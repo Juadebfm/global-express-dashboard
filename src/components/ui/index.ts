@@ -8,3 +8,5 @@ export { Checkbox } from './Checkbox';
 export type { CheckboxProps } from './Checkbox';
 
 export { Card } from './Card';
+
+export { OtpInput } from './OtpInput';

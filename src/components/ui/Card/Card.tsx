@@ -9,10 +9,13 @@ export function Card({ children, className, ...props }: CardProps): ReactElement
   return (
     <div
       className={cn(
-        'rounded-xl bg-white p-6 shadow-card',
-        'transition-shadow hover:shadow-card-hover',
+        'rounded-xl p-6',
         className
       )}
+      style={{
+        backgroundColor: '#F5F7FA',
+        border: '1px solid #DDE5E9',
+      }}
       {...props}
     >
       {children}

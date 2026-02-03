@@ -35,19 +35,17 @@ export function RegisterForm({
   return (
     <Card className="p-8">
       {/* Logo */}
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-brand-500 font-display">
-          GlobalXpress
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">International Freight Agent</p>
+      <div className="flex justify-center mb-6">
+        <img
+          src="/images/mainlogo.svg"
+          alt="GlobalXpress"
+          className="h-12"
+        />
       </div>
 
       {/* Heading */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-gray-900">Create an account</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Join GlobalXpress to manage your shipments.
-        </p>
       </div>
 
       {/* Error message */}

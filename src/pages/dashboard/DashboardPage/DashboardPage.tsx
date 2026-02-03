@@ -1,96 +1,137 @@
 import type { ReactElement } from 'react';
-import { LogOut, Package, TrendingUp, Users, Truck } from 'lucide-react';
-import { useAuth } from '@/hooks';
-import { Button, Card } from '@/components/ui';
-
-const stats = [
-  { label: 'Active Shipments', value: '24', icon: Package, change: '+12%' },
-  { label: 'Total Deliveries', value: '1,284', icon: Truck, change: '+8%' },
-  { label: 'Customers', value: '156', icon: Users, change: '+3%' },
-  { label: 'Revenue', value: '$48.2K', icon: TrendingUp, change: '+18%' },
-];
+import { useEffect, useMemo, useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { AppLayout } from '@/components/layout';
+import { useSearch } from '@/hooks';
+import type { ActiveDelivery, DashboardData, KpiCard } from '@/types';
+import { getDashboardData } from '@/services';
+import {
+  ActiveDeliveries,
+  DashboardHeader,
+  KpiGrid,
+  SecondaryStatsGrid,
+  ShipmentTrendsChart,
+} from '../components';
 
 export function DashboardPage(): ReactElement {
-  const { user, logout } = useAuth();
+  const { query } = useSearch();
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleLogout = async (): Promise<void> => {
-    await logout();
-  };
+  useEffect(() => {
+    let isMounted = true;
+
+    getDashboardData()
+      .then((response) => {
+        if (isMounted) {
+          setData(response);
+          setError(null);
+        }
+      })
+      .catch((err) => {
+        const message = err instanceof Error ? err.message : 'Failed to load dashboard';
+        if (isMounted) {
+          setError(message);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const normalizedQuery = query.trim().toLowerCase();
+
+  const filteredKpis = useMemo((): KpiCard[] => {
+    if (!data) return [];
+    if (normalizedQuery.length === 0) return data.kpis;
+    return data.kpis.filter(
+      (item) =>
+        item.title.toLowerCase().includes(normalizedQuery) ||
+        item.helperText.toLowerCase().includes(normalizedQuery)
+    );
+  }, [data, normalizedQuery]);
+
+  const filteredSecondaryStats = useMemo((): KpiCard[] => {
+    if (!data) return [];
+    if (normalizedQuery.length === 0) return data.secondaryStats;
+    return data.secondaryStats.filter(
+      (item) =>
+        item.title.toLowerCase().includes(normalizedQuery) ||
+        item.helperText.toLowerCase().includes(normalizedQuery)
+    );
+  }, [data, normalizedQuery]);
+
+  const filteredDeliveries = useMemo((): ActiveDelivery[] => {
+    if (!data) return [];
+    if (normalizedQuery.length === 0) return data.activeDeliveries.items;
+    return data.activeDeliveries.items.filter((item) => {
+      const location = `${item.location.city} ${item.location.state} ${item.location.country}`;
+      return (
+        location.toLowerCase().includes(normalizedQuery) ||
+        item.statusLabel.toLowerCase().includes(normalizedQuery) ||
+        String(item.activeShipments).includes(normalizedQuery)
+      );
+    });
+  }, [data, normalizedQuery]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex items-center gap-3 text-gray-500">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Loading dashboard...
+        </div>
+      </div>
+    );
+  }
+
+  if (!data || error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-sm text-red-600">
+          {error ?? 'Dashboard data unavailable.'}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-brand-500 font-display">
-                GlobalXpress
-              </h1>
-              <span className="text-sm text-gray-400">|</span>
-              <span className="text-sm text-gray-600">Dashboard</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">
-                Welcome, {user?.firstName || 'User'}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                rightIcon={<LogOut className="h-4 w-4" />}
-              >
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <AppLayout ui={data.ui} user={data.user}>
+      <div className="space-y-8">
+        <DashboardHeader
+          title={data.app.pageTitle}
+          subtitle={data.app.subtitle}
+          actions={data.ui.actions}
+        />
 
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900">
-            Good morning, {user?.firstName || 'User'}!
-          </h2>
-          <p className="text-gray-600 mt-1">
-            Here's what's happening with your shipments today.
-          </p>
-        </div>
+        <section>
+          <KpiGrid items={filteredKpis} emptyLabel="No matching KPIs found." />
+        </section>
 
-        {/* Stats grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat) => (
-            <Card key={stat.label} className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">{stat.label}</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">
-                    {stat.value}
-                  </p>
-                  <p className="text-sm text-green-600 mt-1">{stat.change}</p>
-                </div>
-                <div className="p-3 bg-brand-50 rounded-lg">
-                  <stat.icon className="h-6 w-6 text-brand-500" />
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+        <section>
+          <SecondaryStatsGrid
+            items={filteredSecondaryStats}
+            emptyLabel="No matching secondary stats found."
+          />
+        </section>
 
-        {/* Placeholder content */}
-        <Card className="p-8 text-center">
-          <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">
-            Dashboard Content Coming Soon
-          </h3>
-          <p className="text-gray-600 mt-2 max-w-md mx-auto">
-            This is a placeholder dashboard. Additional features like shipment
-            tracking, analytics, and customer management will be added here.
-          </p>
-        </Card>
-      </main>
-    </div>
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
+          <ShipmentTrendsChart chart={data.charts.shipmentTrends} />
+          <ActiveDeliveries
+            title={data.activeDeliveries.title}
+            subtitle={data.activeDeliveries.subtitle}
+            items={filteredDeliveries}
+            emptyLabel="No matching deliveries found."
+          />
+        </section>
+      </div>
+    </AppLayout>
   );
 }

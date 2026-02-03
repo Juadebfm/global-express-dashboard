@@ -1,27 +1,56 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { AuthLayout } from '@/components/layout';
-import {
-  ForgotPasswordForm,
-  type ForgotPasswordFormData,
-} from '@/components/forms/ForgotPasswordForm';
-import { mockForgotPassword } from '@/data';
+import { ForgotPasswordForm } from '@/components/forms/ForgotPasswordForm';
+import { mockSendOtp, mockVerifyOtp, mockResetPassword } from '@/data';
 
 export function ForgotPasswordPage(): ReactElement {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (data: ForgotPasswordFormData): Promise<void> => {
+  const handleSendCode = async (email: string): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      await mockForgotPassword(data.email);
-      setSuccess(true);
+      await mockSendOtp(email);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong';
       setError(message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (email: string, otp: string): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await mockVerifyOtp(email, otp);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong';
+      setError(message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (
+    email: string,
+    password: string
+  ): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await mockResetPassword(email, password);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong';
+      setError(message);
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -30,10 +59,11 @@ export function ForgotPasswordPage(): ReactElement {
   return (
     <AuthLayout>
       <ForgotPasswordForm
-        onSubmit={handleSubmit}
+        onSendCode={handleSendCode}
+        onVerifyCode={handleVerifyCode}
+        onResetPassword={handleResetPassword}
         isLoading={isLoading}
         error={error}
-        success={success}
       />
     </AuthLayout>
   );

@@ -1,2 +1,2 @@
-export { LoginPage, RegisterPage, ForgotPasswordPage } from './auth';
+export { LoginPage, ForgotPasswordPage, RegisterPage } from './auth';
 export { DashboardPage } from './dashboard';

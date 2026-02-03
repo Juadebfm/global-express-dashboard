@@ -7,28 +7,22 @@ interface AuthLayoutProps {
 export function AuthLayout({ children }: AuthLayoutProps): ReactElement {
   return (
     <div className="min-h-screen flex">
-      {/* Left side - Image/Background */}
+      {/* Left side - Warehouse Image with overlay */}
       <div className="hidden lg:flex lg:w-1/2 relative">
-        {/* Placeholder gradient background - replace with actual warehouse image */}
         <div
-          className="absolute inset-0 bg-gradient-to-br from-brand-600 via-brand-500 to-orange-400"
+          className="absolute inset-0 bg-gray-800"
           style={{
-            backgroundImage: `url('/images/warehouse-bg.jpg')`,
+            backgroundImage: `url('/images/signin-img.svg')`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
         >
-          {/* Overlay for when image is added */}
-          <div className="absolute inset-0 bg-black/20" />
+          {/* Dark overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/30" />
         </div>
 
-        {/* Branding overlay */}
-        <div className="relative z-10 flex flex-col justify-between p-12 text-white">
-          <div>
-            <h1 className="text-4xl font-bold font-display">GlobalXpress</h1>
-            <p className="mt-2 text-lg text-white/80">International Freight Agent</p>
-          </div>
-
+        {/* Quote overlay */}
+        <div className="relative z-10 flex flex-col justify-end p-12 text-white">
           <div className="max-w-md">
             <blockquote className="text-xl font-medium italic">
               "Delivering excellence across borders, connecting businesses worldwide."
@@ -40,8 +34,8 @@ export function AuthLayout({ children }: AuthLayoutProps): ReactElement {
         </div>
       </div>
 
-      {/* Right side - Form content */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
+      {/* Right side - Form content on orange background */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-brand-500">
         <div className="w-full max-w-md">
           {children}
         </div>

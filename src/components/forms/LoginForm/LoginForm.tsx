@@ -28,11 +28,12 @@ export function LoginForm({
   return (
     <Card className="p-8">
       {/* Logo */}
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-brand-500 font-display">
-          GlobalXpress
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">International Freight Agent</p>
+      <div className="flex justify-center mb-6">
+        <img
+          src="/images/mainlogo.svg"
+          alt="GlobalXpress"
+          className="h-12"
+        />
       </div>
 
       {/* Heading */}
@@ -40,9 +41,6 @@ export function LoginForm({
         <h2 className="text-xl font-semibold text-gray-900">
           Login to your account
         </h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Welcome back! Please enter your details.
-        </p>
       </div>
 
       {/* Error message */}
@@ -94,14 +92,13 @@ export function LoginForm({
         </Button>
       </form>
 
-      {/* Register link */}
       <p className="mt-6 text-center text-sm text-gray-500">
-        Don't have an account?{' '}
+        Don&apos;t have an account?{' '}
         <Link
           to={ROUTES.REGISTER}
           className="font-medium text-brand-500 hover:text-brand-600"
         >
-          Create account
+          Create one
         </Link>
       </p>
     </Card>
