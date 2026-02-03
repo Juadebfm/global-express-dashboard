@@ -1,2 +1,10 @@
 export { LoginPage, ForgotPasswordPage, RegisterPage } from './auth';
 export { DashboardPage } from './dashboard';
+export { ShipmentsPage } from './shipments';
+export { InventoryPage } from './inventory';
+export { ClientsPage } from './clients';
+export { OrdersPage } from './orders';
+export { NotificationsPage } from './notifications';
+export { TeamPage } from './team';
+export { SettingsPage } from './settings';
+export { SupportPage } from './support';

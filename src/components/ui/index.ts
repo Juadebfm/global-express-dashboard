@@ -10,3 +10,4 @@ export type { CheckboxProps } from './Checkbox';
 export { Card } from './Card';
 
 export { OtpInput } from './OtpInput';
+export { PageLoader } from './PageLoader';

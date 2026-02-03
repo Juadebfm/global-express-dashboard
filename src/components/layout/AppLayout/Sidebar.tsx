@@ -11,8 +11,6 @@ import {
   Settings,
   LifeBuoy,
   LogOut,
-  PanelLeftClose,
-  PanelLeftOpen,
 } from 'lucide-react';
 import type { DashboardUser, SidebarItem } from '@/types';
 import { cn } from '@/utils';
@@ -52,6 +50,7 @@ export function Sidebar({
   const location = useLocation();
   const { logout } = useAuth();
   const showLabels = !isCollapsed || isMobileOpen;
+  const logoSrc = showLabels ? '/images/mainlogo.svg' : '/images/favicon.svg';
 
   const isActive = (href: string): boolean =>
     location.pathname === href || location.pathname.startsWith(`${href}/`);
@@ -106,30 +105,20 @@ export function Sidebar({
             showLabels ? '' : 'px-3'
           )}
         >
-          <div className={cn('flex items-center gap-3', showLabels ? '' : 'justify-center w-full')}>
-            <img
-              src="/images/mainlogo.svg"
-              alt="GlobalXpress"
-              className={cn('h-8', showLabels ? '' : 'h-7')}
-            />
-            {showLabels && (
-              <span className="text-xs text-white/60">International Freight Agent</span>
-            )}
-          </div>
           <button
             type="button"
             onClick={onToggleCollapse}
             className={cn(
-              'hidden lg:flex items-center justify-center rounded-lg bg-white/10 p-2 text-white hover:bg-white/20',
-              isCollapsed && 'absolute right-3'
+              'flex items-center gap-3 text-left',
+              showLabels ? '' : 'justify-center w-full'
             )}
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            {isCollapsed ? (
-              <PanelLeftOpen className="h-4 w-4" />
-            ) : (
-              <PanelLeftClose className="h-4 w-4" />
-            )}
+            <img
+              src={logoSrc}
+              alt="GlobalXpress"
+              className={cn(showLabels ? 'h-8' : 'h-9')}
+            />
           </button>
         </div>
 
@@ -165,7 +154,10 @@ export function Sidebar({
             <button
               type="button"
               onClick={logout}
-              className="ml-auto rounded-lg p-2 text-white/70 hover:text-white hover:bg-white/10"
+              className={cn(
+                'rounded-lg p-2 text-red-500 hover:text-red-600 hover:bg-white/10',
+                showLabels ? 'ml-auto' : 'self-center'
+              )}
               aria-label="Logout"
             >
               <LogOut className="h-4 w-4" />

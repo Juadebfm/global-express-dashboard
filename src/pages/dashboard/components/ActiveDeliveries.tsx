@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { Truck } from 'lucide-react';
+import { Truck, Ship, Plane } from 'lucide-react';
 import type { ActiveDelivery } from '@/types';
 
 interface ActiveDeliveriesProps {
@@ -16,6 +16,12 @@ const statusStyles: Record<
   on_time: { bg: 'bg-[#0000FF]', text: 'text-white' },
   delayed: { bg: 'bg-[#FF0000]', text: 'text-white' },
   completed: { bg: 'bg-[#008000]', text: 'text-white' },
+};
+
+const modeIcons: Record<ActiveDelivery['mode'], ReactElement> = {
+  truck: <Truck className="h-4 w-4" />,
+  ship: <Ship className="h-4 w-4" />,
+  air: <Plane className="h-4 w-4" />,
 };
 
 export function ActiveDeliveries({
@@ -44,7 +50,7 @@ export function ActiveDeliveries({
               <div key={item.id} className="flex items-center justify-between gap-4">
                 <div className="flex items-start gap-3">
                   <span className="mt-1 flex h-7 w-7 items-center justify-center rounded-full bg-[#F4EBFF] text-gray-600">
-                    <Truck className="h-4 w-4" />
+                    {modeIcons[item.mode]}
                   </span>
                   <div>
                     <p className="text-sm font-medium text-gray-900">

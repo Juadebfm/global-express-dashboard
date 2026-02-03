@@ -137,6 +137,7 @@ export interface ActiveDeliveryBase {
   location: Location;
   activeShipments: number;
   statusLabel: string;
+  mode: 'truck' | 'ship' | 'air';
 }
 
 export interface FormattingOptions {

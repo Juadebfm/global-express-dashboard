@@ -4,6 +4,14 @@ export const ROUTES = {
   REGISTER: '/register',
   FORGOT_PASSWORD: '/forgot-password',
   DASHBOARD: '/dashboard',
+  SHIPMENTS: '/shipments',
+  INVENTORY: '/inventory',
+  CLIENTS: '/clients',
+  ORDERS: '/orders',
+  NOTIFICATIONS: '/notifications',
+  TEAM: '/team',
+  SETTINGS: '/settings',
+  SUPPORT: '/support',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;
