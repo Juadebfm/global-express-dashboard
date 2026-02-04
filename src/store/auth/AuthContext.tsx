@@ -1,5 +1,4 @@
 import {
-  createContext,
   useCallback,
   useEffect,
   useMemo,
@@ -10,6 +9,7 @@ import {
 import type { LoginCredentials, RegisterData } from '@/types';
 import { mockLogin, mockRegister, mockLogout, mockGetCurrentUser } from '@/data';
 import type { AuthContextValue, AuthState } from './auth.types';
+import { AuthContext } from './auth.context';
 
 const TOKEN_KEY = 'globalxpress_token';
 
@@ -19,8 +19,6 @@ const initialState: AuthState = {
   isLoading: true,
   error: null,
 };
-
-export const AuthContext = createContext<AuthContextValue | null>(null);
 
 interface AuthProviderProps {
   children: ReactNode;

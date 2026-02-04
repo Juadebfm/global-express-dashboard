@@ -79,16 +79,11 @@ export function ShipmentsPage(): ReactElement {
     useShipmentsDashboard();
   const { query } = useSearch();
   const [activeFilter, setActiveFilter] = useState<ShipmentFilterTab['value']>('all');
-  const [shipments, setShipments] = useState<ShipmentRecord[]>([]);
-  const [shipmentsInitialized, setShipmentsInitialized] = useState(false);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, ShipmentStatus>>(
+    {}
+  );
   const [actionMessage, setActionMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (shipmentsData) {
-      setShipments(shipmentsData.shipments);
-      setShipmentsInitialized(true);
-    }
-  }, [shipmentsData]);
 
   useEffect(() => {
     if (!actionMessage) return;
@@ -96,9 +91,15 @@ export function ShipmentsPage(): ReactElement {
     return () => window.clearTimeout(timeout);
   }, [actionMessage]);
 
-  const effectiveShipments = shipmentsInitialized
-    ? shipments
-    : shipmentsData?.shipments ?? [];
+  const effectiveShipments = useMemo(() => {
+    if (!shipmentsData) return [];
+    return shipmentsData.shipments
+      .map((shipment) => {
+        const override = statusOverrides[shipment.id];
+        return override ? { ...shipment, status: override } : shipment;
+      })
+      .filter((shipment) => !deletedIds.has(shipment.id));
+  }, [shipmentsData, statusOverrides, deletedIds]);
 
   const filteredShipments = useMemo(() => {
     if (!effectiveShipments.length) return [];
@@ -242,7 +243,11 @@ export function ShipmentsPage(): ReactElement {
     if (!confirmDelete) return;
 
     const filteredIds = new Set(filteredShipments.map((shipment) => shipment.id));
-    setShipments((prev) => prev.filter((shipment) => !filteredIds.has(shipment.id)));
+    setDeletedIds((prev) => {
+      const next = new Set(prev);
+      filteredIds.forEach((id) => next.add(id));
+      return next;
+    });
     setActionMessage(`Deleted ${filteredShipments.length} rows.`);
   };
 
@@ -268,13 +273,13 @@ export function ShipmentsPage(): ReactElement {
     }
 
     const filteredIds = new Set(filteredShipments.map((shipment) => shipment.id));
-    setShipments((prev) =>
-      prev.map((shipment) =>
-        filteredIds.has(shipment.id)
-          ? { ...shipment, status: normalized as ShipmentStatus }
-          : shipment
-      )
-    );
+    setStatusOverrides((prev) => {
+      const next = { ...prev };
+      filteredIds.forEach((id) => {
+        next[id] = normalized as ShipmentStatus;
+      });
+      return next;
+    });
     setActionMessage(`Updated ${filteredShipments.length} rows.`);
   };
 

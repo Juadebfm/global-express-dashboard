@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useMemo, useCallback } from 'react';
 import { cn } from '@/utils/cn';
 
 interface OtpInputProps {
@@ -18,17 +18,11 @@ export function OtpInput({
   disabled = false,
 }: OtpInputProps): ReactElement {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const [localValues, setLocalValues] = useState<string[]>(
-    Array(length).fill('')
-  );
-
-  // Sync local values with external value
-  useEffect(() => {
+  const digits = useMemo(() => {
     const chars = value.split('');
-    const newValues = Array(length)
+    return Array(length)
       .fill('')
       .map((_, i) => chars[i] || '');
-    setLocalValues(newValues);
   }, [value, length]);
 
   const handleChange = useCallback(
@@ -36,9 +30,8 @@ export function OtpInput({
       // Only accept digits
       const digit = inputValue.replace(/\D/g, '').slice(-1);
 
-      const newValues = [...localValues];
+      const newValues = [...digits];
       newValues[index] = digit;
-      setLocalValues(newValues);
 
       // Update parent value
       onChange(newValues.join(''));
@@ -48,13 +41,13 @@ export function OtpInput({
         inputRefs.current[index + 1]?.focus();
       }
     },
-    [localValues, length, onChange]
+    [digits, length, onChange]
   );
 
   const handleKeyDown = useCallback(
     (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
       // Handle backspace
-      if (e.key === 'Backspace' && !localValues[index] && index > 0) {
+      if (e.key === 'Backspace' && !digits[index] && index > 0) {
         inputRefs.current[index - 1]?.focus();
       }
       // Handle arrow keys
@@ -65,7 +58,7 @@ export function OtpInput({
         inputRefs.current[index + 1]?.focus();
       }
     },
-    [localValues, length]
+    [digits, length]
   );
 
   const handlePaste = useCallback(
@@ -76,15 +69,14 @@ export function OtpInput({
 
       const newValues = Array(length)
         .fill('')
-        .map((_, i) => chars[i] || localValues[i] || '');
-      setLocalValues(newValues);
+        .map((_, i) => chars[i] || digits[i] || '');
       onChange(newValues.join(''));
 
       // Focus the appropriate input
       const focusIndex = Math.min(chars.length, length - 1);
       inputRefs.current[focusIndex]?.focus();
     },
-    [length, localValues, onChange]
+    [length, digits, onChange]
   );
 
   return (
@@ -101,7 +93,7 @@ export function OtpInput({
               type="text"
               inputMode="numeric"
               maxLength={1}
-              value={localValues[index]}
+              value={digits[index]}
               onChange={(e) => handleChange(index, e.target.value)}
               onKeyDown={(e) => handleKeyDown(index, e)}
               onPaste={handlePaste}

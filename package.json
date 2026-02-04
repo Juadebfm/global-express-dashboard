@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "prepare": "husky install",
+    "typecheck": "tsc -b --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {
