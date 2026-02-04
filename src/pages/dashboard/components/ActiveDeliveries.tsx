@@ -85,9 +85,9 @@ export function ActiveDeliveries({
                     {item.statusLabel}
                   </span>
                   <p className="mt-1 text-xs text-gray-500">
-                    {'eta' in item
+                    {item.status === 'on_time'
                       ? item.eta.display
-                      : 'delay' in item
+                      : item.status === 'delayed'
                         ? item.delay.display
                         : 'Delivered'}
                   </p>

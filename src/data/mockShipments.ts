@@ -888,15 +888,9 @@ const totalValue = rawShipments.reduce(
   (sum, shipment) => sum + shipmentValue(shipment),
   0
 );
-const numberFormat = new Intl.NumberFormat('en-US');
 const averageFormat = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
-});
-const currencyFormat = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
 });
 const currencyAverageFormat = new Intl.NumberFormat('en-US', {
   style: 'currency',
