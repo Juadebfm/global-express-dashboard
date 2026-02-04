@@ -23,6 +23,8 @@ const metricIcons: Record<ShipmentMetricCard['icon'], ReactElement> = {
   items: <Layers className="h-4 w-4" />,
 };
 
+const numberFormat = new Intl.NumberFormat('en-US');
+
 const formatValue = (metric: ShipmentMetricCard): string => {
   if (metric.unit === 'USD') {
     return new Intl.NumberFormat('en-US', {
@@ -32,7 +34,7 @@ const formatValue = (metric: ShipmentMetricCard): string => {
     }).format(metric.value);
   }
 
-  return `${new Intl.NumberFormat('en-US').format(metric.value)}${metric.unit}`;
+  return `${numberFormat.format(metric.value)} ${metric.unit}`;
 };
 
 export function ShipmentsSummary({

@@ -43,6 +43,9 @@ export interface ShipmentRecord {
   status: ShipmentStatus;
   mode: ShipmentMode;
   priority: ShipmentPriority;
+  packageCount: number;
+  weightKg: number;
+  valueUSD: number;
 }
 
 export interface ShipmentsDashboardData {

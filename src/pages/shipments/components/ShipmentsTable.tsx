@@ -29,11 +29,10 @@ const modeIcons: Record<ShipmentMode, ReactElement> = {
 const formatDate = (value: string): string => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: '2-digit',
-    year: 'numeric',
-  }).format(date);
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const year = date.getUTCFullYear();
+  return `${day}/${month}/${year}`;
 };
 
 const modeLabel = (mode: ShipmentMode): string => {
@@ -50,23 +49,50 @@ export function ShipmentsTable({ title, items }: ShipmentsTableProps): ReactElem
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full text-[14px]">
+        <table className="min-w-full text-[12.5px]">
           <thead className="bg-gray-50">
             <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
-              <th className="whitespace-nowrap px-6 py-3">SKU</th>
-              <th className="whitespace-nowrap px-6 py-3">Customer</th>
-              <th className="whitespace-nowrap px-6 py-3">Origin</th>
-              <th className="whitespace-nowrap px-6 py-3">Destination</th>
-              <th className="whitespace-nowrap px-6 py-3">Departure</th>
-              <th className="whitespace-nowrap px-6 py-3">ETA</th>
-              <th className="whitespace-nowrap px-6 py-3">Status</th>
+              <th className="whitespace-nowrap border-r border-gray-100 px-6 py-3">
+                SKU
+              </th>
+              <th className="whitespace-nowrap border-r border-gray-100 px-6 py-3">
+                Customer
+              </th>
+              <th className="whitespace-nowrap border-r border-gray-100 px-6 py-3">
+                Origin
+              </th>
+              <th className="whitespace-nowrap border-r border-gray-100 px-6 py-3">
+                Destination
+              </th>
+              <th className="border-r border-gray-100 px-6 py-3">
+                <div className="flex flex-col leading-tight">
+                  <span className="whitespace-nowrap">Departure</span>
+                  <span className="mt-1 text-[10px] font-medium text-gray-400">
+                    dd/mm/yyyy
+                  </span>
+                </div>
+              </th>
+              <th className="border-r border-gray-100 px-6 py-3">
+                <div className="flex flex-col leading-tight">
+                  <span className="whitespace-nowrap">ETA</span>
+                  <span className="mt-1 text-[10px] font-medium text-gray-400">
+                    dd/mm/yyyy
+                  </span>
+                </div>
+              </th>
+              <th className="whitespace-nowrap border-r border-gray-100 px-6 py-3">
+                Status
+              </th>
               <th className="whitespace-nowrap px-6 py-3">Type</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {items.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-10 text-center text-sm text-gray-500">
+                <td
+                  colSpan={8}
+                  className="px-6 py-10 text-center text-[12.5px] text-gray-500"
+                >
                   No shipments match your current filters.
                 </td>
               </tr>
@@ -80,25 +106,25 @@ export function ShipmentsTable({ title, items }: ShipmentsTableProps): ReactElem
                     'hover:bg-brand-50/40'
                   )}
                 >
-                  <td className="whitespace-nowrap px-6 py-4 font-medium text-gray-800">
+                  <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4 font-medium text-gray-800">
                     {shipment.sku}
                   </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-gray-600">
+                  <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4 text-gray-600">
                     {shipment.customer}
                   </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-gray-600">
+                  <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4 text-gray-600">
                     {shipment.origin}
                   </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-gray-600">
+                  <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4 text-gray-600">
                     {shipment.destination}
                   </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-gray-600">
+                  <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4 text-gray-600">
                     {formatDate(shipment.departureDate)}
                   </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-gray-600">
+                  <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4 text-gray-600">
                     {formatDate(shipment.etaDate)}
                   </td>
-                  <td className="whitespace-nowrap px-6 py-4">
+                  <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4">
                     <span
                       className={cn(
                         'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold',

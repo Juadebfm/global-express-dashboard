@@ -819,18 +819,51 @@ const parseDate = (value: string): string => {
   return new Date(Date.UTC(year, month, day, 8, 0, 0)).toISOString();
 };
 
-const shipments: ShipmentRecord[] = rawShipments.map((shipment, index) => ({
-  id: `ship-${index + 1}`,
-  sku: shipment.sku,
-  customer: shipment.customer,
-  origin: normalizeLocation(shipment.origin, index),
-  destination: normalizeLocation(shipment.destination, index + 1),
-  departureDate: parseDate(shipment.departure),
-  etaDate: parseDate(shipment.eta),
-  status: statusMap[shipment.status] ?? 'pending',
-  mode: modeMap[shipment.type] ?? 'air',
-  priority: priorityMap[shipment.priority] ?? 'standard',
-}));
+const shipmentWeight = (shipment: RawShipment): number =>
+  shipment.packages.reduce((acc, pkg) => {
+    const weightValue = Number.parseFloat(pkg.weight.replace('kg', ''));
+    return acc + (Number.isNaN(weightValue) ? 0 : weightValue);
+  }, 0);
+
+const modeRatePerKg: Record<string, number> = {
+  Air: 2.6,
+  Ocean: 1.8,
+  Road: 2.2,
+};
+
+const priorityMultiplier: Record<string, number> = {
+  Express: 1.15,
+  Standard: 1,
+  Economy: 0.9,
+};
+
+const shipmentValue = (shipment: RawShipment): number => {
+  const weight = shipmentWeight(shipment);
+  const rate = modeRatePerKg[shipment.type] ?? 2;
+  const multiplier = priorityMultiplier[shipment.priority] ?? 1;
+  return Math.round(weight * rate * multiplier);
+};
+
+const shipments: ShipmentRecord[] = rawShipments.map((shipment, index) => {
+  const weightKg = shipmentWeight(shipment);
+  const valueUSD = shipmentValue(shipment);
+
+  return {
+    id: `ship-${index + 1}`,
+    sku: shipment.sku,
+    customer: shipment.customer,
+    origin: normalizeLocation(shipment.origin, index),
+    destination: normalizeLocation(shipment.destination, index + 1),
+    departureDate: parseDate(shipment.departure),
+    etaDate: parseDate(shipment.eta),
+    status: statusMap[shipment.status] ?? 'pending',
+    mode: modeMap[shipment.type] ?? 'air',
+    priority: priorityMap[shipment.priority] ?? 'standard',
+    packageCount: shipment.packages.length,
+    weightKg,
+    valueUSD,
+  };
+});
 
 const totalShipments = shipments.length;
 const statusCounts = shipments.reduce(
@@ -846,28 +879,35 @@ const totalItems = rawShipments.reduce(
   0
 );
 
-const totalWeight = rawShipments.reduce((sum, shipment) => {
-  const shipmentWeight = shipment.packages.reduce((acc, pkg) => {
-    const weightValue = Number.parseFloat(pkg.weight.replace('kg', ''));
-    return acc + (Number.isNaN(weightValue) ? 0 : weightValue);
-  }, 0);
-  return sum + shipmentWeight;
-}, 0);
+const totalWeight = rawShipments.reduce(
+  (sum, shipment) => sum + shipmentWeight(shipment),
+  0
+);
 
-const totalValue = 149560;
+const totalValue = rawShipments.reduce(
+  (sum, shipment) => sum + shipmentValue(shipment),
+  0
+);
 const numberFormat = new Intl.NumberFormat('en-US');
+const averageFormat = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 const currencyFormat = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
   maximumFractionDigits: 0,
 });
+const currencyAverageFormat = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
-const averageWeight =
-  totalShipments === 0 ? 0 : Math.round(totalWeight / totalShipments);
-const averageValue =
-  totalShipments === 0 ? 0 : Math.round(totalValue / totalShipments);
-const averageItems =
-  totalShipments === 0 ? 0 : Math.round(totalItems / totalShipments);
+const averageWeight = totalShipments === 0 ? 0 : totalWeight / totalShipments;
+const averageValue = totalShipments === 0 ? 0 : totalValue / totalShipments;
+const averageItems = totalShipments === 0 ? 0 : totalItems / totalShipments;
 
 export const mockShipmentsDashboard: ShipmentsDashboardData = {
   header: {
@@ -905,7 +945,7 @@ export const mockShipmentsDashboard: ShipmentsDashboardData = {
         title: 'Total Weight',
         value: totalWeight,
         unit: 'kg',
-        helperText: `Average weight per shipment: ${numberFormat.format(averageWeight)}kg`,
+        helperText: `Average weight per shipment: ${averageFormat.format(averageWeight)} kg`,
         icon: 'weight',
       },
       {
@@ -913,7 +953,7 @@ export const mockShipmentsDashboard: ShipmentsDashboardData = {
         title: 'Total Value',
         value: totalValue,
         unit: 'USD',
-        helperText: `Average value per shipment: ${currencyFormat.format(averageValue)}`,
+        helperText: `Average value per shipment: ${currencyAverageFormat.format(averageValue)}`,
         icon: 'value',
       },
       {
@@ -921,7 +961,7 @@ export const mockShipmentsDashboard: ShipmentsDashboardData = {
         title: 'Total Items',
         value: totalItems,
         unit: 'items',
-        helperText: `Average item per shipment: ${numberFormat.format(averageItems)}`,
+        helperText: `Average item per shipment: ${averageFormat.format(averageItems)}`,
         icon: 'items',
       },
     ],
