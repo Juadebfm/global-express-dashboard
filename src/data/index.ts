@@ -1,5 +1,6 @@
 export { mockUsers, mockPasswords } from './mockUsers';
 export { mockDashboardData } from './mockDashboard';
+export { mockShipmentsDashboard } from './mockShipments';
 export {
   mockLogin,
   mockRegister,

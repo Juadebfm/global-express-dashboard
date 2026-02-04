@@ -27,7 +27,7 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
     ? {
         displayName: roleLabelMap[authUser.role] ?? 'User',
         email: authUser.email,
-        avatarUrl: `https://i.pravatar.cc/80?u=${encodeURIComponent(authUser.email)}`,
+        avatarUrl: '/images/favicon.svg',
       }
     : user;
 

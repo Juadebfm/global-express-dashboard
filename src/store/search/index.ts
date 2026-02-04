@@ -1,2 +1,2 @@
-export { SearchContext, SearchProvider } from './SearchContext';
-export type { SearchState, SearchContextValue } from './search.types';
+export { useSearchStore } from './search.store';
+export type { SearchState, SearchStore } from './search.types';

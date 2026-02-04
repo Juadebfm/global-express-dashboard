@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { DashboardData } from '@/types';
 import { getDashboardData } from '@/services';
 
@@ -9,32 +9,17 @@ interface DashboardDataState {
 }
 
 export function useDashboardData(): DashboardDataState {
-  const [state, setState] = useState<DashboardDataState>({
-    data: null,
-    isLoading: true,
-    error: null,
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['dashboard', 'overview'],
+    queryFn: getDashboardData,
   });
 
-  useEffect(() => {
-    let isMounted = true;
+  const message =
+    error instanceof Error ? error.message : error ? 'Failed to load dashboard' : null;
 
-    getDashboardData()
-      .then((response) => {
-        if (isMounted) {
-          setState({ data: response, isLoading: false, error: null });
-        }
-      })
-      .catch((err) => {
-        const message = err instanceof Error ? err.message : 'Failed to load dashboard';
-        if (isMounted) {
-          setState({ data: null, isLoading: false, error: message });
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  return state;
+  return {
+    data: data ?? null,
+    isLoading,
+    error: message,
+  };
 }

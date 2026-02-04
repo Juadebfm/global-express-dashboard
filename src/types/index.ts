@@ -22,3 +22,15 @@ export type {
   TimeEstimate,
   FormattingOptions,
 } from './dashboard.types';
+
+export type {
+  ShipmentStatus,
+  ShipmentMode,
+  ShipmentPriority,
+  ShipmentStatusSummary,
+  ShipmentOverviewCard,
+  ShipmentMetricCard,
+  ShipmentFilterTab,
+  ShipmentRecord,
+  ShipmentsDashboardData,
+} from './shipment.types';

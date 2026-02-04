@@ -2,7 +2,7 @@ export interface SearchState {
   query: string;
 }
 
-export interface SearchContextValue extends SearchState {
+export interface SearchStore extends SearchState {
   setQuery: (value: string) => void;
   clear: () => void;
 }

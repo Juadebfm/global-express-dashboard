@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, SearchProvider } from '@/store';
+import { AuthProvider } from '@/store';
 import { ProtectedRoute } from '@/components/auth';
 import {
   LoginPage,
@@ -22,8 +22,7 @@ function App(): ReactElement {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <SearchProvider>
-          <Routes>
+        <Routes>
             {/* Public routes */}
             <Route path={ROUTES.LOGIN} element={<LoginPage />} />
             <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
@@ -107,7 +106,6 @@ function App(): ReactElement {
             <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.LOGIN} replace />} />
             <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
           </Routes>
-        </SearchProvider>
       </AuthProvider>
     </BrowserRouter>
   );

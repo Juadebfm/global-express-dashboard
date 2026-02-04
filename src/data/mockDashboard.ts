@@ -11,7 +11,7 @@ export const mockDashboardData: DashboardData = {
   user: {
     displayName: 'Yusuf Adebayo',
     email: 'Ade@globalexpress.com',
-    avatarUrl: '/avatars/yusuf-adebayo.png',
+    avatarUrl: '/images/favicon.svg',
   },
   ui: {
     topbar: {

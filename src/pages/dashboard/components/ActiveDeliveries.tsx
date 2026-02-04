@@ -1,6 +1,9 @@
 import type { ReactElement } from 'react';
 import { Truck, Ship, Plane } from 'lucide-react';
 import type { ActiveDelivery } from '@/types';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/constants';
+import { useSearch } from '@/hooks';
 
 interface ActiveDeliveriesProps {
   title: string;
@@ -30,6 +33,14 @@ export function ActiveDeliveries({
   items,
   emptyLabel,
 }: ActiveDeliveriesProps): ReactElement {
+  const navigate = useNavigate();
+  const { setQuery } = useSearch();
+
+  const handleNavigate = (item: ActiveDelivery): void => {
+    setQuery(item.location.city);
+    navigate(ROUTES.SHIPMENTS);
+  };
+
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
       <div>
@@ -47,7 +58,13 @@ export function ActiveDeliveries({
             const status = statusStyles[item.status];
 
             return (
-              <div key={item.id} className="flex items-center justify-between gap-4">
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => handleNavigate(item)}
+                className="group flex w-full items-center justify-between gap-4 rounded-xl px-2 py-2 text-left transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                aria-label={`View deliveries for ${item.location.city}, ${item.location.state}`}
+              >
                 <div className="flex items-start gap-3">
                   <span className="mt-1 flex h-7 w-7 items-center justify-center rounded-full bg-[#F4EBFF] text-gray-600">
                     {modeIcons[item.mode]}
@@ -75,7 +92,7 @@ export function ActiveDeliveries({
                         : 'Delivered'}
                   </p>
                 </div>
-              </div>
+              </button>
             );
           })
         )}
