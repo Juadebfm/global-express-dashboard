@@ -18,8 +18,8 @@ export interface TeamMember {
 export const mockTeamMembers: TeamMember[] = [
   {
     id: 'team-1',
-    fullName: 'Amina Abdullahi',
-    email: 'amina.abdullahi@globalxpress.com',
+    fullName: 'Yomi Hassan',
+    email: 'superadmin@globalxpress.com',
     role: 'superadmin',
     permissions: {
       makeAdmin: true,

@@ -4,8 +4,8 @@ export const mockUsers: User[] = [
   {
     id: '0',
     email: 'superadmin@globalxpress.com',
-    firstName: 'Amina',
-    lastName: 'Abdullahi',
+    firstName: 'Yomi',
+    lastName: 'Hassan',
     role: 'superadmin',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',

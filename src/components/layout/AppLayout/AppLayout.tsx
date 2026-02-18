@@ -24,13 +24,16 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
     user: 'User',
   };
 
-  const canManageTeam =
-    authUser?.role === 'superadmin' || authUser?.role === 'admin';
+  const isSuperAdmin = authUser?.role === 'superadmin';
+  const canManageTeam = isSuperAdmin || authUser?.role === 'admin';
 
   const filteredItems = authUser
     ? ui.sidebar.items.filter((item) => {
         if (item.id === 'team' || item.id === 'users') {
           return canManageTeam;
+        }
+        if (item.id === 'clients') {
+          return isSuperAdmin;
         }
         return true;
       })

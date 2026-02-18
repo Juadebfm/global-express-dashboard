@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Mail, Search, User, UserPlus, X } from 'lucide-react';
 import { useAuth, useDashboardData, useSearch } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
@@ -47,13 +47,16 @@ const matchesQuery = (member: TeamMember, query: string): boolean => {
 };
 
 const permissionSummary = (member: TeamMember): string => {
-  if (member.role === 'admin' || member.role === 'superadmin' || member.permissions.makeAdmin) {
-    return 'All Access Granted';
+  if (member.role === 'superadmin') {
+    return 'All Access (Owner)';
+  }
+  if (member.role === 'admin' || member.permissions.makeAdmin) {
+    return 'Elevated Access';
   }
   const labels: string[] = [];
   if (member.permissions.canTransfer) labels.push('Transfer and view');
   if (member.permissions.viewOnly) labels.push('View Only');
-  return labels.length ? labels.join(' · ') : 'Custom';
+  return labels.length ? labels.join(' / ') : 'Custom';
 };
 
 const buildInitials = (name: string): string => {
@@ -80,6 +83,20 @@ export function TeamPage(): ReactElement {
   const hasAccess = isSuperAdmin || isAdmin;
 
   const roleOptions: TeamRole[] = isSuperAdmin ? ['staff', 'admin', 'superadmin'] : ['staff'];
+
+  useEffect(() => {
+    if (!user || user.role !== 'superadmin') return;
+    const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || 'Super Admin';
+
+    setMembers((prev) => {
+      const next = prev.map((member) =>
+        member.role === 'superadmin'
+          ? { ...member, fullName, email: user.email }
+          : member
+      );
+      return next;
+    });
+  }, [user]);
 
   const filteredMembers = useMemo(() => {
     const base = members.filter((member) => {
@@ -197,6 +214,7 @@ export function TeamPage(): ReactElement {
       };
 
       setMembers((prev) => [newMember, ...prev]);
+      setActiveTab('all');
       closeModal();
       return;
     }
@@ -225,13 +243,17 @@ export function TeamPage(): ReactElement {
     closeModal();
   };
 
-  const handleApprove = (): void => {
-    if (!selectedMember) return;
+  const approveMember = (member: TeamMember): void => {
     setMembers((prev) =>
-      prev.map((member) =>
-        member.id === selectedMember.id ? { ...member, approvalStatus: 'approved' } : member
+      prev.map((item) =>
+        item.id === member.id ? { ...item, approvalStatus: 'approved' } : item
       )
     );
+  };
+
+  const handleApprove = (): void => {
+    if (!selectedMember) return;
+    approveMember(selectedMember);
     closeModal();
   };
 
@@ -257,7 +279,7 @@ export function TeamPage(): ReactElement {
                 <button
                   type="button"
                   onClick={openInvite}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-600 shadow-sm transition hover:border-brand-500 hover:text-brand-700"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-600 shadow-sm transition hover:border-brand-500 hover:text-brand-700 whitespace-nowrap"
                 >
                   <UserPlus className="h-4 w-4" />
                   Add team
@@ -347,7 +369,7 @@ export function TeamPage(): ReactElement {
                               <div>
                                 <p className="font-semibold text-gray-800">{member.fullName}</p>
                                 {member.approvalStatus === 'pending' && (
-                                  <span className="mt-1 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                                  <span className="mt-1 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 whitespace-nowrap">
                                     Pending approval
                                   </span>
                                 )}
@@ -360,22 +382,36 @@ export function TeamPage(): ReactElement {
                           </td>
                           <td className="px-6 py-4 text-gray-500">{permissionSummary(member)}</td>
                           <td className="px-6 py-4 text-right">
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                openRemove(member);
-                              }}
-                              disabled={!canRemove}
-                              className={cn(
-                                'rounded-full px-4 py-1.5 text-xs font-semibold transition',
-                                canRemove
-                                  ? 'bg-red-500 text-white hover:bg-red-600'
-                                  : 'cursor-not-allowed bg-gray-200 text-gray-400'
+                            <div className="flex items-center justify-end gap-2">
+                              {canApproveMember(member) && (
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    approveMember(member);
+                                  }}
+                                  className="rounded-full bg-emerald-500 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-600"
+                                >
+                                  Approve
+                                </button>
                               )}
-                            >
-                              Remove
-                            </button>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openRemove(member);
+                                }}
+                                disabled={!canRemove}
+                                className={cn(
+                                  'rounded-full px-4 py-1.5 text-xs font-semibold transition',
+                                  canRemove
+                                    ? 'bg-red-500 text-white hover:bg-red-600'
+                                    : 'cursor-not-allowed bg-gray-200 text-gray-400'
+                                )}
+                              >
+                                Remove
+                              </button>
+                            </div>
                             {!canEdit && (
                               <p className="mt-2 text-xs text-gray-400">
                                 Requires Super Admin
@@ -655,3 +691,4 @@ export function TeamPage(): ReactElement {
     </AppShell>
   );
 }
+
