@@ -5,7 +5,6 @@ export const ROUTES = {
   FORGOT_PASSWORD: '/forgot-password',
   DASHBOARD: '/dashboard',
   SHIPMENTS: '/shipments',
-  INVENTORY: '/inventory',
   CLIENTS: '/clients',
   USERS: '/users',
   ORDERS: '/orders',

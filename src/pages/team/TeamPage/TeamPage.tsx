@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Mail, Search, User, UserPlus, X } from 'lucide-react';
 import { useAuth, useDashboardData, useSearch } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
@@ -84,18 +84,22 @@ export function TeamPage(): ReactElement {
 
   const roleOptions: TeamRole[] = isSuperAdmin ? ['staff', 'admin', 'superadmin'] : ['staff'];
 
-  const resolvedMembers = useMemo(() => {
-    if (!user || user.role !== 'superadmin') return members;
+  useEffect(() => {
+    if (!user || user.role !== 'superadmin') return;
     const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || 'Super Admin';
-    return members.map((member) =>
-      member.role === 'superadmin'
-        ? { ...member, fullName, email: user.email }
-        : member
-    );
-  }, [members, user]);
+
+    setMembers((prev) => {
+      const next = prev.map((member) =>
+        member.role === 'superadmin'
+          ? { ...member, fullName, email: user.email }
+          : member
+      );
+      return next;
+    });
+  }, [user]);
 
   const filteredMembers = useMemo(() => {
-    const base = resolvedMembers.filter((member) => {
+    const base = members.filter((member) => {
       if (activeTab === 'admin') {
         return member.role === 'admin' || member.role === 'superadmin';
       }
@@ -106,7 +110,7 @@ export function TeamPage(): ReactElement {
     });
 
     return base.filter((member) => matchesQuery(member, query.trim()));
-  }, [resolvedMembers, activeTab, query]);
+  }, [members, activeTab, query]);
 
   const openInvite = (): void => {
     setFormState(emptyForm);

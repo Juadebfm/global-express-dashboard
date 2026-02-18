@@ -8,7 +8,6 @@ import {
   ForgotPasswordPage,
   DashboardPage,
   ShipmentsPage,
-  InventoryPage,
   ClientsPage,
   UsersPage,
   OrdersPage,
@@ -43,14 +42,6 @@ function App(): ReactElement {
             element={
               <ProtectedRoute>
                 <ShipmentsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={ROUTES.INVENTORY}
-            element={
-              <ProtectedRoute>
-                <InventoryPage />
               </ProtectedRoute>
             }
           />

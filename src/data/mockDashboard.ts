@@ -29,7 +29,6 @@ export const mockDashboardData: DashboardData = {
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', href: '/dashboard' },
         { id: 'shipments', label: 'Shipments', icon: 'truck', href: '/shipments' },
-        { id: 'inventory', label: 'Inventory', icon: 'boxes', href: '/inventory' },
         { id: 'clients', label: 'Clients', icon: 'users', href: '/clients' },
         { id: 'users', label: 'Users', icon: 'users', href: '/users' },
         { id: 'orders', label: 'Orders', icon: 'clipboard', href: '/orders' },

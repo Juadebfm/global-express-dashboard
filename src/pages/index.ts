@@ -1,7 +1,6 @@
 export { LoginPage, ForgotPasswordPage, RegisterPage } from './auth';
 export { DashboardPage } from './dashboard';
 export { ShipmentsPage } from './shipments';
-export { InventoryPage } from './inventory';
 export { ClientsPage } from './clients';
 export { UsersPage } from './users';
 export { OrdersPage } from './orders';

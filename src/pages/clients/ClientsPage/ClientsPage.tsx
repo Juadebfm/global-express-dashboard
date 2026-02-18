@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ChevronDown,
@@ -9,8 +9,6 @@ import {
   Pencil,
   Search,
   Share2,
-  Smile,
-  Star,
   Trash2,
   UserCheck,
   Users,
@@ -375,17 +373,67 @@ export function ClientsPage(): ReactElement {
   const { query, setQuery } = useSearch();
   const { user } = useAuth();
   const [activeClient, setActiveClient] = useState<Client | null>(null);
+  const [clientList, setClientList] = useState<Client[]>(clients);
   const [statusFilter, setStatusFilter] = useState<ClientStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<ClientPriority | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<ClientType | 'all'>('all');
   const [activeOrderTab, setActiveOrderTab] = useState<OrderTab>('all');
+  const [openMenu, setOpenMenu] = useState<'status' | 'priority' | 'type' | null>(null);
+  const [openClientMenuId, setOpenClientMenuId] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Client | null>(null);
+
+  const statusMenuRef = useRef<HTMLDivElement | null>(null);
+  const priorityMenuRef = useRef<HTMLDivElement | null>(null);
+  const typeMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!openMenu) return;
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const refMap = {
+        status: statusMenuRef,
+        priority: priorityMenuRef,
+        type: typeMenuRef,
+      } as const;
+      const currentRef = refMap[openMenu];
+      if (currentRef.current && currentRef.current.contains(target)) return;
+      setOpenMenu(null);
+    };
+
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [openMenu]);
+
+  useEffect(() => {
+    if (!openClientMenuId) return;
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (
+        target.closest('[data-client-menu]') ||
+        target.closest('[data-client-menu-button]')
+      ) {
+        return;
+      }
+      setOpenClientMenuId(null);
+    };
+
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [openClientMenuId]);
+
+  useEffect(() => {
+    if (!actionMessage) return;
+    const timeout = window.setTimeout(() => setActionMessage(null), 2400);
+    return () => window.clearTimeout(timeout);
+  }, [actionMessage]);
 
   const role = user?.role;
   const hasAccess = role === 'superadmin';
 
   const filteredClients = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return clients.filter((client) => {
+    return clientList.filter((client) => {
       const matchesSearch =
         !needle ||
         `${client.name} ${client.contactName} ${client.email} ${client.phone}`
@@ -399,14 +447,14 @@ export function ClientsPage(): ReactElement {
 
       return matchesSearch && matchesStatus && matchesPriority && matchesType;
     });
-  }, [query, statusFilter, priorityFilter, typeFilter]);
+  }, [clientList, query, statusFilter, priorityFilter, typeFilter]);
 
   const summaryStats = useMemo(() => {
-    const totalClients = clients.length;
-    const activeClients = clients.filter((client) => client.status === 'active').length;
-    const totalRevenue = clients.reduce((acc, client) => acc + client.revenue, 0);
+    const totalClients = clientList.length;
+    const activeClients = clientList.filter((client) => client.status === 'active').length;
+    const totalRevenue = clientList.reduce((acc, client) => acc + client.revenue, 0);
     const avgSatisfaction =
-      clients.reduce((acc, client) => acc + client.satisfaction, 0) / totalClients;
+      clientList.reduce((acc, client) => acc + client.satisfaction, 0) / totalClients;
 
     return {
       totalClients,
@@ -414,13 +462,41 @@ export function ClientsPage(): ReactElement {
       totalRevenue,
       avgSatisfaction,
     };
-  }, []);
+  }, [clientList]);
 
   const selectedOrders = useMemo(() => {
     const orders = clientOrders;
     if (activeOrderTab === 'all') return orders;
     return orders.filter((order) => order.status === activeOrderTab);
   }, [activeOrderTab]);
+
+  const handleCopyEmail = async (client: Client): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(client.email);
+      setActionMessage(`Copied ${client.email}.`);
+    } catch {
+      setActionMessage('Copy failed.');
+    }
+  };
+
+  const handleSuspendClient = (client: Client): void => {
+    if (client.status === 'inactive') return;
+    setClientList((prev) =>
+      prev.map((item) =>
+        item.id === client.id ? { ...item, status: 'inactive' } : item
+      )
+    );
+    setActiveClient((prev) =>
+      prev?.id === client.id ? { ...prev, status: 'inactive' } : prev
+    );
+    setActionMessage(`${client.name} has been suspended.`);
+  };
+
+  const handleDeleteClient = (client: Client): void => {
+    setClientList((prev) => prev.filter((item) => item.id !== client.id));
+    setActiveClient(null);
+    setActionMessage(`${client.name} has been deleted.`);
+  };
 
   if (!hasAccess) {
     return (
@@ -524,6 +600,7 @@ export function ClientsPage(): ReactElement {
                     type="button"
                     className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50"
                     aria-label="Delete"
+                    onClick={() => setPendingDelete(activeClient)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -546,8 +623,6 @@ export function ClientsPage(): ReactElement {
                         <th className="px-6 py-4">ID</th>
                         <th className="px-6 py-4">Items</th>
                         <th className="px-6 py-4">Status</th>
-                        <th className="px-6 py-4">Order Date</th>
-                        <th className="px-6 py-4">Delivery Date</th>
                         <th className="px-6 py-4">Priority</th>
                         <th className="px-6 py-4">Total Value</th>
                         <th className="px-6 py-4">Payment</th>
@@ -573,8 +648,6 @@ export function ClientsPage(): ReactElement {
                               {orderStatusLabels[order.status]}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-gray-500">{order.orderDate}</td>
-                          <td className="px-6 py-4 text-gray-500">{order.deliveryDate}</td>
                           <td className="px-6 py-4">
                             <span
                               className={cn(
@@ -666,20 +739,6 @@ export function ClientsPage(): ReactElement {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500">Avg Satisfaction</p>
-                    <p className="mt-2 text-2xl font-semibold text-gray-900">
-                      {summaryStats.avgSatisfaction.toFixed(1)}
-                    </p>
-                    <p className="mt-1 text-xs text-emerald-600">+0.3 from last month</p>
-                  </div>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                    <Smile className="h-4 w-4" />
-                  </div>
-                </div>
-              </div>
             </div>
 
             <div className="rounded-3xl border border-gray-200 bg-white p-6">
@@ -701,51 +760,155 @@ export function ClientsPage(): ReactElement {
                     className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-800 outline-none transition focus:border-brand-500"
                   />
                 </div>
-                <div className="relative">
-                  <select
-                    value={statusFilter}
-                    onChange={(event) => setStatusFilter(event.target.value as ClientStatus | 'all')}
-                    className="appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pl-4 pr-9 text-sm text-gray-600"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">In-Active</option>
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                </div>
-                <div className="relative">
-                  <select
-                    value={priorityFilter}
-                    onChange={(event) =>
-                      setPriorityFilter(event.target.value as ClientPriority | 'all')
+                <div className="relative" ref={statusMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenMenu((prev) => (prev === 'status' ? null : 'status'))
                     }
-                    className="appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pl-4 pr-9 text-sm text-gray-600"
+                    className="inline-flex w-40 items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 shadow-sm transition hover:border-gray-300"
                   >
-                    <option value="all">All Priorities</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    {statusFilter === 'all' ? 'All Status' : statusLabels[statusFilter]}
+                    <ChevronDown
+                      className={cn(
+                        'h-4 w-4 text-gray-400 transition',
+                        openMenu === 'status' && 'rotate-180'
+                      )}
+                    />
+                  </button>
+                  {openMenu === 'status' && (
+                    <div className="absolute z-20 mt-2 w-44 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
+                      {(
+                        [
+                          { value: 'all', label: 'All Status' },
+                          { value: 'active', label: 'Active' },
+                          { value: 'inactive', label: 'In-Active' },
+                        ] as Array<{ value: ClientStatus | 'all'; label: string }>
+                      ).map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setStatusFilter(option.value);
+                            setOpenMenu(null);
+                          }}
+                          className={cn(
+                            'w-full rounded-lg px-3 py-2 text-left text-sm transition',
+                            statusFilter === option.value
+                              ? 'bg-brand-50 text-brand-600 font-semibold'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="relative">
-                  <select
-                    value={typeFilter}
-                    onChange={(event) => setTypeFilter(event.target.value as ClientType | 'all')}
-                    className="appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pl-4 pr-9 text-sm text-gray-600"
+                <div className="relative" ref={priorityMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenMenu((prev) => (prev === 'priority' ? null : 'priority'))
+                    }
+                    className="inline-flex w-40 items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 shadow-sm transition hover:border-gray-300"
                   >
-                    <option value="all">All Type</option>
-                    <option value="enterprise">Enterprise</option>
-                    <option value="smb">SMB</option>
-                    <option value="startup">Startup</option>
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    {priorityFilter === 'all'
+                      ? 'All Priorities'
+                      : priorityLabels[priorityFilter]}
+                    <ChevronDown
+                      className={cn(
+                        'h-4 w-4 text-gray-400 transition',
+                        openMenu === 'priority' && 'rotate-180'
+                      )}
+                    />
+                  </button>
+                  {openMenu === 'priority' && (
+                    <div className="absolute z-20 mt-2 w-44 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
+                      {(
+                        [
+                          { value: 'all', label: 'All Priorities' },
+                          { value: 'high', label: 'High' },
+                          { value: 'medium', label: 'Medium' },
+                          { value: 'low', label: 'Low' },
+                        ] as Array<{ value: ClientPriority | 'all'; label: string }>
+                      ).map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setPriorityFilter(option.value);
+                            setOpenMenu(null);
+                          }}
+                          className={cn(
+                            'w-full rounded-lg px-3 py-2 text-left text-sm transition',
+                            priorityFilter === option.value
+                              ? 'bg-brand-50 text-brand-600 font-semibold'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="relative" ref={typeMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenMenu((prev) => (prev === 'type' ? null : 'type'))
+                    }
+                    className="inline-flex w-40 items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 shadow-sm transition hover:border-gray-300"
+                  >
+                    {typeFilter === 'all' ? 'All Type' : typeLabels[typeFilter]}
+                    <ChevronDown
+                      className={cn(
+                        'h-4 w-4 text-gray-400 transition',
+                        openMenu === 'type' && 'rotate-180'
+                      )}
+                    />
+                  </button>
+                  {openMenu === 'type' && (
+                    <div className="absolute z-20 mt-2 w-44 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
+                      {(
+                        [
+                          { value: 'all', label: 'All Type' },
+                          { value: 'enterprise', label: 'Enterprise' },
+                          { value: 'smb', label: 'SMB' },
+                          { value: 'startup', label: 'Startup' },
+                        ] as Array<{ value: ClientType | 'all'; label: string }>
+                      ).map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setTypeFilter(option.value);
+                            setOpenMenu(null);
+                          }}
+                          className={cn(
+                            'w-full rounded-lg px-3 py-2 text-left text-sm transition',
+                            typeFilter === option.value
+                              ? 'bg-brand-50 text-brand-600 font-semibold'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             <div>
               <h3 className="text-xl font-semibold text-gray-900">Client Directory</h3>
+              {actionMessage && (
+                <div className="mt-3 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                  {actionMessage}
+                </div>
+              )}
               <div className="mt-4 overflow-hidden rounded-3xl border border-gray-200 bg-white">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -755,7 +918,6 @@ export function ClientsPage(): ReactElement {
                       <th className="px-6 py-4">Status</th>
                       <th className="px-6 py-4">Orders</th>
                       <th className="px-6 py-4">Revenue</th>
-                      <th className="px-6 py-4">Satisfaction</th>
                       <th className="px-6 py-4">Last Order</th>
                       <th className="px-6 py-4 text-right">Actions</th>
                     </tr>
@@ -801,22 +963,67 @@ export function ClientsPage(): ReactElement {
                         <td className="px-6 py-4 text-gray-600">
                           {currencyFormatter.format(client.revenue)}
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-gray-700">
-                            <Star className="h-4 w-4 text-amber-400" />
-                            <span>{client.satisfaction.toFixed(1)}</span>
-                          </div>
-                        </td>
                         <td className="px-6 py-4 text-gray-600">{client.lastOrder}</td>
                         <td className="px-6 py-4 text-right">
-                          <button
-                            type="button"
-                            onClick={(event) => event.stopPropagation()}
-                            className="text-gray-400 hover:text-gray-600"
-                            aria-label="More"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </button>
+                          <div className="relative inline-flex" data-client-menu>
+                            <button
+                              type="button"
+                              data-client-menu-button
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setOpenClientMenuId((prev) =>
+                                  prev === client.id ? null : client.id
+                                );
+                              }}
+                              className="text-gray-400 hover:text-gray-600"
+                              aria-label="More"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+                            {openClientMenuId === client.id && (
+                              <div className="absolute right-0 top-6 z-20 w-44 rounded-xl border border-gray-200 bg-white p-1 text-left shadow-lg">
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setActiveClient(client);
+                                    setOpenClientMenuId(null);
+                                  }}
+                                  className="w-full rounded-lg px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
+                                >
+                                  View Details
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleCopyEmail(client);
+                                    setOpenClientMenuId(null);
+                                  }}
+                                  className="w-full rounded-lg px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
+                                >
+                                  Copy Email
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleSuspendClient(client);
+                                    setOpenClientMenuId(null);
+                                  }}
+                                  disabled={client.status === 'inactive'}
+                                  className={cn(
+                                    'w-full rounded-lg px-3 py-2 text-sm transition',
+                                    client.status === 'inactive'
+                                      ? 'cursor-not-allowed text-gray-300'
+                                      : 'text-rose-600 hover:bg-rose-50'
+                                  )}
+                                >
+                                  Suspend
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -833,6 +1040,38 @@ export function ClientsPage(): ReactElement {
           </>
         )}
       </div>
+
+      {pendingDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-semibold text-gray-900">Delete client</h2>
+            <p className="mt-3 text-sm text-gray-600">
+              Are you sure you want to delete {pendingDelete.name}? This action cannot
+              be undone.
+            </p>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setPendingDelete(null)}
+                className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleDeleteClient(pendingDelete);
+                  setPendingDelete(null);
+                }}
+                className="rounded-xl bg-red-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
