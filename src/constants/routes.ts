@@ -7,6 +7,7 @@ export const ROUTES = {
   SHIPMENTS: '/shipments',
   INVENTORY: '/inventory',
   CLIENTS: '/clients',
+  USERS: '/users',
   ORDERS: '/orders',
   NOTIFICATIONS: '/notifications',
   TEAM: '/team',

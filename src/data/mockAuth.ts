@@ -148,6 +148,15 @@ export async function mockGetCurrentUser(token: string): Promise<User> {
     throw new Error('No token provided');
   }
 
+  const storedEmail =
+    typeof window !== 'undefined' ? window.localStorage.getItem('globalxpress_user') : null;
+  if (storedEmail) {
+    const user = mockUsers.find((item) => item.email === storedEmail);
+    if (user) {
+      return user;
+    }
+  }
+
   return mockUsers[0];
 }
 

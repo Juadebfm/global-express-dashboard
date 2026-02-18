@@ -18,14 +18,30 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const roleLabelMap: Record<string, string> = {
-    superadmin: 'Super Admin (Owner)',
+    superadmin: 'Super Admin',
+    admin: 'Admin',
     staff: 'Staff',
     user: 'User',
   };
 
+  const canManageTeam =
+    authUser?.role === 'superadmin' || authUser?.role === 'admin';
+
+  const filteredItems = authUser
+    ? ui.sidebar.items.filter((item) => {
+        if (item.id === 'team' || item.id === 'users') {
+          return canManageTeam;
+        }
+        return true;
+      })
+    : ui.sidebar.items;
+
   const effectiveUser: DashboardUser = authUser
     ? {
-        displayName: roleLabelMap[authUser.role] ?? 'User',
+        displayName:
+          authUser.firstName && authUser.lastName
+            ? `${authUser.firstName} ${authUser.lastName}`
+            : roleLabelMap[authUser.role] ?? 'User',
         email: authUser.email,
         avatarUrl: '/images/favicon.svg',
       }
@@ -45,8 +61,8 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Sidebar
-        items={ui.sidebar.items}
+        <Sidebar
+        items={filteredItems}
         footerItems={ui.sidebar.footer.items}
         user={effectiveUser}
         isCollapsed={isSidebarCollapsed}

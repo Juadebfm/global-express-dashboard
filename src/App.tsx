@@ -10,6 +10,7 @@ import {
   ShipmentsPage,
   InventoryPage,
   ClientsPage,
+  UsersPage,
   OrdersPage,
   NotificationsPage,
   TeamPage,
@@ -74,6 +75,14 @@ function App(): ReactElement {
             element={
               <ProtectedRoute>
                 <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={ROUTES.USERS}
+            element={
+              <ProtectedRoute>
+                <UsersPage />
               </ProtectedRoute>
             }
           />

@@ -63,6 +63,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     try {
       const response = await mockLogin(credentials);
       localStorage.setItem(TOKEN_KEY, response.tokens.accessToken);
+      localStorage.setItem('globalxpress_user', response.user.email);
 
       if (credentials.rememberMe && response.tokens.refreshToken) {
         localStorage.setItem('globalxpress_refresh', response.tokens.refreshToken);
@@ -91,6 +92,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     try {
       const response = await mockRegister(data);
       localStorage.setItem(TOKEN_KEY, response.tokens.accessToken);
+      localStorage.setItem('globalxpress_user', response.user.email);
 
       setState({
         user: response.user,
@@ -115,6 +117,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     } finally {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem('globalxpress_refresh');
+      localStorage.removeItem('globalxpress_user');
       setState({
         user: null,
         isAuthenticated: false,

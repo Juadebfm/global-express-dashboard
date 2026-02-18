@@ -3,6 +3,7 @@ export { DashboardPage } from './dashboard';
 export { ShipmentsPage } from './shipments';
 export { InventoryPage } from './inventory';
 export { ClientsPage } from './clients';
+export { UsersPage } from './users';
 export { OrdersPage } from './orders';
 export { NotificationsPage } from './notifications';
 export { TeamPage } from './team';
