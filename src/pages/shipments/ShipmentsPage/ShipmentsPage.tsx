@@ -79,7 +79,7 @@ export function ShipmentsPage(): ReactElement {
     useDashboardData();
   const { data: shipmentsData, isLoading: isShipmentsLoading, error: shipmentsError } =
     useShipmentsDashboard();
-  const { query } = useSearch();
+  const { query, setQuery } = useSearch();
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<ShipmentFilterTab['value']>('all');
   const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
@@ -104,15 +104,21 @@ export function ShipmentsPage(): ReactElement {
       .filter((shipment) => !deletedIds.has(shipment.id));
   }, [shipmentsData, statusOverrides, deletedIds]);
 
-  const filteredShipments = useMemo(() => {
-    if (!effectiveShipments.length) return [];
+  const normalizedQuery = query.trim();
 
-    return effectiveShipments.filter((shipment) => {
-      const matchesStatus =
-        activeFilter === 'all' ? true : shipment.status === activeFilter;
-      return matchesStatus && matchesQuery(shipment, query.trim());
-    });
-  }, [effectiveShipments, activeFilter, query]);
+  const statusScopedShipments = useMemo(() => {
+    if (!effectiveShipments.length) return [];
+    if (activeFilter === 'all') return effectiveShipments;
+    return effectiveShipments.filter((shipment) => shipment.status === activeFilter);
+  }, [effectiveShipments, activeFilter]);
+
+  const filteredShipments = useMemo(() => {
+    if (!statusScopedShipments.length) return [];
+    if (!normalizedQuery) return statusScopedShipments;
+    return statusScopedShipments.filter((shipment) =>
+      matchesQuery(shipment, normalizedQuery)
+    );
+  }, [statusScopedShipments, normalizedQuery]);
 
   const summaryData = useMemo(() => {
     if (!shipmentsData) return null;
@@ -199,6 +205,17 @@ export function ShipmentsPage(): ReactElement {
   }, [shipmentsData, effectiveShipments]);
 
   const hasRows = filteredShipments.length > 0;
+  const totalVisible = statusScopedShipments.length;
+  const visibleLabel =
+    totalVisible === 0
+      ? 'No shipments available in this view.'
+      : normalizedQuery
+        ? `Showing ${filteredShipments.length} of ${totalVisible} shipment${
+            totalVisible === 1 ? '' : 's'
+          } for "${normalizedQuery}".`
+        : `Showing ${filteredShipments.length} shipment${
+            filteredShipments.length === 1 ? '' : 's'
+          }.`;
 
   const handleCopy = async (): Promise<void> => {
     if (!hasRows) {
@@ -290,6 +307,14 @@ export function ShipmentsPage(): ReactElement {
     navigate(ROUTES.SHIPMENT_TRACK);
   };
 
+  const handleSearchChange = (value: string): void => {
+    setQuery(value);
+  };
+
+  const handleSearchClear = (): void => {
+    setQuery('');
+  };
+
   return (
     <AppShell
       data={dashboardData}
@@ -328,6 +353,11 @@ export function ShipmentsPage(): ReactElement {
             <ShipmentsTable
               title={shipmentsData.table.title}
               items={filteredShipments}
+              searchValue={query}
+              onSearchChange={handleSearchChange}
+              onSearchClear={handleSearchClear}
+              searchPlaceholder="Search by SKU, customer, origin, destination..."
+              searchMeta={visibleLabel}
             />
           </>
         ) : isShipmentsLoading ? (

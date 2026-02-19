@@ -65,7 +65,10 @@ function App(): ReactElement {
           <Route
             path={ROUTES.ORDERS}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute
+                blockedRoles={['admin', 'superadmin']}
+                redirectTo={ROUTES.DASHBOARD}
+              >
                 <OrdersPage />
               </ProtectedRoute>
             }

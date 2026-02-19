@@ -1,11 +1,16 @@
 import type { ReactElement } from 'react';
-import { Plane, Ship, Truck } from 'lucide-react';
+import { Plane, Search, Ship, Truck, X } from 'lucide-react';
 import type { ShipmentMode, ShipmentRecord, ShipmentStatus } from '@/types';
 import { cn } from '@/utils';
 
 interface ShipmentsTableProps {
   title: string;
   items: ShipmentRecord[];
+  searchValue?: string;
+  searchPlaceholder?: string;
+  searchMeta?: string;
+  onSearchChange?: (value: string) => void;
+  onSearchClear?: () => void;
 }
 
 const statusLabels: Record<ShipmentStatus, string> = {
@@ -41,11 +46,69 @@ const modeLabel = (mode: ShipmentMode): string => {
   return 'Road';
 };
 
-export function ShipmentsTable({ title, items }: ShipmentsTableProps): ReactElement {
+export function ShipmentsTable({
+  title,
+  items,
+  searchValue,
+  searchPlaceholder,
+  searchMeta,
+  onSearchChange,
+  onSearchClear,
+}: ShipmentsTableProps): ReactElement {
+  const hasSearch = typeof onSearchChange === 'function';
+  const trimmedValue = searchValue?.trim() ?? '';
+
   return (
     <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+      <div className="flex flex-col gap-4 border-b border-gray-100 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+          {searchMeta && (
+            <p className="mt-1 text-xs font-medium text-gray-400">{searchMeta}</p>
+          )}
+        </div>
+        {hasSearch && (
+          <div className="w-full sm:w-auto">
+            <div className="relative w-full sm:w-72 lg:w-80">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="search"
+                value={searchValue ?? ''}
+                onChange={(event) => onSearchChange?.(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape' && trimmedValue) {
+                    event.preventDefault();
+                    if (onSearchClear) {
+                      onSearchClear();
+                    } else {
+                      onSearchChange?.('');
+                    }
+                  }
+                }}
+                placeholder={searchPlaceholder ?? 'Search shipments'}
+                className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-9 text-sm text-gray-800 outline-none transition focus:border-brand-500"
+                spellCheck={false}
+                aria-label="Search shipments"
+              />
+              {trimmedValue && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSearchClear) {
+                      onSearchClear();
+                    } else {
+                      onSearchChange?.('');
+                    }
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="overflow-x-auto">

@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
 import {
+  ArrowLeft,
   Calendar,
   Clock,
   Download,
@@ -8,8 +9,10 @@ import {
   Package,
   ShieldCheck,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { AppShell } from '@/pages/shared';
 import { useDashboardData } from '@/hooks';
+import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
 
 interface TrackingTimelineItem {
@@ -304,6 +307,13 @@ export function TrackShipmentPage(): ReactElement {
     >
       <div className="space-y-6">
         <section className="rounded-3xl border border-gray-200 bg-white p-6">
+          <Link
+            to={ROUTES.SHIPMENTS}
+            className="mb-3 inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-brand-600"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to shipments
+          </Link>
           <h1 className="text-2xl font-semibold text-gray-900">Track your shipment</h1>
           <p className="mt-1 text-sm text-gray-400">
             Enter Tracking number to get real time update on your shipment

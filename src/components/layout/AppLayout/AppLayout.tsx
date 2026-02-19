@@ -25,6 +25,7 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
   };
 
   const isSuperAdmin = authUser?.role === 'superadmin';
+  const isAdmin = authUser?.role === 'admin';
   const canManageTeam = isSuperAdmin || authUser?.role === 'admin';
 
   const filteredItems = authUser
@@ -34,6 +35,9 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
         }
         if (item.id === 'clients') {
           return isSuperAdmin;
+        }
+        if (item.id === 'orders') {
+          return !(isSuperAdmin || isAdmin);
         }
         return true;
       })
