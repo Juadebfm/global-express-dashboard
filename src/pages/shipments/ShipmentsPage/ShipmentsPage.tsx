@@ -1,10 +1,12 @@
 import type { ReactElement } from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppShell } from '@/pages/shared';
 import { useDashboardData, useSearch, useShipmentsDashboard } from '@/hooks';
 import type { ShipmentFilterTab, ShipmentRecord, ShipmentStatus } from '@/types';
 import { ShipmentsFilters, ShipmentsHeader, ShipmentsSummary, ShipmentsTable } from '../components';
 import { PageLoader } from '@/components/ui';
+import { ROUTES } from '@/constants';
 
 const matchesQuery = (shipment: ShipmentRecord, query: string): boolean => {
   if (!query) return true;
@@ -78,6 +80,7 @@ export function ShipmentsPage(): ReactElement {
   const { data: shipmentsData, isLoading: isShipmentsLoading, error: shipmentsError } =
     useShipmentsDashboard();
   const { query } = useSearch();
+  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<ShipmentFilterTab['value']>('all');
   const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
   const [statusOverrides, setStatusOverrides] = useState<Record<string, ShipmentStatus>>(
@@ -283,6 +286,10 @@ export function ShipmentsPage(): ReactElement {
     setActionMessage(`Updated ${filteredShipments.length} rows.`);
   };
 
+  const handleTrackShipment = (): void => {
+    navigate(ROUTES.SHIPMENT_TRACK);
+  };
+
   return (
     <AppShell
       data={dashboardData}
@@ -296,6 +303,7 @@ export function ShipmentsPage(): ReactElement {
             <ShipmentsHeader
               title={shipmentsData.header.title}
               subtitle={shipmentsData.header.subtitle}
+              onTrackShipment={handleTrackShipment}
             />
 
             {summaryData && (

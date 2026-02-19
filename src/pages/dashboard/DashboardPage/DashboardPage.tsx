@@ -1,7 +1,8 @@
 import type { ReactElement } from 'react';
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSearch, useDashboardData } from '@/hooks';
-import type { ActiveDelivery, KpiCard } from '@/types';
+import type { ActiveDelivery, KpiCard, UiAction } from '@/types';
 import {
   ActiveDeliveries,
   DashboardHeader,
@@ -10,10 +11,12 @@ import {
   ShipmentTrendsChart,
 } from '../components';
 import { AppShell } from '@/pages/shared';
+import { ROUTES } from '@/constants';
 
 export function DashboardPage(): ReactElement {
   const { query } = useSearch();
   const { data, isLoading, error } = useDashboardData();
+  const navigate = useNavigate();
 
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -50,6 +53,12 @@ export function DashboardPage(): ReactElement {
     });
   }, [data, normalizedQuery]);
 
+  const handleAction = (action: UiAction): void => {
+    if (action.id === 'trackShipment') {
+      navigate(ROUTES.SHIPMENT_TRACK);
+    }
+  };
+
   return (
     <AppShell
       data={data}
@@ -64,6 +73,7 @@ export function DashboardPage(): ReactElement {
               title={data.app.pageTitle}
               subtitle={data.app.subtitle}
               actions={data.ui.actions}
+              onAction={handleAction}
             />
 
             <section>

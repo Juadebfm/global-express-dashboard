@@ -7,6 +7,7 @@ interface DashboardHeaderProps {
   title: string;
   subtitle: string;
   actions: UiAction[];
+  onAction?: (action: UiAction) => void;
 }
 
 const actionIconMap: Record<string, ReactElement> = {
@@ -19,6 +20,7 @@ export function DashboardHeader({
   title,
   subtitle,
   actions,
+  onAction,
 }: DashboardHeaderProps): ReactElement {
   const renderAction = (action: UiAction): ReactElement => {
     const icon = actionIconMap[action.icon] ?? <Plus className="h-4 w-4" />;
@@ -31,6 +33,7 @@ export function DashboardHeader({
         size="sm"
         variant={isPrimary ? 'primary' : 'ghost'}
         leftIcon={icon}
+        onClick={() => onAction?.(action)}
         className={
           isPrimary
             ? 'bg-brand-500 text-white hover:bg-brand-600'

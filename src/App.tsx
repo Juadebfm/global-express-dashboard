@@ -8,6 +8,7 @@ import {
   ForgotPasswordPage,
   DashboardPage,
   ShipmentsPage,
+  TrackShipmentPage,
   ClientsPage,
   UsersPage,
   OrdersPage,
@@ -42,6 +43,14 @@ function App(): ReactElement {
             element={
               <ProtectedRoute>
                 <ShipmentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={ROUTES.SHIPMENT_TRACK}
+            element={
+              <ProtectedRoute>
+                <TrackShipmentPage />
               </ProtectedRoute>
             }
           />
