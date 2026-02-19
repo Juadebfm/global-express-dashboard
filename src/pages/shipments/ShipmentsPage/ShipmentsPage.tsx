@@ -307,6 +307,10 @@ export function ShipmentsPage(): ReactElement {
     navigate(ROUTES.SHIPMENT_TRACK);
   };
 
+  const handleNewShipment = (): void => {
+    navigate(ROUTES.SHIPMENT_NEW);
+  };
+
   const handleSearchChange = (value: string): void => {
     setQuery(value);
   };
@@ -328,6 +332,7 @@ export function ShipmentsPage(): ReactElement {
             <ShipmentsHeader
               title={shipmentsData.header.title}
               subtitle={shipmentsData.header.subtitle}
+              onNewShipment={handleNewShipment}
               onTrackShipment={handleTrackShipment}
             />
 

@@ -9,6 +9,8 @@ import {
   DashboardPage,
   ShipmentsPage,
   TrackShipmentPage,
+  NewShipmentPage,
+  InvoiceDraftPage,
   ClientsPage,
   UsersPage,
   OrdersPage,
@@ -51,6 +53,22 @@ function App(): ReactElement {
             element={
               <ProtectedRoute>
                 <TrackShipmentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={ROUTES.SHIPMENT_NEW}
+            element={
+              <ProtectedRoute>
+                <NewShipmentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={ROUTES.SHIPMENT_INVOICE}
+            element={
+              <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
+                <InvoiceDraftPage />
               </ProtectedRoute>
             }
           />
