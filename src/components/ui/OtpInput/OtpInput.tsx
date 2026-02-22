@@ -99,7 +99,7 @@ export function OtpInput({
               onPaste={handlePaste}
               disabled={disabled}
               className={cn(
-                'w-14 h-14 text-center text-2xl font-semibold rounded-lg border bg-white',
+                'w-14 h-14 text-center text-sm font-semibold rounded-lg border bg-white',
                 'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500',
                 'transition-colors',
                 error

@@ -1,0 +1,1 @@
+export { ExternalSignUpPage } from './ExternalSignUpPage';

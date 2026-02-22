@@ -104,7 +104,12 @@ export function ForgotPasswordForm({
             {...emailForm.register('email')}
           />
 
-          <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
+          <Button
+            type="submit"
+            className="w-full text-sm"
+            size="lg"
+            isLoading={isLoading}
+          >
             Continue
           </Button>
         </form>
@@ -155,7 +160,12 @@ export function ForgotPasswordForm({
             )}
           />
 
-          <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
+          <Button
+            type="submit"
+            className="w-full text-sm"
+            size="lg"
+            isLoading={isLoading}
+          >
             Continue
           </Button>
         </form>
@@ -212,7 +222,12 @@ export function ForgotPasswordForm({
             {...passwordForm.register('confirmPassword')}
           />
 
-          <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
+          <Button
+            type="submit"
+            className="w-full text-sm"
+            size="lg"
+            isLoading={isLoading}
+          >
             Continue
           </Button>
         </form>
@@ -248,7 +263,7 @@ export function ForgotPasswordForm({
 
       <Button
         type="button"
-        className="w-full mt-6"
+        className="w-full mt-6 text-sm"
         size="lg"
         onClick={handleSuccessContinue}
       >

@@ -1,8 +1,12 @@
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
-  REGISTER: '/register',
+  SIGN_IN: '/sign-in',
+  SIGN_UP: '/sign-up',
   FORGOT_PASSWORD: '/forgot-password',
+  COMPLETE_PROFILE: '/complete-profile',
+  FORBIDDEN: '/forbidden',
+  TRACK_PUBLIC: '/track',
   DASHBOARD: '/dashboard',
   SHIPMENTS: '/shipments',
   SHIPMENT_TRACK: '/shipments/track',

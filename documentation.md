@@ -1,142 +1,431 @@
-# GlobalExpress Dashboard — UI Actions & RBAC
+# Frontend Integration Guide ï¿½ Global Express Backend
 
-Last updated: 2026-02-18
-
-## Overview
-- Inventory route has been removed from navigation and routing.
-- Access control summary:
-- Clients: Super Admin only.
-- Team: Admin + Super Admin.
-- Users: Admin + Super Admin.
-- All other pages: authenticated users.
-
-## Global (Topbar)
-- Search input (global query via `useSearch`).
-- Theme icon button (UI only).
-- Notifications icon button (UI only).
-- Language icon button (UI only).
-- User avatar (display only).
-
-## Auth — Login
-- Email input.
-- Password input with show/hide toggle.
-- Remember password checkbox.
-- Forgot password link.
-- Login button.
-- Create account link.
-
-## Auth — Register
-- First name input.
-- Last name input.
-- Email input.
-- Password input with show/hide toggle.
-- Confirm password input with show/hide toggle.
-- Create account button.
-- Login link.
-
-## Auth — Forgot Password (multi-step)
-- Step 1: Email input + Continue button + Back to login link.
-- Step 2: OTP input + Continue button + Back button.
-- Step 3: New password input + Confirm password input + Continue button + Back button.
-- Step 4: Success screen + Continue button to Login.
-
-## Dashboard
-- Header action buttons (from `mockDashboardData.ui.actions`):
-- Export.
-- Track Shipment.
-- New Order.
-
-## Shipments
-- Filter tabs: All, In-Transit, Delivered, Pending.
-- Actions toolbar:
-- Copy rows.
-- Download CSV.
-- Delete rows.
-- Edit rows (set status via prompt).
-
-## Clients (Super Admin only)
-- Summary cards (display only): Total Clients, Active Clients, Total Revenue.
-- Search input.
-- Filters (custom dropdowns): Status, Priority, Type.
-- Client directory row actions menu:
-- View Details (opens client detail view).
-- Copy Email (copies to clipboard).
-- Suspend (sets status to In-Active).
-- Detail view toolbar icons:
-- Copy (UI only).
-- Share (UI only).
-- Delete (opens custom confirmation modal; deletes client).
-- Edit (UI only).
-- Detail view order tabs: All, Processing, Transit, Delivered, Cancelled.
-- Detail view orders table (no per-row actions beyond the kebab icon placeholder).
-
-## Users (Admin + Super Admin)
-- Search input.
-- Row actions:
-- Refresh (shows action message).
-- Resolve (for Issue status).
-- Unlock (for Locked status).
-
-## Orders
-- Placeholder list only (no actions beyond global search).
-
-## Notifications
-- Header actions:
-- Refresh (resets mock list).
-- Save selected.
-- Mark selected read.
-- Delete selected.
-- Row interactions:
-- Checkbox select.
-- Click row to open details modal (marks as read).
-- Modal actions:
-- Delete notification.
-- Close.
-- Sticky selection action bar (appears when selections exist): Save, Mark read, Delete, Clear selection.
-
-## Team (Admin + Super Admin)
-- Search input.
-- Add team button (opens invite modal).
-- Tabs: All team, Admin, Non Admin.
-- Row actions:
-- Approve (Super Admin only; pending users).
-- Remove (Super Admin only; cannot remove superadmin).
-- Row click opens profile modal.
-- Profile modal actions:
-- Remove (Super Admin only).
-- Edit (Super Admin can edit all; Admin can edit staff only).
-- Approve (Super Admin for pending).
-- Invite/Edit modal actions:
-- Save.
-- Cancel.
-- Permission toggles (Make Admin, Can transfer, Can view only).
-
-## Settings
-- Placeholder list only (no actions beyond global search).
-
-## Support
-- Placeholder list only (no actions beyond global search).
+**Base URL:** `https://your-app-name-snowy-waterfall-9062.fly.dev`
+**API Prefix:** `/api/v1`
+**Swagger Docs:** `https://your-app-name-snowy-waterfall-9062.fly.dev/docs`
 
 ---
 
-# Checklist — Remaining Work
+## Auth Architecture
 
-## Frontend
-- [ ] Wire Clients detail toolbar actions: Copy, Share, Edit.
-- [ ] Add real per-row actions in client orders (kebab menu).
-- [ ] Replace placeholder pages (Orders, Settings, Support) with final UI and actions.
-- [ ] Add keyboard navigation for custom dropdowns (Status/Priority/Type).
-- [ ] Add empty states and error handling for Clients, Team, Notifications.
-- [ ] Add success/error toasts for copy/share/suspend/delete actions.
+| User Type | Auth Method | Token Format |
+|---|---|---|
+| Customers | Clerk (custom signup form) | Clerk JWT |
+| Staff / Admin / Superadmin | Internal (email + password) | Internal JWT |
 
-## Backend / Integration
-- [ ] Auth API integration (login/register/forgot/reset/password/OTP).
-- [ ] Role-based access enforcement on server.
-- [ ] Clients endpoints: list, detail, update, suspend, delete.
-- [ ] Orders endpoints (client-specific + global).
-- [ ] Notifications endpoints: list, mark read, save, delete, bulk actions.
-- [ ] Team endpoints: invite, approve, edit, remove, permissions.
-- [ ] Users endpoints: list, status changes, unlock/resolve.
-- [ ] Shipments endpoints: list, filters, bulk actions, export.
-- [ ] Audit logging for destructive actions (delete/suspend).
-- [ ] Pagination and server-side search for large lists.
+---
+
+## 1. Customer Registration
+
+> **Do NOT use Clerk's prebuilt `<SignUp />` component.** Build a custom signup form using Clerk's `useSignUp()` hook. This gives you full control over the fields collected while Clerk still handles email verification and all notifications.
+
+### Install Clerk
+
+```bash
+# React
+npm install @clerk/clerk-react
+
+# Next.js
+npm install @clerk/nextjs
+```
+
+### Setup
+
+```tsx
+// main.tsx / _app.tsx
+import { ClerkProvider } from '@clerk/clerk-react'
+
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+
+<ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+  <App />
+</ClerkProvider>
+```
+
+### Signup Form ï¿½ Required Fields
+
+The signup form must collect **all of the following** in one flow (not split into signup + "complete profile later"):
+
+| Field | Required | Notes |
+|---|---|---|
+| `firstName` + `lastName` | Yes (or businessName) | For individual accounts |
+| `businessName` | Yes (or firstName+lastName) | For business accounts |
+| `email` | Yes | Used for Clerk auth |
+| `password` | Yes | Used for Clerk auth |
+| `phone` | Yes | Direct line (e.g. +2348012345678) |
+| `whatsappNumber` | Yes | WhatsApp number (can be same as phone) |
+| `addressStreet` | Yes | Flat field ï¿½ not nested |
+| `addressCity` | Yes | |
+| `addressState` | Yes | |
+| `addressCountry` | Yes | |
+| `addressPostalCode` | Yes | |
+
+### Multi-step Signup Implementation
+
+```tsx
+import { useSignUp } from '@clerk/clerk-react'
+import { useState } from 'react'
+
+function SignUpPage() {
+  const { signUp, setActive } = useSignUp()
+  const { authFetch } = useApi()
+
+  const [step, setStep] = useState<'account' | 'verify' | 'details'>('account')
+  const [verificationCode, setVerificationCode] = useState('')
+
+  // Form state
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    businessName: '',        // leave empty for individual accounts
+    email: '',
+    password: '',
+    phone: '',
+    whatsappNumber: '',      // field name is whatsappNumber (not whatsapp)
+    addressStreet: '',       // flat fields ï¿½ NOT nested address object
+    addressCity: '',
+    addressState: '',
+    addressCountry: 'Nigeria',
+    addressPostalCode: '',
+  })
+
+  // Step 1 ï¿½ Create Clerk account, trigger email verification
+  const handleAccountSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await signUp!.create({
+      firstName: form.firstName,
+      lastName: form.lastName,
+      emailAddress: form.email,
+      password: form.password,
+    })
+    // Clerk sends a verification email automatically
+    await signUp!.prepareEmailAddressVerification({ strategy: 'email_code' })
+    setStep('verify')
+  }
+
+  // Step 2 ï¿½ Verify email with OTP code from email
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const result = await signUp!.attemptEmailAddressVerification({
+      code: verificationCode,
+    })
+    if (result.status === 'complete') {
+      await setActive!({ session: result.createdSessionId })
+      // Clerk webhook fires here ? backend provisions the user
+      // Move to collecting contact + address details
+      setStep('details')
+    }
+  }
+
+  // Step 3 ï¿½ Save phone, whatsappNumber, and address to backend
+  const handleDetailsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await authFetch('/users/me', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        firstName: form.firstName || undefined,
+        lastName: form.lastName || undefined,
+        businessName: form.businessName || undefined,
+        phone: form.phone,
+        whatsappNumber: form.whatsappNumber,  // note: whatsappNumber not whatsapp
+        addressStreet: form.addressStreet,    // flat fields ï¿½ not nested
+        addressCity: form.addressCity,
+        addressState: form.addressState,
+        addressCountry: form.addressCountry,
+        addressPostalCode: form.addressPostalCode,
+      }),
+    })
+    // Registration complete ï¿½ redirect to dashboard
+    window.location.href = '/dashboard'
+  }
+
+  if (step === 'account') return (
+    <form onSubmit={handleAccountSubmit}>
+      <input placeholder="First Name" onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} />
+      <input placeholder="Last Name" onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} />
+      <input placeholder="Business Name (optional)" onChange={e => setForm(f => ({ ...f, businessName: e.target.value }))} />
+      <input type="email" placeholder="Email" onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+      <input type="password" placeholder="Password" onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
+      <button type="submit">Continue</button>
+    </form>
+  )
+
+  if (step === 'verify') return (
+    <form onSubmit={handleVerify}>
+      <p>Enter the 6-digit code sent to {form.email}</p>
+      <input placeholder="Verification code" onChange={e => setVerificationCode(e.target.value)} />
+      <button type="submit">Verify Email</button>
+    </form>
+  )
+
+  if (step === 'details') return (
+    <form onSubmit={handleDetailsSubmit}>
+      <input placeholder="Direct Phone Line (e.g. +2348012345678)" onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+      <input placeholder="WhatsApp Number" onChange={e => setForm(f => ({ ...f, whatsappNumber: e.target.value }))} />
+      <input placeholder="Street Address" onChange={e => setForm(f => ({ ...f, addressStreet: e.target.value }))} />
+      <input placeholder="City" onChange={e => setForm(f => ({ ...f, addressCity: e.target.value }))} />
+      <input placeholder="State" onChange={e => setForm(f => ({ ...f, addressState: e.target.value }))} />
+      <input placeholder="Country" defaultValue="Nigeria" onChange={e => setForm(f => ({ ...f, addressCountry: e.target.value }))} />
+      <input placeholder="Postal Code" onChange={e => setForm(f => ({ ...f, addressPostalCode: e.target.value }))} />
+      <button type="submit">Complete Registration</button>
+    </form>
+  )
+}
+```
+
+### What happens during signup
+
+1. **Step 1** ï¿½ User fills email + password + name ? Clerk creates account, sends verification email
+2. **Step 2** ï¿½ User enters OTP code from email ? Clerk verifies, creates session
+3. (Clerk webhook fires in the background ? backend auto-creates the user record)
+4. **Step 3** ï¿½ User fills phone, WhatsApp, address ? frontend calls `PATCH /api/v1/users/me` ? profile saved
+5. **Done** ï¿½ User is fully registered with complete profile, redirect to dashboard
+
+> **Important:** Step 3 must complete before the user can place orders. If they close the browser after step 2, they will be prompted to complete their details on next login (see section 3 below).
+
+---
+
+## 2. Customer Login
+
+```tsx
+import { SignIn } from '@clerk/clerk-react'
+
+// Login page ï¿½ prebuilt component is fine here
+<SignIn routing="path" path="/sign-in" />
+```
+
+Or use `useSignIn()` hook for a fully custom login form.
+
+---
+
+## 3. Guard: Incomplete Profile After Login
+
+On login, call `GET /api/v1/users/me` and compute profile completeness from the returned fields.
+The API does **not** return an `isProfileComplete` flag ï¿½ compute it yourself:
+
+```tsx
+import { useEffect } from 'react'
+import { useAuth } from '@clerk/clerk-react'
+
+// Mirror the same logic the backend uses in usersService.isProfileComplete()
+function isProfileComplete(user: any): boolean {
+  const hasName = (user.firstName && user.lastName) || user.businessName
+  const hasPhone = !!user.phone
+  const hasAddress =
+    !!user.addressStreet &&
+    !!user.addressCity &&
+    !!user.addressState &&
+    !!user.addressCountry &&
+    !!user.addressPostalCode
+  return !!(hasName && hasPhone && hasAddress)
+}
+
+function AppGuard({ children }) {
+  const { isSignedIn } = useAuth()
+  const { authFetch } = useApi()
+
+  useEffect(() => {
+    if (!isSignedIn) return
+    authFetch('/users/me').then(res => {
+      if (res.success && !isProfileComplete(res.data)) {
+        window.location.href = '/complete-profile'
+      }
+    })
+  }, [isSignedIn])
+
+  return children
+}
+```
+
+---
+
+## 4. Making Authenticated API Calls
+
+All protected endpoints require an `Authorization: Bearer <token>` header.
+
+### Getting the Clerk JWT (React)
+
+```tsx
+import { useAuth } from '@clerk/clerk-react'
+
+function useApi() {
+  const { getToken } = useAuth()
+
+  const authFetch = async (path: string, options: RequestInit = {}) => {
+    const token = await getToken()
+    const res = await fetch(`https://your-app-name-snowy-waterfall-9062.fly.dev/api/v1${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...options.headers,
+      },
+    })
+    return res.json()
+  }
+
+  return { authFetch }
+}
+```
+
+### Response shape
+
+```json
+// Success
+{ "success": true, "data": { ... } }
+
+// Error
+{ "success": false, "message": "Reason for failure" }
+```
+
+---
+
+## 5. Orders
+
+### Create an order
+
+```
+POST /api/v1/orders
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+```json
+{
+  "recipientName": "Jane Smith",
+  "recipientAddress": "45 Marina Road, Abuja",
+  "recipientPhone": "+2347098765432",
+  "recipientEmail": "jane@example.com",
+  "origin": "Lagos",
+  "destination": "Abuja",
+  "orderDirection": "outbound",
+  "weight": "2.5kg",
+  "declaredValue": "15000",
+  "description": "Electronics"
+}
+```
+
+Returns `201` with the created order including `trackingNumber`.
+
+**Error responses:**
+- `422` ï¿½ Profile not complete. Redirect to `/complete-profile`.
+- `401` ï¿½ Token missing or invalid.
+
+### List own orders
+
+```
+GET /api/v1/orders/my-shipments?page=1&limit=20
+Authorization: Bearer <token>
+```
+
+### Track a shipment (public ï¿½ no auth required)
+
+```
+GET /api/v1/orders/track/:trackingNumber
+```
+
+### Order status values
+
+| Status | Meaning |
+|---|---|
+| `pending` | Order received, not yet processed |
+| `processing` | Being prepared |
+| `in_transit` | On the way |
+| `out_for_delivery` | With delivery agent |
+| `delivered` | Successfully delivered |
+| `failed_delivery` | Delivery attempt failed |
+| `returned` | Returned to sender |
+| `cancelled` | Cancelled |
+
+---
+
+## 6. Real-time Order Status Updates (WebSocket)
+
+Customers receive live status updates when staff updates their shipment.
+
+```ts
+function useOrderUpdates(onUpdate: (data: any) => void) {
+  const { getToken } = useAuth()
+
+  useEffect(() => {
+    let ws: WebSocket
+
+    const connect = async () => {
+      const token = await getToken()
+      ws = new WebSocket(
+        `wss://your-app-name-snowy-waterfall-9062.fly.dev/ws?token=${token}`
+      )
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data)
+        if (msg.type === 'order_status_updated') {
+          onUpdate(msg.data)
+          // msg.data = { orderId, trackingNumber, status, updatedAt }
+        }
+      }
+      ws.onclose = () => setTimeout(connect, 3000)
+    }
+
+    connect()
+    return () => ws?.close()
+  }, [])
+}
+```
+
+---
+
+## 7. Payments (Paystack)
+
+### Initialize payment
+
+```
+POST /api/v1/payments/initialize
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+```json
+{
+  "orderId": "order-uuid",
+  "amount": 500000,
+  "currency": "NGN"
+}
+```
+
+> `amount` is in **kobo** ï¿½ ?5,000 = `500000`
+
+Returns `{ authorizationUrl, reference }` ï¿½ redirect user to `authorizationUrl`.
+
+### Verify after redirect
+
+```
+GET /api/v1/payments/verify/:reference
+Authorization: Bearer <token>
+```
+
+---
+
+## 8. Full Registration Flow
+
+```
+Landing Page
+  +- Sign Up
+       +- Step 1: Email + Password + Name  (Clerk creates account)
+       +- Step 2: Email OTP verification   (Clerk sends code)
+       +- Step 3: Phone + WhatsApp + Address  (PATCH /api/v1/users/me)
+            +- Dashboard
+                 +- My Shipments  (GET /orders/my-shipments)
+                 +- Track Shipment  (GET /orders/track/:trackingNumber)
+                 +- Create Order  (POST /orders)
+                 ï¿½    +- Pay  (POST /payments/initialize ? redirect ? verify)
+                 +- Account Settings  (PATCH /users/me)
+```
+
+---
+
+## 9. Environment Variables (Frontend)
+
+```env
+VITE_CLERK_PUBLISHABLE_KEY=pk_live_...
+VITE_API_BASE_URL=https://your-app-name-snowy-waterfall-9062.fly.dev/api/v1
+VITE_WS_URL=wss://your-app-name-snowy-waterfall-9062.fly.dev/ws
+```

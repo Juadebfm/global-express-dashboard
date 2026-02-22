@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { ArrowDownRight, ArrowUpRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 import type { KpiCard as KpiCardType } from '@/types';
 import { cn } from '@/utils';
 
@@ -23,9 +23,6 @@ const statusStyles: Record<KpiCardType['status'], { bg: string; icon: ReactEleme
 };
 
 export function KpiCard({ data }: KpiCardProps): ReactElement {
-  const TrendIcon = data.trend.direction === 'up' ? ArrowUpRight : ArrowDownRight;
-  const trendColor =
-    data.trend.direction === 'up' ? 'text-green-600' : 'text-red-600';
   const status = statusStyles[data.status];
 
   const displayValue =
@@ -48,14 +45,6 @@ export function KpiCard({ data }: KpiCardProps): ReactElement {
       <div className="mt-4">
         <p className="text-2xl font-semibold text-gray-900">{displayValue}</p>
         <p className="text-xs text-gray-500 mt-1">{data.helperText}</p>
-      </div>
-      <div className="mt-4 flex items-center gap-2 text-xs">
-        <span className={cn('flex items-center gap-1 font-semibold', trendColor)}>
-          {data.trend.direction === 'up' ? '+' : '-'}
-          {data.trend.percent}%
-          <TrendIcon className="h-3.5 w-3.5" />
-        </span>
-        <span className="text-gray-400">{data.trend.period}</span>
       </div>
     </div>
   );
