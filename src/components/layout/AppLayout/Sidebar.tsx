@@ -92,7 +92,7 @@ export function Sidebar({
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex flex-col bg-[#1F1F1F] text-white transition-all',
+          'fixed inset-y-0 left-0 z-50 flex flex-col bg-[var(--gx-sidebar)] text-white transition-all',
           'lg:translate-x-0',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full',
           isCollapsed && !isMobileOpen ? 'w-20' : 'w-72'

@@ -1,5 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 import { useState } from 'react';
+import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { DashboardUi, DashboardUser } from '@/types';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
@@ -14,6 +15,8 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement {
   const { user: authUser } = useAuth();
+  const { isSignedIn: isClerkSignedIn } = useClerkAuth();
+  const { user: clerkUser } = useClerkUser();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
@@ -24,11 +27,13 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
     user: 'User',
   };
 
-  const isSuperAdmin = authUser?.role === 'superadmin';
-  const isAdmin = authUser?.role === 'admin';
-  const canManageTeam = isSuperAdmin || authUser?.role === 'admin';
+  // Determine the effective role: custom auth takes precedence, Clerk users are 'user'
+  const effectiveRole = authUser?.role ?? (isClerkSignedIn ? 'user' : null);
+  const isSuperAdmin = effectiveRole === 'superadmin';
+  const isAdmin = effectiveRole === 'admin';
+  const canManageTeam = isSuperAdmin || isAdmin;
 
-  const filteredItems = authUser
+  const filteredItems = effectiveRole
     ? ui.sidebar.items.filter((item) => {
         if (item.id === 'team' || item.id === 'users') {
           return canManageTeam;
@@ -36,23 +41,35 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
         if (item.id === 'clients') {
           return isSuperAdmin;
         }
-        if (item.id === 'orders') {
-          return !(isSuperAdmin || isAdmin);
-        }
         return true;
       })
     : ui.sidebar.items;
 
-  const effectiveUser: DashboardUser = authUser
-    ? {
+  // Build effective display user from whichever auth is active
+  const effectiveUser: DashboardUser = (() => {
+    if (authUser) {
+      return {
         displayName:
           authUser.firstName && authUser.lastName
             ? `${authUser.firstName} ${authUser.lastName}`
             : roleLabelMap[authUser.role] ?? 'User',
         email: authUser.email,
         avatarUrl: '/images/favicon.svg',
-      }
-    : user;
+      };
+    }
+    if (isClerkSignedIn && clerkUser) {
+      return {
+        displayName:
+          clerkUser.fullName ||
+          clerkUser.firstName ||
+          clerkUser.emailAddresses[0]?.emailAddress ||
+          'Customer',
+        email: clerkUser.emailAddresses[0]?.emailAddress ?? '',
+        avatarUrl: clerkUser.imageUrl || '/images/favicon.svg',
+      };
+    }
+    return user;
+  })();
 
   const handleToggleCollapse = (): void => {
     setIsSidebarCollapsed((prev) => !prev);
@@ -68,7 +85,7 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
 
   return (
     <div className="min-h-screen bg-gray-50">
-        <Sidebar
+      <Sidebar
         items={filteredItems}
         footerItems={ui.sidebar.footer.items}
         user={effectiveUser}

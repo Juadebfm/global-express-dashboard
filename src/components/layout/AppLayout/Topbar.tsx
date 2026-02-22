@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
-import { Bell, Globe, Menu, Search, Sun } from 'lucide-react';
+import { Bell, Globe, Menu, Moon, Search, Sun } from 'lucide-react';
 import type { DashboardUser } from '@/types';
-import { useSearch } from '@/hooks';
+import { useSearch, useTheme } from '@/hooks';
 
 interface TopbarProps {
   searchPlaceholder: string;
@@ -17,9 +17,11 @@ export function Topbar({
   onOpenMobile,
 }: TopbarProps): ReactElement {
   const { query, setQuery } = useSearch();
+  const { mode, toggle } = useTheme();
+  const isDark = mode === 'dark';
 
   return (
-    <header className="sticky top-0 z-30 border-b border-gray-100 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-[var(--gx-glass-border)] bg-[var(--gx-glass-bg)] backdrop-blur">
       <div className="flex items-center justify-between gap-4 px-4 py-3 lg:px-8">
         <div className="flex items-center gap-3 flex-1">
           <button
@@ -47,14 +49,15 @@ export function Topbar({
         <div className="flex items-center gap-3">
           <button
             type="button"
-            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#F4EBFF] text-gray-600 hover:text-gray-800"
-            aria-label="Theme"
+            onClick={toggle}
+            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gx-control-bg)] text-gray-600 transition hover:bg-[var(--gx-control-bg-hover)] hover:text-gray-800"
+            aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
           >
-            <Sun className="h-4 w-4" />
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
           <button
             type="button"
-            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#F4EBFF] text-gray-600 hover:text-gray-800"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gx-control-bg)] text-gray-600 transition hover:bg-[var(--gx-control-bg-hover)] hover:text-gray-800"
             aria-label="Notifications"
           >
             <Bell className="h-4 w-4" />
@@ -66,7 +69,7 @@ export function Topbar({
           </button>
           <button
             type="button"
-            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#F4EBFF] text-gray-600 hover:text-gray-800"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gx-control-bg)] text-gray-600 transition hover:bg-[var(--gx-control-bg-hover)] hover:text-gray-800"
             aria-label="Language"
           >
             <Globe className="h-4 w-4" />

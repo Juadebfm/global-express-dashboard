@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { AuthLayout } from '@/components/layout';
 import { ForgotPasswordForm } from '@/components/forms/ForgotPasswordForm';
-import { mockSendOtp, mockVerifyOtp, mockResetPassword } from '@/data';
+import { sendOtp, verifyOtp, resetPassword } from '@/services/forgotPasswordService';
 
 export function ForgotPasswordPage(): ReactElement {
   const [isLoading, setIsLoading] = useState(false);
@@ -13,7 +13,7 @@ export function ForgotPasswordPage(): ReactElement {
     setError(null);
 
     try {
-      await mockSendOtp(email);
+      await sendOtp(email);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong';
       setError(message);
@@ -28,7 +28,7 @@ export function ForgotPasswordPage(): ReactElement {
     setError(null);
 
     try {
-      await mockVerifyOtp(email, otp);
+      await verifyOtp(email, otp);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong';
       setError(message);
@@ -38,15 +38,12 @@ export function ForgotPasswordPage(): ReactElement {
     }
   };
 
-  const handleResetPassword = async (
-    email: string,
-    password: string
-  ): Promise<void> => {
+  const handleResetPassword = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      await mockResetPassword(email, password);
+      await resetPassword(email, password);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong';
       setError(message);

@@ -84,7 +84,7 @@ export function LoginForm({
 
         <Button
           type="submit"
-          className="w-full"
+          className="w-full text-sm"
           size="lg"
           isLoading={isLoading}
         >
@@ -92,15 +92,7 @@ export function LoginForm({
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-500">
-        Don&apos;t have an account?{' '}
-        <Link
-          to={ROUTES.REGISTER}
-          className="font-medium text-brand-500 hover:text-brand-600"
-        >
-          Create one
-        </Link>
-      </p>
+      <div className="mt-6" />
     </Card>
   );
 }

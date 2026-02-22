@@ -1,4 +1,13 @@
-export { LoginPage, ForgotPasswordPage, RegisterPage } from './auth';
+export {
+  LandingPage,
+  LoginPage,
+  ForgotPasswordPage,
+  CompleteProfilePage,
+  ExternalSignInPage,
+  ExternalSignUpPage,
+} from './auth';
+export { ForbiddenPage } from './errors';
+export { TrackPage } from './public';
 export { DashboardPage } from './dashboard';
 export {
   ShipmentsPage,

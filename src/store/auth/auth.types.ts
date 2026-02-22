@@ -1,4 +1,4 @@
-import type { User, LoginCredentials, RegisterData } from '@/types';
+import type { User, LoginCredentials } from '@/types';
 
 export interface AuthState {
   user: User | null;
@@ -9,7 +9,6 @@ export interface AuthState {
 
 export interface AuthContextValue extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 }

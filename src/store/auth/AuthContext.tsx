@@ -6,8 +6,8 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import type { LoginCredentials, RegisterData } from '@/types';
-import { mockLogin, mockRegister, mockLogout, mockGetCurrentUser } from '@/data';
+import type { LoginCredentials } from '@/types';
+import { login as apiLogin, getMe, logout as apiLogout } from '@/services/authService';
 import type { AuthContextValue, AuthState } from './auth.types';
 import { AuthContext } from './auth.context';
 
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     }
 
     try {
-      const user = await mockGetCurrentUser(token);
+      const user = await getMe(token);
       setState({
         user,
         isAuthenticated: true,
@@ -61,9 +61,8 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const response = await mockLogin(credentials);
+      const response = await apiLogin(credentials);
       localStorage.setItem(TOKEN_KEY, response.tokens.accessToken);
-      localStorage.setItem('globalxpress_user', response.user.email);
 
       if (credentials.rememberMe && response.tokens.refreshToken) {
         localStorage.setItem('globalxpress_refresh', response.tokens.refreshToken);
@@ -86,38 +85,13 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     }
   }, []);
 
-  const register = useCallback(async (data: RegisterData) => {
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
-
-    try {
-      const response = await mockRegister(data);
-      localStorage.setItem(TOKEN_KEY, response.tokens.accessToken);
-      localStorage.setItem('globalxpress_user', response.user.email);
-
-      setState({
-        user: response.user,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Registration failed';
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: message,
-      }));
-      throw err;
-    }
-  }, []);
-
   const logout = useCallback(async () => {
+    const token = localStorage.getItem(TOKEN_KEY);
     try {
-      await mockLogout();
+      if (token) await apiLogout(token);
     } finally {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem('globalxpress_refresh');
-      localStorage.removeItem('globalxpress_user');
       setState({
         user: null,
         isAuthenticated: false,
@@ -135,11 +109,10 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     () => ({
       ...state,
       login,
-      register,
       logout,
       clearError,
     }),
-    [state, login, register, logout, clearError]
+    [state, login, logout, clearError]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
