@@ -14,13 +14,18 @@ export type {
   UiAction,
   SidebarItem,
   KpiCard,
-  TrendInfo,
+  ChangeIndicator,
   ShipmentTrendsChart,
   ActiveDeliveries,
+  ActiveDeliveryBase,
   ActiveDelivery,
   Location,
   TimeEstimate,
   FormattingOptions,
+  ApiDashboardStats,
+  ApiTrend,
+  ApiActiveDelivery,
+  ApiDashboardResponse,
 } from './dashboard.types';
 
 export type {

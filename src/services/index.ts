@@ -1,4 +1,4 @@
-export { getDashboardData } from './dashboardService';
+export { getDashboardData, fetchDashboardRaw, mapToDashboardData } from './dashboardService';
 export { getShipmentsDashboard } from './shipmentsService';
 export { login, getMe, logout } from './authService';
 export { sendOtp, verifyOtp, resetPassword } from './forgotPasswordService';
