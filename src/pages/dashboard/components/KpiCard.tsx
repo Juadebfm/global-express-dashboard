@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
-import type { KpiCard as KpiCardType } from '@/types';
+import { CheckCircle2, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
+import type { KpiCard as KpiCardType, ChangeIndicator } from '@/types';
 import { cn } from '@/utils';
 
 interface KpiCardProps {
@@ -22,29 +22,40 @@ const statusStyles: Record<KpiCardType['status'], { bg: string; icon: ReactEleme
   },
 };
 
+function ChangeBadge({ change }: { change: ChangeIndicator }): ReactElement | null {
+  if (!change) return null;
+  const isUp = change.direction === 'up';
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 text-xs font-medium',
+        isUp ? 'text-green-600' : 'text-red-500'
+      )}
+    >
+      {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      {isUp ? '+' : '-'}{change.value}%
+    </span>
+  );
+}
+
 export function KpiCard({ data }: KpiCardProps): ReactElement {
   const status = statusStyles[data.status];
-
-  const displayValue =
-    data.display ??
-    new Intl.NumberFormat('en-US').format(data.value);
+  const displayValue = data.display ?? new Intl.NumberFormat('en-US').format(data.value);
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-gray-500">{data.title}</p>
-        <span
-          className={cn(
-            'flex h-8 w-8 items-center justify-center rounded-full',
-            status.bg
-          )}
-        >
+        <span className={cn('flex h-8 w-8 items-center justify-center rounded-full', status.bg)}>
           {status.icon}
         </span>
       </div>
       <div className="mt-4">
         <p className="text-2xl font-semibold text-gray-900">{displayValue}</p>
-        <p className="text-xs text-gray-500 mt-1">{data.helperText}</p>
+        <div className="mt-1 flex items-center gap-2">
+          <p className="text-xs text-gray-500">{data.helperText}</p>
+          <ChangeBadge change={data.change} />
+        </div>
       </div>
     </div>
   );

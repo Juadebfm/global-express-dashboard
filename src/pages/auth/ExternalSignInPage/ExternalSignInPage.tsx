@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSignIn } from '@clerk/clerk-react';
-import { CheckCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
 import { Button, Card, Input } from '@/components/ui';
 import { ROUTES } from '@/constants';
@@ -187,6 +187,13 @@ export function ExternalSignInPage(): ReactElement {
   return (
     <AuthLayout>
       <Card className="p-8">
+        <Link
+          to={ROUTES.HOME}
+          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-5"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to home
+        </Link>
         <div className="flex justify-center mb-6">
           <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
         </div>
@@ -253,12 +260,6 @@ export function ExternalSignInPage(): ReactElement {
               Don't have an account?{' '}
               <Link to={ROUTES.SIGN_UP} className="font-medium text-brand-500 hover:text-brand-600">
                 Sign up
-              </Link>
-            </p>
-            <p className="mt-3 text-center text-sm text-gray-500">
-              Internal staff?{' '}
-              <Link to={ROUTES.LOGIN} className="font-medium text-gray-600 hover:text-gray-800">
-                Operator login
               </Link>
             </p>
           </div>

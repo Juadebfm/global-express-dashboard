@@ -14,6 +14,7 @@ import {
   ForbiddenPage,
   TrackPage,
   DashboardPage,
+  AdminDashboardPage,
   ShipmentsPage,
   TrackShipmentPage,
   NewShipmentPage,
@@ -71,8 +72,22 @@ function AppRoutes(): ReactElement {
         <Route
           path={ROUTES.DASHBOARD}
           element={
-            <ProtectedRoute>
+            <ProtectedRoute
+              allowedRoles={['user']}
+              redirectTo={ROUTES.ADMIN_DASHBOARD}
+            >
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.ADMIN_DASHBOARD}
+          element={
+            <ProtectedRoute
+              allowedRoles={['staff', 'admin', 'superadmin']}
+              redirectTo={ROUTES.DASHBOARD}
+            >
+              <AdminDashboardPage />
             </ProtectedRoute>
           }
         />

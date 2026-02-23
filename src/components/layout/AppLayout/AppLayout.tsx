@@ -1,17 +1,47 @@
 import type { ReactElement, ReactNode } from 'react';
 import { useState } from 'react';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
-import type { DashboardUi, DashboardUser } from '@/types';
+import type { DashboardUi, DashboardUser, SidebarItem } from '@/types';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { cn } from '@/utils';
 import { useAuth } from '@/hooks';
+import { ROUTES } from '@/constants';
 
 interface AppLayoutProps {
   children: ReactNode;
   ui: DashboardUi;
   user: DashboardUser;
 }
+
+// ── Role-based nav definitions ────────────────────────────────────────────────
+
+const CUSTOMER_NAV: SidebarItem[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', href: ROUTES.DASHBOARD },
+  { id: 'shipments', label: 'Shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
+  { id: 'deliverySchedule', label: 'Delivery Schedule', icon: 'calendar', href: ROUTES.DELIVERY_SCHEDULE },
+  { id: 'notification', label: 'Notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
+];
+
+const OPERATOR_NAV: SidebarItem[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
+  { id: 'shipments', label: 'Shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
+  { id: 'orders', label: 'Orders', icon: 'clipboard', href: ROUTES.ORDERS },
+  { id: 'clients', label: 'Clients', icon: 'users', href: ROUTES.CLIENTS },
+  { id: 'notification', label: 'Notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
+];
+
+const ADMIN_EXTRA_NAV: SidebarItem[] = [
+  { id: 'users', label: 'Users', icon: 'users', href: ROUTES.USERS },
+  { id: 'team', label: 'Team', icon: 'team', href: ROUTES.TEAM },
+];
+
+const FOOTER_NAV: SidebarItem[] = [
+  { id: 'settings', label: 'Settings', icon: 'settings', href: ROUTES.SETTINGS },
+  { id: 'support', label: 'Support', icon: 'help', href: ROUTES.SUPPORT },
+];
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement {
   const { user: authUser } = useAuth();
@@ -27,25 +57,16 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
     user: 'User',
   };
 
-  // Determine the effective role: custom auth takes precedence, Clerk users are 'user'
   const effectiveRole = authUser?.role ?? (isClerkSignedIn ? 'user' : null);
-  const isSuperAdmin = effectiveRole === 'superadmin';
-  const isAdmin = effectiveRole === 'admin';
-  const canManageTeam = isSuperAdmin || isAdmin;
+  const isCustomer = effectiveRole === 'user';
+  const isSuperAdminOrAdmin = effectiveRole === 'superadmin' || effectiveRole === 'admin';
 
-  const filteredItems = effectiveRole
-    ? ui.sidebar.items.filter((item) => {
-        if (item.id === 'team' || item.id === 'users') {
-          return canManageTeam;
-        }
-        if (item.id === 'clients') {
-          return isSuperAdmin;
-        }
-        return true;
-      })
-    : ui.sidebar.items;
+  const navItems: SidebarItem[] = isCustomer
+    ? CUSTOMER_NAV
+    : isSuperAdminOrAdmin
+      ? [...OPERATOR_NAV, ...ADMIN_EXTRA_NAV]
+      : OPERATOR_NAV;
 
-  // Build effective display user from whichever auth is active
   const effectiveUser: DashboardUser = (() => {
     if (authUser) {
       return {
@@ -71,28 +92,16 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
     return user;
   })();
 
-  const handleToggleCollapse = (): void => {
-    setIsSidebarCollapsed((prev) => !prev);
-  };
-
-  const handleOpenMobile = (): void => {
-    setIsMobileSidebarOpen(true);
-  };
-
-  const handleCloseMobile = (): void => {
-    setIsMobileSidebarOpen(false);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar
-        items={filteredItems}
-        footerItems={ui.sidebar.footer.items}
+        items={navItems}
+        footerItems={FOOTER_NAV}
         user={effectiveUser}
         isCollapsed={isSidebarCollapsed}
         isMobileOpen={isMobileSidebarOpen}
-        onCloseMobile={handleCloseMobile}
-        onToggleCollapse={handleToggleCollapse}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
       />
 
       <div
@@ -105,7 +114,7 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
           searchPlaceholder={ui.topbar.searchPlaceholder}
           notificationsCount={ui.topbar.notifications.unreadCount}
           user={effectiveUser}
-          onOpenMobile={handleOpenMobile}
+          onOpenMobile={() => setIsMobileSidebarOpen(true)}
         />
         <main className="flex-1 px-6 py-6 lg:px-10 lg:py-8">{children}</main>
       </div>

@@ -1,10 +1,25 @@
-import type { ReactElement, ReactNode } from 'react';
+import { useEffect, type ReactElement, type ReactNode } from 'react';
 
 interface AuthLayoutProps {
   children: ReactNode;
+  rightClassName?: string;
 }
 
-export function AuthLayout({ children }: AuthLayoutProps): ReactElement {
+export function AuthLayout({ children, rightClassName }: AuthLayoutProps): ReactElement {
+  useEffect(() => {
+    const root = document.documentElement;
+    const prev = root.dataset.theme;
+    const prevColorScheme = root.style.colorScheme;
+    root.dataset.theme = 'light';
+    root.style.colorScheme = 'light';
+    return () => {
+      if (prev) {
+        root.dataset.theme = prev;
+        root.style.colorScheme = prevColorScheme;
+      }
+    };
+  }, []);
+
   return (
     <div className="min-h-screen flex">
       {/* Left side - Warehouse Image with overlay */}
@@ -35,7 +50,7 @@ export function AuthLayout({ children }: AuthLayoutProps): ReactElement {
       </div>
 
       {/* Right side - Form content on orange background */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-brand-500">
+      <div className={`w-full lg:w-1/2 flex items-center justify-center p-8 ${rightClassName ?? 'bg-brand-500'}`}>
         <div className="w-full max-w-md">
           {children}
         </div>

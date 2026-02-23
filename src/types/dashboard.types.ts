@@ -1,9 +1,14 @@
+// ── Change Indicators ─────────────────────────────────────────────────────────
+// null = no prior-period data → hide badge entirely
+export type ChangeIndicator = { value: number; direction: 'up' | 'down' } | null;
+
+// ── UI / Internal Types ───────────────────────────────────────────────────────
+
 export interface DashboardData {
   app: AppMeta;
   user: DashboardUser;
   ui: DashboardUi;
   kpis: KpiCard[];
-  secondaryStats: KpiCard[];
   charts: {
     shipmentTrends: ShipmentTrendsChart;
   };
@@ -61,14 +66,8 @@ export interface KpiCard {
   unit: string | null;
   display?: string;
   helperText: string;
-  trend: TrendInfo;
+  change: ChangeIndicator;
   status: 'good' | 'warning' | 'bad';
-}
-
-export interface TrendInfo {
-  direction: 'up' | 'down';
-  percent: number;
-  period: string;
 }
 
 export interface ShipmentTrendsChart {
@@ -112,6 +111,14 @@ export interface TimeEstimate {
   minutes: number;
 }
 
+export interface ActiveDeliveryBase {
+  id: string;
+  location: Location;
+  activeShipments: number;
+  statusLabel: string;
+  mode: 'truck' | 'ship' | 'air';
+}
+
 export type ActiveDelivery =
   | (ActiveDeliveryBase & {
       status: 'on_time';
@@ -130,15 +137,13 @@ export type ActiveDelivery =
       deliveredAt: string;
       eta?: never;
       delay?: never;
+    })
+  | (ActiveDeliveryBase & {
+      status: 'unknown';
+      eta?: never;
+      delay?: never;
+      deliveredAt?: never;
     });
-
-export interface ActiveDeliveryBase {
-  id: string;
-  location: Location;
-  activeShipments: number;
-  statusLabel: string;
-  mode: 'truck' | 'ship' | 'air';
-}
 
 export interface FormattingOptions {
   currency: {
@@ -147,4 +152,48 @@ export interface FormattingOptions {
   };
   numberCompact: boolean;
   timeZone: string;
+}
+
+// ── Raw API Response Types ────────────────────────────────────────────────────
+
+export interface ApiDashboardStats {
+  totalOrders: number;
+  totalOrdersChange: ChangeIndicator;
+  activeShipments: number;
+  activeShipmentsChange: ChangeIndicator;
+  pendingOrders: number;
+  pendingOrdersChange: ChangeIndicator;
+  deliveredToday: number;
+  deliveredTotal: number;
+  deliveredTotalChange: ChangeIndicator;
+  cancelled: number;
+  returned: number;
+  // Role-dependent financial fields
+  revenueMtd?: string;
+  revenueMtdChange?: ChangeIndicator;
+  totalSpent?: string;
+  totalSpentChange?: ChangeIndicator;
+}
+
+export interface ApiTrend {
+  month: number; // 1–12
+  deliveredWeight: string; // parse with parseFloat()
+  activeWeight: string; // parse with parseFloat()
+}
+
+export interface ApiActiveDelivery {
+  destination: string; // e.g. "Lagos, Nigeria"
+  shipmentType: 'air' | 'ocean' | 'road' | null;
+  activeCount: number;
+  nextEta: string | null; // ISO 8601
+  status: 'on_time' | 'delayed' | 'unknown';
+}
+
+export interface ApiDashboardResponse {
+  success: boolean;
+  data: {
+    stats: ApiDashboardStats;
+    trends: ApiTrend[];
+    activeDeliveries: ApiActiveDelivery[];
+  };
 }
