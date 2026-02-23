@@ -6,7 +6,7 @@ import { ROUTES } from '@/constants';
 
 export function LandingPage(): ReactElement {
   return (
-    <AuthLayout>
+    <AuthLayout rightClassName="bg-white">
       <div className="flex flex-col gap-6">
         <div className="flex justify-center mb-2">
           <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
@@ -60,7 +60,7 @@ export function LandingPage(): ReactElement {
         </div>
 
         <div className="text-center">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500">
             New customer?{' '}
             <Link
               to={ROUTES.SIGN_UP}

@@ -9,6 +9,7 @@ export {
 export { ForbiddenPage } from './errors';
 export { TrackPage } from './public';
 export { DashboardPage } from './dashboard';
+export { AdminDashboardPage } from './admin';
 export {
   ShipmentsPage,
   TrackShipmentPage,

@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { Button, Input, Checkbox, Card } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import { loginSchema, type LoginFormData } from './LoginForm.schema';
@@ -27,6 +28,14 @@ export function LoginForm({
 
   return (
     <Card className="p-8">
+      <Link
+        to={ROUTES.HOME}
+        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-5"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Back to home
+      </Link>
+
       {/* Logo */}
       <div className="flex justify-center mb-6">
         <img

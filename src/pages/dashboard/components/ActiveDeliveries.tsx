@@ -19,6 +19,7 @@ const statusStyles: Record<
   on_time: { bg: 'bg-[#0000FF]', text: 'text-white' },
   delayed: { bg: 'bg-[#FF0000]', text: 'text-white' },
   completed: { bg: 'bg-[#008000]', text: 'text-white' },
+  unknown: { bg: 'bg-gray-400', text: 'text-white' },
 };
 
 const modeIcons: Record<ActiveDelivery['mode'], ReactElement> = {
@@ -89,7 +90,9 @@ export function ActiveDeliveries({
                       ? item.eta.display
                       : item.status === 'delayed'
                         ? item.delay.display
-                        : 'Delivered'}
+                        : item.status === 'completed'
+                          ? 'Delivered'
+                          : 'No ETA'}
                   </p>
                 </div>
               </button>

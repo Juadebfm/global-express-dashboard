@@ -2,19 +2,17 @@ import type { ReactElement } from 'react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSearch, useDashboardData } from '@/hooks';
-import { mockShipmentsDashboard } from '@/data';
 import type { ActiveDelivery, KpiCard, UiAction } from '@/types';
 import {
   ActiveDeliveries,
   DashboardHeader,
-  DashboardShipmentList,
   KpiGrid,
   ShipmentTrendsChart,
-} from '../components';
+} from '@/pages/dashboard/components';
 import { AppShell } from '@/pages/shared';
 import { ROUTES } from '@/constants';
 
-export function DashboardPage(): ReactElement {
+export function AdminDashboardPage(): ReactElement {
   const { query } = useSearch();
   const { data, isLoading, error } = useDashboardData();
   const navigate = useNavigate();
@@ -42,18 +40,6 @@ export function DashboardPage(): ReactElement {
       );
     });
   }, [data, normalizedQuery]);
-
-  const filteredShipments = useMemo(() => {
-    const all = mockShipmentsDashboard.shipments;
-    if (normalizedQuery.length === 0) return all;
-    return all.filter(
-      (s) =>
-        s.sku.toLowerCase().includes(normalizedQuery) ||
-        s.customer.toLowerCase().includes(normalizedQuery) ||
-        s.origin.toLowerCase().includes(normalizedQuery) ||
-        s.destination.toLowerCase().includes(normalizedQuery)
-    );
-  }, [normalizedQuery]);
 
   const handleAction = (action: UiAction): void => {
     if (action.id === 'trackShipment') navigate(ROUTES.SHIPMENT_TRACK);
@@ -83,10 +69,6 @@ export function DashboardPage(): ReactElement {
                 items={filteredDeliveries}
                 emptyLabel="No matching deliveries found."
               />
-            </section>
-
-            <section>
-              <DashboardShipmentList shipments={filteredShipments} />
             </section>
           </>
         )}

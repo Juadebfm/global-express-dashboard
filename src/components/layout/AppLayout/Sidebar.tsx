@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Truck,
@@ -11,10 +12,13 @@ import {
   Settings,
   LifeBuoy,
   LogOut,
+  CalendarDays,
 } from 'lucide-react';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { DashboardUser, SidebarItem } from '@/types';
 import { cn } from '@/utils';
 import { useAuth } from '@/hooks';
+import { ROUTES } from '@/constants';
 
 interface SidebarProps {
   items: SidebarItem[];
@@ -36,6 +40,7 @@ const iconMap: Record<string, ReactElement> = {
   team: <UsersRound className="h-5 w-5" />,
   settings: <Settings className="h-5 w-5" />,
   help: <LifeBuoy className="h-5 w-5" />,
+  calendar: <CalendarDays className="h-5 w-5" />,
 };
 
 export function Sidebar({
@@ -48,12 +53,25 @@ export function Sidebar({
   onToggleCollapse,
 }: SidebarProps): ReactElement {
   const location = useLocation();
+  const navigate = useNavigate();
   const { logout } = useAuth();
+  const { isSignedIn: isClerkSignedIn, signOut } = useClerkAuth();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const showLabels = !isCollapsed || isMobileOpen;
   const logoSrc = showLabels ? '/images/mainlogo.svg' : '/images/favicon.svg';
 
   const isActive = (href: string): boolean =>
     location.pathname === href || location.pathname.startsWith(`${href}/`);
+
+  const handleLogout = async (): Promise<void> => {
+    if (isClerkSignedIn) {
+      await logout();
+      await signOut({ redirectUrl: ROUTES.SIGN_IN });
+    } else {
+      await logout();
+      navigate(ROUTES.LOGIN);
+    }
+  };
 
   const renderItem = (item: SidebarItem): ReactElement => {
     const active = isActive(item.href);
@@ -153,18 +171,51 @@ export function Sidebar({
             )}
             <button
               type="button"
-              onClick={logout}
+              onClick={() => setShowLogoutConfirm(true)}
               className={cn(
-                'rounded-lg p-2 text-red-500 hover:text-red-600 hover:bg-white/10',
+                'rounded-lg p-2 text-red-400 transition hover:text-red-300 hover:bg-white/10',
                 showLabels ? 'ml-auto' : 'self-center'
               )}
-              aria-label="Logout"
+              aria-label="Sign out"
             >
               <LogOut className="h-4 w-4" />
             </button>
           </div>
         </div>
       </aside>
+
+      {/* Logout confirmation modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex justify-center mb-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                <LogOut className="h-5 w-5 text-red-500" />
+              </div>
+            </div>
+            <h3 className="text-center text-base font-semibold text-gray-900">Sign out</h3>
+            <p className="mt-2 text-center text-sm text-gray-500">
+              Are you sure you want to sign out of your account?
+            </p>
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-medium text-white transition hover:bg-red-600"
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
