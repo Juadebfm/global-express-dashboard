@@ -38,4 +38,27 @@ export type {
   ShipmentFilterTab,
   ShipmentRecord,
   ShipmentsDashboardData,
+  ApiShipmentRecord,
+  ApiShipmentsResponse,
 } from './shipment.types';
+
+export type {
+  NotificationType,
+  ApiNotification,
+  ApiNotificationsResponse,
+  ApiUnreadCountResponse,
+} from './notification.types';
+
+export type {
+  TeamRole,
+  TeamPermissions,
+  TeamMember,
+  ApiTeamMember,
+  ApiTeamResponse,
+} from './team.types';
+
+export type {
+  ApiClientOrder,
+  ApiClient,
+  ApiClientsResponse,
+} from './client.types';

@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { useClerk } from '@clerk/clerk-react';
 import { AuthLayout } from '@/components/layout';
 import { LoginForm, type LoginFormData } from '@/components/forms';
 import { useAuth } from '@/hooks';
@@ -8,6 +9,7 @@ import { ROUTES } from '@/constants';
 
 export function LoginPage(): ReactElement {
   const navigate = useNavigate();
+  const { signOut } = useClerk();
   const { login, isLoading, isAuthenticated, error, clearError } = useAuth();
 
   useEffect(() => {
@@ -29,6 +31,8 @@ export function LoginPage(): ReactElement {
         password: data.password,
         rememberMe: data.rememberMe,
       });
+      // Evict any customer Clerk session on this device
+      await signOut();
       navigate(ROUTES.DASHBOARD);
     } catch {
       // Error is handled by context

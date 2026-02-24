@@ -9,7 +9,6 @@ import type {
 } from '@/types';
 import type { User } from '@/types';
 import { apiGet } from '@/lib/apiClient';
-import { mockDashboardData } from '@/data';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -81,11 +80,7 @@ function mapActiveDeliveries(items: ApiActiveDelivery[]): ActiveDelivery[] {
 function mapKpis(stats: ApiDashboardStats, role: User['role']): KpiCard[] {
   if (role === 'user') {
     const totalSpentNum = stats.totalSpent ? parseFloat(stats.totalSpent) : 0;
-    const totalSpentDisplay = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
-    }).format(totalSpentNum);
+    const totalSpentDisplay = `₦${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(totalSpentNum)}`;
 
     return [
       {
@@ -119,7 +114,7 @@ function mapKpis(stats: ApiDashboardStats, role: User['role']): KpiCard[] {
         id: 'totalSpent',
         title: 'Total Spent',
         value: totalSpentNum,
-        unit: 'USD',
+        unit: 'NGN',
         display: totalSpentDisplay,
         helperText: 'Your total payments',
         change: stats.totalSpentChange ?? null,
@@ -130,11 +125,7 @@ function mapKpis(stats: ApiDashboardStats, role: User['role']): KpiCard[] {
 
   // Operator / admin / superadmin
   const revenueMtdNum = stats.revenueMtd ? parseFloat(stats.revenueMtd) : 0;
-  const revenueMtdDisplay = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(revenueMtdNum);
+  const revenueMtdDisplay = `₦${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(revenueMtdNum)}`;
 
   return [
     {
@@ -168,7 +159,7 @@ function mapKpis(stats: ApiDashboardStats, role: User['role']): KpiCard[] {
       id: 'revenueMtd',
       title: 'Revenue (MTD)',
       value: revenueMtdNum,
-      unit: 'USD',
+      unit: 'NGN',
       display: revenueMtdDisplay,
       helperText: 'Month to date',
       change: stats.revenueMtdChange ?? null,
@@ -191,13 +182,31 @@ export function mapToDashboardData(
   raw: ApiDashboardResponse['data'],
   role: User['role']
 ): DashboardData {
-  const base = mockDashboardData;
   return {
-    ...base,
+    app: {
+      name: 'GlobalExpress',
+      module: 'Dashboard',
+      pageTitle: 'Dashboard Overview',
+      subtitle: "Welcome back! Here's what's happening with your Shipment.",
+      generatedAt: new Date().toISOString(),
+    },
+    user: { displayName: '', email: '', avatarUrl: '/images/favicon.svg' },
+    ui: {
+      topbar: { searchPlaceholder: 'Search', notifications: { unreadCount: 0 } },
+      actions: [
+        { id: 'export', label: 'Export', icon: 'export' },
+        { id: 'trackShipment', label: 'Track Shipment', icon: 'tracking' },
+        { id: 'newOrder', label: 'New Order', icon: 'plus' },
+      ],
+      sidebar: { items: [], footer: { items: [] } },
+    },
     kpis: mapKpis(raw.stats, role),
     charts: {
       shipmentTrends: {
-        ...base.charts.shipmentTrends,
+        title: 'Shipment Trends',
+        subtitle: 'Monthly shipment and movement performance over the past year',
+        xAxis: { type: 'category', key: 'month', label: 'Month' },
+        yAxis: { type: 'number', key: 'value', label: 'Weight (kg)' },
         legend: [
           { key: 'deliveries', label: 'Delivered' },
           { key: 'shipments', label: 'In Transit' },
@@ -210,10 +219,10 @@ export function mapToDashboardData(
       subtitle: 'Active delivery routes',
       items: mapActiveDeliveries(raw.activeDeliveries),
     },
+    formatting: {
+      currency: { code: 'NGN', locale: 'en-NG' },
+      numberCompact: false,
+      timeZone: 'UTC',
+    },
   };
-}
-
-// Kept for backward compat — used while BE endpoint is not yet ready
-export async function getDashboardData(): Promise<DashboardData> {
-  return mockDashboardData;
 }

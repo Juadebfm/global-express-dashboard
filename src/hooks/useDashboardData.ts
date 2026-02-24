@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { DashboardData } from '@/types';
-import { fetchDashboardRaw, mapToDashboardData, getDashboardData } from '@/services';
+import { fetchDashboardRaw, mapToDashboardData } from '@/services';
 import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -23,23 +23,14 @@ export function useDashboardData(year = new Date().getFullYear()): DashboardData
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard', 'overview', year, role],
     queryFn: async (): Promise<DashboardData> => {
-      let token: string | null = null;
-      if (isCustomer) {
-        token = await getToken();
-      } else {
-        token = localStorage.getItem(TOKEN_KEY);
-      }
+      const token = isCustomer
+        ? await getToken()
+        : localStorage.getItem(TOKEN_KEY);
 
-      if (token) {
-        try {
-          const raw = await fetchDashboardRaw(token, year);
-          return mapToDashboardData(raw, role);
-        } catch {
-          // Fall through to mock if API is not yet available
-        }
-      }
+      if (!token) throw new Error('Not authenticated');
 
-      return getDashboardData();
+      const raw = await fetchDashboardRaw(token, year);
+      return mapToDashboardData(raw, role);
     },
     enabled,
   });
