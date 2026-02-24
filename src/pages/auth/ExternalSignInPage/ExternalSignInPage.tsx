@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSignIn } from '@clerk/clerk-react';
+import { useSignIn, useUser } from '@clerk/clerk-react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
 import { Button, Card, Input } from '@/components/ui';
@@ -22,6 +22,7 @@ function getErrorMessage(error: unknown): string {
 export function ExternalSignInPage(): ReactElement {
   const navigate = useNavigate();
   const { isLoaded, signIn, setActive } = useSignIn();
+  const { isSignedIn } = useUser();
 
   const [step, setStep] = useState<Step>('sign-in');
 
@@ -38,6 +39,13 @@ export function ExternalSignInPage(): ReactElement {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Already has an active Clerk session → send straight to dashboard
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      navigate(ROUTES.DASHBOARD, { replace: true });
+    }
+  }, [isLoaded, isSignedIn, navigate]);
 
   const clearErrors = () => {
     setErrors({});
@@ -72,6 +80,9 @@ export function ExternalSignInPage(): ReactElement {
 
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
+        // Evict any operator session on this device
+        localStorage.removeItem('globalxpress_token');
+        localStorage.removeItem('globalxpress_refresh');
         navigate(ROUTES.COMPLETE_PROFILE, { replace: true });
       } else {
         setFormError('Sign in could not be completed. Please try again.');

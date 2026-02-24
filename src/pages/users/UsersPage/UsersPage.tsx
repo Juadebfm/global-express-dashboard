@@ -2,19 +2,24 @@ import type { ReactElement } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { AppShell, PageHeader } from '@/pages/shared';
-import { useAuth, useDashboardData, useSearch } from '@/hooks';
-import { mockAppUsers, type AppUser } from '@/data/mockAppUsers';
+import { useAuth, useClients, useDashboardData, useSearch } from '@/hooks';
 import { cn } from '@/utils';
+
+interface AppUser {
+  id: string;
+  fullName: string;
+  email: string;
+  status: 'active' | 'locked';
+  lastActive: string;
+}
 
 const statusLabelMap: Record<AppUser['status'], string> = {
   active: 'Active',
-  issue: 'Needs Attention',
   locked: 'Locked',
 };
 
 const statusStyleMap: Record<AppUser['status'], string> = {
   active: 'bg-emerald-50 text-emerald-700',
-  issue: 'bg-amber-50 text-amber-700',
   locked: 'bg-rose-50 text-rose-700',
 };
 
@@ -32,7 +37,21 @@ export function UsersPage(): ReactElement {
   const { data, isLoading, error } = useDashboardData();
   const { query, setQuery } = useSearch();
   const { user } = useAuth();
-  const [users, setUsers] = useState<AppUser[]>(mockAppUsers);
+  const { clients: apiClients, isLoading: clientsLoading } = useClients();
+
+  const apiUsers = useMemo<AppUser[]>(
+    () =>
+      apiClients.map((c) => ({
+        id: c.id,
+        fullName: c.name,
+        email: c.email,
+        status: c.isActive ? 'active' : 'locked',
+        lastActive: c.lastActivity,
+      })),
+    [apiClients]
+  );
+  const [usersOverride, setUsersOverride] = useState<AppUser[] | null>(null);
+  const users = usersOverride ?? apiUsers;
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const role = user?.role;
@@ -60,21 +79,9 @@ export function UsersPage(): ReactElement {
     setActionMessage(`Refreshed ${target.fullName}'s account.`);
   };
 
-  const handleResolve = (userId: string): void => {
-    setUsers((prev) =>
-      prev.map((item) =>
-        item.id === userId ? { ...item, status: 'active' } : item
-      )
-    );
-    const target = users.find((item) => item.id === userId);
-    setActionMessage(
-      target ? `Resolved issue for ${target.fullName}.` : 'Issue resolved.'
-    );
-  };
-
   const handleUnlock = (userId: string): void => {
-    setUsers((prev) =>
-      prev.map((item) =>
+    setUsersOverride((prev) =>
+      (prev ?? apiUsers).map((item) =>
         item.id === userId ? { ...item, status: 'active' } : item
       )
     );
@@ -85,7 +92,12 @@ export function UsersPage(): ReactElement {
   };
 
   return (
-    <AppShell data={data} isLoading={isLoading} error={error} loadingLabel="Loading users...">
+    <AppShell
+      data={data}
+      isLoading={isLoading || clientsLoading}
+      error={error}
+      loadingLabel="Loading users..."
+    >
       <div className="space-y-6">
         <PageHeader
           title="Users"
@@ -161,15 +173,6 @@ export function UsersPage(): ReactElement {
                           >
                             Refresh
                           </button>
-                          {appUser.status === 'issue' && (
-                            <button
-                              type="button"
-                              onClick={() => handleResolve(appUser.id)}
-                              className="rounded-full bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
-                            >
-                              Resolve
-                            </button>
-                          )}
                           {appUser.status === 'locked' && (
                             <button
                               type="button"
@@ -188,7 +191,7 @@ export function UsersPage(): ReactElement {
 
               {filteredUsers.length === 0 && (
                 <div className="p-6 text-center text-sm text-gray-500">
-                  No users match your search.
+                  {users.length === 0 ? 'No users found.' : 'No users match your search.'}
                 </div>
               )}
             </div>

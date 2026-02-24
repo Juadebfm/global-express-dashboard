@@ -1,14 +1,9 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
 import { ChevronDown, Mail, Search, User, UserPlus, X } from 'lucide-react';
-import { useAuth, useDashboardData, useSearch } from '@/hooks';
+import { useAuth, useDashboardData, useSearch, useTeam } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
-import {
-  mockTeamMembers,
-  type TeamMember,
-  type TeamPermissions,
-  type TeamRole,
-} from '@/data/mockTeam';
+import type { TeamMember, TeamPermissions, TeamRole } from '@/types';
 import { cn } from '@/utils';
 
 type TeamTab = 'all' | 'admin' | 'non-admin';
@@ -70,12 +65,18 @@ export function TeamPage(): ReactElement {
   const { data, isLoading, error } = useDashboardData();
   const { query, setQuery } = useSearch();
   const { user } = useAuth();
+  const { members: apiMembers, isLoading: teamLoading } = useTeam();
   const [activeTab, setActiveTab] = useState<TeamTab>('all');
-  const [members, setMembers] = useState<TeamMember[]>(mockTeamMembers);
+  const [membersOverride, setMembersOverride] = useState<TeamMember[] | null>(null);
+  const members = membersOverride ?? apiMembers;
   const [activeModal, setActiveModal] = useState<ActiveModal>(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [formState, setFormState] = useState<TeamFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const updateMembers = (updater: (current: TeamMember[]) => TeamMember[]): void => {
+    setMembersOverride((prev) => updater(prev ?? apiMembers));
+  };
 
   const role = user?.role;
   const isSuperAdmin = role === 'superadmin';
@@ -209,14 +210,14 @@ export function TeamPage(): ReactElement {
         approvalStatus,
       };
 
-      setMembers((prev) => [newMember, ...prev]);
+      updateMembers((prev) => [newMember, ...prev]);
       setActiveTab('all');
       closeModal();
       return;
     }
 
     if (activeModal === 'edit' && selectedMember) {
-      setMembers((prev) =>
+      updateMembers((prev) =>
         prev.map((member) =>
           member.id === selectedMember.id
             ? {
@@ -235,12 +236,12 @@ export function TeamPage(): ReactElement {
 
   const handleRemove = (): void => {
     if (!selectedMember) return;
-    setMembers((prev) => prev.filter((member) => member.id !== selectedMember.id));
+    updateMembers((prev) => prev.filter((member) => member.id !== selectedMember.id));
     closeModal();
   };
 
   const approveMember = (member: TeamMember): void => {
-    setMembers((prev) =>
+    updateMembers((prev) =>
       prev.map((item) =>
         item.id === member.id ? { ...item, approvalStatus: 'approved' } : item
       )
@@ -254,7 +255,7 @@ export function TeamPage(): ReactElement {
   };
 
   return (
-    <AppShell data={data} isLoading={isLoading} error={error} loadingLabel="Loading team...">
+    <AppShell data={data} isLoading={isLoading || teamLoading} error={error} loadingLabel="Loading team...">
       <div className="space-y-6">
         <PageHeader
           title="Team"
@@ -687,4 +688,3 @@ export function TeamPage(): ReactElement {
     </AppShell>
   );
 }
-

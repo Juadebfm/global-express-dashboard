@@ -5,7 +5,7 @@ import type { DashboardUi, DashboardUser, SidebarItem } from '@/types';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { cn } from '@/utils';
-import { useAuth } from '@/hooks';
+import { useAuth, useWebSocket } from '@/hooks';
 import { ROUTES } from '@/constants';
 
 interface AppLayoutProps {
@@ -47,6 +47,7 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
   const { user: authUser } = useAuth();
   const { isSignedIn: isClerkSignedIn } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
+  useWebSocket();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
@@ -112,7 +113,6 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
       >
         <Topbar
           searchPlaceholder={ui.topbar.searchPlaceholder}
-          notificationsCount={ui.topbar.notifications.unreadCount}
           user={effectiveUser}
           onOpenMobile={() => setIsMobileSidebarOpen(true)}
         />

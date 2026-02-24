@@ -63,3 +63,46 @@ export interface ShipmentsDashboardData {
   };
   shipments: ShipmentRecord[];
 }
+
+// ── Raw API types ─────────────────────────────────────────────────────────────
+
+export type ApiShipmentStatus =
+  | 'in_transit'
+  | 'picked_up'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'pending'
+  | 'cancelled'
+  | 'returned';
+
+export interface ApiShipmentRecord {
+  id: string;
+  trackingNumber: string;
+  senderName: string;
+  origin: string;
+  destination: string;
+  departureDate: string;
+  eta: string;
+  status: ApiShipmentStatus;
+  shipmentType: 'air' | 'ocean' | 'road';
+  priority: ShipmentPriority;
+  numberOfPackages: number;
+  weight: string;
+  declaredValue: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiShipmentsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    data: ApiShipmentRecord[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  };
+}

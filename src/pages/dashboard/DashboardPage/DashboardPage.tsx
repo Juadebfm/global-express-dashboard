@@ -1,8 +1,7 @@
 import type { ReactElement } from 'react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSearch, useDashboardData } from '@/hooks';
-import { mockShipmentsDashboard } from '@/data';
+import { useSearch, useDashboardData, useShipmentsDashboard } from '@/hooks';
 import type { ActiveDelivery, KpiCard, UiAction } from '@/types';
 import {
   ActiveDeliveries,
@@ -17,6 +16,7 @@ import { ROUTES } from '@/constants';
 export function DashboardPage(): ReactElement {
   const { query } = useSearch();
   const { data, isLoading, error } = useDashboardData();
+  const { data: shipmentsData } = useShipmentsDashboard();
   const navigate = useNavigate();
 
   const normalizedQuery = query.trim().toLowerCase();
@@ -44,7 +44,7 @@ export function DashboardPage(): ReactElement {
   }, [data, normalizedQuery]);
 
   const filteredShipments = useMemo(() => {
-    const all = mockShipmentsDashboard.shipments;
+    const all = shipmentsData?.shipments ?? [];
     if (normalizedQuery.length === 0) return all;
     return all.filter(
       (s) =>
@@ -53,7 +53,7 @@ export function DashboardPage(): ReactElement {
         s.origin.toLowerCase().includes(normalizedQuery) ||
         s.destination.toLowerCase().includes(normalizedQuery)
     );
-  }, [normalizedQuery]);
+  }, [shipmentsData, normalizedQuery]);
 
   const handleAction = (action: UiAction): void => {
     if (action.id === 'trackShipment') navigate(ROUTES.SHIPMENT_TRACK);

@@ -4,22 +4,21 @@ import { Bell, ChevronDown, Globe, LogOut, Menu, Moon, Search, Sun } from 'lucid
 import { useNavigate } from 'react-router-dom';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { DashboardUser } from '@/types';
-import { useAuth, useSearch, useTheme } from '@/hooks';
+import { useAuth, useNotificationCount, useSearch, useTheme } from '@/hooks';
 import { ROUTES } from '@/constants';
 
 interface TopbarProps {
   searchPlaceholder: string;
-  notificationsCount: number;
   user: DashboardUser;
   onOpenMobile: () => void;
 }
 
 export function Topbar({
   searchPlaceholder,
-  notificationsCount,
   user,
   onOpenMobile,
 }: TopbarProps): ReactElement {
+  const notificationsCount = useNotificationCount();
   const { query, setQuery } = useSearch();
   const { mode, toggle } = useTheme();
   const isDark = mode === 'dark';
