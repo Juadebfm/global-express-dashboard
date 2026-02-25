@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, ThemeProvider } from '@/store';
 import { ProtectedRoute } from '@/components/auth';
-import { PageLoader } from '@/components/ui';
+import { FeedbackCenter, PageLoader } from '@/components/ui';
 import {
   LandingPage,
   LoginPage,
@@ -26,6 +26,7 @@ import {
   TeamPage,
   SettingsPage,
   SupportPage,
+  DeliverySchedulePage,
 } from '@/pages';
 import { ROUTES } from '@/constants';
 
@@ -179,6 +180,17 @@ function AppRoutes(): ReactElement {
             </ProtectedRoute>
           }
         />
+        <Route
+          path={ROUTES.DELIVERY_SCHEDULE}
+          element={
+            <ProtectedRoute
+              allowedRoles={['user']}
+              redirectTo={ROUTES.ADMIN_DASHBOARD}
+            >
+              <DeliverySchedulePage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
@@ -192,6 +204,7 @@ function App(): ReactElement {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
+          <FeedbackCenter />
           <AppRoutes />
         </AuthProvider>
       </ThemeProvider>

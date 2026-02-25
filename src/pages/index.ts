@@ -23,3 +23,4 @@ export { NotificationsPage } from './notifications';
 export { TeamPage } from './team';
 export { SettingsPage } from './settings';
 export { SupportPage } from './support';
+export { DeliverySchedulePage } from './deliverySchedule';
