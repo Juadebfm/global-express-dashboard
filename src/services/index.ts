@@ -7,3 +7,4 @@ export type { TrackingResult } from './trackingService';
 export { getNotifications, getUnreadCount, markNotificationRead, toggleNotificationSave } from './notificationsService';
 export { getTeam } from './teamService';
 export { getClients } from './clientsService';
+export { getSupportTickets, createSupportTicket } from './supportService';

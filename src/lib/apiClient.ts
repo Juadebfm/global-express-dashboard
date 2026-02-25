@@ -1,3 +1,5 @@
+import { getHttpFallbackMessage, sanitizeMessage } from './feedback';
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -12,7 +14,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(payload?.message || `Request failed: ${response.status}`);
+    const rawMessage =
+      payload && typeof payload === 'object' && 'message' in payload
+        ? (payload.message as string | undefined)
+        : undefined;
+    const fallback = getHttpFallbackMessage(response.status);
+    throw new Error(sanitizeMessage(rawMessage, fallback));
   }
 
   return payload as T;

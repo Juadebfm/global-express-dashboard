@@ -2,7 +2,10 @@ import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Search, Package, MapPin, Clock, CheckCircle2 } from 'lucide-react';
-import { ROUTES } from '@/constants';
+import { AlertBanner } from '@/components/ui';
+import { FEEDBACK_MESSAGES, ROUTES } from '@/constants';
+import { getDisplayErrorMessage } from '@/lib/feedback';
+import { useFeedbackStore } from '@/store';
 import { trackShipment, type TrackingResult } from '@/services/trackingService';
 
 type StatusKey = 'in_transit' | 'delivered' | 'pending';
@@ -28,6 +31,7 @@ export function TrackPage(): ReactElement {
   const [searched, setSearched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const pushMessage = useFeedbackStore((state) => state.pushMessage);
 
   const doSearch = async (trackingNumber: string): Promise<void> => {
     const trimmed = trackingNumber.trim();
@@ -42,7 +46,9 @@ export function TrackPage(): ReactElement {
       setResult(data);
     } catch (err) {
       setResult(null);
-      setFetchError(err instanceof Error ? err.message : 'Unable to fetch tracking info.');
+      const message = getDisplayErrorMessage(err, FEEDBACK_MESSAGES.tracking.fetchError);
+      setFetchError(message);
+      pushMessage({ tone: 'error', message });
     } finally {
       setIsLoading(false);
       setSearched(true);
@@ -104,9 +110,7 @@ export function TrackPage(): ReactElement {
 
         {/* API error */}
         {fetchError && (
-          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-            {fetchError}
-          </div>
+          <AlertBanner tone="error" message={fetchError} className="mb-4" />
         )}
 
         {/* Not found */}

@@ -62,3 +62,14 @@ export type {
   ApiClient,
   ApiClientsResponse,
 } from './client.types';
+
+export type {
+  SupportTicketCategory,
+  SupportTicketPriority,
+  SupportTicketStatus,
+  SupportTicket,
+  CreateSupportTicketPayload,
+  ApiSupportTicket,
+  ApiSupportTicketsResponse,
+  ApiCreateSupportTicketResponse,
+} from './support.types';
