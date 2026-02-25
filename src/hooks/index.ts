@@ -10,3 +10,5 @@ export { useWebSocket } from './useWebSocket';
 export { useTeam } from './useTeam';
 export { useClients } from './useClients';
 export { useSupportTickets } from './useSupportTickets';
+export { useMyNotificationPreferences } from './useMyNotificationPreferences';
+export { useOrders } from './useOrders';

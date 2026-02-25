@@ -13,6 +13,7 @@ import en from 'react-phone-number-input/locale/en';
 import { AuthLayout } from '@/components/layout';
 import { Button, Card, Checkbox, Input } from '@/components/ui';
 import { ROUTES } from '@/constants';
+import { getMyProfile, getMyProfileCompleteness, syncClerkAccount } from '@/services';
 
 type CountryOption = {
   code: Country;
@@ -51,6 +52,39 @@ const initialFormState: FormState = {
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return 'Something went wrong. Please try again.';
+}
+
+function normalizePhoneDigits(value: string | null | undefined): string {
+  if (!value) return '';
+  return value.replace(/\D/g, '');
+}
+
+function findCountryFromPhone(value: string | null | undefined): CountryOption | null {
+  const digits = normalizePhoneDigits(value);
+  if (!digits) return null;
+
+  return (
+    COUNTRY_OPTIONS
+      .filter((option) => digits.startsWith(option.dialCode.replace(/\D/g, '')))
+      .sort(
+        (a, b) =>
+          b.dialCode.replace(/\D/g, '').length - a.dialCode.replace(/\D/g, '').length
+      )[0] ?? null
+  );
+}
+
+function getLocalPhoneValue(
+  value: string | null | undefined,
+  country: CountryOption
+): string {
+  const digits = normalizePhoneDigits(value);
+  if (!digits) return '';
+
+  const dialDigits = country.dialCode.replace(/\D/g, '');
+  if (digits.startsWith(dialDigits)) {
+    return digits.slice(dialDigits.length);
+  }
+  return digits;
 }
 
 interface CountrySelectProps {
@@ -157,19 +191,7 @@ export function CompleteProfilePage(): ReactElement {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // If not a Clerk user, redirect away
-  useEffect(() => {
-    if (!isClerkLoaded) return;
-    if (!isSignedIn) {
-      navigate(ROUTES.HOME, { replace: true });
-      return;
-    }
-    // If profile already marked complete, skip to dashboard
-    if (user?.unsafeMetadata?.profileCompleted === true) {
-      navigate(ROUTES.DASHBOARD, { replace: true });
-    }
-  }, [isClerkLoaded, isSignedIn, user, navigate]);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
   const selectedCountryOption =
     COUNTRY_OPTIONS.find((item) => item.code === selectedCountry) || COUNTRY_OPTIONS[0];
@@ -180,6 +202,10 @@ export function CompleteProfilePage(): ReactElement {
   const buildE164 = (value: string) => {
     const digits = stripLeadingZeros(normalizeDigits(value));
     if (!digits) return '';
+    const dialDigits = selectedCountryOption.dialCode.replace(/\D/g, '');
+    if (digits.startsWith(dialDigits)) {
+      return `+${digits}`;
+    }
     return `${selectedCountryOption.dialCode}${digits}`;
   };
 
@@ -193,6 +219,69 @@ export function CompleteProfilePage(): ReactElement {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: '' }));
   };
+
+  useEffect(() => {
+    if (!isClerkLoaded) return;
+    if (!isSignedIn) {
+      navigate(ROUTES.HOME, { replace: true });
+      return;
+    }
+
+    let isMounted = true;
+
+    const bootstrapProfile = async (): Promise<void> => {
+      setIsLoadingProfile(true);
+      setFormError(null);
+
+      try {
+        const token = await getToken();
+        if (!token) throw new Error('Authentication token is missing.');
+        await syncClerkAccount(token);
+
+        const completeness = await getMyProfileCompleteness(token);
+        if (completeness.isComplete) {
+          await user?.update({ unsafeMetadata: { profileCompleted: true } });
+          if (isMounted) {
+            navigate(ROUTES.DASHBOARD, { replace: true });
+          }
+          return;
+        }
+
+        const profile = await getMyProfile(token);
+        if (!isMounted) return;
+
+        const countryOption =
+          findCountryFromPhone(profile.phone) ??
+          findCountryFromPhone(profile.whatsappNumber) ??
+          COUNTRY_OPTIONS[0];
+
+        setSelectedCountry(countryOption.code);
+        setForm((prev) => ({
+          ...prev,
+          phone: getLocalPhoneValue(profile.phone, countryOption),
+          whatsappNumber: getLocalPhoneValue(profile.whatsappNumber, countryOption),
+          addressStreet: profile.addressStreet ?? '',
+          addressCity: profile.addressCity ?? '',
+          addressState: profile.addressState ?? '',
+          addressCountry: profile.addressCountry ?? prev.addressCountry,
+          addressPostalCode: profile.addressPostalCode ?? '',
+        }));
+      } catch (error) {
+        if (!isMounted) return;
+        setFormError(getErrorMessage(error));
+      } finally {
+        if (isMounted) {
+          setIsLoadingProfile(false);
+        }
+      }
+    };
+
+    void bootstrapProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [getToken, isClerkLoaded, isSignedIn, navigate, user]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -233,6 +322,7 @@ export function CompleteProfilePage(): ReactElement {
     try {
       const token = await getToken();
       if (!token) throw new Error('Authentication token is missing.');
+      await syncClerkAccount(token);
 
       const response = await fetch(`${apiBaseUrl}/users/me`, {
         method: 'PATCH',
@@ -402,7 +492,7 @@ export function CompleteProfilePage(): ReactElement {
             type="submit"
             className="w-full text-sm"
             size="lg"
-            isLoading={isSubmitting}
+            isLoading={isSubmitting || isLoadingProfile}
           >
             Save & Continue
           </Button>

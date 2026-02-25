@@ -13,6 +13,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthLayout } from '@/components/layout';
 import { Button, Card, Checkbox, Input } from '@/components/ui';
 import { ROUTES } from '@/constants';
+import { syncClerkAccount } from '@/services';
 
 type SignUpStep = 'account' | 'verify' | 'details';
 type AccountType = 'individual' | 'business';
@@ -337,6 +338,11 @@ export function ExternalSignUpPage(): ReactElement {
           throw new Error('Unable to start a session.');
         }
         await setActive({ session: result.createdSessionId });
+        const token = await getToken();
+        if (!token) {
+          throw new Error('Authentication token is missing.');
+        }
+        await syncClerkAccount(token);
         setStep('details');
       } else {
         const missingFields = (result as { missingFields?: string[] }).missingFields;
@@ -428,6 +434,7 @@ export function ExternalSignUpPage(): ReactElement {
       if (!token) {
         throw new Error('Authentication token is missing.');
       }
+      await syncClerkAccount(token);
 
       const response = await fetch(`${apiBaseUrl}/users/me`, {
         method: 'PATCH',
