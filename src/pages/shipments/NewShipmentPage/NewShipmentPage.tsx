@@ -2,6 +2,7 @@
 import type { ReactElement } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import {
   Calendar,
   Check,
@@ -15,9 +16,10 @@ import {
   X,
 } from 'lucide-react';
 import { AppShell } from '@/pages/shared';
-import { Button } from '@/components/ui';
+import { AlertBanner, Button } from '@/components/ui';
 import { useAuth, useDashboardData } from '@/hooks';
 import { ROUTES } from '@/constants';
+import { createOrder, getMyProfileCompleteness, syncClerkAccount } from '@/services';
 import { cn } from '@/utils';
 
 type StepKey = 'shipment' | 'addresses' | 'packages' | 'services' | 'review';
@@ -92,6 +94,12 @@ const categoryOptions: DropdownOption[] = [
 ];
 
 const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const INTERNAL_TOKEN_KEY = 'globalxpress_token';
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return 'Unable to verify profile completeness.';
+}
 
 const formatDateLabel = (value: Date | null): string => {
   if (!value) return 'Select date';
@@ -381,6 +389,7 @@ function DropdownSelect({
 export function NewShipmentPage(): ReactElement {
   const { data, isLoading, error } = useDashboardData();
   const { user } = useAuth();
+  const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
   const [shipmentType, setShipmentType] = useState('standard');
@@ -391,6 +400,16 @@ export function NewShipmentPage(): ReactElement {
   const [serviceLevel, setServiceLevel] = useState('air');
   const [servicePriority, setServicePriority] = useState('express');
   const [category, setCategory] = useState('electronics');
+  const [originAddress, setOriginAddress] = useState('');
+  const [originCity, setOriginCity] = useState('');
+  const [destinationAddress, setDestinationAddress] = useState('');
+  const [destinationCity, setDestinationCity] = useState('');
+  const [packageDescription, setPackageDescription] = useState('');
+  const [packageWeightKg, setPackageWeightKg] = useState('');
+  const [packageDeclaredValue, setPackageDeclaredValue] = useState('');
+  const [recipientName, setRecipientName] = useState('');
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [recipientPhone, setRecipientPhone] = useState('');
   const [sendInvoice, setSendInvoice] = useState(true);
   const [invoiceRecipient, setInvoiceRecipient] = useState('');
   const [invoiceEmail, setInvoiceEmail] = useState('');
@@ -400,9 +419,54 @@ export function NewShipmentPage(): ReactElement {
   );
   const [invoiceNotes, setInvoiceNotes] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isCheckingCompleteness, setIsCheckingCompleteness] = useState(false);
+  const [completenessError, setCompletenessError] = useState<string | null>(null);
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createdTrackingNumber, setCreatedTrackingNumber] = useState<string | null>(null);
 
   const progress = Math.round(((activeStep + 1) / steps.length) * 100);
   const canInvoice = Boolean(user && user.role !== 'user');
+  const isCustomer = isClerkSignedIn && !user;
+  const categoryLabel = categoryOptions.find((option) => option.value === category)?.label ?? category;
+
+  useEffect(() => {
+    if (!isCustomer) return;
+
+    let isMounted = true;
+
+    const checkCompleteness = async (): Promise<void> => {
+      setIsCheckingCompleteness(true);
+      setCompletenessError(null);
+
+      try {
+        const token = await getToken();
+        if (!token) {
+          throw new Error('Authentication token is missing.');
+        }
+
+        await syncClerkAccount(token);
+        const completeness = await getMyProfileCompleteness(token);
+        if (!completeness.isComplete && isMounted) {
+          navigate(ROUTES.COMPLETE_PROFILE, { replace: true });
+        }
+      } catch (checkError) {
+        if (isMounted) {
+          setCompletenessError(getErrorMessage(checkError));
+        }
+      } finally {
+        if (isMounted) {
+          setIsCheckingCompleteness(false);
+        }
+      }
+    };
+
+    void checkCompleteness();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [getToken, isCustomer, navigate]);
 
   const goNext = (): void => {
     setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
@@ -412,22 +476,98 @@ export function NewShipmentPage(): ReactElement {
     setActiveStep((prev) => Math.max(prev - 1, 0));
   };
 
-  const handlePrimaryAction = (): void => {
+  const getApiToken = async (): Promise<string | null> => {
+    if (isCustomer) return getToken();
+    return localStorage.getItem(INTERNAL_TOKEN_KEY);
+  };
+
+  const handlePrimaryAction = async (): Promise<void> => {
     if (activeStep < steps.length - 1) {
       goNext();
       return;
     }
 
-    if (canInvoice && sendInvoice) {
-      navigate(`${ROUTES.SHIPMENT_INVOICE}?created=1`);
+    setCreateError(null);
+
+    const resolvedDescription = packageDescription.trim() || categoryLabel;
+
+    if (!originAddress.trim() || !destinationAddress.trim()) {
+      setCreateError('Please provide both origin and destination addresses.');
+      setActiveStep(1);
       return;
     }
 
-    setShowConfirmation(true);
+    if (!recipientName.trim() || !recipientEmail.trim() || !recipientPhone.trim()) {
+      setCreateError('Please provide recipient name, email, and phone number.');
+      setActiveStep(2);
+      return;
+    }
+
+    if (!packageWeightKg.trim() || !packageDeclaredValue.trim()) {
+      setCreateError('Please provide package weight and declared value.');
+      setActiveStep(2);
+      return;
+    }
+
+    setIsCreatingOrder(true);
+    try {
+      const token = await getApiToken();
+      if (!token) throw new Error('Authentication token is missing.');
+
+      const origin = [originAddress.trim(), originCity.trim()].filter(Boolean).join(', ');
+      const destination = [destinationAddress.trim(), destinationCity.trim()].filter(Boolean).join(', ');
+
+      const order = await createOrder(
+        {
+          recipientName: recipientName.trim(),
+          recipientAddress: destination,
+          recipientPhone: recipientPhone.trim(),
+          recipientEmail: recipientEmail.trim(),
+          origin,
+          destination,
+          orderDirection: 'outbound',
+          weight: `${packageWeightKg.trim()}kg`,
+          declaredValue: packageDeclaredValue.trim(),
+          description: resolvedDescription,
+        },
+        token
+      );
+
+      setCreatedTrackingNumber(order.trackingNumber ?? null);
+
+      if (canInvoice && sendInvoice) {
+        const params = new URLSearchParams({ created: '1' });
+        if (order.id) params.set('orderId', order.id);
+        if (order.trackingNumber) params.set('trackingNumber', order.trackingNumber);
+        navigate(`${ROUTES.SHIPMENT_INVOICE}?${params.toString()}`);
+        return;
+      }
+
+      setShowConfirmation(true);
+    } catch (createOrderError) {
+      const message =
+        createOrderError instanceof Error
+          ? createOrderError.message
+          : 'Failed to create shipment order.';
+      setCreateError(message);
+
+      if (isCustomer && /profile/i.test(message)) {
+        navigate(ROUTES.COMPLETE_PROFILE, { replace: true });
+      }
+
+      return;
+    } finally {
+      setIsCreatingOrder(false);
+    }
   };
 
   return (
-    <AppShell data={data} isLoading={isLoading} error={error} loadingLabel="Loading new shipment...">
+    <AppShell
+      data={data}
+      isLoading={isLoading || isCheckingCompleteness}
+      error={completenessError ?? error}
+      loadingLabel="Loading new shipment..."
+    >
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Create New Shipment</h1>
@@ -435,6 +575,8 @@ export function NewShipmentPage(): ReactElement {
             Follow the steps below to create and schedule your shipment
           </p>
         </div>
+
+        {createError && <AlertBanner tone="error" message={createError} />}
 
         <section className="rounded-2xl border border-gray-200 bg-white p-5">
           <div className="flex items-center justify-between text-sm text-gray-500">
@@ -588,10 +730,15 @@ export function NewShipmentPage(): ReactElement {
         {activeStep === 1 && (
           <section className="space-y-6">
             {[
-              { title: 'Origin Address', subtitle: 'Enter the pickup location details' },
-              { title: 'Destination Address', subtitle: 'Enter the delivery location details' },
-            ].map((card) => (
-              <div key={card.title} className="rounded-2xl border border-gray-200 bg-white p-6">
+              { key: 'origin', title: 'Origin Address', subtitle: 'Enter the pickup location details' },
+              { key: 'destination', title: 'Destination Address', subtitle: 'Enter the delivery location details' },
+            ].map((card) => {
+              const isOrigin = card.key === 'origin';
+              const addressValue = isOrigin ? originAddress : destinationAddress;
+              const cityValue = isOrigin ? originCity : destinationCity;
+
+              return (
+              <div key={card.key} className="rounded-2xl border border-gray-200 bg-white p-6">
                 <h3 className="text-lg font-semibold text-gray-900">{card.title}</h3>
                 <p className="mt-1 text-sm text-gray-400">{card.subtitle}</p>
 
@@ -622,18 +769,33 @@ export function NewShipmentPage(): ReactElement {
                     </span>
                     <input
                       type="text"
-                      placeholder="Select type"
+                      value={addressValue}
+                      onChange={(event) =>
+                        isOrigin
+                          ? setOriginAddress(event.target.value)
+                          : setDestinationAddress(event.target.value)
+                      }
+                      placeholder={isOrigin ? 'Enter origin address' : 'Enter destination address'}
                       className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                     />
                   </div>
                   <div>
                     <span className="text-xs font-semibold uppercase text-gray-500">City</span>
                     <div className="relative mt-2">
-                      <select className="w-full appearance-none rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-600 focus:border-brand-500 focus:outline-none">
-                        <option>Select type</option>
-                        <option>Lagos</option>
-                        <option>Accra</option>
-                        <option>New York</option>
+                      <select
+                        value={cityValue}
+                        onChange={(event) =>
+                          isOrigin
+                            ? setOriginCity(event.target.value)
+                            : setDestinationCity(event.target.value)
+                        }
+                        className="w-full appearance-none rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-600 focus:border-brand-500 focus:outline-none"
+                      >
+                        <option value="">Select city</option>
+                        <option value="Lagos">Lagos</option>
+                        <option value="Abuja">Abuja</option>
+                        <option value="Accra">Accra</option>
+                        <option value="New York">New York</option>
                       </select>
                       <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                     </div>
@@ -688,7 +850,8 @@ export function NewShipmentPage(): ReactElement {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </section>
         )}
         {activeStep === 2 && (
@@ -713,7 +876,9 @@ export function NewShipmentPage(): ReactElement {
                   </span>
                   <input
                     type="text"
-                    placeholder="Select type"
+                    value={packageDescription}
+                    onChange={(event) => setPackageDescription(event.target.value)}
+                    placeholder="Describe package contents"
                     className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                   />
                 </div>
@@ -742,11 +907,13 @@ export function NewShipmentPage(): ReactElement {
                 </div>
                 <div>
                   <span className="text-xs font-semibold uppercase text-gray-500">
-                    Weight (lbs)
+                    Weight (kg)
                   </span>
                   <input
                     type="number"
-                    placeholder="Enter weight"
+                    value={packageWeightKg}
+                    onChange={(event) => setPackageWeightKg(event.target.value)}
+                    placeholder="Enter weight in kg"
                     className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                   />
                 </div>
@@ -754,7 +921,9 @@ export function NewShipmentPage(): ReactElement {
                   <span className="text-xs font-semibold uppercase text-gray-500">Value ($)</span>
                   <input
                     type="number"
-                    placeholder="Enter value"
+                    value={packageDeclaredValue}
+                    onChange={(event) => setPackageDeclaredValue(event.target.value)}
+                    placeholder="Enter declared value"
                     className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                   />
                 </div>
@@ -794,6 +963,8 @@ export function NewShipmentPage(): ReactElement {
                   </span>
                   <input
                     type="text"
+                    value={recipientName}
+                    onChange={(event) => setRecipientName(event.target.value)}
                     placeholder="Type here"
                     className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                   />
@@ -802,6 +973,8 @@ export function NewShipmentPage(): ReactElement {
                   <span className="text-xs font-semibold uppercase text-gray-500">Email</span>
                   <input
                     type="email"
+                    value={recipientEmail}
+                    onChange={(event) => setRecipientEmail(event.target.value)}
                     placeholder="Type here"
                     className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                   />
@@ -810,6 +983,8 @@ export function NewShipmentPage(): ReactElement {
                   <span className="text-xs font-semibold uppercase text-gray-500">Number</span>
                   <input
                     type="tel"
+                    value={recipientPhone}
+                    onChange={(event) => setRecipientPhone(event.target.value)}
                     placeholder="Type here"
                     className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                   />
@@ -935,11 +1110,11 @@ export function NewShipmentPage(): ReactElement {
                   <div className="mt-3 space-y-2 text-sm text-gray-600">
                     <div className="flex items-center justify-between">
                       <span>Type</span>
-                      <span className="font-semibold text-gray-800">Standard</span>
+                      <span className="font-semibold text-gray-800 capitalize">{shipmentType}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Priority</span>
-                      <span className="font-semibold text-gray-800">Standard</span>
+                      <span className="font-semibold text-gray-800 capitalize">{priority}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Total Items</span>
@@ -947,11 +1122,15 @@ export function NewShipmentPage(): ReactElement {
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Total Weight</span>
-                      <span className="font-semibold text-gray-800">0.0 lbs</span>
+                      <span className="font-semibold text-gray-800">
+                        {packageWeightKg.trim() ? `${packageWeightKg.trim()} kg` : '0.0 kg'}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between border-t border-gray-200 pt-3">
                       <span>Total Value</span>
-                      <span className="font-semibold text-gray-800">$0.00</span>
+                      <span className="font-semibold text-gray-800">
+                        ${packageDeclaredValue.trim() || '0.00'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -961,12 +1140,12 @@ export function NewShipmentPage(): ReactElement {
                   <div className="mt-3 text-sm text-gray-600">
                     <p className="font-semibold text-gray-800">From</p>
                     <p className="text-xs text-gray-400">Origin Company</p>
-                    <p>Marina port, Lagos Island, Lagos state, Nigeria.</p>
+                    <p>{[originAddress.trim(), originCity.trim()].filter(Boolean).join(', ') || 'Not provided yet.'}</p>
                   </div>
                   <div className="mt-4 text-sm text-gray-600">
                     <p className="font-semibold text-gray-800">To</p>
                     <p className="text-xs text-gray-400">Destination Company</p>
-                    <p>Aquatic port, Maryland, New York, USA.</p>
+                    <p>{[destinationAddress.trim(), destinationCity.trim()].filter(Boolean).join(', ') || 'Not provided yet.'}</p>
                   </div>
                 </div>
               </div>
@@ -1106,11 +1285,13 @@ export function NewShipmentPage(): ReactElement {
             <Button variant="secondary" size="sm" className="border-gray-300">
               Save Draft
             </Button>
-            <Button size="sm" onClick={handlePrimaryAction}>
+            <Button size="sm" onClick={() => void handlePrimaryAction()} disabled={isCreatingOrder}>
               {activeStep === steps.length - 1
-                ? canInvoice && sendInvoice
-                  ? 'Create Shipment & Send Invoice'
-                  : 'Create Shipment'
+                ? isCreatingOrder
+                  ? 'Creating Shipment...'
+                  : canInvoice && sendInvoice
+                    ? 'Create Shipment & Send Invoice'
+                    : 'Create Shipment'
                 : 'Next'}
             </Button>
           </div>
@@ -1136,6 +1317,11 @@ export function NewShipmentPage(): ReactElement {
                 <p className="text-sm text-gray-500">
                   Your shipment has been saved successfully.
                 </p>
+                {createdTrackingNumber && (
+                  <p className="mt-1 text-xs font-semibold text-brand-600">
+                    Tracking Number: {createdTrackingNumber}
+                  </p>
+                )}
               </div>
             </div>
 

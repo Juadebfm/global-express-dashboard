@@ -1,11 +1,12 @@
 import type { ReactElement } from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSignIn, useUser } from '@clerk/clerk-react';
+import { useAuth as useClerkAuth, useSignIn, useUser } from '@clerk/clerk-react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
 import { Button, Card, Input } from '@/components/ui';
 import { ROUTES } from '@/constants';
+import { getMyProfileCompleteness, syncClerkAccount } from '@/services';
 
 type Step = 'sign-in' | 'forgot-email' | 'forgot-code' | 'forgot-reset' | 'forgot-success';
 
@@ -23,6 +24,7 @@ export function ExternalSignInPage(): ReactElement {
   const navigate = useNavigate();
   const { isLoaded, signIn, setActive } = useSignIn();
   const { isSignedIn } = useUser();
+  const { getToken } = useClerkAuth();
 
   const [step, setStep] = useState<Step>('sign-in');
 
@@ -39,13 +41,42 @@ export function ExternalSignInPage(): ReactElement {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [postAuthRedirect, setPostAuthRedirect] = useState<string>(ROUTES.COMPLETE_PROFILE);
 
-  // Already has an active Clerk session → send straight to dashboard
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      navigate(ROUTES.DASHBOARD, { replace: true });
+  const resolvePostAuthRedirect = useCallback(async (): Promise<string> => {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('Authentication token is missing.');
     }
-  }, [isLoaded, isSignedIn, navigate]);
+
+    await syncClerkAccount(token);
+    const completeness = await getMyProfileCompleteness(token);
+    return completeness.isComplete ? ROUTES.DASHBOARD : ROUTES.COMPLETE_PROFILE;
+  }, [getToken]);
+
+  // Already has an active Clerk session → route based on profile completeness
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+
+    let isMounted = true;
+    const redirect = async (): Promise<void> => {
+      try {
+        const redirectPath = await resolvePostAuthRedirect();
+        if (isMounted) {
+          navigate(redirectPath, { replace: true });
+        }
+      } catch {
+        if (isMounted) {
+          navigate(ROUTES.DASHBOARD, { replace: true });
+        }
+      }
+    };
+
+    void redirect();
+    return () => {
+      isMounted = false;
+    };
+  }, [isLoaded, isSignedIn, navigate, resolvePostAuthRedirect]);
 
   const clearErrors = () => {
     setErrors({});
@@ -80,10 +111,12 @@ export function ExternalSignInPage(): ReactElement {
 
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
+        const redirectPath = await resolvePostAuthRedirect();
+
         // Evict any operator session on this device
         localStorage.removeItem('globalxpress_token');
         localStorage.removeItem('globalxpress_refresh');
-        navigate(ROUTES.COMPLETE_PROFILE, { replace: true });
+        navigate(redirectPath, { replace: true });
       } else {
         setFormError('Sign in could not be completed. Please try again.');
       }
@@ -182,6 +215,8 @@ export function ExternalSignInPage(): ReactElement {
 
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
+        const redirectPath = await resolvePostAuthRedirect();
+        setPostAuthRedirect(redirectPath);
         setStep('forgot-success');
       } else {
         setFormError('Password reset could not be completed. Please try again.');
@@ -430,7 +465,7 @@ export function ExternalSignInPage(): ReactElement {
               type="button"
               className="w-full text-sm"
               size="lg"
-              onClick={() => navigate(ROUTES.COMPLETE_PROFILE, { replace: true })}
+              onClick={() => navigate(postAuthRedirect, { replace: true })}
             >
               Continue to dashboard
             </Button>

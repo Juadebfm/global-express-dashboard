@@ -4,6 +4,16 @@ export type {
   LoginCredentials,
   RegisterData,
   AuthResponse,
+  CustomerProfile,
+  ApiCustomerProfileResponse,
+  ApiProfileCompletenessPayload,
+  ApiProfileCompletenessResponse,
+  ProfileCompleteness,
+  ApiNotificationPreferencesResponse,
+  NotificationPreferenceChannels,
+  NotificationPreferences,
+  NotificationPreferencesUpdateInput,
+  AccountExportFile,
 } from './user.types';
 
 export type {
@@ -73,3 +83,12 @@ export type {
   ApiSupportTicketsResponse,
   ApiCreateSupportTicketResponse,
 } from './support.types';
+
+export type {
+  OrderDirection,
+  CreateOrderPayload,
+  ApiOrder,
+  ApiCreateOrderResponse,
+  OrderListItem,
+  OrdersListResult,
+} from './order.types';

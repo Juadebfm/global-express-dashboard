@@ -20,13 +20,13 @@ export function useShipmentsDashboard(): ShipmentsDashboardState {
   const enabled = isClerkSignedIn || !!user;
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['shipments', 'dashboard'],
+    queryKey: ['shipments', 'dashboard', isCustomer ? 'customer' : 'internal'],
     queryFn: async (): Promise<ShipmentsDashboardData> => {
       const token = isCustomer
         ? await getToken()
         : localStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
-      return getShipmentsDashboard(token);
+      return getShipmentsDashboard(token, isCustomer);
     },
     enabled,
   });
