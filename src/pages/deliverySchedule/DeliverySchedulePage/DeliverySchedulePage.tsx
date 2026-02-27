@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { AlertBanner } from '@/components/ui';
 import { useDashboardData, useSearch, useShipmentsDashboard } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
-import type { ShipmentRecord } from '@/types';
+
 import { getStatusStyle } from '@/lib/statusUtils';
 
 function toTimestamp(value: string): number {

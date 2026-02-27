@@ -35,7 +35,7 @@ const OPERATOR_TABS: Array<{ id: SettingsTab; label: string }> = [
 
 export function SettingsPage(): ReactElement {
   const { data, isLoading, error } = useDashboardData();
-  const { query: _query } = useSearch();
+  useSearch();
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
   const { signOut } = useClerk();
