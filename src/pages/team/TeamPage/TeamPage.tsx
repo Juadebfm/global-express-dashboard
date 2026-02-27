@@ -65,7 +65,7 @@ export function TeamPage(): ReactElement {
   const { data, isLoading, error } = useDashboardData();
   const { query, setQuery } = useSearch();
   const { user } = useAuth();
-  const { members: apiMembers, isLoading: teamLoading } = useTeam();
+  const { members: apiMembers, isLoading: teamLoading, approveMember: approveApi } = useTeam();
   const [activeTab, setActiveTab] = useState<TeamTab>('all');
   const [membersOverride, setMembersOverride] = useState<TeamMember[] | null>(null);
   const members = membersOverride ?? apiMembers;
@@ -241,6 +241,7 @@ export function TeamPage(): ReactElement {
   };
 
   const approveMember = (member: TeamMember): void => {
+    approveApi(member.id);
     updateMembers((prev) =>
       prev.map((item) =>
         item.id === member.id ? { ...item, approvalStatus: 'approved' } : item

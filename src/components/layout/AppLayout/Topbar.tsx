@@ -4,7 +4,7 @@ import { Bell, ChevronDown, Globe, LogOut, Menu, Moon, Search, Sun } from 'lucid
 import { useNavigate } from 'react-router-dom';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { DashboardUser } from '@/types';
-import { useAuth, useNotificationCount, useSearch, useTheme } from '@/hooks';
+import { useAuth, useNotificationCount, useInternalNotificationCount, useSearch, useTheme } from '@/hooks';
 import { ROUTES } from '@/constants';
 
 interface TopbarProps {
@@ -18,13 +18,17 @@ export function Topbar({
   user,
   onOpenMobile,
 }: TopbarProps): ReactElement {
-  const notificationsCount = useNotificationCount();
   const { query, setQuery } = useSearch();
   const { mode, toggle } = useTheme();
   const isDark = mode === 'dark';
 
   const navigate = useNavigate();
   const { user: authUser, logout } = useAuth();
+
+  const isOperator = !!authUser;
+  const customerCount = useNotificationCount();
+  const { data: internalCount } = useInternalNotificationCount(isOperator);
+  const notificationsCount = isOperator ? (internalCount ?? 0) : customerCount;
   const { isSignedIn: isClerkSignedIn, signOut } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
 

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppShell } from '@/pages/shared';
 import { useDashboardData, useSearch, useShipmentsDashboard } from '@/hooks';
-import type { ShipmentFilterTab, ShipmentRecord, ShipmentStatus } from '@/types';
+import type { ShipmentFilterTab, ShipmentRecord, StatusCategory } from '@/types';
 import { ShipmentsFilters, ShipmentsHeader, ShipmentsSummary, ShipmentsTable } from '../components';
 import { PageLoader } from '@/components/ui';
 import { ROUTES } from '@/constants';
@@ -17,17 +17,17 @@ const matchesQuery = (shipment: ShipmentRecord, query: string): boolean => {
     shipment.destination,
     shipment.status,
     shipment.mode,
-    shipment.priority,
   ]
     .join(' ')
     .toLowerCase();
   return haystack.includes(query.toLowerCase());
 };
 
-const statusLabels: Record<ShipmentStatus, string> = {
-  in_transit: 'In-transit',
-  delivered: 'Delivered',
+const statusLabels: Record<StatusCategory, string> = {
   pending: 'Pending',
+  active: 'Active',
+  completed: 'Completed',
+  exception: 'Exception',
 };
 
 const escapeCsv = (value: string | number): string => {
@@ -64,7 +64,7 @@ const buildCsv = (rows: ShipmentRecord[]): string => {
       shipment.destination,
       exportDate(shipment.departureDate),
       exportDate(shipment.etaDate),
-      statusLabels[shipment.status],
+      shipment.statusLabel || statusLabels[shipment.status],
       shipment.mode,
     ]
       .map(escapeCsv)
@@ -82,10 +82,6 @@ export function ShipmentsPage(): ReactElement {
   const { query, setQuery } = useSearch();
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<ShipmentFilterTab['value']>('all');
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
-  const [statusOverrides, setStatusOverrides] = useState<Record<string, ShipmentStatus>>(
-    {}
-  );
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -96,13 +92,8 @@ export function ShipmentsPage(): ReactElement {
 
   const effectiveShipments = useMemo(() => {
     if (!shipmentsData) return [];
-    return shipmentsData.shipments
-      .map((shipment) => {
-        const override = statusOverrides[shipment.id];
-        return override ? { ...shipment, status: override } : shipment;
-      })
-      .filter((shipment) => !deletedIds.has(shipment.id));
-  }, [shipmentsData, statusOverrides, deletedIds]);
+    return shipmentsData.shipments;
+  }, [shipmentsData]);
 
   const normalizedQuery = query.trim();
 
@@ -136,10 +127,11 @@ export function ShipmentsPage(): ReactElement {
         totalItems: 0,
         totalValue: 0,
         statusCounts: {
-          in_transit: 0,
-          delivered: 0,
           pending: 0,
-        } as Record<ShipmentStatus, number>,
+          active: 0,
+          completed: 0,
+          exception: 0,
+        } as Record<StatusCategory, number>,
       }
     );
 
@@ -165,22 +157,28 @@ export function ShipmentsPage(): ReactElement {
         total: totalShipments,
         breakdown: [
           {
-            id: 'in-transit',
-            label: 'In Transit',
-            value: totals.statusCounts.in_transit,
-            status: 'in_transit' as const,
-          },
-          {
-            id: 'delivered',
-            label: 'Delivered',
-            value: totals.statusCounts.delivered,
-            status: 'delivered' as const,
-          },
-          {
             id: 'pending',
-            label: 'Delayed/Pending',
+            label: 'Pending',
             value: totals.statusCounts.pending,
             status: 'pending' as const,
+          },
+          {
+            id: 'active',
+            label: 'Active',
+            value: totals.statusCounts.active,
+            status: 'active' as const,
+          },
+          {
+            id: 'completed',
+            label: 'Completed',
+            value: totals.statusCounts.completed,
+            status: 'completed' as const,
+          },
+          {
+            id: 'exception',
+            label: 'Exception',
+            value: totals.statusCounts.exception,
+            status: 'exception' as const,
           },
         ],
       },
@@ -250,65 +248,8 @@ export function ShipmentsPage(): ReactElement {
     setActionMessage(`Downloaded ${filteredShipments.length} rows.`);
   };
 
-  const handleDelete = (): void => {
-    if (!hasRows) {
-      setActionMessage('No shipments to delete.');
-      return;
-    }
-
-    const confirmDelete = window.confirm(
-      `Delete ${filteredShipments.length} shipment(s) from this view?`
-    );
-
-    if (!confirmDelete) return;
-
-    const filteredIds = new Set(filteredShipments.map((shipment) => shipment.id));
-    setDeletedIds((prev) => {
-      const next = new Set(prev);
-      filteredIds.forEach((id) => next.add(id));
-      return next;
-    });
-    setActionMessage(`Deleted ${filteredShipments.length} rows.`);
-  };
-
-  const handleEdit = (): void => {
-    if (!hasRows) {
-      setActionMessage('No shipments to edit.');
-      return;
-    }
-
-    const input = window.prompt(
-      'Set status for filtered shipments (in_transit, delivered, pending):',
-      'in_transit'
-    );
-
-    if (!input) return;
-
-    const normalized = input.trim().toLowerCase().replace(/[\s-]/g, '_');
-    const allowed: ShipmentStatus[] = ['in_transit', 'delivered', 'pending'];
-
-    if (!allowed.includes(normalized as ShipmentStatus)) {
-      setActionMessage('Invalid status.');
-      return;
-    }
-
-    const filteredIds = new Set(filteredShipments.map((shipment) => shipment.id));
-    setStatusOverrides((prev) => {
-      const next = { ...prev };
-      filteredIds.forEach((id) => {
-        next[id] = normalized as ShipmentStatus;
-      });
-      return next;
-    });
-    setActionMessage(`Updated ${filteredShipments.length} rows.`);
-  };
-
   const handleTrackShipment = (): void => {
     navigate(ROUTES.SHIPMENT_TRACK);
-  };
-
-  const handleNewShipment = (): void => {
-    navigate(ROUTES.SHIPMENT_NEW);
   };
 
   const handleSearchChange = (value: string): void => {
@@ -332,7 +273,6 @@ export function ShipmentsPage(): ReactElement {
             <ShipmentsHeader
               title={shipmentsData.header.title}
               subtitle={shipmentsData.header.subtitle}
-              onNewShipment={handleNewShipment}
               onTrackShipment={handleTrackShipment}
             />
 
@@ -349,8 +289,6 @@ export function ShipmentsPage(): ReactElement {
               onChange={setActiveFilter}
               onCopy={handleCopy}
               onDownload={handleDownload}
-              onDelete={handleDelete}
-              onEdit={handleEdit}
               actionMessage={actionMessage}
               actionsDisabled={!hasRows}
             />

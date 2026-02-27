@@ -2,25 +2,12 @@ import type {
   ShipmentsDashboardData,
   ShipmentRecord,
   ShipmentMode,
-  ShipmentPriority,
-  ShipmentStatus,
   ApiShipmentRecord,
   ApiShipmentsResponse,
 } from '@/types';
+import type { StatusCategory } from '@/types/status.types';
+import { getStatusCategory } from '@/lib/statusUtils';
 import { apiGet } from '@/lib/apiClient';
-
-function mapStatus(beStatus: ApiShipmentRecord['status']): ShipmentStatus {
-  switch (beStatus) {
-    case 'in_transit':
-    case 'picked_up':
-    case 'out_for_delivery':
-      return 'in_transit';
-    case 'delivered':
-      return 'delivered';
-    default:
-      return 'pending';
-  }
-}
 
 function mapApiShipment(s: ApiShipmentRecord): ShipmentRecord {
   return {
@@ -31,9 +18,10 @@ function mapApiShipment(s: ApiShipmentRecord): ShipmentRecord {
     destination: s.destination,
     departureDate: s.departureDate,
     etaDate: s.eta,
-    status: mapStatus(s.status),
+    status: getStatusCategory(s.statusV2),
+    statusV2: s.statusV2,
+    statusLabel: s.statusLabel,
     mode: s.shipmentType,
-    priority: s.priority,
     packageCount: s.numberOfPackages,
     weightKg: parseFloat(s.weight) || 0,
     valueUSD: s.declaredValue,
@@ -70,31 +58,7 @@ function asNumber(value: unknown, fallback = 0): number {
 function parseMode(value: unknown): ShipmentMode {
   const normalized = asString(value).trim().toLowerCase();
   if (normalized === 'air') return 'air';
-  if (normalized === 'ocean' || normalized === 'sea') return 'ocean';
-  return 'road';
-}
-
-function parsePriority(value: unknown): ShipmentPriority {
-  const normalized = asString(value).trim().toLowerCase();
-  if (normalized === 'express') return 'express';
-  if (normalized === 'economy') return 'economy';
-  return 'standard';
-}
-
-function parseStatus(value: unknown): ShipmentStatus {
-  const normalized = asString(value).trim().toLowerCase().replace(/[\s-]/g, '_');
-  if (normalized === 'delivered') return 'delivered';
-  if (
-    normalized === 'in_transit' ||
-    normalized === 'picked_up' ||
-    normalized === 'out_for_delivery' ||
-    normalized === 'processing' ||
-    normalized === 'shipped' ||
-    normalized === 'on_route'
-  ) {
-    return 'in_transit';
-  }
-  return 'pending';
+  return 'ocean';
 }
 
 function firstString(record: AnyRecord, keys: string[], fallback = ''): string {
@@ -181,6 +145,9 @@ function mapMyShipment(item: AnyRecord, index: number): ShipmentRecord {
     'to',
   ]);
 
+  const statusV2 = firstString(item, ['statusV2', 'status_v2']);
+  const statusLabel = firstString(item, ['statusLabel', 'status_label']);
+
   return {
     id,
     sku: tracking || id,
@@ -194,9 +161,10 @@ function mapMyShipment(item: AnyRecord, index: number): ShipmentRecord {
     destination: destination || 'Unknown',
     departureDate: firstString(item, ['departureDate', 'pickupDate', 'createdAt'], new Date().toISOString()),
     etaDate: firstString(item, ['eta', 'estimatedDelivery', 'deliveryDate', 'updatedAt'], new Date().toISOString()),
-    status: parseStatus(item.status),
+    status: statusV2 ? getStatusCategory(statusV2) : 'pending',
+    statusV2,
+    statusLabel,
     mode: parseMode(item.shipmentType ?? item.mode ?? item.transportMode),
-    priority: parsePriority(item.priority),
     packageCount: firstNumber(item, ['numberOfPackages', 'packageCount', 'quantity', 'totalItems'], 1),
     weightKg: firstNumber(item, ['weightKg', 'weight', 'totalWeight'], 0),
     valueUSD: firstNumber(item, ['declaredValue', 'value', 'amount', 'totalValue'], 0),
@@ -209,9 +177,16 @@ function buildShipmentsDashboardData(
   headerSubtitle: string
 ): ShipmentsDashboardData {
 
-  const inTransit = shipments.filter((s) => s.status === 'in_transit').length;
-  const delivered = shipments.filter((s) => s.status === 'delivered').length;
-  const pending = shipments.filter((s) => s.status === 'pending').length;
+  const counts: Record<StatusCategory, number> = {
+    pending: 0,
+    active: 0,
+    completed: 0,
+    exception: 0,
+  };
+
+  for (const s of shipments) {
+    counts[s.status] += 1;
+  }
 
   return {
     header: { title: headerTitle, subtitle: headerSubtitle },
@@ -220,9 +195,10 @@ function buildShipmentsDashboardData(
         title: 'Total Shipments',
         total: shipments.length,
         breakdown: [
-          { id: 'in-transit', label: 'In Transit', value: inTransit, status: 'in_transit' },
-          { id: 'delivered', label: 'Delivered', value: delivered, status: 'delivered' },
-          { id: 'pending', label: 'Pending', value: pending, status: 'pending' },
+          { id: 'pending', label: 'Pending', value: counts.pending, status: 'pending' },
+          { id: 'active', label: 'Active', value: counts.active, status: 'active' },
+          { id: 'completed', label: 'Completed', value: counts.completed, status: 'completed' },
+          { id: 'exception', label: 'Exception', value: counts.exception, status: 'exception' },
         ],
       },
       metrics: [
@@ -254,9 +230,10 @@ function buildShipmentsDashboardData(
     },
     filters: [
       { id: 'all', label: 'All', value: 'all' },
-      { id: 'in_transit', label: 'In Transit', value: 'in_transit' },
-      { id: 'delivered', label: 'Delivered', value: 'delivered' },
       { id: 'pending', label: 'Pending', value: 'pending' },
+      { id: 'active', label: 'Active', value: 'active' },
+      { id: 'completed', label: 'Completed', value: 'completed' },
+      { id: 'exception', label: 'Exception', value: 'exception' },
     ],
     table: { title: 'Shipment List' },
     shipments,

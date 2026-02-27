@@ -10,8 +10,6 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   SHIPMENTS: '/shipments',
   SHIPMENT_TRACK: '/shipments/track',
-  SHIPMENT_NEW: '/shipments/new',
-  SHIPMENT_INVOICE: '/shipments/invoice',
   CLIENTS: '/clients',
   USERS: '/users',
   ORDERS: '/orders',
@@ -19,8 +17,13 @@ export const ROUTES = {
   TEAM: '/team',
   SETTINGS: '/settings',
   SUPPORT: '/support',
+  SUPPORT_TICKET: '/support/:ticketId',
   ADMIN_DASHBOARD: '/admin/dashboard',
   DELIVERY_SCHEDULE: '/delivery-schedule',
+  PAYMENTS: '/payments',
+  PAYMENT_CALLBACK: '/payments/callback',
+  BULK_ORDERS: '/bulk-orders',
+  REPORTS: '/reports',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

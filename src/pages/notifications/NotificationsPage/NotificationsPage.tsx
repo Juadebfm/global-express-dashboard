@@ -44,12 +44,13 @@ function formatDateTime(iso: string): string {
 }
 
 function mapApiNotification(n: ApiNotification): NotificationItem {
-  const truncated = n.message.length > 80 ? n.message.slice(0, 80) + '…' : n.message;
+  const content = n.body ?? n.message;
+  const truncated = content.length > 80 ? content.slice(0, 80) + '…' : content;
   return {
     id: n.id,
     title: n.title,
-    subtitle: truncated,
-    description: n.message,
+    subtitle: n.subtitle ?? truncated,
+    description: content,
     time: formatTime(n.createdAt),
     dateTime: formatDateTime(n.createdAt),
     unread: !n.isRead,
@@ -65,6 +66,8 @@ export function NotificationsPage(): ReactElement {
     isLoading: notifLoading,
     markRead,
     toggleSave,
+    deleteOne,
+    deleteBulk,
     refresh,
   } = useNotifications();
 
@@ -143,6 +146,8 @@ export function NotificationsPage(): ReactElement {
 
   const handleDelete = (): void => {
     if (!hasSelection) return;
+    const ids = Array.from(selectedIds);
+    deleteBulk(ids);
     setDeletedIds((prev) => {
       const next = new Set(prev);
       selectedIds.forEach((id) => next.add(id));
@@ -380,6 +385,7 @@ export function NotificationsPage(): ReactElement {
               <button
                 type="button"
                 onClick={() => {
+                  deleteOne(activeNotification.id);
                   setDeletedIds((prev) => {
                     const next = new Set(prev);
                     next.add(activeNotification.id);

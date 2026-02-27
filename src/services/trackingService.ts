@@ -2,7 +2,7 @@ import { apiGet } from '@/lib/apiClient';
 
 export interface TrackingResult {
   trackingNumber: string;
-  status?: 'in_transit' | 'delivered' | 'pending';
+  status?: string;
   statusLabel: string;
   origin?: string;
   destination?: string;

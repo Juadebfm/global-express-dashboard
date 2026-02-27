@@ -69,3 +69,82 @@ export interface ApiCreateSupportTicketResponse {
   message: string;
   data: ApiSupportTicket;
 }
+
+// ── Chat message ────────────────────────────────────────────────
+
+export interface SupportMessage {
+  id: string;
+  ticketId: string;
+  senderId: string;
+  senderName: string;
+  senderRole: 'customer' | 'staff' | 'admin' | 'superadmin';
+  body: string;
+  isInternal: boolean;
+  createdAt: string;
+}
+
+export interface ApiSupportMessage {
+  id: string;
+  ticketId?: string;
+  ticket_id?: string;
+  senderId?: string;
+  sender_id?: string;
+  senderName?: string;
+  sender_name?: string;
+  senderRole?: string;
+  sender_role?: string;
+  body?: string;
+  message?: string;
+  content?: string;
+  isInternal?: boolean;
+  is_internal?: boolean;
+  createdAt: string;
+  created_at?: string;
+}
+
+// ── Ticket detail (ticket + messages) ───────────────────────────
+
+export interface ApiTicketDetailResponse {
+  success: boolean;
+  message?: string;
+  data: {
+    ticket: ApiSupportTicket;
+    messages: ApiSupportMessage[];
+  };
+}
+
+// ── Send message payload ────────────────────────────────────────
+
+export interface SendSupportMessagePayload {
+  body: string;
+  isInternal?: boolean;
+}
+
+// ── Update ticket status ────────────────────────────────────────
+
+export interface UpdateTicketStatusPayload {
+  status: SupportTicketStatus;
+}
+
+// ── Ticket list query params (for staff) ────────────────────────
+
+export interface SupportTicketListParams {
+  status?: SupportTicketStatus;
+  assignedTo?: string;
+  userId?: string;
+  page?: number;
+  limit?: number;
+}
+
+// ── WebSocket event payloads ────────────────────────────────────
+
+export interface SupportWsMessageEvent {
+  type: 'support:message';
+  ticketId: string;
+  message: ApiSupportMessage;
+}
+
+export interface SupportWsNewTicketEvent {
+  type: 'support:new_ticket';
+  ticket: ApiSupportTicket;
+}

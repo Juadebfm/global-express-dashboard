@@ -1,18 +1,16 @@
 import type { ReactElement } from 'react';
-import { Plus, Navigation } from 'lucide-react';
+import { Navigation } from 'lucide-react';
 import { Button } from '@/components/ui';
 
 interface ShipmentsHeaderProps {
   title: string;
   subtitle: string;
-  onNewShipment?: () => void;
   onTrackShipment?: () => void;
 }
 
 export function ShipmentsHeader({
   title,
   subtitle,
-  onNewShipment,
   onTrackShipment,
 }: ShipmentsHeaderProps): ReactElement {
   return (
@@ -23,16 +21,6 @@ export function ShipmentsHeader({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          leftIcon={<Plus className="h-4 w-4" />}
-          onClick={onNewShipment}
-          className="border-brand-500 text-brand-600 hover:bg-brand-50"
-        >
-          New Shipment
-        </Button>
         <Button
           type="button"
           size="sm"

@@ -1,12 +1,15 @@
-export type NotificationType = 'info' | 'warning' | 'alert' | 'success';
+export type NotificationType = string;
 
 export interface ApiNotification {
   id: string;
   type: NotificationType;
   title: string;
   message: string;
+  subtitle?: string;
+  body?: string;
   isRead: boolean;
   isSaved: boolean;
+  isBroadcast?: boolean;
   createdAt: string;
   updatedAt: string;
   metadata: Record<string, unknown>;

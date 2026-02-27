@@ -2,25 +2,21 @@ import type { ReactElement } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { AppShell, PageHeader } from '@/pages/shared';
-import { useAuth, useClients, useDashboardData, useSearch } from '@/hooks';
+import { useAuth, useAdminUsers, useUpdateUser, useDashboardData, useSearch } from '@/hooks';
 import { cn } from '@/utils';
 
-interface AppUser {
-  id: string;
-  fullName: string;
-  email: string;
-  status: 'active' | 'locked';
-  lastActive: string;
-}
-
-const statusLabelMap: Record<AppUser['status'], string> = {
-  active: 'Active',
-  locked: 'Locked',
+const roleLabelMap: Record<string, string> = {
+  superadmin: 'Super Admin',
+  admin: 'Admin',
+  staff: 'Staff',
+  user: 'Customer',
 };
 
-const statusStyleMap: Record<AppUser['status'], string> = {
-  active: 'bg-emerald-50 text-emerald-700',
-  locked: 'bg-rose-50 text-rose-700',
+const roleStyleMap: Record<string, string> = {
+  superadmin: 'bg-purple-50 text-purple-700',
+  admin: 'bg-blue-50 text-blue-700',
+  staff: 'bg-amber-50 text-amber-700',
+  user: 'bg-gray-100 text-gray-600',
 };
 
 const formatDate = (value: string): string => {
@@ -37,21 +33,9 @@ export function UsersPage(): ReactElement {
   const { data, isLoading, error } = useDashboardData();
   const { query, setQuery } = useSearch();
   const { user } = useAuth();
-  const { clients: apiClients, isLoading: clientsLoading } = useClients();
+  const { users: apiUsers, total, isLoading: usersLoading, error: usersError } = useAdminUsers();
+  const updateUserMutation = useUpdateUser();
 
-  const apiUsers = useMemo<AppUser[]>(
-    () =>
-      apiClients.map((c) => ({
-        id: c.id,
-        fullName: c.name,
-        email: c.email,
-        status: c.isActive ? 'active' : 'locked',
-        lastActive: c.lastActivity,
-      })),
-    [apiClients]
-  );
-  const [usersOverride, setUsersOverride] = useState<AppUser[] | null>(null);
-  const users = usersOverride ?? apiUsers;
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const role = user?.role;
@@ -64,44 +48,45 @@ export function UsersPage(): ReactElement {
   }, [actionMessage]);
 
   const filteredUsers = useMemo(() => {
-    if (!query.trim()) return users;
+    if (!query.trim()) return apiUsers;
     const needle = query.trim().toLowerCase();
-    return users.filter((item) =>
-      `${item.fullName} ${item.email} ${statusLabelMap[item.status]}`
+    return apiUsers.filter((u) =>
+      `${u.firstName} ${u.lastName} ${u.email} ${roleLabelMap[u.role] ?? u.role}`
         .toLowerCase()
         .includes(needle)
     );
-  }, [users, query]);
-
-  const handleRefresh = (userId: string): void => {
-    const target = users.find((item) => item.id === userId);
-    if (!target) return;
-    setActionMessage(`Refreshed ${target.fullName}'s account.`);
-  };
+  }, [apiUsers, query]);
 
   const handleUnlock = (userId: string): void => {
-    setUsersOverride((prev) =>
-      (prev ?? apiUsers).map((item) =>
-        item.id === userId ? { ...item, status: 'active' } : item
-      )
-    );
-    const target = users.find((item) => item.id === userId);
-    setActionMessage(
-      target ? `Unlocked ${target.fullName}'s account.` : 'Account unlocked.'
+    const target = apiUsers.find((u) => u.id === userId);
+    updateUserMutation.mutate(
+      { id: userId, payload: { isActive: true } },
+      {
+        onSuccess: () => {
+          setActionMessage(
+            target
+              ? `Unlocked ${target.firstName} ${target.lastName}'s account.`
+              : 'Account unlocked.'
+          );
+        },
+        onError: () => {
+          setActionMessage('Failed to unlock account.');
+        },
+      }
     );
   };
 
   return (
     <AppShell
       data={data}
-      isLoading={isLoading || clientsLoading}
+      isLoading={isLoading || usersLoading}
       error={error}
       loadingLabel="Loading users..."
     >
       <div className="space-y-6">
         <PageHeader
           title="Users"
-          subtitle="Support customer accounts, resolve issues, and refresh access."
+          subtitle={`Manage user accounts across the platform.${total > 0 ? ` ${total} total users.` : ''}`}
           actions={
             <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
               <div className="relative w-full sm:max-w-xs">
@@ -117,6 +102,12 @@ export function UsersPage(): ReactElement {
             </div>
           }
         />
+
+        {usersError && (
+          <div className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {usersError}
+          </div>
+        )}
 
         {!hasAccess ? (
           <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-10 text-center">
@@ -139,59 +130,72 @@ export function UsersPage(): ReactElement {
                   <tr>
                     <th className="px-6 py-4">Name</th>
                     <th className="px-6 py-4">Email</th>
+                    <th className="px-6 py-4">Role</th>
                     <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Last Active</th>
+                    <th className="px-6 py-4">Joined</th>
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
-                  {filteredUsers.map((appUser) => (
-                    <tr key={appUser.id} className="transition hover:bg-gray-50">
-                      <td className="px-6 py-4 font-semibold text-gray-800">
-                        {appUser.fullName}
-                      </td>
-                      <td className="px-6 py-4 text-gray-500">{appUser.email}</td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={cn(
-                            'inline-flex rounded-full px-3 py-1 text-xs font-semibold',
-                            statusStyleMap[appUser.status]
-                          )}
-                        >
-                          {statusLabelMap[appUser.status]}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-500">
-                        {formatDate(appUser.lastActive)}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex flex-wrap justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleRefresh(appUser.id)}
-                            className="rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-brand-500 hover:text-brand-600"
+                  {filteredUsers.map((appUser) => {
+                    const isActive = appUser.isActive !== false;
+                    return (
+                      <tr key={appUser.id} className="transition hover:bg-gray-50">
+                        <td className="px-6 py-4 font-semibold text-gray-800">
+                          {appUser.firstName} {appUser.lastName}
+                        </td>
+                        <td className="px-6 py-4 text-gray-500">{appUser.email}</td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={cn(
+                              'inline-flex rounded-full px-3 py-1 text-xs font-semibold',
+                              roleStyleMap[appUser.role] ?? 'bg-gray-100 text-gray-600'
+                            )}
                           >
-                            Refresh
-                          </button>
-                          {appUser.status === 'locked' && (
-                            <button
-                              type="button"
-                              onClick={() => handleUnlock(appUser.id)}
-                              className="rounded-full bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-600"
-                            >
-                              Unlock
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            {roleLabelMap[appUser.role] ?? appUser.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={cn(
+                              'inline-flex rounded-full px-3 py-1 text-xs font-semibold',
+                              isActive
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : 'bg-rose-50 text-rose-700'
+                            )}
+                          >
+                            {isActive ? 'Active' : 'Locked'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-gray-500">
+                          {formatDate(appUser.createdAt)}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex flex-wrap justify-end gap-2">
+                            {!isActive && (
+                              <button
+                                type="button"
+                                onClick={() => handleUnlock(appUser.id)}
+                                disabled={updateUserMutation.isPending}
+                                className={cn(
+                                  'rounded-full bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-600',
+                                  updateUserMutation.isPending && 'cursor-not-allowed opacity-60'
+                                )}
+                              >
+                                Unlock
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
 
               {filteredUsers.length === 0 && (
                 <div className="p-6 text-center text-sm text-gray-500">
-                  {users.length === 0 ? 'No users found.' : 'No users match your search.'}
+                  {apiUsers.length === 0 ? 'No users found.' : 'No users match your search.'}
                 </div>
               )}
             </div>

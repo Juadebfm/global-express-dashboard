@@ -1,38 +1,33 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
-import { Copy, Download, Trash2, Pencil, Plane, Ship, Truck } from 'lucide-react';
-import type { ShipmentRecord, ShipmentStatus } from '@/types';
+import { Copy, Download, Trash2, Pencil, Plane, Ship } from 'lucide-react';
+import type { ShipmentRecord, StatusCategory } from '@/types';
 import { cn } from '@/utils';
 
 interface DashboardShipmentListProps {
   shipments: ShipmentRecord[];
 }
 
-type TabValue = 'all' | ShipmentStatus;
+type TabValue = 'all' | StatusCategory;
 
 const TABS: { id: TabValue; label: string }[] = [
   { id: 'all', label: 'All Shipment' },
-  { id: 'in_transit', label: 'In-transit' },
   { id: 'pending', label: 'Pending' },
-  { id: 'delivered', label: 'Delivered' },
+  { id: 'active', label: 'Active' },
+  { id: 'completed', label: 'Completed' },
+  { id: 'exception', label: 'Exception' },
 ];
 
-const STATUS_STYLES: Record<ShipmentStatus, { dot: string; text: string; label: string }> = {
-  delivered: { dot: 'bg-green-500', text: 'text-green-700', label: 'Delivered' },
-  in_transit: { dot: 'bg-blue-500', text: 'text-blue-700', label: 'In-transit' },
+const STATUS_STYLES: Record<StatusCategory, { dot: string; text: string; label: string }> = {
   pending: { dot: 'bg-amber-500', text: 'text-amber-700', label: 'Pending' },
-};
-
-const PRIORITY_STYLES: Record<string, string> = {
-  standard: 'bg-blue-50 text-blue-700',
-  express: 'bg-rose-50 text-rose-700',
-  economy: 'bg-gray-100 text-gray-600',
+  active: { dot: 'bg-blue-500', text: 'text-blue-700', label: 'Active' },
+  completed: { dot: 'bg-green-500', text: 'text-green-700', label: 'Completed' },
+  exception: { dot: 'bg-rose-500', text: 'text-rose-700', label: 'Exception' },
 };
 
 const MODE_ICON: Record<string, ReactElement> = {
   air: <Plane className="h-4 w-4" />,
   ocean: <Ship className="h-4 w-4" />,
-  road: <Truck className="h-4 w-4" />,
 };
 
 export function DashboardShipmentList({ shipments }: DashboardShipmentListProps): ReactElement {
@@ -86,7 +81,7 @@ export function DashboardShipmentList({ shipments }: DashboardShipmentListProps)
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-gray-100">
-              {['SKU', 'Customer', 'Origin', 'Destination', 'Departure', 'ETA', 'Status', 'Type', 'Priority'].map(
+              {['SKU', 'Customer', 'Origin', 'Destination', 'Departure', 'ETA', 'Status', 'Type'].map(
                 (col) => (
                   <th key={col} className="px-4 py-3 text-xs font-medium text-gray-400 whitespace-nowrap">
                     {col}
@@ -98,14 +93,13 @@ export function DashboardShipmentList({ shipments }: DashboardShipmentListProps)
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-sm text-gray-400">
+                <td colSpan={8} className="px-4 py-8 text-center text-sm text-gray-400">
                   No shipments found.
                 </td>
               </tr>
             ) : (
               filtered.map((row) => {
                 const statusStyle = STATUS_STYLES[row.status];
-                const priorityStyle = PRIORITY_STYLES[row.priority] ?? 'bg-gray-100 text-gray-600';
                 return (
                   <tr key={row.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-700 whitespace-nowrap">{row.sku}</td>
@@ -117,18 +111,13 @@ export function DashboardShipmentList({ shipments }: DashboardShipmentListProps)
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span className="inline-flex items-center gap-1.5">
                         <span className={cn('h-1.5 w-1.5 rounded-full', statusStyle.dot)} />
-                        <span className={cn('font-medium', statusStyle.text)}>{statusStyle.label}</span>
+                        <span className={cn('font-medium', statusStyle.text)}>{row.statusLabel || statusStyle.label}</span>
                       </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span className="inline-flex items-center gap-1 text-gray-500">
-                        {MODE_ICON[row.mode] ?? <Truck className="h-4 w-4" />}
+                        {MODE_ICON[row.mode] ?? <Plane className="h-4 w-4" />}
                         <span className="capitalize">{row.mode}</span>
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium capitalize', priorityStyle)}>
-                        {row.priority}
                       </span>
                     </td>
                   </tr>

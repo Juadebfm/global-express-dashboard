@@ -8,18 +8,25 @@ export interface ApiClientOrder {
 
 export interface ApiClient {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
-  address: string;
-  country: string;
   isActive: boolean;
-  totalShipments: number;
-  totalSpent: number;
-  lastActivity: string;
+  totalOrders: number;
+  totalPayments: string;
+  lastOrderAt: string | null;
   createdAt: string;
   updatedAt: string;
   orders?: ApiClientOrder[];
+}
+
+export interface CreateClientPayload {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  businessName?: string;
+  phone?: string;
 }
 
 export interface ApiClientsResponse {

@@ -12,13 +12,12 @@ import {
   ExternalSignUpPage,
   ForgotPasswordPage,
   ForbiddenPage,
+  NotFoundPage,
   TrackPage,
   DashboardPage,
   AdminDashboardPage,
   ShipmentsPage,
   TrackShipmentPage,
-  NewShipmentPage,
-  InvoiceDraftPage,
   ClientsPage,
   UsersPage,
   OrdersPage,
@@ -27,6 +26,10 @@ import {
   SettingsPage,
   SupportPage,
   DeliverySchedulePage,
+  PaymentsPage,
+  PaymentCallbackPage,
+  BulkOrdersPage,
+  ReportsPage,
 } from '@/pages';
 import { ROUTES } from '@/constants';
 
@@ -109,22 +112,6 @@ function AppRoutes(): ReactElement {
           }
         />
         <Route
-          path={ROUTES.SHIPMENT_NEW}
-          element={
-            <ProtectedRoute>
-              <NewShipmentPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={ROUTES.SHIPMENT_INVOICE}
-          element={
-            <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
-              <InvoiceDraftPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path={ROUTES.CLIENTS}
           element={
             <ProtectedRoute>
@@ -181,6 +168,14 @@ function AppRoutes(): ReactElement {
           }
         />
         <Route
+          path={ROUTES.SUPPORT_TICKET}
+          element={
+            <ProtectedRoute>
+              <SupportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path={ROUTES.DELIVERY_SCHEDULE}
           element={
             <ProtectedRoute
@@ -192,8 +187,37 @@ function AppRoutes(): ReactElement {
           }
         />
 
+        <Route
+          path={ROUTES.PAYMENTS}
+          element={
+            <ProtectedRoute>
+              <PaymentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.PAYMENT_CALLBACK}
+          element={<PaymentCallbackPage />}
+        />
+        <Route
+          path={ROUTES.BULK_ORDERS}
+          element={
+            <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
+              <BulkOrdersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.REPORTS}
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+              <ReportsPage />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Fallback */}
-        <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>
   );

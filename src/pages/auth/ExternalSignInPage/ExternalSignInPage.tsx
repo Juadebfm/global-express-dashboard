@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth as useClerkAuth, useSignIn, useUser } from '@clerk/clerk-react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
@@ -24,7 +24,7 @@ export function ExternalSignInPage(): ReactElement {
   const navigate = useNavigate();
   const { isLoaded, signIn, setActive } = useSignIn();
   const { isSignedIn } = useUser();
-  const { getToken } = useClerkAuth();
+  const { getToken, signOut } = useClerkAuth();
 
   const [step, setStep] = useState<Step>('sign-in');
 
@@ -43,6 +43,10 @@ export function ExternalSignInPage(): ReactElement {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [postAuthRedirect, setPostAuthRedirect] = useState<string>(ROUTES.COMPLETE_PROFILE);
 
+  // Tracks whether the current session was created by the user submitting the form.
+  // If true, the stale-session cleanup effect must not sign them out.
+  const didUserSignInRef = useRef(false);
+
   const resolvePostAuthRedirect = useCallback(async (): Promise<string> => {
     const token = await getToken();
     if (!token) {
@@ -54,29 +58,13 @@ export function ExternalSignInPage(): ReactElement {
     return completeness.isComplete ? ROUTES.DASHBOARD : ROUTES.COMPLETE_PROFILE;
   }, [getToken]);
 
-  // Already has an active Clerk session → route based on profile completeness
+  // If user lands on /sign-in with a stale Clerk session, sign them out so they
+  // must authenticate fresh. Skip if the session was just created by the form submission.
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
-
-    let isMounted = true;
-    const redirect = async (): Promise<void> => {
-      try {
-        const redirectPath = await resolvePostAuthRedirect();
-        if (isMounted) {
-          navigate(redirectPath, { replace: true });
-        }
-      } catch {
-        if (isMounted) {
-          navigate(ROUTES.DASHBOARD, { replace: true });
-        }
-      }
-    };
-
-    void redirect();
-    return () => {
-      isMounted = false;
-    };
-  }, [isLoaded, isSignedIn, navigate, resolvePostAuthRedirect]);
+    if (didUserSignInRef.current) return;
+    void signOut({ redirectUrl: ROUTES.SIGN_IN });
+  }, [isLoaded, isSignedIn, signOut]);
 
   const clearErrors = () => {
     setErrors({});
@@ -103,6 +91,7 @@ export function ExternalSignInPage(): ReactElement {
     }
 
     setIsSubmitting(true);
+    didUserSignInRef.current = true;
     try {
       const result = await signIn.create({
         identifier: email.trim(),
@@ -210,6 +199,7 @@ export function ExternalSignInPage(): ReactElement {
     if (!isLoaded || !signIn) return;
 
     setIsSubmitting(true);
+    didUserSignInRef.current = true;
     try {
       const result = await signIn.resetPassword({ password: newPassword });
 

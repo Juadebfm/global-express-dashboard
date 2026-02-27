@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { Truck, Ship, Plane } from 'lucide-react';
+import { Ship, Plane } from 'lucide-react';
 import type { ActiveDelivery } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants';
@@ -23,7 +23,6 @@ const statusStyles: Record<
 };
 
 const modeIcons: Record<ActiveDelivery['mode'], ReactElement> = {
-  truck: <Truck className="h-4 w-4" />,
   ship: <Ship className="h-4 w-4" />,
   air: <Plane className="h-4 w-4" />,
 };

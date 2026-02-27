@@ -1,9 +1,8 @@
 import type {
   ShipmentsDashboardData,
   ShipmentMode,
-  ShipmentPriority,
   ShipmentRecord,
-  ShipmentStatus,
+  StatusCategory,
 } from '@/types';
 
 export interface RawShipmentPackage {
@@ -20,7 +19,6 @@ export interface RawShipment {
   eta: string;
   status: string;
   type: string;
-  priority: string;
   packages: RawShipmentPackage[];
 }
 
@@ -34,7 +32,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Jul. 17, 2025',
     status: 'Delivered',
     type: 'Air',
-    priority: 'Express',
+
     packages: [{ trackingNumber: 'GBX-2025-0715-K8M', weight: '25kg' }],
   },
   {
@@ -46,7 +44,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Sep. 21, 2025',
     status: 'Delivered',
     type: 'Ocean',
-    priority: 'Economy',
+
     packages: [
       { trackingNumber: 'GBX-2025-0822-N3P', weight: '1200kg' },
       { trackingNumber: 'GBX-2025-0822-N3Q', weight: '980kg' },
@@ -61,7 +59,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Oct. 03, 2025',
     status: 'Delivered',
     type: 'Ocean',
-    priority: 'Standard',
+
     packages: [
       { trackingNumber: 'GBX-2025-0903-C7R', weight: '450kg' },
       { trackingNumber: 'GBX-2025-0903-C7S', weight: '520kg' },
@@ -77,7 +75,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Sep. 20, 2025',
     status: 'Delivered',
     type: 'Air',
-    priority: 'Express',
+
     packages: [{ trackingNumber: 'GBX-2025-0918-T2V', weight: '15kg' }],
   },
   {
@@ -89,7 +87,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Oct. 07, 2025',
     status: 'Delivered',
     type: 'Air',
-    priority: 'Standard',
+
     packages: [
       { trackingNumber: 'GBX-2025-1005-U4W', weight: '35kg' },
       { trackingNumber: 'GBX-2025-1005-U4X', weight: '28kg' },
@@ -104,7 +102,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Nov. 11, 2025',
     status: 'Delivered',
     type: 'Ocean',
-    priority: 'Standard',
+
     packages: [{ trackingNumber: 'GBX-2025-1012-K6Y', weight: '850kg' }],
   },
   {
@@ -116,7 +114,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Oct. 30, 2025',
     status: 'Delivered',
     type: 'Air',
-    priority: 'Express',
+
     packages: [
       { trackingNumber: 'GBX-2025-1028-N8Z', weight: '12kg' },
       { trackingNumber: 'GBX-2025-1028-N9A', weight: '8kg' },
@@ -131,8 +129,8 @@ export const rawShipments: RawShipment[] = [
     departure: 'Nov. 04, 2025',
     eta: 'Nov. 11, 2025',
     status: 'Delivered',
-    type: 'Road',
-    priority: 'Economy',
+    type: 'Ocean',
+
     packages: [{ trackingNumber: 'GBX-2025-1104-C1D', weight: '125kg' }],
   },
   {
@@ -144,7 +142,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Dec. 19, 2025',
     status: 'Delivered',
     type: 'Ocean',
-    priority: 'Standard',
+
     packages: [
       { trackingNumber: 'GBX-2025-1119-T3E', weight: '620kg' },
       { trackingNumber: 'GBX-2025-1119-T3F', weight: '580kg' },
@@ -159,7 +157,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Dec. 27, 2025',
     status: 'Delivered',
     type: 'Ocean',
-    priority: 'Standard',
+
     packages: [
       { trackingNumber: 'GBX-2025-1127-U5G', weight: '1450kg' },
       { trackingNumber: 'GBX-2025-1127-U5H', weight: '1380kg' },
@@ -175,7 +173,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Jan. 02, 2026',
     status: 'Delivered',
     type: 'Ocean',
-    priority: 'Economy',
+
     packages: [
       { trackingNumber: 'GBX-2025-1203-K7J', weight: '2100kg' },
       { trackingNumber: 'GBX-2025-1203-K7K', weight: '2050kg' },
@@ -190,7 +188,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Dec. 17, 2025',
     status: 'Delivered',
     type: 'Air',
-    priority: 'Standard',
+
     packages: [{ trackingNumber: 'GBX-2025-1215-N9L', weight: '42kg' }],
   },
   {
@@ -202,7 +200,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Jan. 21, 2026',
     status: 'In transit',
     type: 'Ocean',
-    priority: 'Standard',
+
     packages: [
       { trackingNumber: 'GBX-2025-1222-C2M', weight: '1800kg' },
       { trackingNumber: 'GBX-2025-1222-C2N', weight: '1750kg' },
@@ -219,7 +217,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Jan. 10, 2026',
     status: 'Delivered',
     type: 'Air',
-    priority: 'Express',
+
     packages: [
       { trackingNumber: 'GBX-2026-0108-T4Q', weight: '18kg' },
       { trackingNumber: 'GBX-2026-0108-T4R', weight: '22kg' },
@@ -234,7 +232,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Jan. 16, 2026',
     status: 'Delivered',
     type: 'Air',
-    priority: 'Express',
+
     packages: [{ trackingNumber: 'GBX-2026-0114-U6S', weight: '95kg' }],
   },
   {
@@ -245,8 +243,8 @@ export const rawShipments: RawShipment[] = [
     departure: 'Jan. 21, 2026',
     eta: 'Jan. 28, 2026',
     status: 'In transit',
-    type: 'Road',
-    priority: 'Standard',
+    type: 'Ocean',
+
     packages: [
       { trackingNumber: 'GBX-2026-0121-K8T', weight: '240kg' },
       { trackingNumber: 'GBX-2026-0121-K8U', weight: '260kg' },
@@ -261,7 +259,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Jan. 29, 2026',
     status: 'In transit',
     type: 'Air',
-    priority: 'Standard',
+
     packages: [{ trackingNumber: 'GBX-2026-0127-N1V', weight: '5kg' }],
   },
   {
@@ -273,7 +271,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Mar. 05, 2026',
     status: 'In transit',
     type: 'Ocean',
-    priority: 'Economy',
+
     packages: [
       { trackingNumber: 'GBX-2026-0203-C3W', weight: '780kg' },
       { trackingNumber: 'GBX-2026-0203-C3X', weight: '810kg' },
@@ -288,8 +286,8 @@ export const rawShipments: RawShipment[] = [
     departure: 'Feb. 05, 2026',
     eta: 'Feb. 12, 2026',
     status: 'Pending',
-    type: 'Road',
-    priority: 'Standard',
+    type: 'Ocean',
+
     packages: [{ trackingNumber: 'GBX-2026-0205-T5Z', weight: '68kg' }],
   },
   {
@@ -301,7 +299,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Feb. 09, 2026',
     status: 'Pending',
     type: 'Air',
-    priority: 'Express',
+
     packages: [
       { trackingNumber: 'GBX-2026-0207-U7A', weight: '32kg' },
       { trackingNumber: 'GBX-2026-0207-U7B', weight: '28kg' },
@@ -318,7 +316,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Mar. 12, 2026',
     status: 'Pending',
     type: 'Ocean',
-    priority: 'Standard',
+
     packages: [
       { trackingNumber: 'GBX-2026-0210-K9E', weight: '1950kg' },
       { trackingNumber: 'GBX-2026-0210-K9F', weight: '2020kg' },
@@ -333,7 +331,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Feb. 14, 2026',
     status: 'Pending',
     type: 'Air',
-    priority: 'Express',
+
     packages: [{ trackingNumber: 'GBX-2026-0212-N2G', weight: '8kg' }],
   },
   {
@@ -344,8 +342,8 @@ export const rawShipments: RawShipment[] = [
     departure: 'Feb. 15, 2026',
     eta: 'Feb. 22, 2026',
     status: 'Pending',
-    type: 'Road',
-    priority: 'Economy',
+    type: 'Ocean',
+
     packages: [
       { trackingNumber: 'GBX-2026-0215-C4H', weight: '145kg' },
       { trackingNumber: 'GBX-2026-0215-C4I', weight: '152kg' },
@@ -361,7 +359,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Mar. 19, 2026',
     status: 'Pending',
     type: 'Ocean',
-    priority: 'Standard',
+
     packages: [
       { trackingNumber: 'GBX-2026-0217-T6K', weight: '420kg' },
       { trackingNumber: 'GBX-2026-0217-T6L', weight: '385kg' },
@@ -376,7 +374,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Feb. 21, 2026',
     status: 'Pending',
     type: 'Air',
-    priority: 'Standard',
+
     packages: [{ trackingNumber: 'GBX-2026-0219-U8M', weight: '58kg' }],
   },
   {
@@ -387,8 +385,8 @@ export const rawShipments: RawShipment[] = [
     departure: 'Aug. 05, 2025',
     eta: 'Aug. 12, 2025',
     status: 'Delivered',
-    type: 'Road',
-    priority: 'Standard',
+    type: 'Ocean',
+
     packages: [
       { trackingNumber: 'GBX-2025-0805-K1N', weight: '520kg' },
       { trackingNumber: 'GBX-2025-0805-K1O', weight: '495kg' },
@@ -404,7 +402,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Sep. 20, 2025',
     status: 'Delivered',
     type: 'Air',
-    priority: 'Express',
+
     packages: [
       { trackingNumber: 'GBX-2025-0918-N3Q', weight: '12kg' },
       { trackingNumber: 'GBX-2025-0918-N3R', weight: '9kg' },
@@ -418,8 +416,8 @@ export const rawShipments: RawShipment[] = [
     departure: 'Oct. 02, 2025',
     eta: 'Oct. 09, 2025',
     status: 'Delivered',
-    type: 'Road',
-    priority: 'Standard',
+    type: 'Ocean',
+
     packages: [{ trackingNumber: 'GBX-2025-1002-C5S', weight: '85kg' }],
   },
   {
@@ -431,7 +429,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Dec. 15, 2025',
     status: 'Delivered',
     type: 'Ocean',
-    priority: 'Economy',
+
     packages: [
       { trackingNumber: 'GBX-2025-1115-T7T', weight: '680kg' },
       { trackingNumber: 'GBX-2025-1115-T7U', weight: '720kg' },
@@ -448,7 +446,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Dec. 10, 2025',
     status: 'Delivered',
     type: 'Air',
-    priority: 'Express',
+
     packages: [{ trackingNumber: 'GBX-2025-1208-U9X', weight: '125kg' }],
   },
   {
@@ -460,7 +458,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Feb. 02, 2026',
     status: 'Delivered',
     type: 'Ocean',
-    priority: 'Standard',
+
     packages: [
       { trackingNumber: 'GBX-2026-0103-K2Y', weight: '340kg' },
       { trackingNumber: 'GBX-2026-0103-K2Z', weight: '365kg' },
@@ -475,7 +473,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Jan. 18, 2026',
     status: 'Delivered',
     type: 'Air',
-    priority: 'Standard',
+
     packages: [
       { trackingNumber: 'GBX-2026-0116-N4A', weight: '15kg' },
       { trackingNumber: 'GBX-2026-0116-N4B', weight: '18kg' },
@@ -491,7 +489,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Feb. 24, 2026',
     status: 'In transit',
     type: 'Ocean',
-    priority: 'Economy',
+
     packages: [
       { trackingNumber: 'GBX-2026-0125-C6D', weight: '950kg' },
       { trackingNumber: 'GBX-2026-0125-C6E', weight: '920kg' },
@@ -506,8 +504,8 @@ export const rawShipments: RawShipment[] = [
     departure: 'Jan. 30, 2026',
     eta: 'Feb. 06, 2026',
     status: 'In transit',
-    type: 'Road',
-    priority: 'Standard',
+    type: 'Ocean',
+
     packages: [{ trackingNumber: 'GBX-2026-0130-T8G', weight: '210kg' }],
   },
   {
@@ -519,7 +517,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Mar. 04, 2026',
     status: 'In transit',
     type: 'Ocean',
-    priority: 'Standard',
+
     packages: [
       { trackingNumber: 'GBX-2026-0202-U1H', weight: '1250kg' },
       { trackingNumber: 'GBX-2026-0202-U1I', weight: '1180kg' },
@@ -537,7 +535,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Feb. 08, 2026',
     status: 'In transit',
     type: 'Air',
-    priority: 'Express',
+
     packages: [
       { trackingNumber: 'GBX-2026-0206-K3M', weight: '45kg' },
       { trackingNumber: 'GBX-2026-0206-K3N', weight: '52kg' },
@@ -551,8 +549,8 @@ export const rawShipments: RawShipment[] = [
     departure: 'Feb. 09, 2026',
     eta: 'Feb. 16, 2026',
     status: 'Pending',
-    type: 'Road',
-    priority: 'Economy',
+    type: 'Ocean',
+
     packages: [{ trackingNumber: 'GBX-2026-0209-N5O', weight: '22kg' }],
   },
   {
@@ -563,8 +561,8 @@ export const rawShipments: RawShipment[] = [
     departure: 'Feb. 11, 2026',
     eta: 'Feb. 18, 2026',
     status: 'Pending',
-    type: 'Road',
-    priority: 'Standard',
+    type: 'Ocean',
+
     packages: [
       { trackingNumber: 'GBX-2026-0211-C7P', weight: '320kg' },
       { trackingNumber: 'GBX-2026-0211-C7Q', weight: '295kg' },
@@ -580,7 +578,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Mar. 15, 2026',
     status: 'Pending',
     type: 'Ocean',
-    priority: 'Economy',
+
     packages: [
       { trackingNumber: 'GBX-2026-0213-T9S', weight: '580kg' },
       { trackingNumber: 'GBX-2026-0213-T9T', weight: '615kg' },
@@ -595,7 +593,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Feb. 18, 2026',
     status: 'Pending',
     type: 'Air',
-    priority: 'Express',
+
     packages: [
       { trackingNumber: 'GBX-2026-0216-U2U', weight: '38kg' },
       { trackingNumber: 'GBX-2026-0216-U2V', weight: '42kg' },
@@ -611,7 +609,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Aug. 27, 2025',
     status: 'Delivered',
     type: 'Ocean',
-    priority: 'Standard',
+
     packages: [
       { trackingNumber: 'GBX-2025-0728-K4X', weight: '2250kg' },
       { trackingNumber: 'GBX-2025-0728-K4Y', weight: '2180kg' },
@@ -627,7 +625,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Aug. 17, 2025',
     status: 'Delivered',
     type: 'Air',
-    priority: 'Standard',
+
     packages: [{ trackingNumber: 'GBX-2025-0815-N6A', weight: '18kg' }],
   },
   {
@@ -639,7 +637,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Oct. 25, 2025',
     status: 'Delivered',
     type: 'Ocean',
-    priority: 'Standard',
+
     packages: [
       { trackingNumber: 'GBX-2025-0925-C8B', weight: '1850kg' },
       { trackingNumber: 'GBX-2025-0925-C8C', weight: '1920kg' },
@@ -655,8 +653,8 @@ export const rawShipments: RawShipment[] = [
     departure: 'Oct. 10, 2025',
     eta: 'Oct. 17, 2025',
     status: 'Delivered',
-    type: 'Road',
-    priority: 'Economy',
+    type: 'Ocean',
+
     packages: [
       { trackingNumber: 'GBX-2025-1010-T1F', weight: '185kg' },
       { trackingNumber: 'GBX-2025-1010-T1G', weight: '192kg' },
@@ -671,7 +669,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Nov. 24, 2025',
     status: 'Delivered',
     type: 'Air',
-    priority: 'Express',
+
     packages: [
       { trackingNumber: 'GBX-2025-1122-U3H', weight: '8kg' },
       { trackingNumber: 'GBX-2025-1122-U3I', weight: '11kg' },
@@ -686,8 +684,8 @@ export const rawShipments: RawShipment[] = [
     departure: 'Dec. 30, 2025',
     eta: 'Jan. 06, 2026',
     status: 'Delivered',
-    type: 'Road',
-    priority: 'Standard',
+    type: 'Ocean',
+
     packages: [{ trackingNumber: 'GBX-2025-1230-K5K', weight: '425kg' }],
   },
   {
@@ -699,7 +697,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Jan. 21, 2026',
     status: 'Delivered',
     type: 'Air',
-    priority: 'Standard',
+
     packages: [
       { trackingNumber: 'GBX-2026-0119-N7L', weight: '24kg' },
       { trackingNumber: 'GBX-2026-0119-N7M', weight: '28kg' },
@@ -714,7 +712,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Feb. 27, 2026',
     status: 'In transit',
     type: 'Ocean',
-    priority: 'Standard',
+
     packages: [
       { trackingNumber: 'GBX-2026-0128-C9N', weight: '2100kg' },
       { trackingNumber: 'GBX-2026-0128-C9O', weight: '2050kg' },
@@ -730,7 +728,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Feb. 06, 2026',
     status: 'In transit',
     type: 'Air',
-    priority: 'Express',
+
     packages: [
       { trackingNumber: 'GBX-2026-0204-T2Q', weight: '65kg' },
       { trackingNumber: 'GBX-2026-0204-T2R', weight: '72kg' },
@@ -747,7 +745,7 @@ export const rawShipments: RawShipment[] = [
     eta: 'Mar. 10, 2026',
     status: 'Pending',
     type: 'Ocean',
-    priority: 'Economy',
+
     packages: [
       { trackingNumber: 'GBX-2026-0208-U4U', weight: '1420kg' },
       { trackingNumber: 'GBX-2026-0208-U4V', weight: '1385kg' },
@@ -765,22 +763,15 @@ const locationMap: Record<string, string[]> = {
   Taiwan: ['Taipei, TW'],
 };
 
-const statusMap: Record<string, ShipmentStatus> = {
-  Delivered: 'delivered',
-  'In transit': 'in_transit',
+const statusMap: Record<string, StatusCategory> = {
+  Delivered: 'completed',
+  'In transit': 'active',
   Pending: 'pending',
 };
 
 const modeMap: Record<string, ShipmentMode> = {
   Air: 'air',
   Ocean: 'ocean',
-  Road: 'road',
-};
-
-const priorityMap: Record<string, ShipmentPriority> = {
-  Express: 'express',
-  Standard: 'standard',
-  Economy: 'economy',
 };
 
 const monthIndex: Record<string, number> = {
@@ -828,25 +819,19 @@ const shipmentWeight = (shipment: RawShipment): number =>
 const modeRatePerKg: Record<string, number> = {
   Air: 2.6,
   Ocean: 1.8,
-  Road: 2.2,
-};
-
-const priorityMultiplier: Record<string, number> = {
-  Express: 1.15,
-  Standard: 1,
-  Economy: 0.9,
 };
 
 const shipmentValue = (shipment: RawShipment): number => {
   const weight = shipmentWeight(shipment);
   const rate = modeRatePerKg[shipment.type] ?? 2;
-  const multiplier = priorityMultiplier[shipment.priority] ?? 1;
-  return Math.round(weight * rate * multiplier);
+  return Math.round(weight * rate);
 };
 
 const shipments: ShipmentRecord[] = rawShipments.map((shipment, index) => {
   const weightKg = shipmentWeight(shipment);
   const valueUSD = shipmentValue(shipment);
+
+  const status = statusMap[shipment.status] ?? 'pending';
 
   return {
     id: `ship-${index + 1}`,
@@ -856,9 +841,10 @@ const shipments: ShipmentRecord[] = rawShipments.map((shipment, index) => {
     destination: normalizeLocation(shipment.destination, index + 1),
     departureDate: parseDate(shipment.departure),
     etaDate: parseDate(shipment.eta),
-    status: statusMap[shipment.status] ?? 'pending',
+    status,
+    statusV2: '',
+    statusLabel: shipment.status,
     mode: modeMap[shipment.type] ?? 'air',
-    priority: priorityMap[shipment.priority] ?? 'standard',
     packageCount: shipment.packages.length,
     weightKg,
     valueUSD,
@@ -871,7 +857,7 @@ const statusCounts = shipments.reduce(
     acc[shipment.status] += 1;
     return acc;
   },
-  { in_transit: 0, delivered: 0, pending: 0 } as Record<ShipmentStatus, number>
+  { pending: 0, active: 0, completed: 0, exception: 0 } as Record<StatusCategory, number>
 );
 
 const totalItems = rawShipments.reduce(
@@ -914,22 +900,28 @@ export const mockShipmentsDashboard: ShipmentsDashboardData = {
       total: totalShipments,
       breakdown: [
         {
-          id: 'in-transit',
-          label: 'In Transit',
-          value: statusCounts.in_transit,
-          status: 'in_transit',
-        },
-        {
-          id: 'delivered',
-          label: 'Delivered',
-          value: statusCounts.delivered,
-          status: 'delivered',
-        },
-        {
           id: 'pending',
-          label: 'Delayed/Pending',
+          label: 'Pending',
           value: statusCounts.pending,
           status: 'pending',
+        },
+        {
+          id: 'active',
+          label: 'Active',
+          value: statusCounts.active,
+          status: 'active',
+        },
+        {
+          id: 'completed',
+          label: 'Completed',
+          value: statusCounts.completed,
+          status: 'completed',
+        },
+        {
+          id: 'exception',
+          label: 'Exception',
+          value: statusCounts.exception,
+          status: 'exception',
         },
       ],
     },
@@ -962,9 +954,10 @@ export const mockShipmentsDashboard: ShipmentsDashboardData = {
   },
   filters: [
     { id: 'all', label: 'All Shipment', value: 'all' },
-    { id: 'in-transit', label: 'In-transit', value: 'in_transit' },
     { id: 'pending', label: 'Pending', value: 'pending' },
-    { id: 'delivered', label: 'Delivered', value: 'delivered' },
+    { id: 'active', label: 'Active', value: 'active' },
+    { id: 'completed', label: 'Completed', value: 'completed' },
+    { id: 'exception', label: 'Exception', value: 'exception' },
   ],
   table: {
     title: 'Shipment List',

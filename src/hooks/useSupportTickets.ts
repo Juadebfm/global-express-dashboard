@@ -3,7 +3,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { FEEDBACK_MESSAGES } from '@/constants';
 import { getDisplayErrorMessage } from '@/lib/feedback';
 import { useFeedbackStore } from '@/store';
-import type { CreateSupportTicketPayload, SupportTicket } from '@/types';
+import type { CreateSupportTicketPayload, SupportTicket, SupportTicketListParams } from '@/types';
 import { createSupportTicket, getSupportTickets } from '@/services';
 import { useAuth } from './useAuth';
 import { useAuthToken } from './useAuthToken';
@@ -18,7 +18,7 @@ interface UseSupportTicketsState {
   refresh: () => void;
 }
 
-export function useSupportTickets(): UseSupportTicketsState {
+export function useSupportTickets(params?: SupportTicketListParams): UseSupportTicketsState {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn } = useClerkAuth();
@@ -28,11 +28,11 @@ export function useSupportTickets(): UseSupportTicketsState {
   const enabled = isClerkSignedIn || !!user;
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['support', 'tickets', 'me'],
+    queryKey: ['support', 'tickets', params ?? 'me'],
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
-      return getSupportTickets(token);
+      return getSupportTickets(token, params);
     },
     enabled,
   });
