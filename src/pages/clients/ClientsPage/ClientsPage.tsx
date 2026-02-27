@@ -29,7 +29,8 @@ const statusStyles: Record<ClientStatus, string> = {
 const nairaFormatter = new Intl.NumberFormat('en-NG');
 const formatNaira = (amount: number): string => `₦${nairaFormatter.format(amount)}`;
 
-const formatDate = (iso: string): string => {
+const formatDate = (iso: string | null): string => {
+  if (!iso) return '—';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleDateString('en-US', {
@@ -38,6 +39,9 @@ const formatDate = (iso: string): string => {
     year: 'numeric',
   });
 };
+
+const getClientName = (client: ApiClient): string =>
+  `${client.firstName ?? ''} ${client.lastName ?? ''}`.trim() || client.email;
 
 const buildInitials = (name: string): string => {
   const parts = name.trim().split(' ');
@@ -50,7 +54,7 @@ export function ClientsPage(): ReactElement {
   const { data, isLoading, error } = useDashboardData();
   const { query, setQuery } = useSearch();
   const { user } = useAuth();
-  const { clients: apiClients, isLoading: clientsLoading } = useClients(true);
+  const { clients: apiClients, isLoading: clientsLoading } = useClients();
 
   const [activeClient, setActiveClient] = useState<ApiClient | null>(null);
   const [statusFilter, setStatusFilter] = useState<ClientStatus | 'all'>('all');
@@ -100,7 +104,7 @@ export function ClientsPage(): ReactElement {
     return apiClients.filter((client) => {
       const matchesSearch =
         !needle ||
-        `${client.name} ${client.email} ${client.phone} ${client.address} ${client.country}`
+        `${getClientName(client)} ${client.email} ${client.phone}`
           .toLowerCase()
           .includes(needle);
       const clientStatus: ClientStatus = client.isActive ? 'active' : 'inactive';
@@ -112,7 +116,7 @@ export function ClientsPage(): ReactElement {
   const summaryStats = useMemo(() => {
     const totalClients = apiClients.length;
     const activeClients = apiClients.filter((c) => c.isActive).length;
-    const totalRevenue = apiClients.reduce((acc, c) => acc + c.totalSpent, 0);
+    const totalRevenue = apiClients.reduce((acc, c) => acc + (parseFloat(c.totalPayments) || 0), 0);
     return { totalClients, activeClients, totalRevenue };
   }, [apiClients]);
 
@@ -167,12 +171,12 @@ export function ClientsPage(): ReactElement {
               <p className="text-sm font-semibold text-gray-700">Customer Information</p>
               <div className="mt-4 flex flex-wrap items-center gap-6">
                 <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-brand-50 text-2xl font-semibold text-brand-600">
-                  {buildInitials(activeClient.name)}
+                  {buildInitials(getClientName(activeClient))}
                 </div>
                 <div className="grid gap-3 text-sm text-gray-500 sm:grid-cols-2">
                   <div>
                     <p className="text-xs font-semibold uppercase text-gray-400">Name</p>
-                    <p className="text-base font-semibold text-gray-900">{activeClient.name}</p>
+                    <p className="text-base font-semibold text-gray-900">{getClientName(activeClient)}</p>
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase text-gray-400">Phone Number</p>
@@ -181,12 +185,6 @@ export function ClientsPage(): ReactElement {
                   <div>
                     <p className="text-xs font-semibold uppercase text-gray-400">Email</p>
                     <p className="text-base font-semibold text-gray-900">{activeClient.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-gray-400">Address</p>
-                    <p className="text-base font-semibold text-gray-900">
-                      {activeClient.address}, {activeClient.country}
-                    </p>
                   </div>
                 </div>
               </div>
@@ -373,9 +371,9 @@ export function ClientsPage(): ReactElement {
                     <tr>
                       <th className="px-6 py-4">Customer</th>
                       <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4">Shipments</th>
-                      <th className="px-6 py-4">Total Spent</th>
-                      <th className="px-6 py-4">Last Activity</th>
+                      <th className="px-6 py-4">Orders</th>
+                      <th className="px-6 py-4">Total Payments</th>
+                      <th className="px-6 py-4">Last Order</th>
                       <th className="px-6 py-4 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -391,10 +389,10 @@ export function ClientsPage(): ReactElement {
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-600">
-                                {buildInitials(client.name)}
+                                {buildInitials(getClientName(client))}
                               </div>
                               <div>
-                                <p className="font-semibold text-gray-900">{client.name}</p>
+                                <p className="font-semibold text-gray-900">{getClientName(client)}</p>
                                 <p className="text-xs text-gray-500">{client.phone}</p>
                               </div>
                             </div>
@@ -412,14 +410,14 @@ export function ClientsPage(): ReactElement {
                           </td>
                           <td className="px-6 py-4">
                             <p className="font-semibold text-gray-800">
-                              {client.totalShipments}
+                              {client.totalOrders}
                             </p>
                           </td>
                           <td className="px-6 py-4 text-gray-600">
-                            {formatNaira(client.totalSpent)}
+                            {formatNaira(parseFloat(client.totalPayments) || 0)}
                           </td>
                           <td className="px-6 py-4 text-gray-600">
-                            {formatDate(client.lastActivity)}
+                            {formatDate(client.lastOrderAt)}
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="relative inline-flex" data-client-menu>

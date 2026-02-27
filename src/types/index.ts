@@ -1,6 +1,5 @@
 export type {
   User,
-  AuthTokens,
   LoginCredentials,
   RegisterData,
   AuthResponse,
@@ -14,6 +13,9 @@ export type {
   NotificationPreferences,
   NotificationPreferencesUpdateInput,
   AccountExportFile,
+  ChangePasswordPayload,
+  AdminResetPasswordPayload,
+  CreateInternalUserPayload,
 } from './user.types';
 
 export type {
@@ -39,9 +41,7 @@ export type {
 } from './dashboard.types';
 
 export type {
-  ShipmentStatus,
   ShipmentMode,
-  ShipmentPriority,
   ShipmentStatusSummary,
   ShipmentOverviewCard,
   ShipmentMetricCard,
@@ -70,6 +70,7 @@ export type {
 export type {
   ApiClientOrder,
   ApiClient,
+  CreateClientPayload,
   ApiClientsResponse,
 } from './client.types';
 
@@ -82,6 +83,14 @@ export type {
   ApiSupportTicket,
   ApiSupportTicketsResponse,
   ApiCreateSupportTicketResponse,
+  SupportMessage,
+  ApiSupportMessage,
+  ApiTicketDetailResponse,
+  SendSupportMessagePayload,
+  UpdateTicketStatusPayload,
+  SupportTicketListParams,
+  SupportWsMessageEvent,
+  SupportWsNewTicketEvent,
 } from './support.types';
 
 export type {
@@ -92,3 +101,62 @@ export type {
   OrderListItem,
   OrdersListResult,
 } from './order.types';
+
+export type {
+  StatusV2,
+  StatusCategory,
+  StatusConfig,
+} from './status.types';
+
+export type {
+  WarehousePackage,
+  WarehouseVerifyPayload,
+} from './warehouse.types';
+
+export type {
+  InitializePaymentPayload,
+  PaystackInitResponse,
+  ApiPayment,
+  RecordOfflinePayload,
+  ApiPaymentsResponse,
+} from './payment.types';
+
+export type {
+  BulkOrderItem,
+  CreateBulkOrderPayload,
+  ApiBulkOrderItem,
+  ApiBulkOrder,
+  ApiBulkOrdersResponse,
+} from './bulkOrder.types';
+
+export type {
+  ReportSummary,
+  OrdersByStatusEntry,
+  RevenueEntry,
+} from './report.types';
+
+export type {
+  LogisticsSettings,
+  FxRateSettings,
+  PricingRule,
+  CustomerPricingOverride,
+  NotificationTemplate,
+  RestrictedGood,
+} from './settings.types';
+
+export type {
+  PresignPayload,
+  PresignResponse,
+  ConfirmPayload,
+  OrderImage,
+} from './upload.types';
+
+export type {
+  ApiInternalNotification,
+} from './internalNotification.types';
+
+export type {
+  AdminUserListParams,
+  UpdateUserPayload,
+  ChangeUserRolePayload,
+} from './adminUser.types';

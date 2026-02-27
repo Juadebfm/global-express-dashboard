@@ -10,6 +10,12 @@ export const FEEDBACK_MESSAGES = {
     ticketsLoadError: 'Unable to load your support tickets right now. Please try again.',
     ticketCreateError: 'We could not submit your support ticket. Please try again.',
     ticketCreateSuccess: 'Ticket submitted successfully. Our support team will follow up soon.',
+    ticketDetailLoadError: 'Unable to load this ticket. Please try again.',
+    messageSendError: 'Your message could not be sent. Please try again.',
+    ticketClosedError: 'This ticket is closed and can no longer receive messages.',
+    statusUpdateSuccess: 'Ticket status updated successfully.',
+    statusUpdateError: 'Unable to update ticket status. Please try again.',
+    newTicketToast: 'A new support ticket has been created.',
   },
   tracking: {
     fetchError: 'We could not retrieve tracking details right now. Please try again.',

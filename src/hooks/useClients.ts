@@ -12,7 +12,7 @@ interface ClientsState {
   error: string | null;
 }
 
-export function useClients(aggregate = false): ClientsState {
+export function useClients(params: { isActive?: boolean } = {}): ClientsState {
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
 
@@ -22,11 +22,11 @@ export function useClients(aggregate = false): ClientsState {
     !!role && (role === 'staff' || role === 'admin' || role === 'superadmin');
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['clients', { aggregate }],
+    queryKey: ['clients', params],
     queryFn: async () => {
       const token = isCustomer ? await getToken() : localStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
-      const result = await getClients(token, aggregate);
+      const result = await getClients(token, params);
       return result.data;
     },
     enabled,

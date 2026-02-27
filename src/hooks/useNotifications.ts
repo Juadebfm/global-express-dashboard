@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { ApiNotification } from '@/types';
-import { getNotifications, markNotificationRead, toggleNotificationSave } from '@/services';
+import { getNotifications, markNotificationRead, toggleNotificationSave, deleteNotification, deleteNotificationsBulk } from '@/services';
 import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -13,6 +13,8 @@ interface NotificationsState {
   error: string | null;
   markRead: (id: string) => void;
   toggleSave: (id: string) => void;
+  deleteOne: (id: string) => void;
+  deleteBulk: (ids: string[]) => void;
   refresh: () => void;
 }
 
@@ -61,6 +63,28 @@ export function useNotifications(): NotificationsState {
     },
   });
 
+  const deleteOneMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken_();
+      if (!token) throw new Error('Not authenticated');
+      return deleteNotification(id, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+
+  const deleteBulkMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const token = await getToken_();
+      if (!token) throw new Error('Not authenticated');
+      return deleteNotificationsBulk(ids, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+
   const message =
     error instanceof Error ? error.message : error ? 'Failed to load notifications' : null;
 
@@ -71,6 +95,8 @@ export function useNotifications(): NotificationsState {
     error: message,
     markRead: (id: string) => markReadMutation.mutate(id),
     toggleSave: (id: string) => toggleSaveMutation.mutate(id),
+    deleteOne: (id: string) => deleteOneMutation.mutate(id),
+    deleteBulk: (ids: string[]) => deleteBulkMutation.mutate(ids),
     refresh: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
   };
 }

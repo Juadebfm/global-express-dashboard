@@ -5,7 +5,7 @@ import type {
   OrderListItem,
   OrdersListResult,
 } from '@/types';
-import { apiGet, apiPost } from '@/lib/apiClient';
+import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/apiClient';
 
 export async function createOrder(
   payload: CreateOrderPayload,
@@ -106,10 +106,15 @@ function mapOrderRow(row: AnyRecord, index: number): OrderListItem {
   const trackingNumber =
     firstString(row, ['trackingNumber', 'trackingNo', 'reference', 'code']) ?? id;
 
+  const statusV2 = firstString(row, ['statusV2', 'status_v2']) ?? '';
+  const statusLabel = firstString(row, ['statusLabel', 'status_label']) ?? '';
+
   return {
     id,
     trackingNumber,
     status: firstString(row, ['status', 'orderStatus', 'shipmentStatus']) ?? 'pending',
+    statusV2,
+    statusLabel,
     origin: firstString(row, ['origin', 'originAddress', 'pickupAddress', 'from']),
     destination: firstString(row, [
       'destination',
@@ -166,13 +171,46 @@ function extractPagination(
 export async function getOrders(
   token: string,
   page = 1,
-  limit = 100
+  limit = 100,
+  statusV2?: string
 ): Promise<OrdersListResult> {
-  const response = await apiGet<unknown>(`/orders?page=${page}&limit=${limit}`, token);
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (statusV2) params.set('statusV2', statusV2);
+
+  const response = await apiGet<unknown>(`/orders?${params.toString()}`, token);
   const orders = extractOrderRows(response).map(mapOrderRow);
 
   return {
     data: orders,
     pagination: extractPagination(response, orders.length, page, limit),
   };
+}
+
+export function getOrderById(
+  token: string,
+  id: string
+): Promise<ApiOrder> {
+  return apiGet<ApiOrder>(`/orders/${id}`, token);
+}
+
+export function getOrderImages(
+  token: string,
+  id: string
+): Promise<unknown> {
+  return apiGet<unknown>(`/orders/${id}/images`, token);
+}
+
+export async function updateOrderStatus(
+  token: string,
+  id: string,
+  statusV2: string
+): Promise<void> {
+  await apiPatch(`/orders/${id}/status`, { statusV2 }, token);
+}
+
+export async function deleteOrder(
+  token: string,
+  id: string
+): Promise<void> {
+  await apiDelete(`/orders/${id}`, token);
 }

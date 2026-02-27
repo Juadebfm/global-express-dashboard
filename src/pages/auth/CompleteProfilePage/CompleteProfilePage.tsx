@@ -13,7 +13,7 @@ import en from 'react-phone-number-input/locale/en';
 import { AuthLayout } from '@/components/layout';
 import { Button, Card, Checkbox, Input } from '@/components/ui';
 import { ROUTES } from '@/constants';
-import { getMyProfile, getMyProfileCompleteness, syncClerkAccount } from '@/services';
+import { getMyProfile, getMyProfileCompleteness, syncClerkAccount, updateMyProfile } from '@/services';
 
 type CountryOption = {
   code: Country;
@@ -312,40 +312,21 @@ export function CompleteProfilePage(): ReactElement {
       return;
     }
 
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-    if (!apiBaseUrl) {
-      setFormError('Missing API base URL.');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const token = await getToken();
       if (!token) throw new Error('Authentication token is missing.');
       await syncClerkAccount(token);
 
-      const response = await fetch(`${apiBaseUrl}/users/me`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          phone: buildE164(form.phone),
-          whatsappNumber: buildE164(form.whatsappNumber),
-          addressStreet: form.addressStreet.trim(),
-          addressCity: form.addressCity.trim(),
-          addressState: form.addressState.trim(),
-          addressCountry: form.addressCountry.trim(),
-          addressPostalCode: form.addressPostalCode.trim(),
-        }),
+      await updateMyProfile(token, {
+        phone: buildE164(form.phone),
+        whatsappNumber: buildE164(form.whatsappNumber),
+        addressStreet: form.addressStreet.trim(),
+        addressCity: form.addressCity.trim(),
+        addressState: form.addressState.trim(),
+        addressCountry: form.addressCountry.trim(),
+        addressPostalCode: form.addressPostalCode.trim(),
       });
-
-      const payload = await response.json().catch(() => null);
-
-      if (!response.ok || !payload?.success) {
-        throw new Error(payload?.message || 'Unable to save your details.');
-      }
 
       // Mark profile complete in Clerk metadata so we skip this page on future logins
       await user?.update({ unsafeMetadata: { profileCompleted: true } });

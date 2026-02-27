@@ -9,3 +9,5 @@ export type { ThemeMode, ThemeState, ThemeStore } from './theme';
 
 export { useFeedbackStore } from './feedback';
 export type { FeedbackTone, FeedbackMessage, PushFeedbackInput, FeedbackStore } from './feedback';
+
+export { useWebSocketStore } from './websocket';

@@ -10,11 +10,14 @@ import type {
   NotificationPreferences,
   NotificationPreferencesUpdateInput,
   AccountExportFile,
+  ChangePasswordPayload,
+  AdminResetPasswordPayload,
+  CreateInternalUserPayload,
 } from '@/types';
 import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost } from '@/lib/apiClient';
 
 export function login(credentials: LoginCredentials): Promise<AuthResponse> {
-  return apiPost<AuthResponse>('/auth/login', {
+  return apiPost<AuthResponse>('/internal/auth/login', {
     email: credentials.email,
     password: credentials.password,
   });
@@ -197,6 +200,36 @@ export async function exportMyAccountData(token: string): Promise<AccountExportF
   };
 }
 
+export async function updateMyProfile(
+  token: string,
+  data: Partial<CustomerProfile>
+): Promise<CustomerProfile> {
+  const response = await apiPatch<ApiCustomerProfileResponse>('/users/me', data, token);
+  return response.data;
+}
+
 export async function deleteMyAccount(token: string): Promise<void> {
   await apiDelete('/users/me', token);
+}
+
+export async function changeMyPassword(
+  token: string,
+  payload: ChangePasswordPayload
+): Promise<void> {
+  await apiPatch('/internal/me/password', payload, token);
+}
+
+export async function adminResetPassword(
+  token: string,
+  userId: string,
+  payload: AdminResetPasswordPayload
+): Promise<void> {
+  await apiPatch(`/internal/users/${userId}/password`, payload, token);
+}
+
+export async function createInternalUser(
+  token: string,
+  payload: CreateInternalUserPayload
+): Promise<User> {
+  return apiPost<User>('/internal/users', payload, token);
 }

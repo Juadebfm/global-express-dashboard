@@ -116,7 +116,7 @@ export interface ActiveDeliveryBase {
   location: Location;
   activeShipments: number;
   statusLabel: string;
-  mode: 'truck' | 'ship' | 'air';
+  mode: 'ship' | 'air';
 }
 
 export type ActiveDelivery =
@@ -183,7 +183,7 @@ export interface ApiTrend {
 
 export interface ApiActiveDelivery {
   destination: string; // e.g. "Lagos, Nigeria"
-  shipmentType: 'air' | 'ocean' | 'road' | null;
+  shipmentType: 'air' | 'ocean' | null;
   activeCount: number;
   nextEta: string | null; // ISO 8601
   status: 'on_time' | 'delayed' | 'unknown';

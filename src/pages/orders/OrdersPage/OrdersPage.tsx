@@ -42,7 +42,7 @@ function mapOrderToPlaceholder(order: OrderListItem): PlaceholderItem {
     id: order.id,
     title: `Order ${order.trackingNumber}`,
     subtitle: subtitleParts.length > 0 ? subtitleParts.join(' - ') : undefined,
-    tag: formatStatusLabel(order.status),
+    tag: order.statusLabel || formatStatusLabel(order.status),
   };
 }
 

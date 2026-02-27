@@ -20,6 +20,7 @@ const CUSTOMER_NAV: SidebarItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', href: ROUTES.DASHBOARD },
   { id: 'shipments', label: 'Shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
   { id: 'deliverySchedule', label: 'Delivery Schedule', icon: 'calendar', href: ROUTES.DELIVERY_SCHEDULE },
+  { id: 'payments', label: 'Payments', icon: 'wallet', href: ROUTES.PAYMENTS },
   { id: 'notification', label: 'Notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
 ];
 
@@ -27,13 +28,16 @@ const OPERATOR_NAV: SidebarItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
   { id: 'shipments', label: 'Shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
   { id: 'orders', label: 'Orders', icon: 'clipboard', href: ROUTES.ORDERS },
+  { id: 'bulkOrders', label: 'Bulk Orders', icon: 'package', href: ROUTES.BULK_ORDERS },
   { id: 'clients', label: 'Clients', icon: 'users', href: ROUTES.CLIENTS },
+  { id: 'payments', label: 'Payments', icon: 'wallet', href: ROUTES.PAYMENTS },
   { id: 'notification', label: 'Notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
 ];
 
 const ADMIN_EXTRA_NAV: SidebarItem[] = [
   { id: 'users', label: 'Users', icon: 'users', href: ROUTES.USERS },
   { id: 'team', label: 'Team', icon: 'team', href: ROUTES.TEAM },
+  { id: 'reports', label: 'Reports', icon: 'chart', href: ROUTES.REPORTS },
 ];
 
 const FOOTER_NAV: SidebarItem[] = [

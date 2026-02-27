@@ -62,11 +62,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
 
     try {
       const response = await apiLogin(credentials);
-      localStorage.setItem(TOKEN_KEY, response.tokens.accessToken);
-
-      if (credentials.rememberMe && response.tokens.refreshToken) {
-        localStorage.setItem('globalxpress_refresh', response.tokens.refreshToken);
-      }
+      localStorage.setItem(TOKEN_KEY, response.token);
 
       setState({
         user: response.user,

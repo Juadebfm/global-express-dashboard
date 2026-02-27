@@ -51,13 +51,6 @@ const shipmentTypes = [
   { value: 'bulk', label: 'Bulk Cargo' },
 ];
 
-const deliveryPriorities = [
-  { value: 'standard', label: 'Standard', eta: '5-7 business days', price: '$20.00' },
-  { value: 'express', label: 'Express', eta: '2-3 business days', price: '$45.89' },
-  { value: 'overnight', label: 'Overnight', eta: 'Next business day', price: '$89.99' },
-  { value: 'economy', label: 'Economy', eta: '7-10 business days', price: '$12.50' },
-];
-
 const carrierOptions: DropdownOption[] = [
   { value: 'fedex', label: 'FedEx' },
   { value: 'skyjet', label: 'SkyJet' },
@@ -68,15 +61,8 @@ const carrierOptions: DropdownOption[] = [
 ];
 
 const serviceOptions: DropdownOption[] = [
-  { value: 'road', label: 'Road' },
   { value: 'air', label: 'Air' },
   { value: 'ocean', label: 'Ocean' },
-];
-
-const priorityOptions: DropdownOption[] = [
-  { value: 'express', label: 'Express' },
-  { value: 'standard', label: 'Standard' },
-  { value: 'economy', label: 'Economy' },
 ];
 
 const invoiceTermsOptions: DropdownOption[] = [
@@ -393,12 +379,10 @@ export function NewShipmentPage(): ReactElement {
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
   const [shipmentType, setShipmentType] = useState('standard');
-  const [priority, setPriority] = useState('standard');
   const [pickupDate, setPickupDate] = useState<Date | null>(new Date(Date.UTC(2026, 1, 20)));
   const [deliveryDate, setDeliveryDate] = useState<Date | null>(null);
   const [carrier, setCarrier] = useState('skyjet');
   const [serviceLevel, setServiceLevel] = useState('air');
-  const [servicePriority, setServicePriority] = useState('express');
   const [category, setCategory] = useState('electronics');
   const [originAddress, setOriginAddress] = useState('');
   const [originCity, setOriginCity] = useState('');
@@ -514,7 +498,6 @@ export function NewShipmentPage(): ReactElement {
       const token = await getApiToken();
       if (!token) throw new Error('Authentication token is missing.');
 
-      const origin = [originAddress.trim(), originCity.trim()].filter(Boolean).join(', ');
       const destination = [destinationAddress.trim(), destinationCity.trim()].filter(Boolean).join(', ');
 
       const order = await createOrder(
@@ -523,12 +506,13 @@ export function NewShipmentPage(): ReactElement {
           recipientAddress: destination,
           recipientPhone: recipientPhone.trim(),
           recipientEmail: recipientEmail.trim(),
-          origin,
-          destination,
           orderDirection: 'outbound',
           weight: `${packageWeightKg.trim()}kg`,
           declaredValue: packageDeclaredValue.trim(),
           description: resolvedDescription,
+          shipmentType: (serviceLevel as 'air' | 'ocean') || 'air',
+          departureDate: pickupDate?.toISOString(),
+          eta: deliveryDate?.toISOString(),
         },
         token
       );
@@ -539,7 +523,7 @@ export function NewShipmentPage(): ReactElement {
         const params = new URLSearchParams({ created: '1' });
         if (order.id) params.set('orderId', order.id);
         if (order.trackingNumber) params.set('trackingNumber', order.trackingNumber);
-        navigate(`${ROUTES.SHIPMENT_INVOICE}?${params.toString()}`);
+        navigate(ROUTES.ORDERS);
         return;
       }
 
@@ -609,12 +593,12 @@ export function NewShipmentPage(): ReactElement {
         </section>
         {activeStep === 0 && (
           <section className="rounded-2xl border border-gray-200 bg-white p-6">
-            <h2 className="text-lg font-semibold text-gray-900">Shipment Type & Priority</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Shipment Type</h2>
             <p className="mt-1 text-sm text-gray-500">
-              Select the type of shipment and delivery priority
+              Select the type of shipment
             </p>
 
-            <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_1.4fr]">
+            <div className="mt-6">
               <div>
                 <p className="text-sm font-semibold text-gray-700">Shipment Type</p>
                 <div className="mt-4 space-y-3">
@@ -648,44 +632,6 @@ export function NewShipmentPage(): ReactElement {
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-gray-700">Delivery Priority</p>
-                <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                  {deliveryPriorities.map((option) => (
-                    <label
-                      key={option.value}
-                      className={cn(
-                        'flex items-center justify-between gap-3 rounded-2xl border p-4 text-sm transition',
-                        priority === option.value
-                          ? 'border-brand-500 bg-brand-50 text-brand-700'
-                          : 'border-gray-200 text-gray-700 hover:border-brand-300'
-                      )}
-                    >
-                      <input
-                        type="radio"
-                        name="delivery-priority"
-                        value={option.value}
-                        checked={priority === option.value}
-                        onChange={() => setPriority(option.value)}
-                        className="sr-only"
-                      />
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-4 w-4 items-center justify-center rounded-full border border-brand-500">
-                          {priority === option.value && (
-                            <span className="h-2 w-2 rounded-full bg-brand-500" />
-                          )}
-                        </span>
-                        <div>
-                          <p className="font-semibold">{option.label}</p>
-                          <p className="text-xs text-gray-500">{option.eta}</p>
-                        </div>
-                      </div>
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm">
-                        {option.price}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-
                 <div className="mt-6 grid gap-4 md:grid-cols-2">
                   <DatePicker label="Pick-up Date" value={pickupDate} onChange={setPickupDate} />
                   <DatePicker
@@ -806,7 +752,7 @@ export function NewShipmentPage(): ReactElement {
                     </span>
                     <div className="relative mt-2">
                       <select className="w-full appearance-none rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-600 focus:border-brand-500 focus:outline-none">
-                        <option>Select priority</option>
+                        <option>Select state</option>
                         <option>CA</option>
                         <option>TX</option>
                         <option>NY</option>
@@ -820,7 +766,7 @@ export function NewShipmentPage(): ReactElement {
                     </span>
                     <div className="relative mt-2">
                       <select className="w-full appearance-none rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-600 focus:border-brand-500 focus:outline-none">
-                        <option>Select priority</option>
+                        <option>Select ZIP</option>
                         <option>90001</option>
                         <option>10001</option>
                         <option>77001</option>
@@ -1068,13 +1014,6 @@ export function NewShipmentPage(): ReactElement {
                   options={serviceOptions}
                   onChange={setServiceLevel}
                 />
-                <DropdownSelect
-                  label="Priority"
-                  value={servicePriority}
-                  placeholder="Select type"
-                  options={priorityOptions}
-                  onChange={setServicePriority}
-                />
               </div>
             </div>
 
@@ -1111,10 +1050,6 @@ export function NewShipmentPage(): ReactElement {
                     <div className="flex items-center justify-between">
                       <span>Type</span>
                       <span className="font-semibold text-gray-800 capitalize">{shipmentType}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Priority</span>
-                      <span className="font-semibold text-gray-800 capitalize">{priority}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Total Items</span>
@@ -1352,7 +1287,7 @@ export function NewShipmentPage(): ReactElement {
                     setShowConfirmation(false);
                     return;
                   }
-                  navigate(`${ROUTES.SHIPMENT_INVOICE}?created=1`);
+                  navigate(ROUTES.ORDERS);
                 }}
               >
                 {canInvoice ? 'Open Invoice Draft' : 'Done'}

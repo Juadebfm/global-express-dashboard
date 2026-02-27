@@ -81,10 +81,11 @@ export function apiPatch<T>(path: string, body?: unknown, token?: string): Promi
   });
 }
 
-export function apiDelete<T>(path: string, token?: string): Promise<T> {
+export function apiDelete<T>(path: string, token?: string, body?: unknown): Promise<T> {
   return request<T>(path, {
     method: 'DELETE',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 }
 

@@ -3,7 +3,7 @@ import { CircleDollarSign, Layers, Scale } from 'lucide-react';
 import type {
   ShipmentMetricCard,
   ShipmentOverviewCard,
-  ShipmentStatus,
+  StatusCategory,
 } from '@/types';
 
 interface ShipmentsSummaryProps {
@@ -11,10 +11,11 @@ interface ShipmentsSummaryProps {
   metrics: ShipmentMetricCard[];
 }
 
-const statusStyles: Record<ShipmentStatus, { dot: string; bar: string }> = {
-  in_transit: { dot: 'bg-blue-500', bar: 'bg-blue-500' },
+const statusStyles: Record<StatusCategory, { dot: string; bar: string }> = {
   pending: { dot: 'bg-amber-500', bar: 'bg-amber-500' },
-  delivered: { dot: 'bg-emerald-500', bar: 'bg-emerald-500' },
+  active: { dot: 'bg-blue-500', bar: 'bg-blue-500' },
+  completed: { dot: 'bg-emerald-500', bar: 'bg-emerald-500' },
+  exception: { dot: 'bg-rose-500', bar: 'bg-rose-500' },
 };
 
 const metricIcons: Record<ShipmentMetricCard['icon'], ReactElement> = {

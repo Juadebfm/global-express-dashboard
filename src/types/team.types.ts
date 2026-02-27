@@ -17,12 +17,12 @@ export interface TeamMember {
 
 export interface ApiTeamMember {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
+  displayName?: string;
   email: string;
   role: 'staff' | 'admin' | 'superadmin';
-  permissions: string[];
   isActive: boolean;
-  avatar: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,5 +30,13 @@ export interface ApiTeamMember {
 export interface ApiTeamResponse {
   success: boolean;
   message: string;
-  data: ApiTeamMember[];
+  data: {
+    data: ApiTeamMember[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  };
 }

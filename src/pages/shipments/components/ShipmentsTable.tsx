@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
-import { Plane, Search, Ship, Truck, X } from 'lucide-react';
-import type { ShipmentMode, ShipmentRecord, ShipmentStatus } from '@/types';
+import { Plane, Search, Ship, X } from 'lucide-react';
+import type { ShipmentMode, ShipmentRecord } from '@/types';
+import { getStatusStyle } from '@/lib/statusUtils';
 import { cn } from '@/utils';
 
 interface ShipmentsTableProps {
@@ -13,22 +14,9 @@ interface ShipmentsTableProps {
   onSearchClear?: () => void;
 }
 
-const statusLabels: Record<ShipmentStatus, string> = {
-  in_transit: 'In-transit',
-  pending: 'Pending',
-  delivered: 'Delivered',
-};
-
-const statusStyles: Record<ShipmentStatus, string> = {
-  in_transit: 'bg-blue-50 text-blue-600',
-  pending: 'bg-amber-50 text-amber-600',
-  delivered: 'bg-emerald-50 text-emerald-600',
-};
-
 const modeIcons: Record<ShipmentMode, ReactElement> = {
   air: <Plane className="h-4 w-4" />,
   ocean: <Ship className="h-4 w-4" />,
-  road: <Truck className="h-4 w-4" />,
 };
 
 const formatDate = (value: string): string => {
@@ -42,8 +30,7 @@ const formatDate = (value: string): string => {
 
 const modeLabel = (mode: ShipmentMode): string => {
   if (mode === 'air') return 'Air';
-  if (mode === 'ocean') return 'Ocean';
-  return 'Road';
+  return 'Ocean';
 };
 
 export function ShipmentsTable({
@@ -188,14 +175,20 @@ export function ShipmentsTable({
                     {formatDate(shipment.etaDate)}
                   </td>
                   <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4">
-                    <span
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold',
-                        statusStyles[shipment.status]
-                      )}
-                    >
-                      {statusLabels[shipment.status]}
-                    </span>
+                    {(() => {
+                      const style = getStatusStyle(shipment.statusV2);
+                      return (
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold',
+                            style.bgClass,
+                            style.textClass
+                          )}
+                        >
+                          {shipment.statusLabel || shipment.status}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-gray-600">
                     <span className="inline-flex items-center gap-2">

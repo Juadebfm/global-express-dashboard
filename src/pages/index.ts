@@ -6,15 +6,13 @@ export {
   ExternalSignInPage,
   ExternalSignUpPage,
 } from './auth';
-export { ForbiddenPage } from './errors';
+export { ForbiddenPage, NotFoundPage } from './errors';
 export { TrackPage } from './public';
 export { DashboardPage } from './dashboard';
 export { AdminDashboardPage } from './admin';
 export {
   ShipmentsPage,
   TrackShipmentPage,
-  NewShipmentPage,
-  InvoiceDraftPage,
 } from './shipments';
 export { ClientsPage } from './clients';
 export { UsersPage } from './users';
@@ -24,3 +22,6 @@ export { TeamPage } from './team';
 export { SettingsPage } from './settings';
 export { SupportPage } from './support';
 export { DeliverySchedulePage } from './deliverySchedule';
+export { PaymentsPage, PaymentCallbackPage } from './payments';
+export { BulkOrdersPage } from './bulkOrders';
+export { ReportsPage } from './reports';

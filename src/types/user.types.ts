@@ -4,13 +4,9 @@ export interface User {
   firstName: string;
   lastName: string;
   role: 'superadmin' | 'admin' | 'staff' | 'user';
+  isActive?: boolean;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken?: string;
 }
 
 export interface LoginCredentials {
@@ -28,7 +24,26 @@ export interface RegisterData {
 
 export interface AuthResponse {
   user: User;
-  tokens: AuthTokens;
+  token: string;
+}
+
+// ── Internal auth payloads ───────────────────────────────────────────────────
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface AdminResetPasswordPayload {
+  newPassword: string;
+}
+
+export interface CreateInternalUserPayload {
+  email: string;
+  password: string;
+  role: 'staff' | 'admin' | 'superadmin';
+  firstName: string;
+  lastName: string;
 }
 
 export interface CustomerProfile {

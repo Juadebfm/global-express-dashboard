@@ -30,7 +30,6 @@ function etaMinutes(isoString: string | null): number {
 
 function shipmentTypeToMode(type: ApiActiveDelivery['shipmentType']): ActiveDelivery['mode'] {
   if (type === 'ocean') return 'ship';
-  if (type === 'road') return 'truck';
   return 'air';
 }
 
@@ -124,10 +123,7 @@ function mapKpis(stats: ApiDashboardStats, role: User['role']): KpiCard[] {
   }
 
   // Operator / admin / superadmin
-  const revenueMtdNum = stats.revenueMtd ? parseFloat(stats.revenueMtd) : 0;
-  const revenueMtdDisplay = `₦${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(revenueMtdNum)}`;
-
-  return [
+  const kpis: KpiCard[] = [
     {
       id: 'totalOrders',
       title: 'All Orders',
@@ -155,7 +151,13 @@ function mapKpis(stats: ApiDashboardStats, role: User['role']): KpiCard[] {
       change: stats.pendingOrdersChange,
       status: stats.pendingOrders > 0 ? 'warning' : 'good',
     },
-    {
+  ];
+
+  // Revenue is superadmin-only — the backend omits it for other roles
+  if (role === 'superadmin' && stats.revenueMtd) {
+    const revenueMtdNum = parseFloat(stats.revenueMtd);
+    const revenueMtdDisplay = `₦${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(revenueMtdNum)}`;
+    kpis.push({
       id: 'revenueMtd',
       title: 'Revenue (MTD)',
       value: revenueMtdNum,
@@ -164,8 +166,10 @@ function mapKpis(stats: ApiDashboardStats, role: User['role']): KpiCard[] {
       helperText: 'Month to date',
       change: stats.revenueMtdChange ?? null,
       status: 'good',
-    },
-  ];
+    });
+  }
+
+  return kpis;
 }
 
 // ── Exports ───────────────────────────────────────────────────────────────────

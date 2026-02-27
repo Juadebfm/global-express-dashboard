@@ -1,14 +1,13 @@
-export type ShipmentStatus = 'in_transit' | 'pending' | 'delivered';
+import type { StatusCategory } from './status.types';
 
-export type ShipmentMode = 'air' | 'ocean' | 'road';
+export type ShipmentMode = 'air' | 'ocean';
 
-export type ShipmentPriority = 'standard' | 'express' | 'economy';
 
 export interface ShipmentStatusSummary {
   id: string;
   label: string;
   value: number;
-  status: ShipmentStatus;
+  status: StatusCategory;
 }
 
 export interface ShipmentOverviewCard {
@@ -29,7 +28,7 @@ export interface ShipmentMetricCard {
 export interface ShipmentFilterTab {
   id: string;
   label: string;
-  value: ShipmentStatus | 'all';
+  value: StatusCategory | 'all';
 }
 
 export interface ShipmentRecord {
@@ -40,9 +39,10 @@ export interface ShipmentRecord {
   destination: string;
   departureDate: string;
   etaDate: string;
-  status: ShipmentStatus;
+  status: StatusCategory;
+  statusV2: string;
+  statusLabel: string;
   mode: ShipmentMode;
-  priority: ShipmentPriority;
   packageCount: number;
   weightKg: number;
   valueUSD: number;
@@ -66,15 +66,6 @@ export interface ShipmentsDashboardData {
 
 // ── Raw API types ─────────────────────────────────────────────────────────────
 
-export type ApiShipmentStatus =
-  | 'in_transit'
-  | 'picked_up'
-  | 'out_for_delivery'
-  | 'delivered'
-  | 'pending'
-  | 'cancelled'
-  | 'returned';
-
 export interface ApiShipmentRecord {
   id: string;
   trackingNumber: string;
@@ -83,9 +74,9 @@ export interface ApiShipmentRecord {
   destination: string;
   departureDate: string;
   eta: string;
-  status: ApiShipmentStatus;
-  shipmentType: 'air' | 'ocean' | 'road';
-  priority: ShipmentPriority;
+  statusV2: string;
+  statusLabel: string;
+  shipmentType: 'air' | 'ocean';
   numberOfPackages: number;
   weight: string;
   declaredValue: number;

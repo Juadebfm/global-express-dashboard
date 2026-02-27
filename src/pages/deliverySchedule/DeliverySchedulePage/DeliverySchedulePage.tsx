@@ -4,6 +4,7 @@ import { AlertBanner } from '@/components/ui';
 import { useDashboardData, useSearch, useShipmentsDashboard } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
 import type { ShipmentRecord } from '@/types';
+import { getStatusStyle } from '@/lib/statusUtils';
 
 function toTimestamp(value: string): number {
   const date = new Date(value);
@@ -21,24 +22,6 @@ function formatDate(value: string): string {
   });
 }
 
-function formatStatus(value: ShipmentRecord['status']): string {
-  if (value === 'in_transit') return 'In Transit';
-  if (value === 'pending') return 'Pending';
-  return 'Delivered';
-}
-
-function statusClass(value: ShipmentRecord['status']): string {
-  if (value === 'in_transit') return 'bg-blue-50 text-blue-700';
-  if (value === 'pending') return 'bg-amber-50 text-amber-700';
-  return 'bg-emerald-50 text-emerald-700';
-}
-
-function priorityClass(value: ShipmentRecord['priority']): string {
-  if (value === 'express') return 'bg-rose-50 text-rose-700';
-  if (value === 'economy') return 'bg-slate-100 text-slate-700';
-  return 'bg-indigo-50 text-indigo-700';
-}
-
 export function DeliverySchedulePage(): ReactElement {
   const { data: dashboardData, isLoading, error } = useDashboardData();
   const {
@@ -53,7 +36,7 @@ export function DeliverySchedulePage(): ReactElement {
     const normalizedQuery = query.trim().toLowerCase();
 
     return rows
-      .filter((row) => row.status !== 'delivered')
+      .filter((row) => row.status !== 'completed')
       .filter((row) => {
         if (!normalizedQuery) return true;
         const haystack = [
@@ -62,7 +45,6 @@ export function DeliverySchedulePage(): ReactElement {
           row.origin,
           row.destination,
           row.status,
-          row.priority,
           row.mode,
         ]
           .join(' ')
@@ -123,16 +105,16 @@ export function DeliverySchedulePage(): ReactElement {
                   <div className="min-w-0 flex-1">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
                       <span className="text-xs font-medium text-gray-500">{row.sku}</span>
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(row.status)}`}
-                      >
-                        {formatStatus(row.status)}
-                      </span>
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${priorityClass(row.priority)}`}
-                      >
-                        {row.priority}
-                      </span>
+                      {(() => {
+                        const style = getStatusStyle(row.statusV2);
+                        return (
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${style.bgClass} ${style.textClass}`}
+                          >
+                            {row.statusLabel || row.status}
+                          </span>
+                        );
+                      })()}
                       <span className="rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-600">
                         {row.mode}
                       </span>
