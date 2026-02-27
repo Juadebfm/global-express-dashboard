@@ -2,6 +2,7 @@ import type {
   ApiCreateOrderResponse,
   ApiOrder,
   CreateOrderPayload,
+  OrderImage,
   OrderListItem,
   OrdersListResult,
 } from '@/types';
@@ -196,8 +197,8 @@ export function getOrderById(
 export function getOrderImages(
   token: string,
   id: string
-): Promise<unknown> {
-  return apiGet<unknown>(`/orders/${id}/images`, token);
+): Promise<OrderImage[]> {
+  return apiGet<OrderImage[]>(`/orders/${id}/images`, token);
 }
 
 export async function updateOrderStatus(

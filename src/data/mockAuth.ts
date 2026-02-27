@@ -24,10 +24,7 @@ export async function mockLogin(
 
   return {
     user,
-    tokens: {
-      accessToken: generateToken(),
-      refreshToken: generateToken(),
-    },
+    token: generateToken(),
   };
 }
 
@@ -54,10 +51,7 @@ export async function mockRegister(data: RegisterData): Promise<AuthResponse> {
 
   return {
     user: newUser,
-    tokens: {
-      accessToken: generateToken(),
-      refreshToken: generateToken(),
-    },
+    token: generateToken(),
   };
 }
 

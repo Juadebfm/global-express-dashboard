@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider, ThemeProvider } from '@/store';
 import { ProtectedRoute } from '@/components/auth';
 import { FeedbackCenter, PageLoader } from '@/components/ui';
