@@ -1,0 +1,231 @@
+{
+  "loadingLabel": "배송 로딩 중...",
+  "loadingListLabel": "배송 목록 로딩 중...",
+  "unavailable": "배송 데이터를 이용할 수 없습니다.",
+  "statusLabels": {
+    "pending": "대기 중",
+    "active": "진행 중",
+    "completed": "완료",
+    "exception": "예외"
+  },
+  "csv": {
+    "trackingNumber": "운송장 번호",
+    "customer": "고객",
+    "origin": "출발지",
+    "destination": "도착지",
+    "departure": "출발",
+    "eta": "도착 예정",
+    "status": "상태",
+    "type": "유형"
+  },
+  "visibleLabel": {
+    "empty": "이 보기에 배송이 없습니다.",
+    "filtered": "\"{{query}}\"에 대해 {{total}}건 중 {{showing}}건을 표시 중입니다.",
+    "default": "{{count}}건의 배송을 표시 중입니다."
+  },
+  "searchPlaceholder": "운송장 번호, 고객, 출발지, 도착지로 검색...",
+  "loadingShipmentList": "배송 목록 로딩 중...",
+  "actions": {
+    "nothingToCopy": "복사할 배송이 없습니다.",
+    "copied": "{{count}}행이 복사되었습니다.",
+    "copyFailed": "복사에 실패했습니다.",
+    "nothingToDownload": "다운로드할 배송이 없습니다.",
+    "downloaded": "{{count}}행이 다운로드되었습니다."
+  },
+  "header": {
+    "titleOperator": "배송",
+    "subtitleOperator": "배송을 추적하고 관리하세요",
+    "titleCustomer": "내 배송",
+    "subtitleCustomer": "주문 및 대량 배송 품목을 추적하세요",
+    "trackShipment": "배송 추적하기"
+  },
+  "summary": {
+    "totalShipments": "전체 배송",
+    "totalWeight": "총 무게",
+    "totalValue": "총 가치",
+    "totalItems": "총 품목",
+    "averageWeight": "배송당 평균 무게: {{value}} kg",
+    "averageValue": "배송당 평균 가치: {{value}}",
+    "averageItems": "배송당 평균 품목: {{value}}"
+  },
+  "filters": {
+    "all": "전체",
+    "pending": "대기 중",
+    "active": "진행 중",
+    "completed": "완료",
+    "exception": "예외"
+  },
+  "shipmentList": "배송 목록",
+  "statusV2": {
+    "PREORDER_SUBMITTED": "사전 주문 제출됨",
+    "AWAITING_WAREHOUSE_RECEIPT": "창고 입고 대기 중",
+    "WAREHOUSE_RECEIVED": "창고 입고 완료",
+    "WAREHOUSE_VERIFIED_PRICED": "검증 및 가격 책정 완료",
+    "DISPATCHED_TO_ORIGIN_AIRPORT": "출발 공항으로 발송",
+    "AT_ORIGIN_AIRPORT": "출발 공항 도착",
+    "BOARDED_ON_FLIGHT": "항공기 탑승",
+    "FLIGHT_DEPARTED": "항공기 출발",
+    "FLIGHT_LANDED_LAGOS": "라고스 착륙",
+    "DISPATCHED_TO_ORIGIN_PORT": "출발 항구로 발송",
+    "AT_ORIGIN_PORT": "출발 항구 도착",
+    "LOADED_ON_VESSEL": "선박 적재",
+    "VESSEL_DEPARTED": "선박 출항",
+    "VESSEL_ARRIVED_LAGOS_PORT": "라고스 항구 도착",
+    "CUSTOMS_CLEARED_LAGOS": "통관 완료",
+    "IN_TRANSIT_TO_LAGOS_OFFICE": "라고스 사무소로 운송 중",
+    "READY_FOR_PICKUP": "수령 준비 완료",
+    "PICKED_UP_COMPLETED": "수령 완료",
+    "ON_HOLD": "보류 중",
+    "CANCELLED": "취소됨",
+    "RESTRICTED_ITEM_REJECTED": "제한 품목 거부됨",
+    "RESTRICTED_ITEM_OVERRIDE_APPROVED": "예외 승인됨"
+  },
+  "locations": {
+    "South Korea": "대한민국",
+    "Korea": "한국",
+    "Seoul, South Korea": "서울, 대한민국",
+    "Lagos, Nigeria": "라고스, 나이지리아",
+    "Nigeria": "나이지리아",
+    "Lagos": "라고스"
+  },
+  "table": {
+    "searchPlaceholder": "운송장 번호, 고객, 출발지, 도착지로 검색...",
+    "columns": {
+      "trackingNo": "운송장 번호",
+      "customer": "고객",
+      "origin": "출발지",
+      "destination": "도착지",
+      "departure": "출발",
+      "eta": "도착 예정",
+      "status": "상태",
+      "type": "유형"
+    },
+    "modeLabels": {
+      "air": "항공",
+      "ocean": "해상"
+    },
+    "empty": "현재 필터와 일치하는 배송이 없습니다."
+  },
+  "newShipment": {
+    "loadingLabel": "새 배송 로딩 중...",
+    "titleCustomer": "새 배송 생성",
+    "titleOperator": "고객 주문 생성",
+    "subtitleCustomer": "아래 단계에 따라 배송을 생성하고 예약하세요",
+    "subtitleOperator": "아래 단계에 따라 고객을 대신하여 주문을 생성하세요",
+    "progress": {
+      "step": "{{total}}단계 중 {{current}}단계",
+      "complete": "{{percent}}% 완료"
+    },
+    "steps": {
+      "shipment": { "label": "배송 유형", "description": "배송 기본 정보 설정" },
+      "addresses": { "label": "주소", "description": "출발지와 도착지" },
+      "packages": { "label": "패키지 상세", "description": "품목 상세 추가" },
+      "review": { "label": "검토", "description": "확인 및 견적" }
+    },
+    "shipmentType": {
+      "sectionTitle": "배송 유형",
+      "sectionSubtitle": "배송 유형을 선택하세요",
+      "air": "항공 화물",
+      "ocean": "해상 화물"
+    },
+    "schedule": {
+      "pickupDate": "픽업 날짜",
+      "preferredDeliveryDate": "희망 배송 날짜",
+      "pickupTime": "픽업 시간",
+      "deliveryTime": "배송 시간",
+      "apply": "적용"
+    },
+    "originAddress": {
+      "title": "출발지 주소",
+      "subtitle": "고정 픽업 위치 — Global Express 한국 창고",
+      "companyName": "회사명",
+      "phoneNumber": "전화번호",
+      "address": "주소"
+    },
+    "destinationAddress": {
+      "title": "도착지 주소",
+      "subtitle": "고정 배송 위치 — Global Express 라고스 사무소",
+      "companyName": "회사명",
+      "phoneNumber": "전화번호",
+      "address": "주소"
+    },
+    "packageDetails": {
+      "title": "패키지 상세",
+      "subtitle": "배송 내용물을 설명하세요",
+      "descriptionLabel": "설명",
+      "descriptionPlaceholder": "패키지 내용물을 설명하세요 (예: 전자기기 — 노트북)",
+      "weightLabel": "무게 (kg)",
+      "weightPlaceholder": "무게를 kg로 입력하세요",
+      "volumeLabel": "부피 (CBM)",
+      "volumePlaceholder": "부피를 입방미터로 입력하세요",
+      "declaredValueLabel": "신고 가격 ($)",
+      "declaredValuePlaceholder": "신고 가격을 입력하세요"
+    },
+    "recipientInfo": {
+      "sectionTitle": "수취인 정보",
+      "nameLabel": "수취인 이름",
+      "namePlaceholder": "이름 전체",
+      "emailLabel": "이메일",
+      "emailPlaceholder": "recipient@example.com",
+      "phoneLabel": "전화번호",
+      "phonePlaceholder": "+234...",
+      "usePickupRepLabel": "다른 사람이 이 배송을 수령합니다",
+      "repNameLabel": "대리인 이름 *",
+      "repNamePlaceholder": "대리인 이름 전체",
+      "repPhoneLabel": "대리인 전화번호",
+      "repPhonePlaceholder": "+234..."
+    },
+    "review": {
+      "title": "검토 및 비용 견적",
+      "subtitle": "배송 세부 정보를 검토하고 비용 견적을 받으세요",
+      "shipmentSummary": "배송 요약",
+      "typeLabel": "유형",
+      "airFreight": "항공 화물",
+      "oceanFreight": "해상 화물",
+      "totalWeightLabel": "총 무게",
+      "totalVolumeLabel": "총 부피",
+      "declaredValueLabel": "신고 가격",
+      "route": "경로",
+      "from": "출발",
+      "to": "도착",
+      "recipient": "수취인",
+      "pickupRepresentative": "픽업 대리인",
+      "costEstimate": "비용 견적",
+      "calculatingEstimate": "견적 계산 중…",
+      "estimatedShippingCost": "예상 배송 비용",
+      "recalculate": "견적 재계산",
+      "enterWeightForEstimate": "견적을 보려면 무게를 입력하세요",
+      "enterVolumeForEstimate": "견적을 보려면 부피(CBM)를 입력하세요"
+    },
+    "navigation": {
+      "previous": "이전",
+      "saveDraft": "임시 저장",
+      "next": "다음",
+      "createShipment": "배송 생성",
+      "createOrder": "주문 생성",
+      "creatingShipment": "배송 생성 중...",
+      "creatingOrder": "주문 생성 중..."
+    },
+    "errors": {
+      "recipientRequired": "수취인 이름, 이메일, 전화번호를 입력해 주세요.",
+      "pickupRepRequired": "픽업 대리인의 이름을 입력해 주세요.",
+      "failedToCreate": "배송 주문 생성에 실패했습니다."
+    },
+    "confirmation": {
+      "shipmentCreated": "배송 생성 완료",
+      "orderCreated": "고객 주문 생성 완료",
+      "shipmentSaved": "배송이 성공적으로 저장되었습니다.",
+      "orderSaved": "고객 주문이 성공적으로 저장되었습니다.",
+      "trackingNumber": "운송장 번호: {{number}}",
+      "customerNote": "사전 주문이 제출되었습니다. 창고에서 패키지를 확인한 후 가격이 확정됩니다.",
+      "operatorNote": "고객 주문이 제출되었습니다. 창고 확인 후 가격이 확정됩니다.",
+      "shareDetails": "상세 정보 공유",
+      "copy": "복사",
+      "copied": "복사됨!",
+      "shareViaEmail": "이메일로 공유",
+      "shareViaWhatsApp": "WhatsApp으로 공유",
+      "shareViaKakaoTalk": "카카오톡으로 공유",
+      "done": "완료"
+    }
+  }
+}

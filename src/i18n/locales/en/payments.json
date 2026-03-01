@@ -1,0 +1,25 @@
+{
+  "loadingLabel": "Loading payments...",
+  "pageTitle": "Payments",
+  "subtitle": "Review payment transactions.",
+  "transactions": {
+    "title": "Payment Transactions",
+    "descriptionWithCount": "{{count}} payments found.",
+    "descriptionEmpty": "All payment transactions will appear here."
+  },
+  "item": {
+    "title": "Payment {{reference}}"
+  },
+  "empty": "No payments match your search.",
+  "errorEmpty": "Unable to load payments.",
+  "callback": {
+    "verifying": "Verifying Payment...",
+    "verifyingDesc": "Please wait while we confirm your payment.",
+    "success": "Payment Successful",
+    "successDesc": "Your payment has been confirmed.",
+    "viewOrders": "View Orders",
+    "failed": "Payment Verification Failed",
+    "failedDesc": "We could not verify your payment. Please contact support if you were charged.",
+    "goToDashboard": "Go to Dashboard"
+  }
+}

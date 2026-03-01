@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useClerk } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import { AlertBanner, ConfirmModal } from '@/components/ui';
@@ -23,17 +24,21 @@ import { cn } from '@/utils';
 
 type SettingsTab = 'general' | 'logistics' | 'fx' | 'pricing' | 'restricted-goods';
 
-const OPERATOR_TABS: Array<{ id: SettingsTab; label: string }> = [
-  { id: 'general', label: 'General' },
-  { id: 'logistics', label: 'Logistics' },
-  { id: 'fx', label: 'FX Rate' },
-  { id: 'pricing', label: 'Pricing' },
-  { id: 'restricted-goods', label: 'Restricted Goods' },
-];
+const OPERATOR_TAB_IDS: SettingsTab[] = ['general', 'logistics', 'fx', 'pricing', 'restricted-goods'];
+
+/** Map tab ID → i18n key under `tabs.*` */
+const TAB_I18N_KEY: Record<SettingsTab, string> = {
+  general: 'tabs.general',
+  logistics: 'tabs.logistics',
+  fx: 'tabs.fx',
+  pricing: 'tabs.pricing',
+  'restricted-goods': 'tabs.restrictedGoods',
+};
 
 /* ── Component ───────────────────────────────────────────────── */
 
 export function SettingsPage(): ReactElement {
+  const { t } = useTranslation('settings');
   const { data, isLoading, error } = useDashboardData();
   useSearch();
   const { user } = useAuth();
@@ -71,7 +76,7 @@ export function SettingsPage(): ReactElement {
     setPasswordSuccess(null);
     try {
       await changePasswordMutation.mutateAsync({ currentPassword, newPassword });
-      setPasswordSuccess('Password changed successfully.');
+      setPasswordSuccess(t('changePassword.successMessage'));
       setCurrentPassword('');
       setNewPassword('');
     } catch {
@@ -96,14 +101,14 @@ export function SettingsPage(): ReactElement {
     key: keyof NonNullable<typeof preferences>['channels'];
     label: string;
   }> = [
-    { key: 'notifyEmailAlerts', label: 'Email Alerts' },
-    { key: 'notifyInAppAlerts', label: 'In-App Alerts' },
-    { key: 'consentMarketing', label: 'Marketing Emails' },
+    { key: 'notifyEmailAlerts', label: t('notificationPreferences.channels.notifyEmailAlerts') },
+    { key: 'notifyInAppAlerts', label: t('notificationPreferences.channels.notifyInAppAlerts') },
+    { key: 'consentMarketing', label: t('notificationPreferences.channels.consentMarketing') },
   ];
 
   const renderStatus = (value: boolean): { label: string; className: string } => {
-    if (value) return { label: 'Enabled', className: 'bg-emerald-50 text-emerald-700' };
-    return { label: 'Disabled', className: 'bg-rose-50 text-rose-700' };
+    if (value) return { label: t('notificationPreferences.status.enabled'), className: 'bg-emerald-50 text-emerald-700' };
+    return { label: t('notificationPreferences.status.disabled'), className: 'bg-rose-50 text-rose-700' };
   };
 
   /* ── Customer actions ───────────────────────────────────────── */
@@ -124,7 +129,7 @@ export function SettingsPage(): ReactElement {
       URL.revokeObjectURL(url);
     } catch (downloadError) {
       setExportError(
-        downloadError instanceof Error ? downloadError.message : 'Failed to export account data.'
+        downloadError instanceof Error ? downloadError.message : t('accountDataExport.failedMessage')
       );
     } finally {
       setIsExporting(false);
@@ -144,7 +149,7 @@ export function SettingsPage(): ReactElement {
       navigate(ROUTES.HOME, { replace: true });
     } catch (removeError) {
       setDeleteError(
-        removeError instanceof Error ? removeError.message : 'Failed to delete account.'
+        removeError instanceof Error ? removeError.message : t('deleteAccount.failedMessage')
       );
     } finally {
       setIsDeleting(false);
@@ -155,29 +160,29 @@ export function SettingsPage(): ReactElement {
   /* ── Render ─────────────────────────────────────────────────── */
 
   return (
-    <AppShell data={data} isLoading={isLoading} error={error} loadingLabel="Loading settings...">
+    <AppShell data={data} isLoading={isLoading} error={error} loadingLabel={t('loadingLabel')}>
       <div className="space-y-6">
         <PageHeader
-          title="Settings"
-          subtitle="Configure preferences for your GlobalExpress account."
+          title={t('pageTitle')}
+          subtitle={t('subtitle')}
         />
 
         {/* ── Operator tab bar (staff see read-only, admin can edit) */}
         {isOperator && (
           <div className="flex gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1">
-            {OPERATOR_TABS.map((tab) => (
+            {OPERATOR_TAB_IDS.map((tabId) => (
               <button
-                key={tab.id}
+                key={tabId}
                 type="button"
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => setActiveTab(tabId)}
                 className={cn(
                   'rounded-lg px-4 py-2 text-sm font-medium transition',
-                  activeTab === tab.id
+                  activeTab === tabId
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 )}
               >
-                {tab.label}
+                {t(TAB_I18N_KEY[tabId])}
               </button>
             ))}
           </div>
@@ -189,13 +194,13 @@ export function SettingsPage(): ReactElement {
             {/* Operator: Change password */}
             {isOperator && (
               <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                <h3 className="text-sm font-semibold text-gray-900">Change Password</h3>
-                <p className="mt-1 text-xs text-gray-500">Update your operator account password.</p>
+                <h3 className="text-sm font-semibold text-gray-900">{t('changePassword.title')}</h3>
+                <p className="mt-1 text-xs text-gray-500">{t('changePassword.subtitle')}</p>
 
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   <div>
                     <label htmlFor="current-pw" className="block text-xs font-medium text-gray-700">
-                      Current Password
+                      {t('changePassword.currentPassword')}
                     </label>
                     <input
                       id="current-pw"
@@ -207,7 +212,7 @@ export function SettingsPage(): ReactElement {
                   </div>
                   <div>
                     <label htmlFor="new-pw" className="block text-xs font-medium text-gray-700">
-                      New Password
+                      {t('changePassword.newPassword')}
                     </label>
                     <input
                       id="new-pw"
@@ -244,7 +249,7 @@ export function SettingsPage(): ReactElement {
                         : 'bg-brand-500 hover:bg-brand-600'
                     )}
                   >
-                    {changePasswordMutation.isPending ? 'Saving...' : 'Update Password'}
+                    {changePasswordMutation.isPending ? t('changePassword.savingButton') : t('changePassword.saveButton')}
                   </button>
                 </div>
               </section>
@@ -257,9 +262,9 @@ export function SettingsPage(): ReactElement {
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-900">Account Data Export</h3>
+                      <h3 className="text-sm font-semibold text-gray-900">{t('accountDataExport.title')}</h3>
                       <p className="mt-1 text-xs text-gray-500">
-                        Download a copy of your account data.
+                        {t('accountDataExport.subtitle')}
                       </p>
                     </div>
                     <button
@@ -273,7 +278,7 @@ export function SettingsPage(): ReactElement {
                           : 'bg-brand-500 hover:bg-brand-600'
                       )}
                     >
-                      {isExporting ? 'Exporting...' : 'Export Data'}
+                      {isExporting ? t('accountDataExport.exportingButton') : t('accountDataExport.exportButton')}
                     </button>
                   </div>
                   {exportError && (
@@ -287,9 +292,9 @@ export function SettingsPage(): ReactElement {
                 <div className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                      <h3 className="text-sm font-semibold text-red-700">Delete Account</h3>
+                      <h3 className="text-sm font-semibold text-red-700">{t('deleteAccount.title')}</h3>
                       <p className="mt-1 text-xs text-gray-500">
-                        Permanently remove your account and sign out.
+                        {t('deleteAccount.subtitle')}
                       </p>
                     </div>
                     <button
@@ -303,7 +308,7 @@ export function SettingsPage(): ReactElement {
                           : 'bg-red-600 hover:bg-red-700'
                       )}
                     >
-                      Delete Account
+                      {t('deleteAccount.deleteButton')}
                     </button>
                   </div>
                   {deleteError && (
@@ -313,10 +318,10 @@ export function SettingsPage(): ReactElement {
                   )}
                   <ConfirmModal
                     isOpen={showDeleteConfirm}
-                    title="Delete Account"
-                    message="This action is irreversible. Your account and all associated data will be permanently removed, and you will be signed out."
-                    confirmLabel="Delete Account"
-                    cancelLabel="Cancel"
+                    title={t('deleteAccount.modal.title')}
+                    message={t('deleteAccount.modal.message')}
+                    confirmLabel={t('deleteAccount.modal.confirmLabel')}
+                    cancelLabel={t('deleteAccount.modal.cancelLabel')}
                     tone="danger"
                     isLoading={isDeleting}
                     onConfirm={() => void handleDeleteAccount()}
@@ -328,17 +333,17 @@ export function SettingsPage(): ReactElement {
                 <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900">
-                      Notification Preferences
+                      {t('notificationPreferences.title')}
                     </h3>
                     <p className="mt-1 text-xs text-gray-500">
-                      Loaded from your account preferences.
+                      {t('notificationPreferences.subtitle')}
                     </p>
                   </div>
 
                   <div className="mt-5">
                     {prefsLoading && (
                       <div className="rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">
-                        Loading notification preferences...
+                        {t('notificationPreferences.loadingText')}
                       </div>
                     )}
 
@@ -396,14 +401,14 @@ export function SettingsPage(): ReactElement {
                           );
                         })}
                         {prefsSaving && (
-                          <p className="text-xs text-gray-500">Saving preferences...</p>
+                          <p className="text-xs text-gray-500">{t('notificationPreferences.savingText')}</p>
                         )}
                       </div>
                     )}
 
                     {!prefsLoading && !prefsError && !preferences && (
                       <div className="rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">
-                        Notification preferences are unavailable.
+                        {t('notificationPreferences.unavailableText')}
                       </div>
                     )}
                   </div>
@@ -416,14 +421,14 @@ export function SettingsPage(): ReactElement {
         {/* ── Logistics tab (all operators — read-only) ─────── */}
         {isOperator && activeTab === 'logistics' && (
           <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-900">Logistics Settings</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{t('logistics.title')}</h3>
             <p className="mt-1 text-xs text-gray-500">
-              Shipping lane, office addresses, and ETA notes.
+              {t('logistics.subtitle')}
             </p>
 
             {logistics.isLoading && (
               <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">
-                Loading logistics settings...
+                {t('logistics.loadingText')}
               </div>
             )}
 
@@ -434,7 +439,7 @@ export function SettingsPage(): ReactElement {
                   message={
                     logistics.error instanceof Error
                       ? logistics.error.message
-                      : 'Failed to load logistics settings.'
+                      : t('logistics.failedMessage')
                   }
                 />
               </div>
@@ -442,10 +447,10 @@ export function SettingsPage(): ReactElement {
 
             {logistics.data && (
               <div className="mt-4 space-y-4">
-                <SettingsField label="Shipping Lane" value={logistics.data.lane} />
-                <SettingsField label="Korea Office" value={logistics.data.koreaOffice} />
-                <SettingsField label="Lagos Office" value={logistics.data.lagosOffice} />
-                <SettingsField label="ETA Notes" value={logistics.data.etaNotes} />
+                <SettingsField label={t('logistics.fields.shippingLane')} value={logistics.data.lane} />
+                <SettingsField label={t('logistics.fields.koreaOffice')} value={logistics.data.koreaOffice} />
+                <SettingsField label={t('logistics.fields.lagosOffice')} value={logistics.data.lagosOffice} />
+                <SettingsField label={t('logistics.fields.etaNotes')} value={logistics.data.etaNotes} />
               </div>
             )}
           </section>
@@ -454,14 +459,14 @@ export function SettingsPage(): ReactElement {
         {/* ── FX Rate tab (all operators — read-only) ─────────── */}
         {isOperator && activeTab === 'fx' && (
           <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-900">FX Rate Settings</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{t('fxRate.title')}</h3>
             <p className="mt-1 text-xs text-gray-500">
-              Currency exchange rate configuration.
+              {t('fxRate.subtitle')}
             </p>
 
             {fxRate.isLoading && (
               <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">
-                Loading FX rate settings...
+                {t('fxRate.loadingText')}
               </div>
             )}
 
@@ -472,7 +477,7 @@ export function SettingsPage(): ReactElement {
                   message={
                     fxRate.error instanceof Error
                       ? fxRate.error.message
-                      : 'Failed to load FX rate settings.'
+                      : t('fxRate.failedMessage')
                   }
                 />
               </div>
@@ -480,11 +485,11 @@ export function SettingsPage(): ReactElement {
 
             {fxRate.data && (
               <div className="mt-4 space-y-4">
-                <SettingsField label="Mode" value={fxRate.data.mode === 'live' ? 'Live' : 'Manual'} />
-                <SettingsField label="Manual Rate" value={String(fxRate.data.manualRate)} />
+                <SettingsField label={t('fxRate.fields.mode')} value={fxRate.data.mode === 'live' ? t('fxRate.fields.modeLive') : t('fxRate.fields.modeManual')} />
+                <SettingsField label={t('fxRate.fields.manualRate')} value={String(fxRate.data.manualRate)} />
                 <SettingsField
-                  label="Effective Rate"
-                  value={fxRate.data.effectiveRate != null ? String(fxRate.data.effectiveRate) : 'N/A'}
+                  label={t('fxRate.fields.effectiveRate')}
+                  value={fxRate.data.effectiveRate != null ? String(fxRate.data.effectiveRate) : t('fxRate.fields.notAvailable')}
                 />
               </div>
             )}
@@ -494,14 +499,14 @@ export function SettingsPage(): ReactElement {
         {/* ── Pricing tab (all operators — read-only) ──────────── */}
         {isOperator && activeTab === 'pricing' && (
           <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-900">Pricing Rules</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{t('pricing.title')}</h3>
             <p className="mt-1 text-xs text-gray-500">
-              Active pricing rules for air and sea shipments.
+              {t('pricing.subtitle')}
             </p>
 
             {pricing.isLoading && (
               <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">
-                Loading pricing rules...
+                {t('pricing.loadingText')}
               </div>
             )}
 
@@ -512,7 +517,7 @@ export function SettingsPage(): ReactElement {
                   message={
                     pricing.error instanceof Error
                       ? pricing.error.message
-                      : 'Failed to load pricing rules.'
+                      : t('pricing.failedMessage')
                   }
                 />
               </div>
@@ -523,11 +528,11 @@ export function SettingsPage(): ReactElement {
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <tr>
-                      <th className="px-4 py-3">Name</th>
-                      <th className="px-4 py-3">Mode</th>
-                      <th className="px-4 py-3">Rate</th>
-                      <th className="px-4 py-3">Weight Range</th>
-                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">{t('pricing.table.name')}</th>
+                      <th className="px-4 py-3">{t('pricing.table.mode')}</th>
+                      <th className="px-4 py-3">{t('pricing.table.rate')}</th>
+                      <th className="px-4 py-3">{t('pricing.table.weightRange')}</th>
+                      <th className="px-4 py-3">{t('pricing.table.status')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white">
@@ -556,7 +561,7 @@ export function SettingsPage(): ReactElement {
                                 : 'bg-gray-100 text-gray-500'
                             )}
                           >
-                            {rule.isActive ? 'Active' : 'Inactive'}
+                            {rule.isActive ? t('pricing.statusActive') : t('pricing.statusInactive')}
                           </span>
                         </td>
                       </tr>
@@ -568,7 +573,7 @@ export function SettingsPage(): ReactElement {
 
             {pricing.data && pricing.data.length === 0 && (
               <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-4 text-center text-sm text-gray-500">
-                No pricing rules configured.
+                {t('pricing.emptyText')}
               </div>
             )}
           </section>
@@ -577,14 +582,14 @@ export function SettingsPage(): ReactElement {
         {/* ── Restricted Goods tab (all operators — read-only) ── */}
         {isOperator && activeTab === 'restricted-goods' && (
           <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-900">Restricted Goods</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{t('restrictedGoods.title')}</h3>
             <p className="mt-1 text-xs text-gray-500">
-              Items restricted from shipment.
+              {t('restrictedGoods.subtitle')}
             </p>
 
             {restrictedGoods.isLoading && (
               <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">
-                Loading restricted goods...
+                {t('restrictedGoods.loadingText')}
               </div>
             )}
 
@@ -595,7 +600,7 @@ export function SettingsPage(): ReactElement {
                   message={
                     restrictedGoods.error instanceof Error
                       ? restrictedGoods.error.message
-                      : 'Failed to load restricted goods.'
+                      : t('restrictedGoods.failedMessage')
                   }
                 />
               </div>
@@ -606,11 +611,11 @@ export function SettingsPage(): ReactElement {
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <tr>
-                      <th className="px-4 py-3">Code</th>
-                      <th className="px-4 py-3">Name (EN)</th>
-                      <th className="px-4 py-3">Name (KO)</th>
-                      <th className="px-4 py-3">Override</th>
-                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">{t('restrictedGoods.table.code')}</th>
+                      <th className="px-4 py-3">{t('restrictedGoods.table.nameEn')}</th>
+                      <th className="px-4 py-3">{t('restrictedGoods.table.nameKo')}</th>
+                      <th className="px-4 py-3">{t('restrictedGoods.table.override')}</th>
+                      <th className="px-4 py-3">{t('restrictedGoods.table.status')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white">
@@ -620,7 +625,7 @@ export function SettingsPage(): ReactElement {
                         <td className="px-4 py-3 text-gray-600">{item.nameEn}</td>
                         <td className="px-4 py-3 text-gray-600">{item.nameKo}</td>
                         <td className="px-4 py-3 text-gray-500">
-                          {item.allowWithOverride ? 'Allowed' : 'No'}
+                          {item.allowWithOverride ? t('restrictedGoods.overrideAllowed') : t('restrictedGoods.overrideNo')}
                         </td>
                         <td className="px-4 py-3">
                           <span
@@ -631,7 +636,7 @@ export function SettingsPage(): ReactElement {
                                 : 'bg-gray-100 text-gray-500'
                             )}
                           >
-                            {item.isActive ? 'Restricted' : 'Inactive'}
+                            {item.isActive ? t('restrictedGoods.statusRestricted') : t('restrictedGoods.statusInactive')}
                           </span>
                         </td>
                       </tr>
@@ -643,7 +648,7 @@ export function SettingsPage(): ReactElement {
 
             {restrictedGoods.data && restrictedGoods.data.length === 0 && (
               <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-4 text-center text-sm text-gray-500">
-                No restricted goods configured.
+                {t('restrictedGoods.emptyText')}
               </div>
             )}
           </section>

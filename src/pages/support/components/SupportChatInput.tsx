@@ -1,5 +1,6 @@
 import type { ReactElement, FormEvent, KeyboardEvent } from 'react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Send } from 'lucide-react';
 
 interface SupportChatInputProps {
@@ -10,6 +11,7 @@ interface SupportChatInputProps {
 }
 
 export function SupportChatInput({ onSend, isSending, isStaff, isClosed }: SupportChatInputProps): ReactElement {
+  const { t } = useTranslation('support');
   const [body, setBody] = useState('');
   const [isInternal, setIsInternal] = useState(false);
 
@@ -32,7 +34,7 @@ export function SupportChatInput({ onSend, isSending, isStaff, isClosed }: Suppo
   if (isClosed) {
     return (
       <div className="border-t border-gray-200 bg-gray-50 px-4 py-3 text-center text-sm text-gray-500">
-        This ticket is closed and cannot receive new messages.
+        {t('chatInput.closedMessage')}
       </div>
     );
   }
@@ -49,7 +51,7 @@ export function SupportChatInput({ onSend, isSending, isStaff, isClosed }: Suppo
               onChange={() => setIsInternal(false)}
               className="text-brand-600 focus:ring-brand-500"
             />
-            <span className="text-gray-700">Reply</span>
+            <span className="text-gray-700">{t('chatInput.replyLabel')}</span>
           </label>
           <label className="flex cursor-pointer items-center gap-2 text-xs">
             <input
@@ -59,7 +61,7 @@ export function SupportChatInput({ onSend, isSending, isStaff, isClosed }: Suppo
               onChange={() => setIsInternal(true)}
               className="text-amber-600 focus:ring-amber-500"
             />
-            <span className="text-amber-700">Internal Note</span>
+            <span className="text-amber-700">{t('chatInput.internalNoteLabel')}</span>
           </label>
         </div>
       )}
@@ -69,7 +71,7 @@ export function SupportChatInput({ onSend, isSending, isStaff, isClosed }: Suppo
           value={body}
           onChange={(e) => setBody(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={isInternal ? 'Write an internal note...' : 'Type a message...'}
+          placeholder={isInternal ? t('chatInput.internalPlaceholder') : t('chatInput.messagePlaceholder')}
           rows={2}
           className={`flex-1 resize-none rounded-xl border px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 ${
             isInternal

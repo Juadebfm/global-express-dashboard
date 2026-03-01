@@ -10,6 +10,7 @@ import {
 } from 'react-phone-number-input';
 import flags from 'react-phone-number-input/flags';
 import en from 'react-phone-number-input/locale/en';
+import { useTranslation } from 'react-i18next';
 import { AuthLayout } from '@/components/layout';
 import { Button, Card, Checkbox, Input } from '@/components/ui';
 import { ROUTES } from '@/constants';
@@ -181,6 +182,7 @@ function CountrySelect({ selected, onSelect, isError = false }: CountrySelectPro
 }
 
 export function CompleteProfilePage(): ReactElement {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { getToken, isSignedIn, isLoaded: isClerkLoaded } = useAuth();
   const { user } = useUser();
@@ -290,22 +292,22 @@ export function CompleteProfilePage(): ReactElement {
     const nextErrors: Record<string, string> = {};
 
     if (!form.phone.trim()) {
-      nextErrors.phone = 'Phone number is required.';
+      nextErrors.phone = t('completeProfile.validation.phoneRequired');
     } else if (!isValidPhone(form.phone)) {
-      nextErrors.phone = 'Enter a valid phone number.';
+      nextErrors.phone = t('completeProfile.validation.phoneInvalid');
     }
 
     if (!form.whatsappNumber.trim()) {
-      nextErrors.whatsappNumber = 'WhatsApp number is required.';
+      nextErrors.whatsappNumber = t('completeProfile.validation.whatsappRequired');
     } else if (!isValidPhone(form.whatsappNumber)) {
-      nextErrors.whatsappNumber = 'Enter a valid WhatsApp number.';
+      nextErrors.whatsappNumber = t('completeProfile.validation.whatsappInvalid');
     }
 
-    if (!form.addressStreet.trim()) nextErrors.addressStreet = 'Street address is required.';
-    if (!form.addressCity.trim()) nextErrors.addressCity = 'City is required.';
-    if (!form.addressState.trim()) nextErrors.addressState = 'State is required.';
-    if (!form.addressCountry.trim()) nextErrors.addressCountry = 'Country is required.';
-    if (!form.addressPostalCode.trim()) nextErrors.addressPostalCode = 'Postal code is required.';
+    if (!form.addressStreet.trim()) nextErrors.addressStreet = t('completeProfile.validation.streetRequired');
+    if (!form.addressCity.trim()) nextErrors.addressCity = t('completeProfile.validation.cityRequired');
+    if (!form.addressState.trim()) nextErrors.addressState = t('completeProfile.validation.stateRequired');
+    if (!form.addressCountry.trim()) nextErrors.addressCountry = t('completeProfile.validation.countryRequired');
+    if (!form.addressPostalCode.trim()) nextErrors.addressPostalCode = t('completeProfile.validation.postalCodeRequired');
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -380,9 +382,9 @@ export function CompleteProfilePage(): ReactElement {
         </div>
 
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Complete your profile</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('completeProfile.title')}</h2>
           <p className="mt-1 text-sm text-gray-600">
-            We need your contact and address details to finish setup.
+            {t('completeProfile.subtitle')}
           </p>
         </div>
 
@@ -394,7 +396,7 @@ export function CompleteProfilePage(): ReactElement {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {renderPhoneField(
-            'Phone',
+            t('completeProfile.phoneLabel'),
             form.phone,
             (value) => {
               updateField('phone', value);
@@ -405,14 +407,14 @@ export function CompleteProfilePage(): ReactElement {
 
           <div className="space-y-2">
             {renderPhoneField(
-              'WhatsApp Number',
+              t('completeProfile.whatsappLabel'),
               form.whatsappNumber,
               (value) => updateField('whatsappNumber', value),
               errors.whatsappNumber,
               usePhoneForWhatsapp
             )}
             <Checkbox
-              label="Same as phone number"
+              label={t('completeProfile.sameAsPhone')}
               checked={usePhoneForWhatsapp}
               onChange={(event) => {
                 const checked = event.target.checked;
@@ -423,8 +425,8 @@ export function CompleteProfilePage(): ReactElement {
           </div>
 
           <Input
-            label="Street Address"
-            placeholder="12 Broad Street"
+            label={t('completeProfile.streetAddress')}
+            placeholder={t('completeProfile.streetPlaceholder')}
             value={form.addressStreet}
             onChange={(event) => updateField('addressStreet', event.target.value)}
             error={errors.addressStreet}
@@ -433,16 +435,16 @@ export function CompleteProfilePage(): ReactElement {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="City"
-              placeholder="Lagos"
+              label={t('completeProfile.city')}
+              placeholder={t('completeProfile.cityPlaceholder')}
               value={form.addressCity}
               onChange={(event) => updateField('addressCity', event.target.value)}
               error={errors.addressCity}
               className="text-sm placeholder:text-sm"
             />
             <Input
-              label="State"
-              placeholder="Lagos"
+              label={t('completeProfile.state')}
+              placeholder={t('completeProfile.statePlaceholder')}
               value={form.addressState}
               onChange={(event) => updateField('addressState', event.target.value)}
               error={errors.addressState}
@@ -452,16 +454,16 @@ export function CompleteProfilePage(): ReactElement {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Country"
-              placeholder="Nigeria"
+              label={t('completeProfile.country')}
+              placeholder={t('completeProfile.countryPlaceholder')}
               value={form.addressCountry}
               onChange={(event) => updateField('addressCountry', event.target.value)}
               error={errors.addressCountry}
               className="text-sm placeholder:text-sm"
             />
             <Input
-              label="Postal Code"
-              placeholder="100001"
+              label={t('completeProfile.postalCode')}
+              placeholder={t('completeProfile.postalCodePlaceholder')}
               value={form.addressPostalCode}
               onChange={(event) => updateField('addressPostalCode', event.target.value)}
               error={errors.addressPostalCode}
@@ -475,7 +477,7 @@ export function CompleteProfilePage(): ReactElement {
             size="lg"
             isLoading={isSubmitting || isLoadingProfile}
           >
-            Save & Continue
+            {t('completeProfile.saveButton')}
           </Button>
         </form>
       </Card>

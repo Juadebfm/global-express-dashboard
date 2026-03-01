@@ -1,0 +1,125 @@
+{
+  "loadingLabel": "Loading bulk orders...",
+  "pageTitle": "Bulk Orders",
+  "subtitle": "Manage bulk shipment orders.",
+  "createButton": "Create Bulk Order",
+  "summary": {
+    "totalBulkOrders": "Total Bulk Orders",
+    "totalItems": "Total Items",
+    "acrossAllOrders": "Across all bulk orders",
+    "activeOrders": "Active Orders",
+    "currentlyInPipeline": "Currently in logistics pipeline"
+  },
+  "queue": {
+    "title": "Bulk Order Queue",
+    "descriptionWithCount": "{{count}} bulk orders available.",
+    "descriptionEmpty": "Bulk orders will appear here.",
+    "searchPlaceholder": "Search by ID, origin, destination...",
+    "statusFilter": {
+      "all": "All Status",
+      "pending": "Pending",
+      "active": "Active",
+      "completed": "Completed",
+      "exception": "Exception"
+    }
+  },
+  "table": {
+    "title": "Order List",
+    "columns": {
+      "orderId": "Order ID",
+      "route": "Route",
+      "items": "Items",
+      "status": "Status",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "viewDetails": "View Details",
+    "deleteOrder": "Delete Order",
+    "empty": "No bulk orders found.",
+    "emptyFiltered": "No bulk orders match your filters."
+  },
+  "detail": {
+    "backLabel": "Bulk Orders",
+    "sectionTitle": "Bulk Order Details",
+    "fields": {
+      "orderId": "Order ID",
+      "route": "Route",
+      "status": "Status",
+      "items": "Items",
+      "created": "Created",
+      "notes": "Notes"
+    },
+    "markReceived": "Mark Received",
+    "deleteOrder": "Delete Order",
+    "itemsTitle": "Items ({{count}})",
+    "loadingItems": "Loading items...",
+    "noItems": "No items found for this bulk order.",
+    "itemsTable": {
+      "trackingNo": "Tracking #",
+      "recipient": "Recipient",
+      "description": "Description",
+      "weight": "Weight",
+      "value": "Value",
+      "date": "Date"
+    }
+  },
+  "createForm": {
+    "backLabel": "Bulk Orders",
+    "title": "Create Bulk Order",
+    "subtitle": "Add multiple items to ship in a single batch.",
+    "orderDetails": "Order Details",
+    "shipmentType": "Shipment Type",
+    "airFreight": "Air Freight",
+    "oceanFreight": "Ocean Freight",
+    "originLabel": "Origin",
+    "originValue": "South Korea",
+    "destinationLabel": "Destination",
+    "destinationValue": "Lagos, Nigeria",
+    "notesLabel": "Notes (optional)",
+    "notesPlaceholder": "Internal notes for this batch...",
+    "items": {
+      "sectionTitle": "Items ({{count}})",
+      "sectionSubtitle": "Add recipients for this bulk shipment",
+      "addItemButton": "Add Item",
+      "itemLabel": "Item {{number}}",
+      "removeAriaLabel": "Remove item",
+      "customerLabel": "Customer",
+      "customerPlaceholder": "Select or search customer...",
+      "noCustomersFound": "No customers found",
+      "recipientNameLabel": "Recipient Name *",
+      "recipientNamePlaceholder": "Full name",
+      "addressLabel": "Address",
+      "addressPlaceholder": "Recipient address",
+      "phoneLabel": "Phone",
+      "phonePlaceholder": "+234...",
+      "emailLabel": "Email",
+      "emailPlaceholder": "email@example.com",
+      "usePickupRepLabel": "Someone else will pick up this item",
+      "repNameLabel": "Representative Name *",
+      "repNamePlaceholder": "Full name of representative",
+      "repPhoneLabel": "Representative Phone",
+      "repPhonePlaceholder": "+234...",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "e.g. Electronics",
+      "weightLabel": "Weight (kg)",
+      "declaredValueLabel": "Declared Value ($)",
+      "emptyMessage": "No items yet. Click \"Add Item\" to start."
+    },
+    "cancelButton": "Cancel",
+    "submitButton": "Create Bulk Order",
+    "submittingButton": "Creating..."
+  },
+  "deleteModal": {
+    "title": "Delete Bulk Order",
+    "message": "This bulk order will be permanently deleted. This action cannot be undone.",
+    "confirmLabel": "Delete Order",
+    "cancelLabel": "Cancel"
+  },
+  "messages": {
+    "deleted": "Bulk order deleted.",
+    "statusUpdated": "Status updated.",
+    "failedToDelete": "Failed to delete bulk order.",
+    "failedToLoadDetail": "Failed to load bulk order details.",
+    "failedToUpdateStatus": "Failed to update status."
+  }
+}

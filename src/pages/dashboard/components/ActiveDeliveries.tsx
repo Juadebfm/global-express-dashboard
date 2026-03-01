@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { Ship, Plane } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { ActiveDelivery } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants';
@@ -33,6 +34,7 @@ export function ActiveDeliveries({
   items,
   emptyLabel,
 }: ActiveDeliveriesProps): ReactElement {
+  const { t } = useTranslation('dashboard');
   const navigate = useNavigate();
   const { setQuery } = useSearch();
 
@@ -74,7 +76,7 @@ export function ActiveDeliveries({
                       {item.location.city}, {item.location.state}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {item.activeShipments} active shipments
+                      {t('activeDeliveries.activeShipmentsCount', { count: item.activeShipments })}
                     </p>
                   </div>
                 </div>
@@ -82,7 +84,10 @@ export function ActiveDeliveries({
                   <span
                     className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold ${status.bg} ${status.text}`}
                   >
-                    {item.statusLabel}
+                    {item.status === 'on_time' ? t('activeDeliveries.onTime')
+                      : item.status === 'delayed' ? t('activeDeliveries.delayed')
+                      : item.status === 'completed' ? t('activeDeliveries.delivered')
+                      : t('activeDeliveries.unknown')}
                   </span>
                   <p className="mt-1 text-xs text-gray-500">
                     {item.status === 'on_time'
@@ -90,8 +95,8 @@ export function ActiveDeliveries({
                       : item.status === 'delayed'
                         ? item.delay.display
                         : item.status === 'completed'
-                          ? 'Delivered'
-                          : 'No ETA'}
+                          ? t('activeDeliveries.delivered')
+                          : t('activeDeliveries.noEta')}
                   </p>
                 </div>
               </button>

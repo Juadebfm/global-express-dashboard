@@ -1,0 +1,18 @@
+{
+  "loadingLabel": "Loading delivery schedule...",
+  "title": "Delivery Schedule",
+  "subtitle": "Live upcoming deliveries powered by your shipment data.",
+  "upcomingDeliveries": "Upcoming Deliveries",
+  "deliveryCount_one": "{{count}} delivery",
+  "deliveryCount_other": "{{count}} deliveries",
+  "matchSearch": " match your search",
+  "scheduled": " scheduled",
+  "noMatchSearch": "No delivery schedule items match your search.",
+  "noUpcoming": "No upcoming deliveries available yet.",
+  "routeLabel": "{{origin}} to {{destination}}",
+  "customerLabel": "Customer: {{customer}}",
+  "packagesLabel": "Packages: {{count}}",
+  "departureLabel": "Departure: {{date}}",
+  "etaLabel": "ETA: {{date}}",
+  "tbd": "TBD"
+}

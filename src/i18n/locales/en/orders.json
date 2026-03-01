@@ -1,0 +1,19 @@
+{
+  "loadingLabel": "Loading orders...",
+  "pageTitle": "Orders",
+  "subtitle": "Review active and recently created customer orders.",
+  "createClientOrder": "Create Client Order",
+  "queue": {
+    "title": "Order Queue",
+    "descriptionWithCount": "{{count}} orders available from backend.",
+    "descriptionEmpty": "Latest orders across all logistics channels."
+  },
+  "item": {
+    "title": "Order {{trackingNumber}}",
+    "origin": "Origin: {{origin}}",
+    "destination": "Destination: {{destination}}",
+    "created": "Created: {{date}}"
+  },
+  "empty": "No orders match your search.",
+  "errorEmpty": "Unable to load orders."
+}

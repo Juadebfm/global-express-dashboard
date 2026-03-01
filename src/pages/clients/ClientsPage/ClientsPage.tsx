@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   ChevronDown,
@@ -11,15 +12,12 @@ import {
 } from 'lucide-react';
 import { AppShell } from '@/pages/shared';
 import { useAuth, useClients, useDashboardData, useSearch } from '@/hooks';
+import i18n from '@/i18n/i18n';
 import type { ApiClient } from '@/types';
 import { cn } from '@/utils';
+import { CopyButton } from '@/components/ui';
 
 type ClientStatus = 'active' | 'inactive';
-
-const statusLabels: Record<ClientStatus, string> = {
-  active: 'Active',
-  inactive: 'In-Active',
-};
 
 const statusStyles: Record<ClientStatus, string> = {
   active: 'bg-emerald-50 text-emerald-700',
@@ -29,11 +27,11 @@ const statusStyles: Record<ClientStatus, string> = {
 const nairaFormatter = new Intl.NumberFormat('en-NG');
 const formatNaira = (amount: number): string => `₦${nairaFormatter.format(amount)}`;
 
-const formatDate = (iso: string | null): string => {
+const formatDate = (iso: string | null, locale: string = 'en-US'): string => {
   if (!iso) return '—';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -51,6 +49,8 @@ const buildInitials = (name: string): string => {
 };
 
 export function ClientsPage(): ReactElement {
+  const { t } = useTranslation('clients');
+  const dateLocale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
   const { data, isLoading, error } = useDashboardData();
   const { query, setQuery } = useSearch();
   const { user } = useAuth();
@@ -63,6 +63,11 @@ export function ClientsPage(): ReactElement {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const statusMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const statusLabels: Record<ClientStatus, string> = useMemo(() => ({
+    active: t('statusActive'),
+    inactive: t('statusInactive'),
+  }), [t]);
 
   useEffect(() => {
     if (!openMenu) return;
@@ -123,9 +128,9 @@ export function ClientsPage(): ReactElement {
   const handleCopyEmail = async (client: ApiClient): Promise<void> => {
     try {
       await navigator.clipboard.writeText(client.email);
-      setActionMessage(`Copied ${client.email}.`);
+      setActionMessage(t('copiedEmail', { email: client.email }));
     } catch {
-      setActionMessage('Copy failed.');
+      setActionMessage(t('copyFailed'));
     }
   };
 
@@ -135,12 +140,12 @@ export function ClientsPage(): ReactElement {
         data={data}
         isLoading={isLoading}
         error={error}
-        loadingLabel="Loading clients..."
+        loadingLabel={t('loadingLabel')}
       >
         <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-10 text-center">
-          <p className="text-lg font-semibold text-gray-800">Access restricted</p>
+          <p className="text-lg font-semibold text-gray-800">{t('accessRestricted')}</p>
           <p className="mt-2 text-sm text-gray-500">
-            Client management is available to staff, admin, and super admin accounts.
+            {t('accessRestrictedDesc')}
           </p>
         </div>
       </AppShell>
@@ -152,7 +157,7 @@ export function ClientsPage(): ReactElement {
       data={data}
       isLoading={isLoading || clientsLoading}
       error={error}
-      loadingLabel="Loading clients..."
+      loadingLabel={t('loadingLabel')}
     >
       <div className="space-y-6">
         {activeClient ? (
@@ -164,26 +169,26 @@ export function ClientsPage(): ReactElement {
               className="inline-flex items-center gap-2 text-xl font-semibold text-gray-900"
             >
               <ArrowLeft className="h-5 w-5" />
-              View Clients
+              {t('viewClients')}
             </button>
 
             <div className="rounded-3xl border border-gray-200 bg-white p-6">
-              <p className="text-sm font-semibold text-gray-700">Customer Information</p>
+              <p className="text-sm font-semibold text-gray-700">{t('customerInfo')}</p>
               <div className="mt-4 flex flex-wrap items-center gap-6">
                 <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-brand-50 text-2xl font-semibold text-brand-600">
                   {buildInitials(getClientName(activeClient))}
                 </div>
                 <div className="grid gap-3 text-sm text-gray-500 sm:grid-cols-2">
                   <div>
-                    <p className="text-xs font-semibold uppercase text-gray-400">Name</p>
+                    <p className="text-xs font-semibold uppercase text-gray-400">{t('nameLabel')}</p>
                     <p className="text-base font-semibold text-gray-900">{getClientName(activeClient)}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase text-gray-400">Phone Number</p>
+                    <p className="text-xs font-semibold uppercase text-gray-400">{t('phoneLabel')}</p>
                     <p className="text-base font-semibold text-gray-900">{activeClient.phone}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase text-gray-400">Email</p>
+                    <p className="text-xs font-semibold uppercase text-gray-400">{t('emailLabel')}</p>
                     <p className="text-base font-semibold text-gray-900">{activeClient.email}</p>
                   </div>
                 </div>
@@ -192,17 +197,17 @@ export function ClientsPage(): ReactElement {
 
             <div className="rounded-3xl border border-gray-200 bg-white">
               <div className="border-b border-gray-100 px-6 py-4">
-                <h2 className="text-lg font-semibold text-gray-900">Order List</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{t('orderList')}</h2>
               </div>
               <div className="px-6 py-6">
                 <div className="overflow-hidden rounded-2xl border border-gray-200">
                   <table className="w-full text-left text-sm">
                     <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                       <tr>
-                        <th className="px-6 py-4">Tracking #</th>
-                        <th className="px-6 py-4">Status</th>
-                        <th className="px-6 py-4">Amount</th>
-                        <th className="px-6 py-4">Date</th>
+                        <th className="px-6 py-4">{t('trackingNumber')}</th>
+                        <th className="px-6 py-4">{t('status')}</th>
+                        <th className="px-6 py-4">{t('amount')}</th>
+                        <th className="px-6 py-4">{t('date')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 bg-white">
@@ -212,14 +217,17 @@ export function ClientsPage(): ReactElement {
                             colSpan={4}
                             className="px-6 py-8 text-center text-sm text-gray-400"
                           >
-                            No orders found for this client.
+                            {t('noOrders')}
                           </td>
                         </tr>
                       ) : (
                         (activeClient.orders ?? []).map((order) => (
                           <tr key={order.id} className="transition hover:bg-gray-50">
                             <td className="px-6 py-4 font-medium text-gray-800">
-                              {order.trackingNumber}
+                              <span className="inline-flex items-center gap-1.5">
+                                {order.trackingNumber}
+                                <CopyButton value={order.trackingNumber} />
+                              </span>
                             </td>
                             <td className="px-6 py-4">
                               <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold capitalize text-gray-700">
@@ -230,7 +238,7 @@ export function ClientsPage(): ReactElement {
                               {formatNaira(order.amount)}
                             </td>
                             <td className="px-6 py-4 text-gray-500">
-                              {formatDate(order.createdAt)}
+                              {formatDate(order.createdAt, dateLocale)}
                             </td>
                           </tr>
                         ))
@@ -248,7 +256,7 @@ export function ClientsPage(): ReactElement {
               <div className="rounded-2xl border border-gray-200 bg-white p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Total Clients</p>
+                    <p className="text-sm text-gray-500">{t('totalClients')}</p>
                     <p className="mt-2 text-2xl font-semibold text-gray-900">
                       {summaryStats.totalClients}
                     </p>
@@ -262,13 +270,13 @@ export function ClientsPage(): ReactElement {
               <div className="rounded-2xl border border-gray-200 bg-white p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Active Clients</p>
+                    <p className="text-sm text-gray-500">{t('activeClients')}</p>
                     <p className="mt-2 text-2xl font-semibold text-gray-900">
                       {summaryStats.activeClients}
                     </p>
                     <p className="mt-1 text-xs text-gray-500">
                       {summaryStats.totalClients > 0
-                        ? `${((summaryStats.activeClients / summaryStats.totalClients) * 100).toFixed(1)}% of total`
+                        ? t('ofTotal', { percent: ((summaryStats.activeClients / summaryStats.totalClients) * 100).toFixed(1) })
                         : '—'}
                     </p>
                   </div>
@@ -281,7 +289,7 @@ export function ClientsPage(): ReactElement {
               <div className="rounded-2xl border border-gray-200 bg-white p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Total Revenue</p>
+                    <p className="text-sm text-gray-500">{t('totalRevenue')}</p>
                     <p className="mt-2 text-2xl font-semibold text-gray-900">
                       {formatNaira(summaryStats.totalRevenue)}
                     </p>
@@ -295,9 +303,9 @@ export function ClientsPage(): ReactElement {
 
             <div className="rounded-3xl border border-gray-200 bg-white p-6">
               <div className="space-y-2">
-                <h2 className="text-2xl font-semibold text-gray-900">Clients List</h2>
+                <h2 className="text-2xl font-semibold text-gray-900">{t('clientsList')}</h2>
                 <p className="text-sm text-gray-500">
-                  Manage your client relationships and track performance
+                  {t('clientsListDesc')}
                 </p>
               </div>
 
@@ -308,7 +316,7 @@ export function ClientsPage(): ReactElement {
                     type="search"
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search by name, email..."
+                    placeholder={t('searchPlaceholder')}
                     className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-800 outline-none transition focus:border-brand-500"
                   />
                 </div>
@@ -318,7 +326,7 @@ export function ClientsPage(): ReactElement {
                     onClick={() => setOpenMenu((prev) => !prev)}
                     className="inline-flex w-40 items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 shadow-sm transition hover:border-gray-300"
                   >
-                    {statusFilter === 'all' ? 'All Status' : statusLabels[statusFilter]}
+                    {statusFilter === 'all' ? t('statusAll') : statusLabels[statusFilter]}
                     <ChevronDown
                       className={cn(
                         'h-4 w-4 text-gray-400 transition',
@@ -330,9 +338,9 @@ export function ClientsPage(): ReactElement {
                     <div className="absolute z-20 mt-2 w-44 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
                       {(
                         [
-                          { value: 'all', label: 'All Status' },
-                          { value: 'active', label: 'Active' },
-                          { value: 'inactive', label: 'In-Active' },
+                          { value: 'all', label: t('statusAll') },
+                          { value: 'active', label: t('statusActive') },
+                          { value: 'inactive', label: t('statusInactive') },
                         ] as Array<{ value: ClientStatus | 'all'; label: string }>
                       ).map((option) => (
                         <button
@@ -359,7 +367,7 @@ export function ClientsPage(): ReactElement {
             </div>
 
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">Client Directory</h3>
+              <h3 className="text-xl font-semibold text-gray-900">{t('clientDirectory')}</h3>
               {actionMessage && (
                 <div className="mt-3 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                   {actionMessage}
@@ -369,12 +377,12 @@ export function ClientsPage(): ReactElement {
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <tr>
-                      <th className="px-6 py-4">Customer</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4">Orders</th>
-                      <th className="px-6 py-4">Total Payments</th>
-                      <th className="px-6 py-4">Last Order</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
+                      <th className="px-6 py-4">{t('customer')}</th>
+                      <th className="px-6 py-4">{t('status')}</th>
+                      <th className="px-6 py-4">{t('orders')}</th>
+                      <th className="px-6 py-4">{t('totalPayments')}</th>
+                      <th className="px-6 py-4">{t('lastOrder')}</th>
+                      <th className="px-6 py-4 text-right">{t('actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white">
@@ -417,7 +425,7 @@ export function ClientsPage(): ReactElement {
                             {formatNaira(parseFloat(client.totalPayments) || 0)}
                           </td>
                           <td className="px-6 py-4 text-gray-600">
-                            {formatDate(client.lastOrderAt)}
+                            {formatDate(client.lastOrderAt, dateLocale)}
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="relative inline-flex" data-client-menu>
@@ -431,7 +439,7 @@ export function ClientsPage(): ReactElement {
                                   );
                                 }}
                                 className="text-gray-400 hover:text-gray-600"
-                                aria-label="More"
+                                aria-label={t('more')}
                               >
                                 <MoreVertical className="h-4 w-4" />
                               </button>
@@ -446,7 +454,7 @@ export function ClientsPage(): ReactElement {
                                     }}
                                     className="w-full rounded-lg px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
                                   >
-                                    View Details
+                                    {t('viewDetails')}
                                   </button>
                                   <button
                                     type="button"
@@ -457,7 +465,7 @@ export function ClientsPage(): ReactElement {
                                     }}
                                     className="w-full rounded-lg px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
                                   >
-                                    Copy Email
+                                    {t('copyEmail')}
                                   </button>
                                 </div>
                               )}
@@ -472,8 +480,8 @@ export function ClientsPage(): ReactElement {
                 {filteredClients.length === 0 && (
                   <div className="p-6 text-center text-sm text-gray-500">
                     {apiClients.length === 0
-                      ? 'No clients found.'
-                      : 'No clients match your filters.'}
+                      ? t('noClientsFound')
+                      : t('noClientsMatch')}
                   </div>
                 )}
               </div>

@@ -1,0 +1,86 @@
+{
+  "loadingLabel": "지원 로딩 중...",
+  "listView": {
+    "pageTitle": "고객 지원",
+    "subtitleCustomer": "배송 및 계정에 대한 도움을 받으세요.",
+    "subtitleStaff": "고객 지원 티켓을 관리합니다.",
+    "newTicketButton": "새 티켓"
+  },
+  "filters": {
+    "all": "전체",
+    "open": "신규",
+    "inProgress": "진행 중",
+    "resolved": "해결됨",
+    "closed": "종료"
+  },
+  "ticketList": {
+    "loadingText": "티켓 로딩 중...",
+    "emptyText": "지원 티켓이 없습니다.",
+    "noDescription": "설명 없음",
+    "byRequester": "{{name}} 요청"
+  },
+  "detailView": {
+    "loadingText": "티켓 로딩 중...",
+    "ticketNotFound": "티켓을 찾을 수 없습니다.",
+    "backToTickets": "티켓 목록으로"
+  },
+  "chatInput": {
+    "closedMessage": "이 티켓은 종료되어 새 메시지를 보낼 수 없습니다.",
+    "replyLabel": "답변",
+    "internalNoteLabel": "내부 메모",
+    "internalPlaceholder": "내부 메모를 작성하세요...",
+    "messagePlaceholder": "메시지를 입력하세요..."
+  },
+  "statusActions": {
+    "startWorking": "작업 시작",
+    "markResolved": "해결 완료",
+    "closeTicket": "티켓 종료",
+    "reopen": "다시 열기"
+  },
+  "ticketForm": {
+    "title": "지원 티켓 생성",
+    "subtitle": "문제를 제출하면 관리자 지원 대기열로 전달됩니다.",
+    "subjectLabel": "제목",
+    "subjectPlaceholder": "문제를 간략하게 설명하세요",
+    "categoryLabel": "카테고리",
+    "priorityLabel": "우선순위",
+    "trackingNumberLabel": "관련 운송장 번호 (선택사항)",
+    "trackingNumberPlaceholder": "예: GX-1234567",
+    "messageLabel": "메시지",
+    "messagePlaceholder": "저희 팀이 빠르게 해결할 수 있도록 자세한 내용을 입력해 주세요.",
+    "submitButton": "티켓 제출",
+    "categories": {
+      "shipmentInquiry": "배송 문의",
+      "paymentIssue": "결제 문제",
+      "damagedGoods": "파손 물품",
+      "documentRequest": "서류 요청",
+      "accountIssue": "계정 문제",
+      "general": "일반"
+    },
+    "priorities": {
+      "low": "낮음",
+      "medium": "보통",
+      "high": "높음"
+    },
+    "validation": {
+      "subjectMin": "제목은 5자 이상이어야 합니다",
+      "subjectMax": "제목은 120자 이하여야 합니다",
+      "categoryRequired": "유효한 카테고리를 선택해 주세요",
+      "priorityRequired": "유효한 우선순위를 선택해 주세요",
+      "trackingNumberMax": "운송장 번호는 50자 이하여야 합니다",
+      "descriptionMin": "10자 이상 입력해 주세요",
+      "descriptionMax": "메시지는 2000자 이하여야 합니다"
+    }
+  },
+  "feedbackMessages": {
+    "ticketsLoadError": "지원 티켓을 불러올 수 없습니다. 다시 시도해 주세요.",
+    "ticketCreateError": "지원 티켓을 제출할 수 없습니다. 다시 시도해 주세요.",
+    "ticketCreateSuccess": "티켓이 성공적으로 제출되었습니다. 지원팀이 곧 연락드리겠습니다.",
+    "ticketDetailLoadError": "이 티켓을 불러올 수 없습니다. 다시 시도해 주세요.",
+    "messageSendError": "메시지를 보낼 수 없습니다. 다시 시도해 주세요.",
+    "ticketClosedError": "이 티켓은 종료되어 더 이상 메시지를 보낼 수 없습니다.",
+    "statusUpdateSuccess": "티켓 상태가 성공적으로 업데이트되었습니다.",
+    "statusUpdateError": "티켓 상태를 업데이트할 수 없습니다. 다시 시도해 주세요.",
+    "newTicketToast": "새 지원 티켓이 생성되었습니다."
+  }
+}

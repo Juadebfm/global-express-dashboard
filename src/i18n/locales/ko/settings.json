@@ -1,0 +1,121 @@
+{
+  "loadingLabel": "설정 로딩 중...",
+  "pageTitle": "설정",
+  "subtitle": "GlobalExpress 계정 환경 설정을 구성합니다.",
+  "tabs": {
+    "general": "일반",
+    "logistics": "물류",
+    "fx": "환율",
+    "pricing": "가격",
+    "restrictedGoods": "제한 품목"
+  },
+  "language": {
+    "title": "언어",
+    "subtitle": "선호하는 언어를 선택하세요."
+  },
+  "changePassword": {
+    "title": "비밀번호 변경",
+    "subtitle": "운영자 계정 비밀번호를 업데이트합니다.",
+    "currentPassword": "현재 비밀번호",
+    "newPassword": "새 비밀번호",
+    "saveButton": "비밀번호 변경",
+    "savingButton": "저장 중...",
+    "successMessage": "비밀번호가 성공적으로 변경되었습니다."
+  },
+  "accountDataExport": {
+    "title": "계정 데이터 내보내기",
+    "subtitle": "계정 데이터의 사본을 다운로드합니다.",
+    "exportButton": "데이터 내보내기",
+    "exportingButton": "내보내는 중...",
+    "failedMessage": "계정 데이터 내보내기에 실패했습니다."
+  },
+  "deleteAccount": {
+    "title": "계정 삭제",
+    "subtitle": "계정을 영구적으로 삭제하고 로그아웃합니다.",
+    "deleteButton": "계정 삭제",
+    "deletingButton": "삭제 중...",
+    "failedMessage": "계정 삭제에 실패했습니다.",
+    "modal": {
+      "title": "계정 삭제",
+      "message": "이 작업은 되돌릴 수 없습니다. 계정과 관련된 모든 데이터가 영구적으로 삭제되며, 로그아웃됩니다.",
+      "confirmLabel": "계정 삭제",
+      "cancelLabel": "취소"
+    }
+  },
+  "notificationPreferences": {
+    "title": "알림 설정",
+    "subtitle": "계정 환경 설정에서 로드되었습니다.",
+    "loadingText": "알림 설정 로딩 중...",
+    "unavailableText": "알림 설정을 사용할 수 없습니다.",
+    "savingText": "설정 저장 중...",
+    "channels": {
+      "notifyEmailAlerts": "이메일 알림",
+      "notifyInAppAlerts": "앱 내 알림",
+      "consentMarketing": "마케팅 이메일"
+    },
+    "status": {
+      "enabled": "활성",
+      "disabled": "비활성"
+    }
+  },
+  "logistics": {
+    "title": "물류 설정",
+    "subtitle": "배송 경로, 사무소 주소 및 도착 예정 안내.",
+    "loadingText": "물류 설정 로딩 중...",
+    "failedMessage": "물류 설정 로딩에 실패했습니다.",
+    "fields": {
+      "shippingLane": "배송 경로",
+      "koreaOffice": "한국 사무소",
+      "lagosOffice": "라고스 사무소",
+      "etaNotes": "도착 예정 안내"
+    }
+  },
+  "fxRate": {
+    "title": "환율 설정",
+    "subtitle": "환율 구성.",
+    "loadingText": "환율 설정 로딩 중...",
+    "failedMessage": "환율 설정 로딩에 실패했습니다.",
+    "fields": {
+      "mode": "모드",
+      "modeLive": "실시간",
+      "modeManual": "수동",
+      "manualRate": "수동 환율",
+      "effectiveRate": "적용 환율",
+      "notAvailable": "N/A"
+    }
+  },
+  "pricing": {
+    "title": "가격 규칙",
+    "subtitle": "항공 및 해상 배송의 활성 가격 규칙.",
+    "loadingText": "가격 규칙 로딩 중...",
+    "failedMessage": "가격 규칙 로딩에 실패했습니다.",
+    "emptyText": "구성된 가격 규칙이 없습니다.",
+    "table": {
+      "name": "이름",
+      "mode": "모드",
+      "rate": "요율",
+      "weightRange": "무게 범위",
+      "status": "상태"
+    },
+    "statusActive": "활성",
+    "statusInactive": "비활성"
+  },
+  "restrictedGoods": {
+    "title": "제한 품목",
+    "subtitle": "배송이 제한된 품목.",
+    "loadingText": "제한 품목 로딩 중...",
+    "failedMessage": "제한 품목 로딩에 실패했습니다.",
+    "emptyText": "구성된 제한 품목이 없습니다.",
+    "table": {
+      "code": "코드",
+      "nameEn": "이름 (EN)",
+      "nameKo": "이름 (KO)",
+      "override": "재정의",
+      "status": "상태"
+    },
+    "overrideAllowed": "허용",
+    "overrideNo": "불가",
+    "statusRestricted": "제한",
+    "statusInactive": "비활성"
+  }
+}

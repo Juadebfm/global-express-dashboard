@@ -1,0 +1,81 @@
+{
+  "loadingLabel": "팀 로딩 중...",
+  "pageTitle": "팀",
+  "subtitle": "현재까지의 팀 목록입니다",
+  "addTeamButton": "팀 추가",
+  "searchPlaceholder": "검색",
+  "accessRestricted": {
+    "title": "접근 제한",
+    "message": "팀 관리는 관리자 및 최고 관리자 계정만 사용할 수 있습니다."
+  },
+  "tabs": {
+    "all": "전체 팀",
+    "admin": "관리자",
+    "nonAdmin": "비관리자"
+  },
+  "roleLabels": {
+    "staff": "직원",
+    "admin": "관리자",
+    "superadmin": "최고 관리자"
+  },
+  "permissions": {
+    "allAccess": "전체 접근 (소유자)",
+    "elevatedAccess": "상위 접근",
+    "transferAndView": "이체 및 조회",
+    "viewOnly": "조회만",
+    "custom": "사용자 정의"
+  },
+  "table": {
+    "columns": {
+      "name": "이름",
+      "email": "이메일",
+      "role": "역할",
+      "permission": "권한"
+    },
+    "pendingApproval": "승인 대기 중",
+    "approve": "승인",
+    "remove": "제거",
+    "requiresSuperAdmin": "최고 관리자 필요"
+  },
+  "emptyState": {
+    "title": "관리할 관리자가 없습니다",
+    "subtitle": "팀을 생성하여 비즈니스를 확장하세요",
+    "addTeamButton": "팀 추가"
+  },
+  "modals": {
+    "profile": {
+      "title": "팀 프로필 보기",
+      "teammateRole": "팀원 역할",
+      "permission": "권한",
+      "removeButton": "제거",
+      "editButton": "수정",
+      "approveButton": "승인"
+    },
+    "invite": {
+      "title": "팀원 초대",
+      "namePlaceholder": "팀원 이름 입력",
+      "emailPlaceholder": "팀원 이메일 입력"
+    },
+    "edit": {
+      "title": "팀원 수정",
+      "namePlaceholder": "팀원 이름 입력",
+      "emailPlaceholder": "팀원 이메일 입력"
+    },
+    "permissions": {
+      "sectionTitle": "권한",
+      "makeAdmin": "관리자로 지정",
+      "canTransfer": "자금 이체 및 조회 가능",
+      "viewOnly": "조회만 가능",
+      "adminApprovalNote": "관리자가 생성한 직원은 최고 관리자의 승인이 필요합니다."
+    },
+    "formError": "이름과 이메일은 필수 항목입니다.",
+    "cancelButton": "취소",
+    "saveButton": "저장",
+    "remove": {
+      "title": "사용자 계정 제거",
+      "message": "{{name}}의 계정을 제거하시겠습니까? 로그인 접근 권한이 삭제됩니다.",
+      "removeButton": "제거",
+      "cancelButton": "취소"
+    }
+  }
+}

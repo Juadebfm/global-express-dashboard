@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Navigation } from 'lucide-react';
 import { Button } from '@/components/ui';
 
@@ -13,6 +14,7 @@ export function ShipmentsHeader({
   subtitle,
   onTrackShipment,
 }: ShipmentsHeaderProps): ReactElement {
+  const { t } = useTranslation('shipments');
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div>
@@ -28,7 +30,7 @@ export function ShipmentsHeader({
           onClick={onTrackShipment}
           className="bg-brand-500 text-white hover:bg-brand-600"
         >
-          Track Your Shipment
+          {t('header.trackShipment')}
         </Button>
       </div>
     </div>

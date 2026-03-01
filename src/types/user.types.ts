@@ -5,6 +5,7 @@ export interface User {
   lastName: string;
   role: 'superadmin' | 'admin' | 'staff' | 'user';
   isActive?: boolean;
+  preferredLanguage?: 'en' | 'ko';
   createdAt: string;
   updatedAt: string;
 }

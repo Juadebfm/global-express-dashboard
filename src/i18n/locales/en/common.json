@@ -1,0 +1,55 @@
+{
+  "close": "Close",
+  "loading": "Loading...",
+  "appShell": {
+    "errorTitle": "Something went wrong",
+    "errorDefault": "We couldn't load this page. The service may be temporarily unavailable.",
+    "tryAgain": "Try Again",
+    "backToDashboard": "Back to Dashboard",
+    "goToHome": "Go to Home"
+  },
+  "confirmModal": {
+    "defaultConfirmLabel": "Confirm",
+    "defaultCancelLabel": "Cancel"
+  },
+  "feedback": {
+    "unexpectedError": "Something went wrong. Please try again.",
+    "networkError": "Unable to connect right now. Please check your connection and try again.",
+    "forbidden": "You do not have permission to perform this action.",
+    "notFound": "The requested resource is not available.",
+    "unavailable": "Service is temporarily unavailable. Please try again shortly.",
+    "rateLimited": "Too many attempts. Please wait a moment and try again.",
+    "sessionExpired": "Your session expired. Please sign in again.",
+    "invalidDetails": "Some details are invalid. Please review and try again."
+  },
+  "errors": {
+    "forbidden": {
+      "title": "Access Denied",
+      "message": "You don't have permission to view this page. If you think this is a mistake, contact your administrator.",
+      "backToDashboard": "Back to Dashboard",
+      "goToHome": "Go to Home",
+      "goBack": "Go Back"
+    },
+    "notFound": {
+      "title": "Page Not Found",
+      "message": "The page you're looking for doesn't exist or has been moved.",
+      "backToDashboard": "Back to Dashboard",
+      "goToHome": "Go to Home",
+      "goBack": "Go Back"
+    }
+  },
+  "status": {
+    "pending": "Pending",
+    "active": "Active",
+    "completed": "Completed",
+    "exception": "Exception",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
+  "roles": {
+    "superadmin": "Super Admin",
+    "admin": "Admin",
+    "staff": "Staff",
+    "user": "Customer"
+  }
+}

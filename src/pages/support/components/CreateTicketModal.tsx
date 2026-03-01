@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { SupportTicketForm } from '@/components/forms';
 import type { CreateSupportTicketPayload } from '@/types';
@@ -12,6 +13,7 @@ interface CreateTicketModalProps {
 }
 
 export function CreateTicketModal({ isOpen, onClose, onSubmit, isCreating }: CreateTicketModalProps): ReactElement | null {
+  const { t } = useTranslation('common');
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,7 +45,7 @@ export function CreateTicketModal({ isOpen, onClose, onSubmit, isCreating }: Cre
           type="button"
           onClick={onClose}
           className="absolute right-3 top-3 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-          aria-label="Close"
+          aria-label={t('close')}
         >
           <X className="h-5 w-5" />
         </button>

@@ -6,12 +6,20 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import type { LoginCredentials } from '@/types';
+import type { LoginCredentials, User } from '@/types';
 import { login as apiLogin, getMe, logout as apiLogout } from '@/services/authService';
+import { useLanguageStore } from '@/store/language';
 import type { AuthContextValue, AuthState } from './auth.types';
 import { AuthContext } from './auth.context';
 
 const TOKEN_KEY = 'globalxpress_token';
+
+function syncLanguageFromUser(user: User): void {
+  const lang = user.preferredLanguage;
+  if (lang === 'en' || lang === 'ko') {
+    useLanguageStore.getState().setLanguage(lang);
+  }
+}
 
 const initialState: AuthState = {
   user: null,
@@ -42,6 +50,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
         throw new Error('Incomplete session');
       }
 
+      syncLanguageFromUser(user);
       setState({
         user,
         isAuthenticated: true,
@@ -70,6 +79,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       const response = await apiLogin(credentials);
       localStorage.setItem(TOKEN_KEY, response.token);
 
+      syncLanguageFromUser(response.user);
       setState({
         user: response.user,
         isAuthenticated: true,

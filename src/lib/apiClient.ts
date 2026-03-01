@@ -86,6 +86,14 @@ export function apiPost<T>(path: string, body?: unknown, token?: string): Promis
   });
 }
 
+export function apiPut<T>(path: string, body?: unknown, token?: string): Promise<T> {
+  return request<T>(path, {
+    method: 'PUT',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+}
+
 export function apiPatch<T>(path: string, body?: unknown, token?: string): Promise<T> {
   return request<T>(path, {
     method: 'PATCH',

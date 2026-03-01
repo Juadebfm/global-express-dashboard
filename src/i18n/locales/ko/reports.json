@@ -1,0 +1,70 @@
+{
+  "pageTitle": "보고서",
+  "subtitle": "비즈니스 분석 및 인사이트.",
+  "dateRange": { "to": "~" },
+  "loading": "보고서 데이터 로딩 중…",
+  "kpis": {
+    "totalOrders": "총 주문",
+    "totalUsers": "총 사용자",
+    "totalRevenue": "총 수익",
+    "revenueChange": "수익 변동",
+    "vsPreviousPeriod": "전 기간 대비"
+  },
+  "revenueAnalytics": {
+    "title": "수익 분석",
+    "total": "합계: {{value}}",
+    "payments": "결제: {{value}}",
+    "avgOrder": "평균 주문: {{value}}"
+  },
+  "shipmentVolume": {
+    "title": "배송 물량",
+    "total": "합계: {{value}}",
+    "air": "항공: {{value}}",
+    "sea": "해상: {{value}}",
+    "barLabelAir": "항공",
+    "barLabelSea": "해상"
+  },
+  "statusPipeline": {
+    "title": "상태 파이프라인",
+    "summary": "활성 {{active}} / 전체 {{total}}"
+  },
+  "airVsSea": {
+    "title": "항공 vs 해상 비교",
+    "orders": "주문",
+    "totalWeight": "총 무게",
+    "completion": "완료율",
+    "avgDelivery": "평균 배송",
+    "avgDeliveryValue": "{{value}}일",
+    "revenue": "수익"
+  },
+  "topCustomers": {
+    "title": "상위 고객",
+    "columns": {
+      "rank": "#",
+      "customer": "고객",
+      "orders": "주문",
+      "weight": "무게",
+      "revenue": "수익"
+    }
+  },
+  "deliveryPerformance": {
+    "title": "배송 성과",
+    "avgDays": "평균 일수",
+    "medianDays": "중간값 일수",
+    "delivered": "배송 완료",
+    "lineLabel": "평균 일수",
+    "avgValue": "평균 {{value}}일",
+    "minValue": "최소 {{value}}일",
+    "maxValue": "최대 {{value}}일",
+    "doneCount": "{{count}}건 완료"
+  },
+  "paymentBreakdown": {
+    "title": "결제 내역",
+    "byType": "유형별",
+    "byStatus": "상태별",
+    "collectionStatus": "수금 상태",
+    "successRate": "{{value}}% 성공",
+    "paymentCount": "{{count}}건 결제",
+    "orderCount": "{{count}}건 주문"
+  }
+}

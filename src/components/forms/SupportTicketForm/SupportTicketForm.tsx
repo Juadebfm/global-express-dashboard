@@ -1,14 +1,15 @@
 import type { ReactElement } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown } from 'lucide-react';
 import { AlertBanner, Button, Card, Input } from '@/components/ui';
 import { cn } from '@/utils';
 import {
   supportTicketCategories,
   supportTicketPriorities,
-  supportTicketSchema,
+  createSupportTicketSchema,
   type SupportTicketFormData,
 } from './SupportTicketForm.schema';
 import type { SupportTicketFormProps } from './SupportTicketForm.types';
@@ -24,19 +25,19 @@ const defaultValues: SupportTicketFormData = {
 const fieldClassName =
   'w-full rounded-lg border border-[#DDE5E9] bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500';
 
-const CATEGORY_LABELS: Record<(typeof supportTicketCategories)[number], string> = {
-  shipment_inquiry: 'Shipment Inquiry',
-  payment_issue: 'Payment Issue',
-  damaged_goods: 'Damaged Goods',
-  document_request: 'Document Request',
-  account_issue: 'Account Issue',
-  general: 'General',
+const CATEGORY_KEYS: Record<(typeof supportTicketCategories)[number], string> = {
+  shipment_inquiry: 'ticketForm.categories.shipmentInquiry',
+  payment_issue: 'ticketForm.categories.paymentIssue',
+  damaged_goods: 'ticketForm.categories.damagedGoods',
+  document_request: 'ticketForm.categories.documentRequest',
+  account_issue: 'ticketForm.categories.accountIssue',
+  general: 'ticketForm.categories.general',
 };
 
-const PRIORITY_LABELS: Record<(typeof supportTicketPriorities)[number], string> = {
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
+const PRIORITY_KEYS: Record<(typeof supportTicketPriorities)[number], string> = {
+  low: 'ticketForm.priorities.low',
+  medium: 'ticketForm.priorities.medium',
+  high: 'ticketForm.priorities.high',
 };
 
 /* ── Custom dropdown ──────────────────────────────────────────── */
@@ -135,6 +136,24 @@ export function SupportTicketForm({
   error,
   successMessage,
 }: SupportTicketFormProps): ReactElement {
+  const { t } = useTranslation('support');
+
+  const schema = useMemo(() => createSupportTicketSchema(t), [t]);
+
+  const categoryLabels = useMemo<Record<(typeof supportTicketCategories)[number], string>>(
+    () => Object.fromEntries(
+      supportTicketCategories.map((c) => [c, t(CATEGORY_KEYS[c])]),
+    ) as Record<(typeof supportTicketCategories)[number], string>,
+    [t],
+  );
+
+  const priorityLabels = useMemo<Record<(typeof supportTicketPriorities)[number], string>>(
+    () => Object.fromEntries(
+      supportTicketPriorities.map((p) => [p, t(PRIORITY_KEYS[p])]),
+    ) as Record<(typeof supportTicketPriorities)[number], string>,
+    [t],
+  );
+
   const {
     register,
     handleSubmit,
@@ -143,7 +162,7 @@ export function SupportTicketForm({
     setValue,
     reset,
   } = useForm<SupportTicketFormData>({
-    resolver: zodResolver(supportTicketSchema),
+    resolver: zodResolver(schema),
     defaultValues,
   });
 
@@ -166,9 +185,9 @@ export function SupportTicketForm({
   return (
     <Card className="p-6">
       <div className="mb-5">
-        <h2 className="text-lg font-semibold text-gray-900">Create Support Ticket</h2>
+        <h2 className="text-lg font-semibold text-gray-900">{t('ticketForm.title')}</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Submit an issue and it will be routed directly to the admin support queue.
+          {t('ticketForm.subtitle')}
         </p>
       </div>
 
@@ -182,8 +201,8 @@ export function SupportTicketForm({
 
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
         <Input
-          label="Subject"
-          placeholder="Briefly describe your issue"
+          label={t('ticketForm.subjectLabel')}
+          placeholder={t('ticketForm.subjectPlaceholder')}
           error={errors.subject?.message}
           {...register('subject')}
         />
@@ -191,40 +210,40 @@ export function SupportTicketForm({
         <div className="grid gap-4 md:grid-cols-2">
           <Dropdown
             id="support-category"
-            label="Category"
+            label={t('ticketForm.categoryLabel')}
             value={category}
             options={supportTicketCategories}
-            labels={CATEGORY_LABELS}
+            labels={categoryLabels}
             error={errors.category?.message}
             onChange={(v) => setValue('category', v, { shouldValidate: true })}
           />
 
           <Dropdown
             id="support-priority"
-            label="Priority"
+            label={t('ticketForm.priorityLabel')}
             value={priority}
             options={supportTicketPriorities}
-            labels={PRIORITY_LABELS}
+            labels={priorityLabels}
             error={errors.priority?.message}
             onChange={(v) => setValue('priority', v, { shouldValidate: true })}
           />
         </div>
 
         <Input
-          label="Related Tracking Number (Optional)"
-          placeholder="e.g. GX-1234567"
+          label={t('ticketForm.trackingNumberLabel')}
+          placeholder={t('ticketForm.trackingNumberPlaceholder')}
           error={errors.relatedTrackingNumber?.message}
           {...register('relatedTrackingNumber')}
         />
 
         <div>
           <label htmlFor="support-description" className="mb-1.5 block text-sm font-medium text-gray-700">
-            Message
+            {t('ticketForm.messageLabel')}
           </label>
           <textarea
             id="support-description"
             rows={5}
-            placeholder="Provide details so our team can resolve this quickly."
+            placeholder={t('ticketForm.messagePlaceholder')}
             className={`${fieldClassName} resize-y`}
             aria-invalid={errors.description ? 'true' : 'false'}
             {...register('description')}
@@ -238,7 +257,7 @@ export function SupportTicketForm({
 
         <div className="flex justify-end pt-1">
           <Button type="submit" className="text-sm" size="md" isLoading={isLoading}>
-            Submit Ticket
+            {t('ticketForm.submitButton')}
           </Button>
         </div>
       </form>

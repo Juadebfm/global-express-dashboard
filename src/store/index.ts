@@ -11,3 +11,6 @@ export { useFeedbackStore } from './feedback';
 export type { FeedbackTone, FeedbackMessage, PushFeedbackInput, FeedbackStore } from './feedback';
 
 export { useWebSocketStore } from './websocket';
+
+export { useLanguageStore, LANGUAGE_STORAGE_KEY } from './language';
+export type { Language, LanguageState, LanguageStore } from './language';

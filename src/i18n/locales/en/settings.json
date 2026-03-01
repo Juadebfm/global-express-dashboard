@@ -1,0 +1,121 @@
+{
+  "loadingLabel": "Loading settings...",
+  "pageTitle": "Settings",
+  "subtitle": "Configure preferences for your GlobalExpress account.",
+  "tabs": {
+    "general": "General",
+    "logistics": "Logistics",
+    "fx": "FX Rate",
+    "pricing": "Pricing",
+    "restrictedGoods": "Restricted Goods"
+  },
+  "language": {
+    "title": "Language",
+    "subtitle": "Choose your preferred language."
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "subtitle": "Update your operator account password.",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "saveButton": "Update Password",
+    "savingButton": "Saving...",
+    "successMessage": "Password changed successfully."
+  },
+  "accountDataExport": {
+    "title": "Account Data Export",
+    "subtitle": "Download a copy of your account data.",
+    "exportButton": "Export Data",
+    "exportingButton": "Exporting...",
+    "failedMessage": "Failed to export account data."
+  },
+  "deleteAccount": {
+    "title": "Delete Account",
+    "subtitle": "Permanently remove your account and sign out.",
+    "deleteButton": "Delete Account",
+    "deletingButton": "Deleting...",
+    "failedMessage": "Failed to delete account.",
+    "modal": {
+      "title": "Delete Account",
+      "message": "This action is irreversible. Your account and all associated data will be permanently removed, and you will be signed out.",
+      "confirmLabel": "Delete Account",
+      "cancelLabel": "Cancel"
+    }
+  },
+  "notificationPreferences": {
+    "title": "Notification Preferences",
+    "subtitle": "Loaded from your account preferences.",
+    "loadingText": "Loading notification preferences...",
+    "unavailableText": "Notification preferences are unavailable.",
+    "savingText": "Saving preferences...",
+    "channels": {
+      "notifyEmailAlerts": "Email Alerts",
+      "notifyInAppAlerts": "In-App Alerts",
+      "consentMarketing": "Marketing Emails"
+    },
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    }
+  },
+  "logistics": {
+    "title": "Logistics Settings",
+    "subtitle": "Shipping lane, office addresses, and ETA notes.",
+    "loadingText": "Loading logistics settings...",
+    "failedMessage": "Failed to load logistics settings.",
+    "fields": {
+      "shippingLane": "Shipping Lane",
+      "koreaOffice": "Korea Office",
+      "lagosOffice": "Lagos Office",
+      "etaNotes": "ETA Notes"
+    }
+  },
+  "fxRate": {
+    "title": "FX Rate Settings",
+    "subtitle": "Currency exchange rate configuration.",
+    "loadingText": "Loading FX rate settings...",
+    "failedMessage": "Failed to load FX rate settings.",
+    "fields": {
+      "mode": "Mode",
+      "modeLive": "Live",
+      "modeManual": "Manual",
+      "manualRate": "Manual Rate",
+      "effectiveRate": "Effective Rate",
+      "notAvailable": "N/A"
+    }
+  },
+  "pricing": {
+    "title": "Pricing Rules",
+    "subtitle": "Active pricing rules for air and sea shipments.",
+    "loadingText": "Loading pricing rules...",
+    "failedMessage": "Failed to load pricing rules.",
+    "emptyText": "No pricing rules configured.",
+    "table": {
+      "name": "Name",
+      "mode": "Mode",
+      "rate": "Rate",
+      "weightRange": "Weight Range",
+      "status": "Status"
+    },
+    "statusActive": "Active",
+    "statusInactive": "Inactive"
+  },
+  "restrictedGoods": {
+    "title": "Restricted Goods",
+    "subtitle": "Items restricted from shipment.",
+    "loadingText": "Loading restricted goods...",
+    "failedMessage": "Failed to load restricted goods.",
+    "emptyText": "No restricted goods configured.",
+    "table": {
+      "code": "Code",
+      "nameEn": "Name (EN)",
+      "nameKo": "Name (KO)",
+      "override": "Override",
+      "status": "Status"
+    },
+    "overrideAllowed": "Allowed",
+    "overrideNo": "No",
+    "statusRestricted": "Restricted",
+    "statusInactive": "Inactive"
+  }
+}

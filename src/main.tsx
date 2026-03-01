@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ClerkProvider } from '@clerk/clerk-react';
+import './i18n/i18n';
 import './index.css';
 import App from './App.tsx';
 import { queryClient } from './lib/queryClient';

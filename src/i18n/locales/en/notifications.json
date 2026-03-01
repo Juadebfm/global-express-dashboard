@@ -1,0 +1,25 @@
+{
+  "loadingLabel": "Loading notifications...",
+  "pageTitle": "Notification",
+  "refresh": "Refresh",
+  "badges": {
+    "new": "New",
+    "saved": "Saved"
+  },
+  "sections": {
+    "new": "New",
+    "earlier": "Earlier"
+  },
+  "empty": {
+    "title": "No notifications found",
+    "subtitle": "Try adjusting your search to see more updates."
+  },
+  "bulkBar": {
+    "selected": "{{count}} selected",
+    "clearSelection": "Clear selection",
+    "save": "Save",
+    "markRead": "Mark read",
+    "delete": "Delete"
+  },
+  "close": "Close"
+}

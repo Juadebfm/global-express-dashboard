@@ -1,0 +1,25 @@
+{
+  "loadingLabel": "결제 로딩 중...",
+  "pageTitle": "결제",
+  "subtitle": "결제 거래를 검토합니다.",
+  "transactions": {
+    "title": "결제 거래",
+    "descriptionWithCount": "{{count}}건의 결제가 있습니다.",
+    "descriptionEmpty": "모든 결제 거래가 여기에 표시됩니다."
+  },
+  "item": {
+    "title": "결제 {{reference}}"
+  },
+  "empty": "검색과 일치하는 결제가 없습니다.",
+  "errorEmpty": "결제를 불러올 수 없습니다.",
+  "callback": {
+    "verifying": "결제 확인 중...",
+    "verifyingDesc": "결제를 확인하는 동안 잠시 기다려 주세요.",
+    "success": "결제 성공",
+    "successDesc": "결제가 확인되었습니다.",
+    "viewOrders": "주문 보기",
+    "failed": "결제 확인 실패",
+    "failedDesc": "결제를 확인할 수 없습니다. 결제가 이루어진 경우 고객 지원에 문의하세요.",
+    "goToDashboard": "대시보드로 이동"
+  }
+}

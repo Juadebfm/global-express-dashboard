@@ -10,6 +10,7 @@ import {
 import flags from 'react-phone-number-input/flags';
 import en from 'react-phone-number-input/locale/en';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AuthLayout } from '@/components/layout';
 import { Button, Card, Checkbox, Input } from '@/components/ui';
 import { ROUTES } from '@/constants';
@@ -199,6 +200,7 @@ function CountrySelect({
 }
 
 export function ExternalSignUpPage(): ReactElement {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { isLoaded, signUp, setActive } = useSignUp();
   const { getToken, isSignedIn } = useAuth();
@@ -263,27 +265,27 @@ export function ExternalSignUpPage(): ReactElement {
 
     if (accountType === 'business') {
       if (!form.businessName.trim()) {
-        nextErrors.businessName = 'Business name is required.';
+        nextErrors.businessName = t('externalSignUp.validation.businessNameRequired');
       }
     } else {
       if (!form.firstName.trim()) {
-        nextErrors.firstName = 'First name is required.';
+        nextErrors.firstName = t('externalSignUp.validation.firstNameRequired');
       }
       if (!form.lastName.trim()) {
-        nextErrors.lastName = 'Last name is required.';
+        nextErrors.lastName = t('externalSignUp.validation.lastNameRequired');
       }
     }
 
     if (!form.email.trim()) {
-      nextErrors.email = 'Email is required.';
+      nextErrors.email = t('externalSignUp.validation.emailRequired');
     } else if (!emailPattern.test(form.email.trim())) {
-      nextErrors.email = 'Enter a valid email address.';
+      nextErrors.email = t('externalSignUp.validation.emailInvalid');
     }
 
     if (!form.password.trim()) {
-      nextErrors.password = 'Password is required.';
+      nextErrors.password = t('externalSignUp.validation.passwordRequired');
     } else if (form.password.trim().length < 8) {
-      nextErrors.password = 'Password must be at least 8 characters.';
+      nextErrors.password = t('externalSignUp.validation.passwordMinLength');
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -386,35 +388,35 @@ export function ExternalSignUpPage(): ReactElement {
     const nextErrors: Record<string, string> = {};
 
     if (!form.phone.trim()) {
-      nextErrors.phone = 'Phone number is required.';
+      nextErrors.phone = t('externalSignUp.validation.phoneRequired');
     } else if (!isValidPhone(form.phone)) {
-      nextErrors.phone = 'Enter a valid phone number.';
+      nextErrors.phone = t('externalSignUp.validation.phoneInvalid');
     }
 
     if (!form.whatsappNumber.trim()) {
-      nextErrors.whatsappNumber = 'WhatsApp number is required.';
+      nextErrors.whatsappNumber = t('externalSignUp.validation.whatsappRequired');
     } else if (!isValidPhone(form.whatsappNumber)) {
-      nextErrors.whatsappNumber = 'Enter a valid WhatsApp number.';
+      nextErrors.whatsappNumber = t('externalSignUp.validation.whatsappInvalid');
     }
 
     if (!form.addressStreet.trim()) {
-      nextErrors.addressStreet = 'Street address is required.';
+      nextErrors.addressStreet = t('externalSignUp.validation.streetRequired');
     }
 
     if (!form.addressCity.trim()) {
-      nextErrors.addressCity = 'City is required.';
+      nextErrors.addressCity = t('externalSignUp.validation.cityRequired');
     }
 
     if (!form.addressState.trim()) {
-      nextErrors.addressState = 'State is required.';
+      nextErrors.addressState = t('externalSignUp.validation.stateRequired');
     }
 
     if (!form.addressCountry.trim()) {
-      nextErrors.addressCountry = 'Country is required.';
+      nextErrors.addressCountry = t('externalSignUp.validation.countryRequired');
     }
 
     if (!form.addressPostalCode.trim()) {
-      nextErrors.addressPostalCode = 'Postal code is required.';
+      nextErrors.addressPostalCode = t('externalSignUp.validation.postalCodeRequired');
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -545,15 +547,15 @@ export function ExternalSignUpPage(): ReactElement {
           <div>
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                Create a customer account
+                {t('externalSignUp.title')}
               </h2>
               <p className="mt-1 text-sm text-gray-600">
-                Use your email to sign up. We will verify it next.
+                {t('externalSignUp.subtitle')}
               </p>
             </div>
 
             <div className="mb-4">
-              <p className="text-sm font-medium text-gray-700 mb-2">Account type</p>
+              <p className="text-sm font-medium text-gray-700 mb-2">{t('externalSignUp.accountType')}</p>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -564,7 +566,7 @@ export function ExternalSignUpPage(): ReactElement {
                       : 'rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:border-gray-300'
                   }
                 >
-                  Individual
+                  {t('externalSignUp.individual')}
                 </button>
                 <button
                   type="button"
@@ -575,7 +577,7 @@ export function ExternalSignUpPage(): ReactElement {
                       : 'rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:border-gray-300'
                   }
                 >
-                  Business
+                  {t('externalSignUp.business')}
                 </button>
               </div>
             </div>
@@ -589,8 +591,8 @@ export function ExternalSignUpPage(): ReactElement {
             <form onSubmit={handleAccountSubmit} className="space-y-4">
               {accountType === 'business' ? (
                 <Input
-                  label="Business Name"
-                  placeholder="Acme Logistics Ltd"
+                  label={t('externalSignUp.businessName')}
+                  placeholder={t('externalSignUp.businessNamePlaceholder')}
                   value={form.businessName}
                   onChange={(event) => updateField('businessName', event.target.value)}
                   error={errors.businessName}
@@ -599,16 +601,16 @@ export function ExternalSignUpPage(): ReactElement {
               ) : (
                 <div className="grid grid-cols-2 gap-4">
                   <Input
-                    label="First Name"
-                    placeholder="John"
+                    label={t('externalSignUp.firstName')}
+                    placeholder={t('externalSignUp.firstNamePlaceholder')}
                     value={form.firstName}
                     onChange={(event) => updateField('firstName', event.target.value)}
                     error={errors.firstName}
                     className={inputClassName}
                   />
                   <Input
-                    label="Last Name"
-                    placeholder="Doe"
+                    label={t('externalSignUp.lastName')}
+                    placeholder={t('externalSignUp.lastNamePlaceholder')}
                     value={form.lastName}
                     onChange={(event) => updateField('lastName', event.target.value)}
                     error={errors.lastName}
@@ -618,9 +620,9 @@ export function ExternalSignUpPage(): ReactElement {
               )}
 
               <Input
-                label="Email"
+                label={t('externalSignUp.emailLabel')}
                 type="email"
-                placeholder="you@example.com"
+                placeholder={t('externalSignUp.emailPlaceholder')}
                 value={form.email}
                 onChange={(event) => updateField('email', event.target.value)}
                 error={errors.email}
@@ -628,9 +630,9 @@ export function ExternalSignUpPage(): ReactElement {
               />
 
               <Input
-                label="Password"
+                label={t('externalSignUp.passwordLabel')}
                 type="password"
-                placeholder="Create a password"
+                placeholder={t('externalSignUp.passwordPlaceholder')}
                 showPasswordToggle
                 value={form.password}
                 onChange={(event) => updateField('password', event.target.value)}
@@ -647,17 +649,17 @@ export function ExternalSignUpPage(): ReactElement {
                 isLoading={isSubmitting}
                 disabled={!isLoaded || !isAccountStepValid}
               >
-                Continue
+                {t('externalSignUp.continueButton')}
               </Button>
             </form>
 
             <p className="mt-6 text-center text-sm text-gray-500">
-              Already have an account?{' '}
+              {t('externalSignUp.hasAccount')}{' '}
               <Link
                 to={ROUTES.SIGN_IN}
                 className="font-medium text-brand-500 hover:text-brand-600"
               >
-                Sign in
+                {t('externalSignUp.signIn')}
               </Link>
             </p>
           </div>
@@ -667,10 +669,10 @@ export function ExternalSignUpPage(): ReactElement {
           <div>
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                Verify your email
+                {t('externalSignUp.verifyTitle')}
               </h2>
               <p className="mt-1 text-sm text-gray-600">
-                Enter the 6-digit code sent to {form.email}.
+                {t('externalSignUp.verifySubtitle', { email: form.email })}
               </p>
             </div>
 
@@ -682,8 +684,8 @@ export function ExternalSignUpPage(): ReactElement {
 
             <form onSubmit={handleVerify} className="space-y-4">
               <Input
-                label="Verification Code"
-                placeholder="Enter code"
+                label={t('externalSignUp.verificationCode')}
+                placeholder={t('externalSignUp.codePlaceholder')}
                 value={verificationCode}
                 onChange={(event) => setVerificationCode(event.target.value)}
                 className={inputClassName}
@@ -696,7 +698,7 @@ export function ExternalSignUpPage(): ReactElement {
                 isLoading={isSubmitting}
                 disabled={!isLoaded}
               >
-                Verify Email
+                {t('externalSignUp.verifyEmail')}
               </Button>
             </form>
 
@@ -707,14 +709,14 @@ export function ExternalSignUpPage(): ReactElement {
                 className="font-medium text-brand-500 hover:text-brand-600"
                 disabled={isResending}
               >
-                {isResending ? 'Resending...' : 'Resend code'}
+                {isResending ? t('externalSignUp.resending') : t('externalSignUp.resendCode')}
               </button>
               <button
                 type="button"
                 onClick={() => setStep('account')}
                 className="font-medium text-gray-500 hover:text-gray-700"
               >
-                Back to account details
+                {t('externalSignUp.backToDetails')}
               </button>
             </div>
           </div>
@@ -724,10 +726,10 @@ export function ExternalSignUpPage(): ReactElement {
           <div>
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                Complete your profile
+                {t('externalSignUp.profileTitle')}
               </h2>
               <p className="mt-1 text-sm text-gray-600">
-                We need your contact and address details to finish setup.
+                {t('externalSignUp.profileSubtitle')}
               </p>
             </div>
 
@@ -739,7 +741,7 @@ export function ExternalSignUpPage(): ReactElement {
 
             <form onSubmit={handleDetailsSubmit} className="space-y-4">
               {renderPhoneField(
-                'Phone',
+                t('externalSignUp.phoneLabel'),
                 form.phone,
                 (value) => {
                   updateField('phone', value);
@@ -752,14 +754,14 @@ export function ExternalSignUpPage(): ReactElement {
 
               <div className="space-y-2">
                 {renderPhoneField(
-                  'WhatsApp Number',
+                  t('externalSignUp.whatsappLabel'),
                   form.whatsappNumber,
                   (value) => updateField('whatsappNumber', value),
                   errors.whatsappNumber,
                   usePhoneForWhatsapp
                 )}
                 <Checkbox
-                  label="Same as phone number"
+                  label={t('externalSignUp.sameAsPhone')}
                   checked={usePhoneForWhatsapp}
                   onChange={(event) => {
                     const checked = event.target.checked;
@@ -772,8 +774,8 @@ export function ExternalSignUpPage(): ReactElement {
               </div>
 
               <Input
-                label="Street Address"
-                placeholder="12 Broad Street"
+                label={t('externalSignUp.streetAddress')}
+                placeholder={t('externalSignUp.streetPlaceholder')}
                 value={form.addressStreet}
                 onChange={(event) => updateField('addressStreet', event.target.value)}
                 error={errors.addressStreet}
@@ -782,16 +784,16 @@ export function ExternalSignUpPage(): ReactElement {
 
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="City"
-                  placeholder="Lagos"
+                  label={t('externalSignUp.city')}
+                  placeholder={t('externalSignUp.cityPlaceholder')}
                   value={form.addressCity}
                   onChange={(event) => updateField('addressCity', event.target.value)}
                   error={errors.addressCity}
                   className={inputClassName}
                 />
                 <Input
-                  label="State"
-                  placeholder="Lagos"
+                  label={t('externalSignUp.state')}
+                  placeholder={t('externalSignUp.statePlaceholder')}
                   value={form.addressState}
                   onChange={(event) => updateField('addressState', event.target.value)}
                   error={errors.addressState}
@@ -801,16 +803,16 @@ export function ExternalSignUpPage(): ReactElement {
 
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Country"
-                  placeholder="Nigeria"
+                  label={t('externalSignUp.country')}
+                  placeholder={t('externalSignUp.countryPlaceholder')}
                   value={form.addressCountry}
                   onChange={(event) => updateField('addressCountry', event.target.value)}
                   error={errors.addressCountry}
                   className={inputClassName}
                 />
                 <Input
-                  label="Postal Code"
-                  placeholder="100001"
+                  label={t('externalSignUp.postalCode')}
+                  placeholder={t('externalSignUp.postalCodePlaceholder')}
                   value={form.addressPostalCode}
                   onChange={(event) => updateField('addressPostalCode', event.target.value)}
                   error={errors.addressPostalCode}
@@ -825,7 +827,7 @@ export function ExternalSignUpPage(): ReactElement {
                 isLoading={isSubmitting}
                 disabled={!isDetailsStepValid}
               >
-                Complete Registration
+                {t('externalSignUp.completeRegistration')}
               </Button>
             </form>
           </div>

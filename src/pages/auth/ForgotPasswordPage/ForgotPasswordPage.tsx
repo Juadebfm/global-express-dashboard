@@ -1,10 +1,12 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AuthLayout } from '@/components/layout';
 import { ForgotPasswordForm } from '@/components/forms/ForgotPasswordForm';
 import { sendOtp, verifyOtp, resetPassword } from '@/services/forgotPasswordService';
 
 export function ForgotPasswordPage(): ReactElement {
+  const { t } = useTranslation('auth');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,7 +17,7 @@ export function ForgotPasswordPage(): ReactElement {
     try {
       await sendOtp(email);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Something went wrong';
+      const message = err instanceof Error ? err.message : t('forgotPassword.somethingWentWrong');
       setError(message);
       throw err;
     } finally {
@@ -30,7 +32,7 @@ export function ForgotPasswordPage(): ReactElement {
     try {
       await verifyOtp(email, otp);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Something went wrong';
+      const message = err instanceof Error ? err.message : t('forgotPassword.somethingWentWrong');
       setError(message);
       throw err;
     } finally {
@@ -45,7 +47,7 @@ export function ForgotPasswordPage(): ReactElement {
     try {
       await resetPassword(email, password);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Something went wrong';
+      const message = err instanceof Error ? err.message : t('forgotPassword.somethingWentWrong');
       setError(message);
       throw err;
     } finally {

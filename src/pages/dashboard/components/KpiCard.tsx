@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { CheckCircle2, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import type { KpiCard as KpiCardType, ChangeIndicator } from '@/types';
 import { cn } from '@/utils';
+import i18n from '@/i18n/i18n';
 
 interface KpiCardProps {
   data: KpiCardType;
@@ -40,7 +41,8 @@ function ChangeBadge({ change }: { change: ChangeIndicator }): ReactElement | nu
 
 export function KpiCard({ data }: KpiCardProps): ReactElement {
   const status = statusStyles[data.status];
-  const displayValue = data.display ?? new Intl.NumberFormat('en-US').format(data.value);
+  const locale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
+  const displayValue = data.display ?? new Intl.NumberFormat(locale).format(data.value);
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">

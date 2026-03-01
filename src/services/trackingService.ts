@@ -1,5 +1,11 @@
 import { apiGet } from '@/lib/apiClient';
 
+export interface TimelineEvent {
+  status: string;
+  statusLabel: string;
+  timestamp: string;
+}
+
 export interface TrackingResult {
   trackingNumber: string;
   status?: string;
@@ -9,8 +15,10 @@ export interface TrackingResult {
   estimatedDelivery: string | null;
   lastUpdate: string;
   lastLocation: string;
+  timeline?: TimelineEvent[];
 }
 
-export function trackShipment(trackingNumber: string): Promise<TrackingResult> {
-  return apiGet<TrackingResult>(`/orders/track/${encodeURIComponent(trackingNumber)}`);
+export async function trackShipment(trackingNumber: string): Promise<TrackingResult> {
+  const response = await apiGet<{ data: TrackingResult }>(`/orders/track/${encodeURIComponent(trackingNumber)}`);
+  return response.data;
 }

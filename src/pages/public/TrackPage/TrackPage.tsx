@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Search, Package, MapPin, Clock, CheckCircle2 } from "lucide-react";
 import { AlertBanner } from "@/components/ui";
 import { FEEDBACK_MESSAGES, ROUTES } from "@/constants";
@@ -8,8 +9,10 @@ import { getDisplayErrorMessage } from "@/lib/feedback";
 import { useFeedbackStore } from "@/store";
 import { trackShipment, type TrackingResult } from "@/services/trackingService";
 import { getStatusStyle } from "@/lib/statusUtils";
+import { resolveLocation } from "@/utils";
 
 export function TrackPage(): ReactElement {
+  const { t } = useTranslation('tracking');
   const { trackingNumber: paramTrackingNumber } = useParams<{
     trackingNumber?: string;
   }>();
@@ -66,7 +69,7 @@ export function TrackPage(): ReactElement {
             to={ROUTES.SIGN_IN}
             className="text-sm font-medium text-brand-500 hover:text-brand-600"
           >
-            Sign in
+            {t('public.signIn')}
           </Link>
         </div>
       </header>
@@ -74,10 +77,10 @@ export function TrackPage(): ReactElement {
       <main className="mx-auto max-w-3xl px-4 py-12">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900">
-            Track Your Shipment
+            {t('public.title')}
           </h1>
           <p className="mt-2 text-sm text-gray-500">
-            Enter your tracking number to get the latest status.
+            {t('public.subtitle')}
           </p>
         </div>
 
@@ -90,7 +93,7 @@ export function TrackPage(): ReactElement {
                 type="text"
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                placeholder="Enter tracking number (e.g. GX-1234567)"
+                placeholder={t('public.placeholder')}
                 className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm text-gray-800 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
               />
             </div>
@@ -99,7 +102,7 @@ export function TrackPage(): ReactElement {
               className="rounded-xl bg-brand-500 px-6 py-3 text-sm font-medium text-white transition hover:bg-brand-600 disabled:opacity-50"
               disabled={!input.trim() || isLoading}
             >
-              {isLoading ? "Searching..." : "Track"}
+              {isLoading ? t('public.searching') : t('public.trackButton')}
             </button>
           </div>
         </form>
@@ -114,10 +117,10 @@ export function TrackPage(): ReactElement {
           <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
             <Package className="mx-auto mb-3 h-10 w-10 text-gray-300" />
             <p className="text-sm font-medium text-gray-700">
-              No shipment found
+              {t('public.notFound')}
             </p>
             <p className="mt-1 text-xs text-gray-400">
-              Check your tracking number and try again.
+              {t('public.notFoundDesc')}
             </p>
           </div>
         )}
@@ -133,7 +136,7 @@ export function TrackPage(): ReactElement {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-xs text-gray-400 uppercase tracking-wide">
-                        Tracking number
+                        {t('public.trackingNumber')}
                       </p>
                       <p className="mt-1 text-lg font-semibold text-gray-900">
                         {result.trackingNumber ?? input.trim().toUpperCase()}
@@ -145,31 +148,31 @@ export function TrackPage(): ReactElement {
                       <span
                         className={`h-1.5 w-1.5 rounded-full ${style.dotClass}`}
                       />
-                      {result.statusLabel}
+                      {result.status ? t(`shipments:statusV2.${result.status}`, { defaultValue: result.statusLabel }) : result.statusLabel}
                     </span>
                   </div>
 
                   <div className="mt-6 grid grid-cols-2 gap-4 border-t border-gray-100 pt-4">
                     {result.origin && (
                       <div>
-                        <p className="text-xs text-gray-400">Origin</p>
+                        <p className="text-xs text-gray-400">{t('public.origin')}</p>
                         <p className="mt-0.5 text-sm font-medium text-gray-800">
-                          {result.origin}
+                          {(() => { const o = resolveLocation(result.origin); return t(`shipments:locations.${o}`, { defaultValue: o }); })()}
                         </p>
                       </div>
                     )}
                     {result.destination && (
                       <div>
-                        <p className="text-xs text-gray-400">Destination</p>
+                        <p className="text-xs text-gray-400">{t('public.destination')}</p>
                         <p className="mt-0.5 text-sm font-medium text-gray-800">
-                          {result.destination}
+                          {(() => { const d = resolveLocation(result.destination); return t(`shipments:locations.${d}`, { defaultValue: d }); })()}
                         </p>
                       </div>
                     )}
                     {result.estimatedDelivery && (
                       <div>
                         <p className="text-xs text-gray-400">
-                          Estimated Delivery
+                          {t('public.estimatedDelivery')}
                         </p>
                         <div className="mt-0.5 flex items-center gap-1.5">
                           <Clock className="h-3.5 w-3.5 text-gray-400" />
@@ -180,7 +183,7 @@ export function TrackPage(): ReactElement {
                       </div>
                     )}
                     <div>
-                      <p className="text-xs text-gray-400">Last Update</p>
+                      <p className="text-xs text-gray-400">{t('public.lastUpdate')}</p>
                       <p className="mt-0.5 text-sm font-medium text-gray-800">
                         {result.lastUpdate}
                       </p>
@@ -195,7 +198,7 @@ export function TrackPage(): ReactElement {
                       <MapPin className="h-4 w-4 text-brand-500" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">Current Location</p>
+                      <p className="text-xs text-gray-400">{t('public.currentLocation')}</p>
                       <p className="text-sm font-medium text-gray-800">
                         {result.lastLocation}
                       </p>
@@ -205,12 +208,12 @@ export function TrackPage(): ReactElement {
                 </div>
 
                 <p className="text-center text-xs text-gray-400">
-                  Have an account?{" "}
+                  {t('public.haveAccount')}{" "}
                   <Link
                     to={ROUTES.SIGN_IN}
                     className="font-medium text-brand-500 hover:text-brand-600"
                   >
-                    Sign in for more details
+                    {t('public.signInForDetails')}
                   </Link>
                 </p>
               </div>

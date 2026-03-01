@@ -1,10 +1,12 @@
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FileQuestion } from 'lucide-react';
 import { ROUTES } from '@/constants';
 import { useAuth } from '@/hooks';
 
 export function NotFoundPage(): ReactElement {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
@@ -21,9 +23,9 @@ export function NotFoundPage(): ReactElement {
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-gray-900">Page Not Found</h1>
+        <h1 className="text-3xl font-bold text-gray-900">{t('errors.notFound.title')}</h1>
         <p className="mt-3 text-sm text-gray-500">
-          The page you're looking for doesn't exist or has been moved.
+          {t('errors.notFound.message')}
         </p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -32,14 +34,14 @@ export function NotFoundPage(): ReactElement {
             onClick={handleHome}
             className="rounded-xl bg-brand-500 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-brand-600"
           >
-            {isAuthenticated ? 'Back to Dashboard' : 'Go to Home'}
+            {isAuthenticated ? t('errors.notFound.backToDashboard') : t('errors.notFound.goToHome')}
           </button>
           <button
             type="button"
             onClick={() => navigate(-1)}
             className="rounded-xl border border-gray-200 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
           >
-            Go Back
+            {t('errors.notFound.goBack')}
           </button>
         </div>
       </div>

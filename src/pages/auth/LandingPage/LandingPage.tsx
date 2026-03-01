@@ -1,10 +1,13 @@
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, Package, ShieldCheck } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
 import { ROUTES } from '@/constants';
 
 export function LandingPage(): ReactElement {
+  const { t } = useTranslation('auth');
+
   return (
     <AuthLayout rightClassName="bg-white">
       <div className="flex flex-col gap-6">
@@ -13,9 +16,9 @@ export function LandingPage(): ReactElement {
         </div>
 
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Welcome to GlobalXpress</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('landing.title')}</h1>
           <p className="mt-2 text-sm text-gray-500">
-            Choose how you'd like to continue.
+            {t('landing.subtitle')}
           </p>
         </div>
 
@@ -30,9 +33,9 @@ export function LandingPage(): ReactElement {
                 <Package className="h-5 w-5 text-brand-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">Customer Portal</p>
+                <p className="text-sm font-semibold text-gray-900">{t('landing.customerPortal')}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Track shipments and manage your orders
+                  {t('landing.customerPortalDesc')}
                 </p>
               </div>
             </div>
@@ -49,9 +52,9 @@ export function LandingPage(): ReactElement {
                 <ShieldCheck className="h-5 w-5 text-gray-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">Staff / Operator Login</p>
+                <p className="text-sm font-semibold text-gray-900">{t('landing.staffLogin')}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  For internal team members only
+                  {t('landing.staffLoginDesc')}
                 </p>
               </div>
             </div>
@@ -61,12 +64,12 @@ export function LandingPage(): ReactElement {
 
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            New customer?{' '}
+            {t('landing.newCustomer')}{' '}
             <Link
               to={ROUTES.SIGN_UP}
               className="font-medium text-brand-500 hover:text-brand-600"
             >
-              Create an account
+              {t('landing.createAccount')}
             </Link>
           </p>
         </div>

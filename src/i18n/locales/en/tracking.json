@@ -1,0 +1,43 @@
+{
+  "public": {
+    "signIn": "Sign in",
+    "title": "Track Your Shipment",
+    "subtitle": "Enter your tracking number to get the latest status.",
+    "placeholder": "Enter tracking number (e.g. GX-1234567)",
+    "searching": "Searching...",
+    "trackButton": "Track",
+    "notFound": "No shipment found",
+    "notFoundDesc": "Check your tracking number and try again.",
+    "trackingNumber": "Tracking number",
+    "origin": "Origin",
+    "destination": "Destination",
+    "estimatedDelivery": "Estimated Delivery",
+    "lastUpdate": "Last Update",
+    "currentLocation": "Current Location",
+    "haveAccount": "Have an account?",
+    "signInForDetails": "Sign in for more details"
+  },
+  "internal": {
+    "backToShipments": "Back to shipments",
+    "title": "Track your shipment",
+    "subtitle": "Enter a tracking number to get real-time updates on your shipment.",
+    "inputLabel": "Enter your Tracking Number",
+    "placeholder": "e.g. GX-ABC123",
+    "tracking": "Tracking...",
+    "trackButton": "Track Shipment",
+    "shipmentHeading": "Shipment {{trackingNumber}}",
+    "status": "Status",
+    "estimatedDelivery": "Estimated Delivery",
+    "currentLocation": "Current Location",
+    "lastUpdated": "Last Updated",
+    "from": "From",
+    "to": "To",
+    "pending": "Pending",
+    "inTransit": "In Transit",
+    "unknown": "Unknown",
+    "na": "N/A",
+    "emptyState": "Enter a tracking number above to view shipment details.",
+    "timeline": "Shipment Timeline",
+    "timelineEmpty": "No timeline events available yet."
+  }
+}

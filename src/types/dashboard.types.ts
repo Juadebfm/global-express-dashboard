@@ -54,7 +54,7 @@ export interface UiAction {
 
 export interface SidebarItem {
   id: string;
-  label: string;
+  label?: string;
   icon: string;
   href: string;
 }

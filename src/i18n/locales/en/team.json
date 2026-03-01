@@ -1,0 +1,81 @@
+{
+  "loadingLabel": "Loading team...",
+  "pageTitle": "Team",
+  "subtitle": "Here are your teams so far",
+  "addTeamButton": "Add team",
+  "searchPlaceholder": "Search",
+  "accessRestricted": {
+    "title": "Access restricted",
+    "message": "Team management is available to Admin and Super Admin accounts only."
+  },
+  "tabs": {
+    "all": "All team",
+    "admin": "Admin",
+    "nonAdmin": "Non Admin"
+  },
+  "roleLabels": {
+    "staff": "Staff",
+    "admin": "Admin",
+    "superadmin": "Super Admin"
+  },
+  "permissions": {
+    "allAccess": "All Access (Owner)",
+    "elevatedAccess": "Elevated Access",
+    "transferAndView": "Transfer and view",
+    "viewOnly": "View Only",
+    "custom": "Custom"
+  },
+  "table": {
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "permission": "Permission"
+    },
+    "pendingApproval": "Pending approval",
+    "approve": "Approve",
+    "remove": "Remove",
+    "requiresSuperAdmin": "Requires Super Admin"
+  },
+  "emptyState": {
+    "title": "No Admin available to manage",
+    "subtitle": "Expand your business by create teams",
+    "addTeamButton": "Add team"
+  },
+  "modals": {
+    "profile": {
+      "title": "View team profile",
+      "teammateRole": "Teammate role",
+      "permission": "Permission",
+      "removeButton": "Remove",
+      "editButton": "Edit",
+      "approveButton": "Approve"
+    },
+    "invite": {
+      "title": "Invite Team member",
+      "namePlaceholder": "Enter teammate name",
+      "emailPlaceholder": "Enter teammate email"
+    },
+    "edit": {
+      "title": "Edit Team member",
+      "namePlaceholder": "Enter teammate name",
+      "emailPlaceholder": "Enter teammate email"
+    },
+    "permissions": {
+      "sectionTitle": "Permissions",
+      "makeAdmin": "Make as an Admin",
+      "canTransfer": "Can transfer funds and view",
+      "viewOnly": "Can view only",
+      "adminApprovalNote": "Staff created by Admin require Super Admin approval."
+    },
+    "formError": "Name and email are required.",
+    "cancelButton": "Cancel",
+    "saveButton": "Save",
+    "remove": {
+      "title": "Remove user account",
+      "message": "Are you sure you want to remove {{name}}'s account? They will lose their access to login back",
+      "removeButton": "Remove",
+      "cancelButton": "Cancel"
+    }
+  }
+}

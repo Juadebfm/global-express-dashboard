@@ -1,8 +1,10 @@
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { MessageSquare } from 'lucide-react';
 import { getSupportStatusDisplay } from '@/lib/supportStatusUtils';
 import type { SupportTicket } from '@/types';
+import i18n from '@/i18n/i18n';
 
 interface SupportTicketListProps {
   tickets: SupportTicket[];
@@ -10,25 +12,30 @@ interface SupportTicketListProps {
   isLoading: boolean;
 }
 
+function getLocale(): string {
+  return i18n.language === 'ko' ? 'ko-KR' : 'en-US';
+}
+
 function formatDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(d);
+  return new Intl.DateTimeFormat(getLocale(), { month: 'short', day: 'numeric' }).format(d);
 }
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(d);
+  return new Intl.DateTimeFormat(getLocale(), { hour: 'numeric', minute: '2-digit' }).format(d);
 }
 
 export function SupportTicketList({ tickets, isStaff, isLoading }: SupportTicketListProps): ReactElement {
+  const { t } = useTranslation('support');
   const navigate = useNavigate();
 
   if (isLoading) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white px-5 py-10 text-center text-sm text-gray-500 shadow-sm">
-        Loading tickets...
+        {t('ticketList.loadingText')}
       </div>
     );
   }
@@ -37,7 +44,7 @@ export function SupportTicketList({ tickets, isStaff, isLoading }: SupportTicket
     return (
       <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-5 py-10 text-center text-sm text-gray-500">
         <MessageSquare className="mx-auto mb-2 h-8 w-8 text-gray-300" />
-        No support tickets found.
+        {t('ticketList.emptyText')}
       </div>
     );
   }
@@ -63,10 +70,10 @@ export function SupportTicketList({ tickets, isStaff, isLoading }: SupportTicket
               </div>
               <h3 className="truncate text-sm font-semibold text-gray-900">{ticket.subject}</h3>
               <p className="mt-0.5 truncate text-xs text-gray-500">
-                {ticket.description || 'No description'}
+                {ticket.description || t('ticketList.noDescription')}
               </p>
               {isStaff && ticket.requesterName && (
-                <span className="mt-1 block text-xs text-gray-400">By {ticket.requesterName}</span>
+                <span className="mt-1 block text-xs text-gray-400">{t('ticketList.byRequester', { name: ticket.requesterName })}</span>
               )}
             </div>
 

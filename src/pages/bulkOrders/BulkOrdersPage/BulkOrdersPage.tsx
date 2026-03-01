@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   Boxes,
@@ -18,8 +19,8 @@ import { AppShell, PageHeader } from '@/pages/shared';
 import type { ApiClient, ApiBulkOrder, ApiBulkOrderItem, BulkOrderItem } from '@/types';
 import { getStatusStyle } from '@/lib/statusUtils';
 import { createBulkOrder, deleteBulkOrder, getBulkOrderById, getClients, updateBulkOrderStatus } from '@/services';
-import { AlertBanner, Button, Checkbox, ConfirmModal } from '@/components/ui';
-import { cn } from '@/utils';
+import { AlertBanner, Button, Checkbox, ConfirmModal, CopyButton } from '@/components/ui';
+import { cn, resolveLocation } from '@/utils';
 
 const TOKEN_KEY = 'globalxpress_token';
 
@@ -27,19 +28,13 @@ const TOKEN_KEY = 'globalxpress_token';
 
 type StatusFilter = 'all' | 'pending' | 'active' | 'completed' | 'exception';
 
-const STATUS_OPTIONS: Array<{ value: StatusFilter; label: string }> = [
-  { value: 'all', label: 'All Status' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'active', label: 'Active' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'exception', label: 'Exception' },
-];
+const STATUS_FILTER_VALUES: StatusFilter[] = ['all', 'pending', 'active', 'completed', 'exception'];
 
-function formatDate(iso: string | null): string {
+function formatDate(iso: string | null, locale: string = 'en-US'): string {
   if (!iso) return '—';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return date.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function formatWeight(val: string | number | undefined): string {
@@ -64,6 +59,12 @@ function getStatusCategory(statusV2: string): StatusFilter {
 // ── Component ───────────────────────────────────────────────────
 
 export function BulkOrdersPage(): ReactElement {
+  const { t, i18n } = useTranslation('bulkOrders');
+  const dateLocale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
+  const translateLocation = (value: unknown): string => {
+    const str = resolveLocation(value);
+    return str ? t(`shipments:locations.${str}`, { defaultValue: str }) : '';
+  };
   const { data, isLoading, error } = useDashboardData();
   const { bulkOrders, total, isLoading: ordersLoading, error: ordersError, refetch: refetchOrders } = useBulkOrders();
   const { query, setQuery } = useSearch();
@@ -170,13 +171,13 @@ export function BulkOrdersPage(): ReactElement {
     setCreateError(null);
 
     if (createItems.length === 0) {
-      setCreateError('Please add at least one item.');
+      setCreateError(t('messages.addAtLeastOneItem', 'Please add at least one item.'));
       return;
     }
 
     const missingRecipient = createItems.some((item) => !item.recipientName.trim());
     if (missingRecipient) {
-      setCreateError('Every item must have a recipient name.');
+      setCreateError(t('messages.recipientRequired', 'Every item must have a recipient name.'));
       return;
     }
 
@@ -210,11 +211,11 @@ export function BulkOrdersPage(): ReactElement {
         items,
       });
 
-      setActionMessage('Bulk order created successfully.');
+      setActionMessage(t('messages.created', 'Bulk order created successfully.'));
       resetCreateForm();
       refetchOrders();
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to create bulk order.');
+      setCreateError(err instanceof Error ? err.message : t('messages.failedToCreate', 'Failed to create bulk order.'));
     } finally {
       setIsCreating(false);
     }
@@ -312,7 +313,7 @@ export function BulkOrdersPage(): ReactElement {
       const detail = await getBulkOrderById(token, order.id);
       setActiveOrder(detail);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to load bulk order details.');
+      setActionError(err instanceof Error ? err.message : t('messages.failedToLoadDetail'));
       setActiveOrder(order);
     } finally {
       setDetailLoading(false);
@@ -325,10 +326,10 @@ export function BulkOrdersPage(): ReactElement {
       const token = localStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       await deleteBulkOrder(token, orderId);
-      setActionMessage('Bulk order deleted.');
+      setActionMessage(t('messages.deleted'));
       if (activeOrder?.id === orderId) setActiveOrder(null);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to delete bulk order.');
+      setActionError(err instanceof Error ? err.message : t('messages.failedToDelete'));
     } finally {
       setDeleteTarget(null);
     }
@@ -340,9 +341,9 @@ export function BulkOrdersPage(): ReactElement {
       const token = localStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       await updateBulkOrderStatus(token, orderId, newStatus);
-      setActionMessage('Status updated.');
+      setActionMessage(t('messages.statusUpdated'));
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to update status.');
+      setActionError(err instanceof Error ? err.message : t('messages.failedToUpdateStatus'));
     }
   };
 
@@ -353,7 +354,7 @@ export function BulkOrdersPage(): ReactElement {
       data={data}
       isLoading={isLoading || ordersLoading}
       error={error}
-      loadingLabel="Loading bulk orders..."
+      loadingLabel={t('loadingLabel')}
     >
       <div className="space-y-6">
         {activeOrder ? (
@@ -365,7 +366,7 @@ export function BulkOrdersPage(): ReactElement {
               className="inline-flex items-center gap-2 text-xl font-semibold text-gray-900"
             >
               <ArrowLeft className="h-5 w-5" />
-              Bulk Orders
+              {t('detail.backLabel')}
             </button>
 
             {actionError && (
@@ -381,33 +382,33 @@ export function BulkOrdersPage(): ReactElement {
 
             {/* Order info card */}
             <div className="rounded-3xl border border-gray-200 bg-white p-6">
-              <p className="text-sm font-semibold text-gray-700">Bulk Order Details</p>
+              <p className="text-sm font-semibold text-gray-700">{t('detail.sectionTitle')}</p>
               <div className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase text-gray-400">Order ID</p>
+                  <p className="text-xs font-semibold uppercase text-gray-400">{t('detail.fields.orderId')}</p>
                   <p className="text-base font-semibold text-gray-900">{activeOrder.id.slice(0, 8)}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase text-gray-400">Route</p>
+                  <p className="text-xs font-semibold uppercase text-gray-400">{t('detail.fields.route')}</p>
                   <p className="text-base font-semibold text-gray-900">
-                    {activeOrder.origin} → {activeOrder.destination}
+                    {translateLocation(activeOrder.origin)} → {translateLocation(activeOrder.destination)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase text-gray-400">Status</p>
+                  <p className="text-xs font-semibold uppercase text-gray-400">{t('detail.fields.status')}</p>
                   <StatusBadge statusV2={activeOrder.statusV2} label={activeOrder.statusLabel} />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase text-gray-400">Items</p>
+                  <p className="text-xs font-semibold uppercase text-gray-400">{t('detail.fields.items')}</p>
                   <p className="text-base font-semibold text-gray-900">{activeOrder.itemCount}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase text-gray-400">Created</p>
-                  <p className="text-base font-semibold text-gray-900">{formatDate(activeOrder.createdAt)}</p>
+                  <p className="text-xs font-semibold uppercase text-gray-400">{t('detail.fields.created')}</p>
+                  <p className="text-base font-semibold text-gray-900">{formatDate(activeOrder.createdAt, dateLocale)}</p>
                 </div>
                 {activeOrder.notes && (
                   <div className="sm:col-span-2 lg:col-span-3">
-                    <p className="text-xs font-semibold uppercase text-gray-400">Notes</p>
+                    <p className="text-xs font-semibold uppercase text-gray-400">{t('detail.fields.notes')}</p>
                     <p className="text-sm text-gray-700">{activeOrder.notes}</p>
                   </div>
                 )}
@@ -421,7 +422,7 @@ export function BulkOrdersPage(): ReactElement {
                     onClick={() => void handleUpdateStatus(activeOrder.id, 'WAREHOUSE_RECEIVED')}
                     className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600"
                   >
-                    Mark Received
+                    {t('detail.markReceived')}
                   </button>
                   <button
                     type="button"
@@ -429,7 +430,7 @@ export function BulkOrdersPage(): ReactElement {
                     className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Delete Order
+                    {t('detail.deleteOrder')}
                   </button>
                 </div>
               )}
@@ -439,34 +440,37 @@ export function BulkOrdersPage(): ReactElement {
             <div className="rounded-3xl border border-gray-200 bg-white">
               <div className="border-b border-gray-100 px-6 py-4">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  Items ({activeOrder.items?.length ?? activeOrder.itemCount})
+                  {t('detail.itemsTitle', { count: activeOrder.items?.length ?? activeOrder.itemCount })}
                 </h2>
               </div>
               <div className="px-6 py-6">
                 {detailLoading ? (
-                  <div className="py-8 text-center text-sm text-gray-500">Loading items...</div>
+                  <div className="py-8 text-center text-sm text-gray-500">{t('detail.loadingItems')}</div>
                 ) : (activeOrder.items ?? []).length === 0 ? (
                   <div className="rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-400">
-                    No items found for this bulk order.
+                    {t('detail.noItems')}
                   </div>
                 ) : (
                   <div className="overflow-hidden rounded-2xl border border-gray-200">
                     <table className="w-full text-left text-sm">
                       <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                         <tr>
-                          <th className="px-6 py-4">Tracking #</th>
-                          <th className="px-6 py-4">Recipient</th>
-                          <th className="px-6 py-4">Description</th>
-                          <th className="px-6 py-4">Weight</th>
-                          <th className="px-6 py-4">Value</th>
-                          <th className="px-6 py-4">Date</th>
+                          <th className="px-6 py-4">{t('detail.itemsTable.trackingNo')}</th>
+                          <th className="px-6 py-4">{t('detail.itemsTable.recipient')}</th>
+                          <th className="px-6 py-4">{t('detail.itemsTable.description')}</th>
+                          <th className="px-6 py-4">{t('detail.itemsTable.weight')}</th>
+                          <th className="px-6 py-4">{t('detail.itemsTable.value')}</th>
+                          <th className="px-6 py-4">{t('detail.itemsTable.date')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 bg-white">
                         {(activeOrder.items ?? []).map((item: ApiBulkOrderItem) => (
                           <tr key={item.id} className="transition hover:bg-gray-50">
                             <td className="px-6 py-4 font-medium text-gray-800">
-                              {item.trackingNumber}
+                              <span className="inline-flex items-center gap-1.5">
+                                {item.trackingNumber}
+                                <CopyButton value={item.trackingNumber} />
+                              </span>
                             </td>
                             <td className="px-6 py-4">
                               <p className="font-medium text-gray-800">{item.recipientName}</p>
@@ -484,7 +488,7 @@ export function BulkOrdersPage(): ReactElement {
                               {formatValue(item.declaredValue)}
                             </td>
                             <td className="px-6 py-4 text-gray-500">
-                              {formatDate(item.createdAt)}
+                              {formatDate(item.createdAt, dateLocale)}
                             </td>
                           </tr>
                         ))}
@@ -504,25 +508,25 @@ export function BulkOrdersPage(): ReactElement {
               className="inline-flex items-center gap-2 text-xl font-semibold text-gray-900"
             >
               <ArrowLeft className="h-5 w-5" />
-              Bulk Orders
+              {t('createForm.backLabel')}
             </button>
 
             <PageHeader
-              title="Create Bulk Order"
-              subtitle="Add multiple items to ship in a single batch."
+              title={t('createForm.title')}
+              subtitle={t('createForm.subtitle')}
             />
 
             {createError && <AlertBanner tone="error" message={createError} />}
 
             {/* Order-level fields */}
             <div className="rounded-3xl border border-gray-200 bg-white p-6">
-              <p className="text-sm font-semibold text-gray-700">Order Details</p>
+              <p className="text-sm font-semibold text-gray-700">{t('createForm.orderDetails')}</p>
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {/* Shipment Type */}
                 <div>
                   <span className="text-xs font-semibold uppercase text-gray-500">
-                    Shipment Type
+                    {t('createForm.shipmentType')}
                   </span>
                   <div className="mt-2 flex gap-2">
                     {(['air', 'ocean'] as const).map((type) => (
@@ -537,7 +541,7 @@ export function BulkOrdersPage(): ReactElement {
                             : 'border-gray-200 text-gray-600 hover:border-gray-300',
                         )}
                       >
-                        {type === 'air' ? 'Air Freight' : 'Ocean Freight'}
+                        {type === 'air' ? t('createForm.airFreight') : t('createForm.oceanFreight')}
                       </button>
                     ))}
                   </div>
@@ -545,10 +549,10 @@ export function BulkOrdersPage(): ReactElement {
 
                 {/* Origin (read-only) */}
                 <div>
-                  <span className="text-xs font-semibold uppercase text-gray-500">Origin</span>
+                  <span className="text-xs font-semibold uppercase text-gray-500">{t('createForm.originLabel')}</span>
                   <input
                     type="text"
-                    value="South Korea"
+                    value={t('createForm.originValue')}
                     readOnly
                     className="mt-2 w-full cursor-not-allowed rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-500"
                   />
@@ -556,10 +560,10 @@ export function BulkOrdersPage(): ReactElement {
 
                 {/* Destination (read-only) */}
                 <div>
-                  <span className="text-xs font-semibold uppercase text-gray-500">Destination</span>
+                  <span className="text-xs font-semibold uppercase text-gray-500">{t('createForm.destinationLabel')}</span>
                   <input
                     type="text"
-                    value="Lagos, Nigeria"
+                    value={t('createForm.destinationValue')}
                     readOnly
                     className="mt-2 w-full cursor-not-allowed rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-500"
                   />
@@ -568,12 +572,12 @@ export function BulkOrdersPage(): ReactElement {
 
               {/* Notes */}
               <div className="mt-4">
-                <span className="text-xs font-semibold uppercase text-gray-500">Notes (optional)</span>
+                <span className="text-xs font-semibold uppercase text-gray-500">{t('createForm.notesLabel')}</span>
                 <textarea
                   value={createNotes}
                   onChange={(e) => setCreateNotes(e.target.value)}
                   rows={2}
-                  placeholder="Internal notes for this batch..."
+                  placeholder={t('createForm.notesPlaceholder')}
                   className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                 />
               </div>
@@ -584,10 +588,10 @@ export function BulkOrdersPage(): ReactElement {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-gray-700">
-                    Items ({createItems.length})
+                    {t('createForm.items.sectionTitle', { count: createItems.length })}
                   </p>
                   <p className="mt-1 text-xs text-gray-400">
-                    Add recipients for this bulk shipment
+                    {t('createForm.items.sectionSubtitle')}
                   </p>
                 </div>
                 <Button
@@ -596,7 +600,7 @@ export function BulkOrdersPage(): ReactElement {
                   leftIcon={<Plus className="h-4 w-4" />}
                   onClick={addItem}
                 >
-                  Add Item
+                  {t('createForm.items.addItemButton')}
                 </Button>
               </div>
 
@@ -617,13 +621,13 @@ export function BulkOrdersPage(): ReactElement {
                     >
                       <div className="flex items-center justify-between">
                         <p className="text-xs font-semibold uppercase text-gray-400">
-                          Item {index + 1}
+                          {t('createForm.items.itemLabel', { number: index + 1 })}
                         </p>
                         <button
                           type="button"
                           onClick={() => removeItem(item._key)}
                           className="text-gray-400 transition hover:text-red-500"
-                          aria-label="Remove item"
+                          aria-label={t('createForm.items.removeAriaLabel')}
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -632,7 +636,7 @@ export function BulkOrdersPage(): ReactElement {
                       {/* Customer picker */}
                       <div className="relative mt-3" data-client-picker>
                         <span className="text-xs font-semibold uppercase text-gray-500">
-                          Customer
+                          {t('createForm.items.customerLabel')}
                         </span>
                         <div className="relative">
                           <input
@@ -643,7 +647,7 @@ export function BulkOrdersPage(): ReactElement {
                               setOpenClientPicker(item._key);
                             }}
                             onFocus={() => setOpenClientPicker(item._key)}
-                            placeholder="Select or search customer..."
+                            placeholder={t('createForm.items.customerPlaceholder')}
                             className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 pr-10 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                           />
                           <ChevronDown
@@ -656,7 +660,7 @@ export function BulkOrdersPage(): ReactElement {
                         {openClientPicker === item._key && (
                           <div className="absolute left-0 right-0 z-20 mt-1 max-h-52 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
                             {filteredClients.length === 0 ? (
-                              <p className="px-4 py-3 text-xs text-gray-400">No customers found</p>
+                              <p className="px-4 py-3 text-xs text-gray-400">{t('createForm.items.noCustomersFound')}</p>
                             ) : (
                               filteredClients.slice(0, 15).map((c) => (
                                 <button
@@ -680,45 +684,45 @@ export function BulkOrdersPage(): ReactElement {
                       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <div>
                           <span className="text-xs font-semibold uppercase text-gray-500">
-                            Recipient Name *
+                            {t('createForm.items.recipientNameLabel')}
                           </span>
                           <input
                             type="text"
                             value={item.recipientName}
                             onChange={(e) => updateItem(item._key, 'recipientName', e.target.value)}
-                            placeholder="Full name"
+                            placeholder={t('createForm.items.recipientNamePlaceholder')}
                             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                           />
                         </div>
                         <div>
                           <span className="text-xs font-semibold uppercase text-gray-500">
-                            Address
+                            {t('createForm.items.addressLabel')}
                           </span>
                           <input
                             type="text"
                             value={item.recipientAddress ?? ''}
                             onChange={(e) => updateItem(item._key, 'recipientAddress', e.target.value)}
-                            placeholder="Recipient address"
+                            placeholder={t('createForm.items.addressPlaceholder')}
                             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                           />
                         </div>
                         <div>
-                          <span className="text-xs font-semibold uppercase text-gray-500">Phone</span>
+                          <span className="text-xs font-semibold uppercase text-gray-500">{t('createForm.items.phoneLabel')}</span>
                           <input
                             type="tel"
                             value={item.recipientPhone ?? ''}
                             onChange={(e) => updateItem(item._key, 'recipientPhone', e.target.value)}
-                            placeholder="+234..."
+                            placeholder={t('createForm.items.phonePlaceholder')}
                             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                           />
                         </div>
                         <div>
-                          <span className="text-xs font-semibold uppercase text-gray-500">Email</span>
+                          <span className="text-xs font-semibold uppercase text-gray-500">{t('createForm.items.emailLabel')}</span>
                           <input
                             type="email"
                             value={item.recipientEmail ?? ''}
                             onChange={(e) => updateItem(item._key, 'recipientEmail', e.target.value)}
-                            placeholder="email@example.com"
+                            placeholder={t('createForm.items.emailPlaceholder')}
                             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                           />
                         </div>
@@ -726,7 +730,7 @@ export function BulkOrdersPage(): ReactElement {
 
                       <div className="mt-3">
                         <Checkbox
-                          label="Someone else will pick up this item"
+                          label={t('createForm.items.usePickupRepLabel')}
                           checked={!!item.usePickupRep}
                           onChange={(e) => updateItem(item._key, 'usePickupRep', e.target.checked)}
                         />
@@ -736,25 +740,25 @@ export function BulkOrdersPage(): ReactElement {
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
                           <div>
                             <span className="text-xs font-semibold uppercase text-gray-500">
-                              Representative Name *
+                              {t('createForm.items.repNameLabel')}
                             </span>
                             <input
                               type="text"
                               value={item.pickupRepName ?? ''}
                               onChange={(e) => updateItem(item._key, 'pickupRepName', e.target.value)}
-                              placeholder="Full name of representative"
+                              placeholder={t('createForm.items.repNamePlaceholder')}
                               className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                             />
                           </div>
                           <div>
                             <span className="text-xs font-semibold uppercase text-gray-500">
-                              Representative Phone
+                              {t('createForm.items.repPhoneLabel')}
                             </span>
                             <input
                               type="tel"
                               value={item.pickupRepPhone ?? ''}
                               onChange={(e) => updateItem(item._key, 'pickupRepPhone', e.target.value)}
-                              placeholder="+234..."
+                              placeholder={t('createForm.items.repPhonePlaceholder')}
                               className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                             />
                           </div>
@@ -764,19 +768,19 @@ export function BulkOrdersPage(): ReactElement {
                       <div className="mt-3 grid gap-3 sm:grid-cols-3">
                         <div>
                           <span className="text-xs font-semibold uppercase text-gray-500">
-                            Description
+                            {t('createForm.items.descriptionLabel')}
                           </span>
                           <input
                             type="text"
                             value={item.description ?? ''}
                             onChange={(e) => updateItem(item._key, 'description', e.target.value)}
-                            placeholder="e.g. Electronics"
+                            placeholder={t('createForm.items.descriptionPlaceholder')}
                             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                           />
                         </div>
                         <div>
                           <span className="text-xs font-semibold uppercase text-gray-500">
-                            Weight (kg)
+                            {t('createForm.items.weightLabel')}
                           </span>
                           <input
                             type="number"
@@ -788,7 +792,7 @@ export function BulkOrdersPage(): ReactElement {
                         </div>
                         <div>
                           <span className="text-xs font-semibold uppercase text-gray-500">
-                            Declared Value ($)
+                            {t('createForm.items.declaredValueLabel')}
                           </span>
                           <input
                             type="number"
@@ -805,7 +809,7 @@ export function BulkOrdersPage(): ReactElement {
 
                 {createItems.length === 0 && (
                   <div className="rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-400">
-                    No items yet. Click &quot;Add Item&quot; to start.
+                    {t('createForm.items.emptyMessage')}
                   </div>
                 )}
               </div>
@@ -814,14 +818,14 @@ export function BulkOrdersPage(): ReactElement {
             {/* Submit */}
             <div className="flex items-center justify-between">
               <Button variant="secondary" size="sm" onClick={resetCreateForm}>
-                Cancel
+                {t('createForm.cancelButton')}
               </Button>
               <Button
                 size="sm"
                 onClick={() => void handleCreateSubmit()}
                 disabled={isCreating}
               >
-                {isCreating ? 'Creating...' : 'Create Bulk Order'}
+                {isCreating ? t('createForm.submittingButton') : t('createForm.submitButton')}
               </Button>
             </div>
           </div>
@@ -829,8 +833,8 @@ export function BulkOrdersPage(): ReactElement {
           /* ── List View ──────────────────────────────────────── */
           <>
             <PageHeader
-              title="Bulk Orders"
-              subtitle="Manage bulk shipment orders."
+              title={t('pageTitle')}
+              subtitle={t('subtitle')}
               actions={
                 canCreateBulk ? (
                   <Button
@@ -840,7 +844,7 @@ export function BulkOrdersPage(): ReactElement {
                     className="bg-brand-500 text-white hover:bg-brand-600"
                     onClick={() => setShowCreateForm(true)}
                   >
-                    Create Bulk Order
+                    {t('createButton')}
                   </Button>
                 ) : undefined
               }
@@ -867,7 +871,7 @@ export function BulkOrdersPage(): ReactElement {
               <div className="rounded-2xl border border-gray-200 bg-white p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Total Bulk Orders</p>
+                    <p className="text-sm text-gray-500">{t('summary.totalBulkOrders')}</p>
                     <p className="mt-2 text-2xl font-semibold text-gray-900">{summaryStats.totalOrders}</p>
                   </div>
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
@@ -879,10 +883,10 @@ export function BulkOrdersPage(): ReactElement {
               <div className="rounded-2xl border border-gray-200 bg-white p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Total Items</p>
+                    <p className="text-sm text-gray-500">{t('summary.totalItems')}</p>
                     <p className="mt-2 text-2xl font-semibold text-gray-900">{summaryStats.totalItems}</p>
                     <p className="mt-1 text-xs text-gray-500">
-                      Across all bulk orders
+                      {t('summary.acrossAllOrders')}
                     </p>
                   </div>
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
@@ -894,10 +898,10 @@ export function BulkOrdersPage(): ReactElement {
               <div className="rounded-2xl border border-gray-200 bg-white p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Active Orders</p>
+                    <p className="text-sm text-gray-500">{t('summary.activeOrders')}</p>
                     <p className="mt-2 text-2xl font-semibold text-gray-900">{summaryStats.activeCount}</p>
                     <p className="mt-1 text-xs text-gray-500">
-                      Currently in logistics pipeline
+                      {t('summary.currentlyInPipeline')}
                     </p>
                   </div>
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
@@ -910,11 +914,11 @@ export function BulkOrdersPage(): ReactElement {
             {/* Search + filter bar */}
             <div className="rounded-3xl border border-gray-200 bg-white p-6">
               <div className="space-y-2">
-                <h2 className="text-2xl font-semibold text-gray-900">Bulk Order Queue</h2>
+                <h2 className="text-2xl font-semibold text-gray-900">{t('queue.title')}</h2>
                 <p className="text-sm text-gray-500">
                   {total > 0
-                    ? `${total} bulk order${total === 1 ? '' : 's'} available.`
-                    : 'Bulk orders will appear here.'}
+                    ? t('queue.descriptionWithCount', { count: total })
+                    : t('queue.descriptionEmpty')}
                 </p>
               </div>
 
@@ -925,7 +929,7 @@ export function BulkOrdersPage(): ReactElement {
                     type="search"
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search by ID, origin, destination..."
+                    placeholder={t('queue.searchPlaceholder')}
                     className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-800 outline-none transition focus:border-brand-500"
                   />
                 </div>
@@ -935,29 +939,29 @@ export function BulkOrdersPage(): ReactElement {
                     onClick={() => setOpenMenu((prev) => !prev)}
                     className="inline-flex w-40 items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 shadow-sm transition hover:border-gray-300"
                   >
-                    {STATUS_OPTIONS.find((o) => o.value === statusFilter)?.label}
+                    {t(`queue.statusFilter.${statusFilter}`)}
                     <ChevronDown
                       className={cn('h-4 w-4 text-gray-400 transition', openMenu && 'rotate-180')}
                     />
                   </button>
                   {openMenu && (
                     <div className="absolute z-20 mt-2 w-44 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
-                      {STATUS_OPTIONS.map((option) => (
+                      {STATUS_FILTER_VALUES.map((value) => (
                         <button
-                          key={option.value}
+                          key={value}
                           type="button"
                           onClick={() => {
-                            setStatusFilter(option.value);
+                            setStatusFilter(value);
                             setOpenMenu(false);
                           }}
                           className={cn(
                             'w-full rounded-lg px-3 py-2 text-left text-sm transition',
-                            statusFilter === option.value
+                            statusFilter === value
                               ? 'bg-brand-50 font-semibold text-brand-600'
                               : 'text-gray-600 hover:bg-gray-50'
                           )}
                         >
-                          {option.label}
+                          {t(`queue.statusFilter.${value}`)}
                         </button>
                       ))}
                     </div>
@@ -968,17 +972,17 @@ export function BulkOrdersPage(): ReactElement {
 
             {/* Table */}
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">Order List</h3>
+              <h3 className="text-xl font-semibold text-gray-900">{t('table.title')}</h3>
               <div className="mt-4 overflow-hidden rounded-3xl border border-gray-200 bg-white">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <tr>
-                      <th className="px-6 py-4">Order ID</th>
-                      <th className="px-6 py-4">Route</th>
-                      <th className="px-6 py-4">Items</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4">Created</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
+                      <th className="px-6 py-4">{t('table.columns.orderId')}</th>
+                      <th className="px-6 py-4">{t('table.columns.route')}</th>
+                      <th className="px-6 py-4">{t('table.columns.items')}</th>
+                      <th className="px-6 py-4">{t('table.columns.status')}</th>
+                      <th className="px-6 py-4">{t('table.columns.created')}</th>
+                      <th className="px-6 py-4 text-right">{t('table.columns.actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white">
@@ -992,7 +996,7 @@ export function BulkOrdersPage(): ReactElement {
                           {order.id.slice(0, 8)}
                         </td>
                         <td className="px-6 py-4 text-gray-600">
-                          {order.origin} → {order.destination}
+                          {translateLocation(order.origin)} → {translateLocation(order.destination)}
                         </td>
                         <td className="px-6 py-4">
                           <span className="font-semibold text-gray-800">{order.itemCount}</span>
@@ -1001,7 +1005,7 @@ export function BulkOrdersPage(): ReactElement {
                           <StatusBadge statusV2={order.statusV2} label={order.statusLabel} />
                         </td>
                         <td className="px-6 py-4 text-gray-500">
-                          {formatDate(order.createdAt)}
+                          {formatDate(order.createdAt, dateLocale)}
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="relative inline-flex" data-row-menu>
@@ -1030,7 +1034,7 @@ export function BulkOrdersPage(): ReactElement {
                                   }}
                                   className="w-full rounded-lg px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
                                 >
-                                  View Details
+                                  {t('table.viewDetails')}
                                 </button>
                                 {isAdmin && (
                                   <button
@@ -1042,7 +1046,7 @@ export function BulkOrdersPage(): ReactElement {
                                     }}
                                     className="w-full rounded-lg px-3 py-2 text-sm text-red-600 transition hover:bg-red-50"
                                   >
-                                    Delete Order
+                                    {t('table.deleteOrder')}
                                   </button>
                                 )}
                               </div>
@@ -1057,8 +1061,8 @@ export function BulkOrdersPage(): ReactElement {
                 {filteredOrders.length === 0 && (
                   <div className="p-6 text-center text-sm text-gray-500">
                     {bulkOrders.length === 0
-                      ? 'No bulk orders found.'
-                      : 'No bulk orders match your filters.'}
+                      ? t('table.empty')
+                      : t('table.emptyFiltered')}
                   </div>
                 )}
               </div>
@@ -1067,10 +1071,10 @@ export function BulkOrdersPage(): ReactElement {
         )}
         <ConfirmModal
           isOpen={!!deleteTarget}
-          title="Delete Bulk Order"
-          message="This bulk order will be permanently deleted. This action cannot be undone."
-          confirmLabel="Delete Order"
-          cancelLabel="Cancel"
+          title={t('deleteModal.title')}
+          message={t('deleteModal.message')}
+          confirmLabel={t('deleteModal.confirmLabel')}
+          cancelLabel={t('deleteModal.cancelLabel')}
           tone="danger"
           onConfirm={() => { if (deleteTarget) void handleDelete(deleteTarget); }}
           onCancel={() => setDeleteTarget(null)}
@@ -1082,17 +1086,10 @@ export function BulkOrdersPage(): ReactElement {
 
 // ── Status badge component ──────────────────────────────────────
 
-function formatStatusLabel(statusV2: string, label?: string): string {
-  if (label) return label;
-  // Derive readable label from statusV2: "AWAITING_WAREHOUSE_RECEIPT" → "Awaiting Warehouse Receipt"
-  return statusV2
-    .split('_')
-    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
-    .join(' ');
-}
-
 function StatusBadge({ statusV2, label }: { statusV2: string; label?: string }): ReactElement {
+  const { t } = useTranslation('shipments');
   const style = getStatusStyle(statusV2);
+  const fallback = label || statusV2.split('_').map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
   return (
     <span
       className={cn(
@@ -1102,7 +1099,7 @@ function StatusBadge({ statusV2, label }: { statusV2: string; label?: string }):
       )}
     >
       <span className={cn('h-1.5 w-1.5 rounded-full', style.dotClass)} />
-      {formatStatusLabel(statusV2, label)}
+      {t(`statusV2.${statusV2}`, { defaultValue: fallback })}
     </span>
   );
 }

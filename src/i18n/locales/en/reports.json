@@ -1,0 +1,70 @@
+{
+  "pageTitle": "Reports",
+  "subtitle": "Business analytics and insights.",
+  "dateRange": { "to": "to" },
+  "loading": "Loading report data…",
+  "kpis": {
+    "totalOrders": "Total Orders",
+    "totalUsers": "Total Users",
+    "totalRevenue": "Total Revenue",
+    "revenueChange": "Revenue Change",
+    "vsPreviousPeriod": "vs previous period"
+  },
+  "revenueAnalytics": {
+    "title": "Revenue Analytics",
+    "total": "Total: {{value}}",
+    "payments": "Payments: {{value}}",
+    "avgOrder": "Avg Order: {{value}}"
+  },
+  "shipmentVolume": {
+    "title": "Shipment Volume",
+    "total": "Total: {{value}}",
+    "air": "Air: {{value}}",
+    "sea": "Sea: {{value}}",
+    "barLabelAir": "Air",
+    "barLabelSea": "Sea"
+  },
+  "statusPipeline": {
+    "title": "Status Pipeline",
+    "summary": "{{active}} active / {{total}} total"
+  },
+  "airVsSea": {
+    "title": "Air vs Sea Comparison",
+    "orders": "Orders",
+    "totalWeight": "Total Weight",
+    "completion": "Completion",
+    "avgDelivery": "Avg Delivery",
+    "avgDeliveryValue": "{{value}} days",
+    "revenue": "Revenue"
+  },
+  "topCustomers": {
+    "title": "Top Customers",
+    "columns": {
+      "rank": "#",
+      "customer": "Customer",
+      "orders": "Orders",
+      "weight": "Weight",
+      "revenue": "Revenue"
+    }
+  },
+  "deliveryPerformance": {
+    "title": "Delivery Performance",
+    "avgDays": "Avg Days",
+    "medianDays": "Median Days",
+    "delivered": "Delivered",
+    "lineLabel": "Avg Days",
+    "avgValue": "Avg {{value}}d",
+    "minValue": "Min {{value}}d",
+    "maxValue": "Max {{value}}d",
+    "doneCount": "{{count}} done"
+  },
+  "paymentBreakdown": {
+    "title": "Payment Breakdown",
+    "byType": "By Type",
+    "byStatus": "By Status",
+    "collectionStatus": "Collection Status",
+    "successRate": "{{value}}% success",
+    "paymentCount": "{{count}} payments",
+    "orderCount": "{{count}} orders"
+  }
+}

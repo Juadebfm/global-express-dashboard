@@ -1,10 +1,12 @@
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ShieldOff } from 'lucide-react';
 import { ROUTES } from '@/constants';
 import { useAuth } from '@/hooks';
 
 export function ForbiddenPage(): ReactElement {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
@@ -21,10 +23,9 @@ export function ForbiddenPage(): ReactElement {
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-gray-900">Access Denied</h1>
+        <h1 className="text-3xl font-bold text-gray-900">{t('errors.forbidden.title')}</h1>
         <p className="mt-3 text-sm text-gray-500">
-          You don't have permission to view this page. If you think this is a
-          mistake, contact your administrator.
+          {t('errors.forbidden.message')}
         </p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -33,14 +34,14 @@ export function ForbiddenPage(): ReactElement {
             onClick={handleBack}
             className="rounded-xl bg-brand-500 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-brand-600"
           >
-            {isAuthenticated ? 'Back to Dashboard' : 'Go to Home'}
+            {isAuthenticated ? t('errors.forbidden.backToDashboard') : t('errors.forbidden.goToHome')}
           </button>
           <button
             type="button"
             onClick={() => navigate(-1)}
             className="rounded-xl border border-gray-200 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
           >
-            Go Back
+            {t('errors.forbidden.goBack')}
           </button>
         </div>
       </div>

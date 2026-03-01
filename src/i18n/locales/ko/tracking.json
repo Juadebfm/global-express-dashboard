@@ -1,0 +1,43 @@
+{
+  "public": {
+    "signIn": "로그인",
+    "title": "배송 추적",
+    "subtitle": "운송장 번호를 입력하여 최신 상태를 확인하세요.",
+    "placeholder": "운송장 번호를 입력하세요 (예: GX-1234567)",
+    "searching": "검색 중...",
+    "trackButton": "추적",
+    "notFound": "배송을 찾을 수 없습니다",
+    "notFoundDesc": "운송장 번호를 확인하고 다시 시도하세요.",
+    "trackingNumber": "운송장 번호",
+    "origin": "출발지",
+    "destination": "도착지",
+    "estimatedDelivery": "예상 배송일",
+    "lastUpdate": "최근 업데이트",
+    "currentLocation": "현재 위치",
+    "haveAccount": "계정이 있으신가요?",
+    "signInForDetails": "자세한 내용은 로그인하세요"
+  },
+  "internal": {
+    "backToShipments": "배송 목록으로",
+    "title": "배송 추적",
+    "subtitle": "운송장 번호를 입력하여 실시간 배송 업데이트를 확인하세요.",
+    "inputLabel": "운송장 번호 입력",
+    "placeholder": "예: GX-ABC123",
+    "tracking": "추적 중...",
+    "trackButton": "배송 추적",
+    "shipmentHeading": "배송 {{trackingNumber}}",
+    "status": "상태",
+    "estimatedDelivery": "예상 배송일",
+    "currentLocation": "현재 위치",
+    "lastUpdated": "최근 업데이트",
+    "from": "출발",
+    "to": "도착",
+    "pending": "대기 중",
+    "inTransit": "운송 중",
+    "unknown": "알 수 없음",
+    "na": "해당 없음",
+    "emptyState": "위에 운송장 번호를 입력하여 배송 세부 정보를 확인하세요.",
+    "timeline": "배송 타임라인",
+    "timelineEmpty": "아직 타임라인 이벤트가 없습니다."
+  }
+}

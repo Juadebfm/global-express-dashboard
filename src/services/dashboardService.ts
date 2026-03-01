@@ -9,15 +9,20 @@ import type {
 } from '@/types';
 import type { User } from '@/types';
 import { apiGet } from '@/lib/apiClient';
+import i18n from '@/i18n/i18n';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+function t(key: string): string {
+  return i18n.t(key, { ns: 'dashboard' }) as string;
+}
 
 function formatEtaFromIso(isoString: string | null): string {
-  if (!isoString) return 'TBD';
+  if (!isoString) return t('activeDeliveries.tbd');
   const diff = new Date(isoString).getTime() - Date.now();
-  if (diff <= 0) return 'Arrived';
+  if (diff <= 0) return t('activeDeliveries.arrived');
   const hours = Math.floor(diff / 3_600_000);
   const minutes = Math.floor((diff % 3_600_000) / 60_000);
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
@@ -37,7 +42,7 @@ function shipmentTypeToMode(type: ApiActiveDelivery['shipmentType']): ActiveDeli
 
 function mapTrends(trends: ApiTrend[]): DashboardData['charts']['shipmentTrends']['data'] {
   return trends.map((t) => ({
-    month: MONTH_NAMES[t.month - 1] ?? String(t.month),
+    month: MONTH_KEYS[t.month - 1] ? i18n.t(`months.${MONTH_KEYS[t.month - 1]}`, { ns: 'dashboard' }) as string : String(t.month),
     deliveries: parseFloat(t.deliveredWeight) || 0,
     shipments: parseFloat(t.activeWeight) || 0,
   }));
@@ -60,7 +65,7 @@ function mapActiveDeliveries(items: ApiActiveDelivery[]): ActiveDelivery[] {
       return {
         ...base,
         status: 'on_time' as const,
-        statusLabel: 'On time',
+        statusLabel: t('activeDeliveries.onTime'),
         eta: { display: formatEtaFromIso(d.nextEta), minutes: etaMinutes(d.nextEta) },
       };
     }
@@ -68,54 +73,55 @@ function mapActiveDeliveries(items: ApiActiveDelivery[]): ActiveDelivery[] {
       return {
         ...base,
         status: 'delayed' as const,
-        statusLabel: 'Delayed',
+        statusLabel: t('activeDeliveries.delayed'),
         delay: { display: formatEtaFromIso(d.nextEta), minutes: etaMinutes(d.nextEta) },
       };
     }
-    return { ...base, status: 'unknown' as const, statusLabel: 'Unknown' };
+    return { ...base, status: 'unknown' as const, statusLabel: t('activeDeliveries.unknown') };
   });
 }
 
 function mapKpis(stats: ApiDashboardStats, role: User['role']): KpiCard[] {
   if (role === 'user') {
     const totalSpentNum = stats.totalSpent ? parseFloat(stats.totalSpent) : 0;
-    const totalSpentDisplay = `₦${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(totalSpentNum)}`;
+    const locale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
+    const totalSpentDisplay = `₦${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(totalSpentNum)}`;
 
     return [
       {
         id: 'totalOrders',
-        title: 'All Shipments',
+        title: t('kpis.customer.allShipments'),
         value: stats.totalOrders,
         unit: null,
-        helperText: 'Shipment available',
+        helperText: t('kpis.customer.allShipmentsHelper'),
         change: stats.totalOrdersChange,
         status: 'good',
       },
       {
         id: 'pendingOrders',
-        title: 'Pending Shipment',
+        title: t('kpis.customer.pendingShipment'),
         value: stats.pendingOrders,
         unit: null,
-        helperText: 'Currently in transit',
+        helperText: t('kpis.customer.pendingShipmentHelper'),
         change: stats.pendingOrdersChange,
         status: stats.pendingOrders > 0 ? 'warning' : 'good',
       },
       {
         id: 'deliveredTotal',
-        title: 'Delivered Shipment',
+        title: t('kpis.customer.deliveredShipment'),
         value: stats.deliveredTotal,
         unit: null,
-        helperText: 'Successful deliveries',
+        helperText: t('kpis.customer.deliveredShipmentHelper'),
         change: stats.deliveredTotalChange,
         status: 'good',
       },
       {
         id: 'totalSpent',
-        title: 'Total Spent',
+        title: t('kpis.customer.totalSpent'),
         value: totalSpentNum,
         unit: 'NGN',
         display: totalSpentDisplay,
-        helperText: 'Your total payments',
+        helperText: t('kpis.customer.totalSpentHelper'),
         change: stats.totalSpentChange ?? null,
         status: 'good',
       },
@@ -126,28 +132,28 @@ function mapKpis(stats: ApiDashboardStats, role: User['role']): KpiCard[] {
   const kpis: KpiCard[] = [
     {
       id: 'totalOrders',
-      title: 'All Orders',
+      title: t('kpis.operator.allOrders'),
       value: stats.totalOrders,
       unit: null,
-      helperText: 'Total orders globally',
+      helperText: t('kpis.operator.allOrdersHelper'),
       change: stats.totalOrdersChange,
       status: 'good',
     },
     {
       id: 'activeShipments',
-      title: 'Active Shipments',
+      title: t('kpis.operator.activeShipments'),
       value: stats.activeShipments,
       unit: null,
-      helperText: 'Currently in transit',
+      helperText: t('kpis.operator.activeShipmentsHelper'),
       change: stats.activeShipmentsChange,
       status: 'good',
     },
     {
       id: 'pendingOrders',
-      title: 'Pending Orders',
+      title: t('kpis.operator.pendingOrders'),
       value: stats.pendingOrders,
       unit: null,
-      helperText: 'Awaiting processing',
+      helperText: t('kpis.operator.pendingOrdersHelper'),
       change: stats.pendingOrdersChange,
       status: stats.pendingOrders > 0 ? 'warning' : 'good',
     },
@@ -156,14 +162,15 @@ function mapKpis(stats: ApiDashboardStats, role: User['role']): KpiCard[] {
   // Revenue is superadmin-only — the backend omits it for other roles
   if (role === 'superadmin' && stats.revenueMtd) {
     const revenueMtdNum = parseFloat(stats.revenueMtd);
-    const revenueMtdDisplay = `₦${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(revenueMtdNum)}`;
+    const locale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
+    const revenueMtdDisplay = `₦${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(revenueMtdNum)}`;
     kpis.push({
       id: 'revenueMtd',
-      title: 'Revenue (MTD)',
+      title: t('kpis.operator.revenueMtd'),
       value: revenueMtdNum,
       unit: 'NGN',
       display: revenueMtdDisplay,
-      helperText: 'Month to date',
+      helperText: t('kpis.operator.revenueMtdHelper'),
       change: stats.revenueMtdChange ?? null,
       status: 'good',
     });
@@ -192,45 +199,43 @@ export function mapToDashboardData(
     app: {
       name: 'GlobalExpress',
       module: 'Dashboard',
-      pageTitle: 'Dashboard Overview',
-      subtitle: isOperator
-        ? "Welcome back! Here's what's happening with your Shipment."
-        : "Welcome back! Here's what's happening with your Shipment.",
+      pageTitle: t('pageTitle'),
+      subtitle: t('subtitle'),
       generatedAt: new Date().toISOString(),
     },
     user: { displayName: '', email: '', avatarUrl: '/images/favicon.svg' },
     ui: {
-      topbar: { searchPlaceholder: 'Search', notifications: { unreadCount: 0 } },
+      topbar: { searchPlaceholder: t('searchPlaceholder'), notifications: { unreadCount: 0 } },
       actions: isOperator
         ? [
-            { id: 'export', label: 'Export', icon: 'export' },
-            { id: 'trackShipment', label: 'Track Client Shipment', icon: 'tracking' },
-            { id: 'newOrder', label: 'Create Client Order', icon: 'plus' },
+            { id: 'export', label: t('actions.export'), icon: 'export' },
+            { id: 'trackShipment', label: t('actions.trackClientShipment'), icon: 'tracking' },
+            { id: 'newOrder', label: t('actions.createClientOrder'), icon: 'plus' },
           ]
         : [
-            { id: 'export', label: 'Export', icon: 'export' },
-            { id: 'trackShipment', label: 'Track Shipment', icon: 'tracking' },
-            { id: 'newOrder', label: 'Pre-Order', icon: 'plus' },
+            { id: 'export', label: t('actions.export'), icon: 'export' },
+            { id: 'trackShipment', label: t('actions.trackShipment'), icon: 'tracking' },
+            { id: 'newOrder', label: t('actions.preOrder'), icon: 'plus' },
           ],
       sidebar: { items: [], footer: { items: [] } },
     },
     kpis: mapKpis(raw.stats, role),
     charts: {
       shipmentTrends: {
-        title: 'Shipment Trends',
-        subtitle: 'Monthly shipment and movement performance over the past year',
-        xAxis: { type: 'category', key: 'month', label: 'Month' },
-        yAxis: { type: 'number', key: 'value', label: 'Weight (kg)' },
+        title: t('charts.shipmentTrends'),
+        subtitle: t('charts.shipmentTrendsSubtitle'),
+        xAxis: { type: 'category', key: 'month', label: t('charts.xAxisLabel') },
+        yAxis: { type: 'number', key: 'value', label: t('charts.yAxisLabel') },
         legend: [
-          { key: 'deliveries', label: 'Delivered' },
-          { key: 'shipments', label: 'In Transit' },
+          { key: 'deliveries', label: t('charts.delivered') },
+          { key: 'shipments', label: t('charts.inTransit') },
         ],
         data: mapTrends(raw.trends),
       },
     },
     activeDeliveries: {
-      title: 'Delivery Schedule',
-      subtitle: 'Active delivery routes',
+      title: t('activeDeliveries.title'),
+      subtitle: t('activeDeliveries.subtitle'),
       items: mapActiveDeliveries(raw.activeDeliveries),
     },
     formatting: {
