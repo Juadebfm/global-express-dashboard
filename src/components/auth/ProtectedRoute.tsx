@@ -27,10 +27,14 @@ export function ProtectedRoute({
     return <PageLoader label="Loading..." />;
   }
 
-  // Clerk users are treated as 'user' role for access control
-  const effectiveRole: User['role'] | null = isClerkSignedIn
-    ? 'user'
-    : (user?.role ?? null);
+  // Internal JWT takes priority — if the user explicitly logged in with
+  // credentials, honour that role even when a Clerk session cookie lingers.
+  const effectiveRole: User['role'] | null =
+    isAuthenticated && user?.role
+      ? user.role
+      : isClerkSignedIn
+        ? 'user'
+        : null;
 
   const isEffectivelyAuthenticated = isAuthenticated || isClerkSignedIn;
 
@@ -38,11 +42,16 @@ export function ProtectedRoute({
     return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
-  if (blockedRoles && effectiveRole && blockedRoles.includes(effectiveRole)) {
+  // No role resolved — send to login to avoid redirect loops between dashboards
+  if (!effectiveRole) {
+    return <Navigate to={ROUTES.LOGIN} replace />;
+  }
+
+  if (blockedRoles && blockedRoles.includes(effectiveRole)) {
     return <Navigate to={redirectTo ?? ROUTES.FORBIDDEN} replace />;
   }
 
-  if (allowedRoles && (!effectiveRole || !allowedRoles.includes(effectiveRole))) {
+  if (allowedRoles && !allowedRoles.includes(effectiveRole)) {
     return <Navigate to={redirectTo ?? ROUTES.FORBIDDEN} replace />;
   }
 

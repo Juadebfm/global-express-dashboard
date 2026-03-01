@@ -24,6 +24,7 @@ interface SidebarProps {
   items: SidebarItem[];
   footerItems: SidebarItem[];
   user: DashboardUser;
+  roleLabel?: string | null;
   isCollapsed: boolean;
   isMobileOpen: boolean;
   onCloseMobile: () => void;
@@ -47,6 +48,7 @@ export function Sidebar({
   items,
   footerItems,
   user,
+  roleLabel,
   isCollapsed,
   isMobileOpen,
   onCloseMobile,
@@ -119,8 +121,8 @@ export function Sidebar({
         {/* Header */}
         <div
           className={cn(
-            'relative flex items-center justify-between px-4 py-5',
-            showLabels ? '' : 'px-3'
+            'relative flex flex-col px-4 py-5',
+            showLabels ? '' : 'items-center px-3'
           )}
         >
           <button
@@ -138,6 +140,11 @@ export function Sidebar({
               className={cn(showLabels ? 'h-8' : 'h-9')}
             />
           </button>
+          {showLabels && roleLabel && (
+            <span className="mt-2 self-start text-[10px] font-semibold uppercase tracking-wider text-white/50">
+              {roleLabel} Panel
+            </span>
+          )}
         </div>
 
         {/* Navigation */}

@@ -1,17 +1,20 @@
 export interface BulkOrderItem {
-  trackingNumber?: string;
-  senderId?: string;
+  customerId?: string;
   recipientName: string;
-  recipientPhone?: string;
   recipientAddress?: string;
+  recipientPhone?: string;
+  recipientEmail?: string;
   description?: string;
-  weightKg?: number;
-  declaredValue?: number;
+  weight?: string;
+  declaredValue?: string;
+  pickupRepName?: string;
+  pickupRepPhone?: string;
 }
 
 export interface CreateBulkOrderPayload {
   origin: string;
   destination: string;
+  shipmentType: 'air' | 'ocean';
   notes?: string;
   items: BulkOrderItem[];
 }
@@ -20,13 +23,20 @@ export interface ApiBulkOrderItem {
   id: string;
   trackingNumber: string;
   senderId?: string;
+  customerId?: string;
   recipientName: string;
   recipientPhone?: string;
   recipientAddress?: string;
+  recipientEmail?: string;
   description?: string;
+  weight?: string | number;
   weightKg?: number;
-  declaredValue?: number;
+  declaredValue?: string | number;
+  pickupRepName?: string | null;
+  pickupRepPhone?: string | null;
+  statusV2?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface ApiBulkOrder {
@@ -35,7 +45,7 @@ export interface ApiBulkOrder {
   destination: string;
   notes?: string;
   statusV2: string;
-  statusLabel: string;
+  statusLabel?: string;
   itemCount: number;
   items?: ApiBulkOrderItem[];
   createdBy: string;

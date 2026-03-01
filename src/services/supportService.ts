@@ -125,5 +125,13 @@ export async function updateTicketStatus(
   payload: UpdateTicketStatusPayload,
   token: string,
 ): Promise<void> {
-  await apiPatch(`/support/tickets/${ticketId}`, payload, token);
+  await apiPatch(`/support/tickets/${ticketId}/status`, payload, token);
+}
+
+export async function assignTicket(
+  ticketId: string,
+  assignedTo: string,
+  token: string,
+): Promise<void> {
+  await apiPatch(`/support/tickets/${ticketId}/assign`, { assignedTo }, token);
 }

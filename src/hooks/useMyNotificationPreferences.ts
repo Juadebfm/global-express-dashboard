@@ -41,7 +41,7 @@ export function useMyNotificationPreferences(): NotificationPreferencesState {
     }: {
       channel: keyof NotificationPreferenceChannels;
       enabled: boolean;
-    }): Promise<NotificationPreferences | null> => {
+    }): Promise<NotificationPreferences> => {
       const token = await getToken();
       if (!token) throw new Error('Authentication token is missing.');
 
@@ -53,15 +53,9 @@ export function useMyNotificationPreferences(): NotificationPreferencesState {
 
       if (previous) {
         queryClient.setQueryData<NotificationPreferences>(queryKey, {
-          ...previous,
           channels: {
             ...previous.channels,
             [channel]: enabled,
-          },
-          raw: {
-            ...previous.raw,
-            [channel]: enabled,
-            ...(channel === 'inApp' ? { in_app: enabled } : {}),
           },
         });
       }
@@ -74,11 +68,7 @@ export function useMyNotificationPreferences(): NotificationPreferencesState {
       }
     },
     onSuccess: (result) => {
-      if (result) {
-        queryClient.setQueryData(queryKey, result);
-      } else {
-        queryClient.invalidateQueries({ queryKey });
-      }
+      queryClient.setQueryData(queryKey, result);
     },
   });
 

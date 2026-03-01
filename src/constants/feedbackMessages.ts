@@ -5,6 +5,7 @@ export const FEEDBACK_MESSAGES = {
     forbidden: 'You do not have permission to perform this action.',
     notFound: 'The requested resource is not available.',
     unavailable: 'Service is temporarily unavailable. Please try again shortly.',
+    rateLimited: 'Too many attempts. Please wait a moment and try again.',
   },
   support: {
     ticketsLoadError: 'Unable to load your support tickets right now. Please try again.',

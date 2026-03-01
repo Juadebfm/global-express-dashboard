@@ -36,6 +36,12 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
 
     try {
       const user = await getMe(token);
+
+      // If the session returned no usable role, treat it as invalid
+      if (!user?.role) {
+        throw new Error('Incomplete session');
+      }
+
       setState({
         user,
         isAuthenticated: true,

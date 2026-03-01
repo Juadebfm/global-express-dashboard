@@ -35,7 +35,6 @@ const OPERATOR_NAV: SidebarItem[] = [
 ];
 
 const ADMIN_EXTRA_NAV: SidebarItem[] = [
-  { id: 'users', label: 'Users', icon: 'users', href: ROUTES.USERS },
   { id: 'team', label: 'Team', icon: 'team', href: ROUTES.TEAM },
   { id: 'reports', label: 'Reports', icon: 'chart', href: ROUTES.REPORTS },
 ];
@@ -103,6 +102,7 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
         items={navItems}
         footerItems={FOOTER_NAV}
         user={effectiveUser}
+        roleLabel={effectiveRole && !isCustomer ? roleLabelMap[effectiveRole] ?? null : null}
         isCollapsed={isSidebarCollapsed}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}

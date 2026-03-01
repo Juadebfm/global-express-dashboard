@@ -90,30 +90,22 @@ export interface ProfileCompleteness {
 
 export interface ApiNotificationPreferencesResponse {
   success: boolean;
-  message: string;
-  data: Record<string, unknown> | null;
+  message?: string;
+  data: NotificationPreferenceChannels | null;
 }
 
 export interface NotificationPreferenceChannels {
-  email: boolean | null;
-  sms: boolean | null;
-  push: boolean | null;
-  inApp: boolean | null;
-  whatsapp: boolean | null;
+  notifyEmailAlerts: boolean;
+  notifySmsAlerts: boolean;
+  notifyInAppAlerts: boolean;
+  consentMarketing: boolean;
 }
 
 export interface NotificationPreferences {
   channels: NotificationPreferenceChannels;
-  raw: Record<string, unknown>;
 }
 
-export interface NotificationPreferencesUpdateInput {
-  email?: boolean;
-  sms?: boolean;
-  push?: boolean;
-  inApp?: boolean;
-  whatsapp?: boolean;
-}
+export type NotificationPreferencesUpdateInput = Partial<NotificationPreferenceChannels>;
 
 export interface AccountExportFile {
   blob: Blob;

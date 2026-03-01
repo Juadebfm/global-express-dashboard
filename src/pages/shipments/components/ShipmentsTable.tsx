@@ -103,7 +103,7 @@ export function ShipmentsTable({
           <thead className="bg-gray-50">
             <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
               <th className="whitespace-nowrap border-r border-gray-100 px-6 py-3">
-                SKU
+                Tracking No.
               </th>
               <th className="whitespace-nowrap border-r border-gray-100 px-6 py-3">
                 Customer

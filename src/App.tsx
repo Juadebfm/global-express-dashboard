@@ -18,8 +18,8 @@ import {
   AdminDashboardPage,
   ShipmentsPage,
   TrackShipmentPage,
+  NewShipmentPage,
   ClientsPage,
-  UsersPage,
   OrdersPage,
   NotificationsPage,
   TeamPage,
@@ -112,6 +112,14 @@ function AppRoutes(): ReactElement {
           }
         />
         <Route
+          path={ROUTES.NEW_SHIPMENT}
+          element={
+            <ProtectedRoute>
+              <NewShipmentPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path={ROUTES.CLIENTS}
           element={
             <ProtectedRoute>
@@ -132,14 +140,6 @@ function AppRoutes(): ReactElement {
           element={
             <ProtectedRoute>
               <NotificationsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={ROUTES.USERS}
-          element={
-            <ProtectedRoute>
-              <UsersPage />
             </ProtectedRoute>
           }
         />

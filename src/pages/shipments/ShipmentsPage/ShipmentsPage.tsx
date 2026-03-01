@@ -46,7 +46,7 @@ const exportDate = (value: string): string => {
 
 const buildCsv = (rows: ShipmentRecord[]): string => {
   const header = [
-    'SKU',
+    'Tracking Number',
     'Customer',
     'Origin',
     'Destination',
@@ -299,7 +299,7 @@ export function ShipmentsPage(): ReactElement {
               searchValue={query}
               onSearchChange={handleSearchChange}
               onSearchClear={handleSearchClear}
-              searchPlaceholder="Search by SKU, customer, origin, destination..."
+              searchPlaceholder="Search by tracking number, customer, origin, destination..."
               searchMeta={visibleLabel}
             />
           </>

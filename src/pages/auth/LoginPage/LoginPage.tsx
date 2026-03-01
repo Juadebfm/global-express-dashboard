@@ -10,13 +10,20 @@ import { ROUTES } from '@/constants';
 export function LoginPage(): ReactElement {
   const navigate = useNavigate();
   const { signOut } = useClerk();
-  const { login, isLoading, isAuthenticated, error, clearError } = useAuth();
+  const { login, isLoading, isAuthenticated, user, error, clearError } = useAuth();
 
+  // Redirect already-authenticated users to the correct dashboard.
+  // Only redirect when we have a resolved role — otherwise the
+  // ProtectedRoute on the target page would bounce us back here (loop).
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(ROUTES.DASHBOARD, { replace: true });
+    if (!isLoading && isAuthenticated && user?.role) {
+      const dest =
+        user.role === 'staff' || user.role === 'admin' || user.role === 'superadmin'
+          ? ROUTES.ADMIN_DASHBOARD
+          : ROUTES.DASHBOARD;
+      navigate(dest, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isLoading, isAuthenticated, user, navigate]);
 
   useEffect(() => {
     return () => {
@@ -33,7 +40,7 @@ export function LoginPage(): ReactElement {
       });
       // Evict any customer Clerk session on this device
       await signOut();
-      navigate(ROUTES.DASHBOARD);
+      // The useEffect above handles redirect once isAuthenticated + user are set
     } catch {
       // Error is handled by context
     }

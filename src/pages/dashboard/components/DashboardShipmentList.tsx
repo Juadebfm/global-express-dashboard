@@ -81,7 +81,7 @@ export function DashboardShipmentList({ shipments }: DashboardShipmentListProps)
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-gray-100">
-              {['SKU', 'Customer', 'Origin', 'Destination', 'Departure', 'ETA', 'Status', 'Type'].map(
+              {['Tracking No.', 'Customer', 'Origin', 'Destination', 'Departure', 'ETA', 'Status', 'Type'].map(
                 (col) => (
                   <th key={col} className="px-4 py-3 text-xs font-medium text-gray-400 whitespace-nowrap">
                     {col}

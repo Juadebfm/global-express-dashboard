@@ -1,11 +1,12 @@
 import { z } from 'zod';
 
 export const supportTicketCategories = [
-  'shipment',
-  'billing',
-  'account',
-  'technical',
-  'other',
+  'shipment_inquiry',
+  'payment_issue',
+  'damaged_goods',
+  'document_request',
+  'account_issue',
+  'general',
 ] as const;
 
 export const supportTicketPriorities = ['low', 'medium', 'high'] as const;
