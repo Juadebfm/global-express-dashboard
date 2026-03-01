@@ -5,7 +5,6 @@ import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import {
   Calendar,
   Check,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -37,11 +36,6 @@ interface StepDefinition {
   description: string;
 }
 
-interface DropdownOption {
-  value: string;
-  label: string;
-  description?: string;
-}
 
 const steps: StepDefinition[] = [
   {
@@ -493,96 +487,6 @@ function TimePicker({ label, value, onChange }: TimePickerProps): ReactElement {
           >
             Done
           </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-interface DropdownSelectProps {
-  label: string;
-  value: string;
-  placeholder: string;
-  options: DropdownOption[];
-  onChange: (value: string) => void;
-}
-
-function DropdownSelect({
-  label,
-  value,
-  placeholder,
-  options,
-  onChange,
-}: DropdownSelectProps): ReactElement {
-  const [isOpen, setIsOpen] = useState(false);
-  const activeLabel = options.find((option) => option.value === value)?.label;
-
-  return (
-    <div className="relative">
-      {label && (
-        <span className="text-xs font-semibold uppercase text-gray-500">
-          {label}
-        </span>
-      )}
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        className={cn(
-          "mt-2 flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 hover:border-brand-400",
-          !label && "mt-0",
-        )}
-      >
-        <span className={activeLabel ? "text-gray-900" : "text-gray-400"}>
-          {activeLabel ?? placeholder}
-        </span>
-        <ChevronDown className="h-4 w-4 text-gray-400" />
-      </button>
-
-      {isOpen && (
-        <div className="absolute left-0 right-0 z-10 mt-2 rounded-2xl border border-gray-200 bg-white p-3 shadow-lg">
-          {label && (
-            <p className="mb-2 text-xs font-semibold uppercase text-gray-400">
-              {label}
-            </p>
-          )}
-          <div className="space-y-2">
-            {options.map((option) => {
-              const isActive = option.value === value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(option.value);
-                    setIsOpen(false);
-                  }}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50",
-                    isActive && "bg-brand-50 text-brand-600",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex h-4 w-4 items-center justify-center rounded-full border",
-                      isActive ? "border-brand-500" : "border-gray-300",
-                    )}
-                  >
-                    {isActive && (
-                      <span className="h-2 w-2 rounded-full bg-brand-500" />
-                    )}
-                  </span>
-                  <div>
-                    <p className="font-medium">{option.label}</p>
-                    {option.description && (
-                      <p className="text-xs text-gray-400">
-                        {option.description}
-                      </p>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
         </div>
       )}
     </div>
