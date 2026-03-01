@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Boxes,
@@ -91,13 +91,13 @@ export function BulkOrdersPage(): ReactElement {
   const [clients, setClients] = useState<ApiClient[]>([]);
   const [clientSearch, setClientSearch] = useState<Record<number, string>>({});
   const [openClientPicker, setOpenClientPicker] = useState<number | null>(null);
-  let nextKey = 0;
+  const nextKeyRef = useRef(0);
 
   const addItem = useCallback((): void => {
     setCreateItems((prev) => [
       ...prev,
       {
-        _key: Date.now() + nextKey++,
+        _key: Date.now() + nextKeyRef.current++,
         recipientName: '',
         recipientAddress: '',
         recipientPhone: '',
@@ -1082,7 +1082,7 @@ export function BulkOrdersPage(): ReactElement {
 
 // ── Status badge component ──────────────────────────────────────
 
-function formatStatusLabel(statusV2: string, label: string): string {
+function formatStatusLabel(statusV2: string, label?: string): string {
   if (label) return label;
   // Derive readable label from statusV2: "AWAITING_WAREHOUSE_RECEIPT" → "Awaiting Warehouse Receipt"
   return statusV2
@@ -1091,7 +1091,7 @@ function formatStatusLabel(statusV2: string, label: string): string {
     .join(' ');
 }
 
-function StatusBadge({ statusV2, label }: { statusV2: string; label: string }): ReactElement {
+function StatusBadge({ statusV2, label }: { statusV2: string; label?: string }): ReactElement {
   const style = getStatusStyle(statusV2);
   return (
     <span

@@ -50,7 +50,6 @@ import type {
 const TOKEN_KEY = 'globalxpress_token';
 
 const BRAND = '#f97316';
-const BRAND_LIGHT = '#fdba74';
 const SEA_COLOR = '#3b82f6';
 const PIE_COLORS = ['#f97316', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899'];
 
@@ -62,7 +61,8 @@ const PHASE_COLORS: Record<string, string> = {
   terminal: '#10b981',
 };
 
-function fmtPeriod(iso: string): string {
+function fmtPeriod(iso: unknown): string {
+  if (typeof iso !== 'string') return String(iso ?? '');
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
@@ -255,7 +255,7 @@ export function ReportsPage(): ReactElement {
                   <XAxis dataKey="period" tickFormatter={fmtPeriod} tick={{ fontSize: 12 }} />
                   <YAxis tickFormatter={(v) => fmtUsd(v)} tick={{ fontSize: 12 }} />
                   <Tooltip
-                    formatter={(v: number) => [fmtUsd(v), 'Revenue']}
+                    formatter={(v) => [fmtUsd(v as number), 'Revenue']}
                     labelFormatter={fmtPeriod}
                   />
                   <Bar dataKey="revenue" fill={BRAND} radius={[4, 4, 0, 0]} />
@@ -527,7 +527,7 @@ export function ReportsPage(): ReactElement {
                             <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(v: number, name: string) => [v, name]} />
+                        <Tooltip formatter={(v, name) => [v as number, name as string]} />
                         <Legend
                           wrapperStyle={{ fontSize: 11 }}
                           formatter={(val: string) => val.charAt(0).toUpperCase() + val.slice(1)}

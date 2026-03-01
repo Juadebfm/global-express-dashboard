@@ -147,6 +147,7 @@ export function SupportTicketForm({
     defaultValues,
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- RHF watch is safe here
   const category = watch('category');
   const priority = watch('priority');
 
