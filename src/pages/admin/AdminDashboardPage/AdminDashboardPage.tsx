@@ -43,6 +43,7 @@ export function AdminDashboardPage(): ReactElement {
 
   const handleAction = (action: UiAction): void => {
     if (action.id === 'trackShipment') navigate(ROUTES.SHIPMENT_TRACK);
+    if (action.id === 'newOrder') navigate(ROUTES.NEW_SHIPMENT);
   };
 
   return (

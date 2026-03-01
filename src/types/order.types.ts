@@ -13,6 +13,8 @@ export interface CreateOrderPayload {
   departureDate?: string;
   eta?: string;
   senderId?: string;
+  pickupRepName?: string;
+  pickupRepPhone?: string;
 }
 
 export interface ApiOrder {

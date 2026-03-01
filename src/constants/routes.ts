@@ -10,8 +10,9 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   SHIPMENTS: '/shipments',
   SHIPMENT_TRACK: '/shipments/track',
+  NEW_SHIPMENT: '/shipments/new',
   CLIENTS: '/clients',
-  USERS: '/users',
+
   ORDERS: '/orders',
   NOTIFICATIONS: '/notifications',
   TEAM: '/team',

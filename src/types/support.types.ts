@@ -1,9 +1,10 @@
 export type SupportTicketCategory =
-  | 'shipment'
-  | 'billing'
-  | 'account'
-  | 'technical'
-  | 'other';
+  | 'shipment_inquiry'
+  | 'payment_issue'
+  | 'damaged_goods'
+  | 'document_request'
+  | 'account_issue'
+  | 'general';
 
 export type SupportTicketPriority = 'low' | 'medium' | 'high';
 

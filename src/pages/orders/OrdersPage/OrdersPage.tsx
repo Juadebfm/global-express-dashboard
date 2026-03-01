@@ -1,8 +1,12 @@
 import type { ReactElement } from 'react';
 import { useMemo } from 'react';
-import { useDashboardData, useOrders, useSearch } from '@/hooks';
+import { useNavigate } from 'react-router-dom';
+import { Plus } from 'lucide-react';
+import { useDashboardData, useOrders, useSearch, useAuth } from '@/hooks';
 import type { OrderListItem } from '@/types';
+import { Button } from '@/components/ui';
 import { AppShell, PageHeader, PagePlaceholder, type PlaceholderItem } from '@/pages/shared';
+import { ROUTES } from '@/constants';
 
 function formatStatusLabel(status: string): string {
   return status
@@ -50,7 +54,12 @@ export function OrdersPage(): ReactElement {
   const { data, isLoading, error } = useDashboardData();
   const { orders, total, isLoading: isOrdersLoading, error: ordersError } = useOrders();
   const { query } = useSearch();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const orderItems = useMemo(() => orders.map(mapOrderToPlaceholder), [orders]);
+
+  const isOperator =
+    user?.role === 'staff' || user?.role === 'admin' || user?.role === 'superadmin';
 
   return (
     <AppShell
@@ -63,6 +72,19 @@ export function OrdersPage(): ReactElement {
         <PageHeader
           title="Orders"
           subtitle="Review active and recently created customer orders."
+          actions={
+            isOperator ? (
+              <Button
+                size="sm"
+                variant="primary"
+                leftIcon={<Plus className="h-4 w-4" />}
+                className="bg-brand-500 text-white hover:bg-brand-600"
+                onClick={() => navigate(ROUTES.NEW_SHIPMENT)}
+              >
+                Create Client Order
+              </Button>
+            ) : undefined
+          }
         />
         {ordersError && (
           <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">

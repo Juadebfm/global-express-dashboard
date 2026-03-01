@@ -186,22 +186,32 @@ export function mapToDashboardData(
   raw: ApiDashboardResponse['data'],
   role: User['role']
 ): DashboardData {
+  const isOperator = role === 'staff' || role === 'admin' || role === 'superadmin';
+
   return {
     app: {
       name: 'GlobalExpress',
       module: 'Dashboard',
       pageTitle: 'Dashboard Overview',
-      subtitle: "Welcome back! Here's what's happening with your Shipment.",
+      subtitle: isOperator
+        ? "Welcome back! Here's what's happening with your Shipment."
+        : "Welcome back! Here's what's happening with your Shipment.",
       generatedAt: new Date().toISOString(),
     },
     user: { displayName: '', email: '', avatarUrl: '/images/favicon.svg' },
     ui: {
       topbar: { searchPlaceholder: 'Search', notifications: { unreadCount: 0 } },
-      actions: [
-        { id: 'export', label: 'Export', icon: 'export' },
-        { id: 'trackShipment', label: 'Track Shipment', icon: 'tracking' },
-        { id: 'newOrder', label: 'New Order', icon: 'plus' },
-      ],
+      actions: isOperator
+        ? [
+            { id: 'export', label: 'Export', icon: 'export' },
+            { id: 'trackShipment', label: 'Track Client Shipment', icon: 'tracking' },
+            { id: 'newOrder', label: 'Create Client Order', icon: 'plus' },
+          ]
+        : [
+            { id: 'export', label: 'Export', icon: 'export' },
+            { id: 'trackShipment', label: 'Track Shipment', icon: 'tracking' },
+            { id: 'newOrder', label: 'Pre-Order', icon: 'plus' },
+          ],
       sidebar: { items: [], footer: { items: [] } },
     },
     kpis: mapKpis(raw.stats, role),

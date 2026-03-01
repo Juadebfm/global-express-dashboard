@@ -133,6 +133,13 @@ export type {
   ReportSummary,
   OrdersByStatusEntry,
   RevenueEntry,
+  RevenueAnalytics,
+  ShipmentVolume,
+  TopCustomer,
+  DeliveryPerformance,
+  StatusPipeline,
+  PaymentBreakdown,
+  ShipmentComparison,
 } from './report.types';
 
 export type {

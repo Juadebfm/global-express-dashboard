@@ -21,7 +21,7 @@ export const mockDashboardData: DashboardData = {
     actions: [
       { id: 'export', label: 'Export', icon: 'export' },
       { id: 'trackShipment', label: 'Track Shipment', icon: 'tracking' },
-      { id: 'newOrder', label: 'New Order', icon: 'plus' },
+      { id: 'newOrder', label: 'Pre-Order', icon: 'plus' },
     ],
     sidebar: {
       items: [

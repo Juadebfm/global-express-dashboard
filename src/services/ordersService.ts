@@ -215,3 +215,49 @@ export async function deleteOrder(
 ): Promise<void> {
   await apiDelete(`/orders/${id}`, token);
 }
+
+/* ── Pickup representative ─────────────────────────────── */
+
+export async function updatePickupRep(
+  token: string,
+  orderId: string,
+  payload: { pickupRepName: string; pickupRepPhone: string },
+): Promise<ApiOrder> {
+  const res = await apiPatch<{ success: boolean; data: ApiOrder }>(
+    `/orders/${orderId}/pickup-rep`,
+    payload,
+    token,
+  );
+  return res.data;
+}
+
+/* ── Shipping cost estimate ─────────────────────────────── */
+
+export interface EstimatePayload {
+  shipmentType: 'air' | 'ocean';
+  weightKg?: number;
+  cbm?: number;
+}
+
+export interface ShippingEstimate {
+  mode: string;
+  weightKg: number | null;
+  cbm: number | null;
+  estimatedCostUsd: number;
+  pricingSource: string;
+  departureFrequency: string;
+  estimatedTransitDays: number;
+  disclaimer: string;
+}
+
+export async function estimateShippingCost(
+  token: string,
+  payload: EstimatePayload,
+): Promise<ShippingEstimate> {
+  const response = await apiPost<{ success: boolean; data: ShippingEstimate }>(
+    '/orders/estimate',
+    payload,
+    token,
+  );
+  return response.data;
+}

@@ -1,19 +1,30 @@
 import { getHttpFallbackMessage, sanitizeMessage } from './feedback';
+import { useFeedbackStore } from '@/store/feedback/feedback.store';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+function showRateLimitToast(): void {
+  useFeedbackStore.getState().pushMessage({
+    tone: 'warning',
+    message: 'Too many attempts. Please wait a moment and try again.',
+  });
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const { headers: optionHeaders, ...restOptions } = options;
   const response = await fetch(`${BASE_URL}${path}`, {
+    ...restOptions,
     headers: {
       'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string>),
+      ...(optionHeaders as Record<string, string>),
     },
-    ...options,
   });
 
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
+    if (response.status === 429) showRateLimitToast();
+
     const rawMessage =
       payload && typeof payload === 'object' && 'message' in payload
         ? (payload.message as string | undefined)
@@ -37,6 +48,8 @@ async function requestBlob(
   });
 
   if (!response.ok) {
+    if (response.status === 429) showRateLimitToast();
+
     let rawMessage: string | undefined;
 
     const payload = await response.clone().json().catch(() => null);

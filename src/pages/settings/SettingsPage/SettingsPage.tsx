@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { useAuth as useClerkAuth, useClerk } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
-import { AlertBanner } from '@/components/ui';
+import { AlertBanner, ConfirmModal } from '@/components/ui';
 import {
   useAuth,
   useChangePassword,
@@ -54,6 +54,7 @@ export function SettingsPage(): ReactElement {
   const [exportError, setExportError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const isCustomer = isClerkSignedIn && !user;
   const isOperator = !!user;
@@ -95,17 +96,14 @@ export function SettingsPage(): ReactElement {
     key: keyof NonNullable<typeof preferences>['channels'];
     label: string;
   }> = [
-    { key: 'email', label: 'Email' },
-    { key: 'sms', label: 'SMS' },
-    { key: 'push', label: 'Push' },
-    { key: 'inApp', label: 'In-App' },
-    { key: 'whatsapp', label: 'WhatsApp' },
+    { key: 'notifyEmailAlerts', label: 'Email Alerts' },
+    { key: 'notifyInAppAlerts', label: 'In-App Alerts' },
+    { key: 'consentMarketing', label: 'Marketing Emails' },
   ];
 
-  const renderStatus = (value: boolean | null): { label: string; className: string } => {
-    if (value === true) return { label: 'Enabled', className: 'bg-emerald-50 text-emerald-700' };
-    if (value === false) return { label: 'Disabled', className: 'bg-rose-50 text-rose-700' };
-    return { label: 'Unknown', className: 'bg-gray-100 text-gray-600' };
+  const renderStatus = (value: boolean): { label: string; className: string } => {
+    if (value) return { label: 'Enabled', className: 'bg-emerald-50 text-emerald-700' };
+    return { label: 'Disabled', className: 'bg-rose-50 text-rose-700' };
   };
 
   /* ── Customer actions ───────────────────────────────────────── */
@@ -134,10 +132,6 @@ export function SettingsPage(): ReactElement {
   };
 
   const handleDeleteAccount = async (): Promise<void> => {
-    const shouldDelete = window.confirm(
-      'Delete your account? This action is irreversible and you will be signed out.'
-    );
-    if (!shouldDelete) return;
     setDeleteError(null);
     setIsDeleting(true);
     try {
@@ -154,6 +148,7 @@ export function SettingsPage(): ReactElement {
       );
     } finally {
       setIsDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -299,7 +294,7 @@ export function SettingsPage(): ReactElement {
                     </div>
                     <button
                       type="button"
-                      onClick={() => void handleDeleteAccount()}
+                      onClick={() => setShowDeleteConfirm(true)}
                       disabled={isDeleting || isExporting}
                       className={cn(
                         'rounded-xl px-4 py-2 text-sm font-semibold text-white transition',
@@ -308,7 +303,7 @@ export function SettingsPage(): ReactElement {
                           : 'bg-red-600 hover:bg-red-700'
                       )}
                     >
-                      {isDeleting ? 'Deleting...' : 'Delete Account'}
+                      Delete Account
                     </button>
                   </div>
                   {deleteError && (
@@ -316,6 +311,17 @@ export function SettingsPage(): ReactElement {
                       <AlertBanner tone="error" message={deleteError} />
                     </div>
                   )}
+                  <ConfirmModal
+                    isOpen={showDeleteConfirm}
+                    title="Delete Account"
+                    message="This action is irreversible. Your account and all associated data will be permanently removed, and you will be signed out."
+                    confirmLabel="Delete Account"
+                    cancelLabel="Cancel"
+                    tone="danger"
+                    isLoading={isDeleting}
+                    onConfirm={() => void handleDeleteAccount()}
+                    onCancel={() => setShowDeleteConfirm(false)}
+                  />
                 </div>
 
                 {/* Notification preferences */}

@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Boxes,
@@ -7,15 +7,18 @@ import {
   ClipboardList,
   MoreVertical,
   Package,
+  Plus,
   Search,
   Trash2,
+  X,
 } from 'lucide-react';
 import { useAuth, useDashboardData, useSearch } from '@/hooks';
 import { useBulkOrders } from '@/hooks/useBulkOrders';
 import { AppShell, PageHeader } from '@/pages/shared';
-import type { ApiBulkOrder, ApiBulkOrderItem } from '@/types';
+import type { ApiClient, ApiBulkOrder, ApiBulkOrderItem, BulkOrderItem } from '@/types';
 import { getStatusStyle } from '@/lib/statusUtils';
-import { deleteBulkOrder, getBulkOrderById, updateBulkOrderStatus } from '@/services';
+import { createBulkOrder, deleteBulkOrder, getBulkOrderById, getClients, updateBulkOrderStatus } from '@/services';
+import { AlertBanner, Button, Checkbox, ConfirmModal } from '@/components/ui';
 import { cn } from '@/utils';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -39,14 +42,18 @@ function formatDate(iso: string | null): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function formatWeight(kg: number | undefined): string {
-  if (kg == null) return '—';
-  return `${kg.toLocaleString()} kg`;
+function formatWeight(val: string | number | undefined): string {
+  if (val == null || val === '') return '—';
+  const num = typeof val === 'string' ? parseFloat(val) : val;
+  if (Number.isNaN(num)) return '—';
+  return `${num.toLocaleString()} kg`;
 }
 
-function formatValue(value: number | undefined): string {
-  if (value == null) return '—';
-  return `$${value.toLocaleString()}`;
+function formatValue(val: string | number | undefined): string {
+  if (val == null || val === '') return '—';
+  const num = typeof val === 'string' ? parseFloat(val) : val;
+  if (Number.isNaN(num)) return '—';
+  return `$${num.toLocaleString()}`;
 }
 
 function getStatusCategory(statusV2: string): StatusFilter {
@@ -58,7 +65,7 @@ function getStatusCategory(statusV2: string): StatusFilter {
 
 export function BulkOrdersPage(): ReactElement {
   const { data, isLoading, error } = useDashboardData();
-  const { bulkOrders, total, isLoading: ordersLoading, error: ordersError } = useBulkOrders();
+  const { bulkOrders, total, isLoading: ordersLoading, error: ordersError, refetch: refetchOrders } = useBulkOrders();
   const { query, setQuery } = useSearch();
   const { user } = useAuth();
 
@@ -69,8 +76,161 @@ export function BulkOrdersPage(): ReactElement {
   const [openRowMenuId, setOpenRowMenuId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const canCreateBulk = user?.role === 'staff' || isAdmin;
+
+  // ── Create form state ────────────────────────────────────────
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createShipmentType, setCreateShipmentType] = useState<'air' | 'ocean'>('air');
+  const [createNotes, setCreateNotes] = useState('');
+  const [createItems, setCreateItems] = useState<Array<BulkOrderItem & { _key: number; usePickupRep?: boolean }>>([]);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [clients, setClients] = useState<ApiClient[]>([]);
+  const [clientSearch, setClientSearch] = useState<Record<number, string>>({});
+  const [openClientPicker, setOpenClientPicker] = useState<number | null>(null);
+  let nextKey = 0;
+
+  const addItem = useCallback((): void => {
+    setCreateItems((prev) => [
+      ...prev,
+      {
+        _key: Date.now() + nextKey++,
+        recipientName: '',
+        recipientAddress: '',
+        recipientPhone: '',
+        recipientEmail: '',
+        description: '',
+        weight: '',
+        declaredValue: '',
+        usePickupRep: false,
+        pickupRepName: '',
+        pickupRepPhone: '',
+      },
+    ]);
+  }, []);
+
+  const removeItem = (key: number): void => {
+    setCreateItems((prev) => prev.filter((item) => item._key !== key));
+  };
+
+  const updateItem = (key: number, field: string, value: string | boolean): void => {
+    setCreateItems((prev) =>
+      prev.map((item) => (item._key === key ? { ...item, [field]: value } : item)),
+    );
+  };
+
+  const selectClient = (key: number, client: ApiClient): void => {
+    setCreateItems((prev) =>
+      prev.map((item) =>
+        item._key === key
+          ? {
+              ...item,
+              customerId: client.id,
+              recipientName: `${client.firstName} ${client.lastName}`.trim(),
+              recipientPhone: client.phone || '',
+              recipientEmail: client.email || '',
+            }
+          : item,
+      ),
+    );
+    setClientSearch((prev) => ({
+      ...prev,
+      [key]: `${client.firstName} ${client.lastName}`.trim(),
+    }));
+    setOpenClientPicker(null);
+  };
+
+  // Fetch clients when form opens
+  useEffect(() => {
+    if (!showCreateForm) return;
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+
+    void getClients(token, { limit: 100 }).then((result) => {
+      setClients(result.data);
+    });
+
+    // Add first empty row
+    if (createItems.length === 0) addItem();
+  }, [showCreateForm, addItem, createItems.length]);
+
+  const resetCreateForm = (): void => {
+    setShowCreateForm(false);
+    setCreateShipmentType('air');
+    setCreateNotes('');
+    setCreateItems([]);
+    setCreateError(null);
+    setClientSearch({});
+  };
+
+  const handleCreateSubmit = async (): Promise<void> => {
+    setCreateError(null);
+
+    if (createItems.length === 0) {
+      setCreateError('Please add at least one item.');
+      return;
+    }
+
+    const missingRecipient = createItems.some((item) => !item.recipientName.trim());
+    if (missingRecipient) {
+      setCreateError('Every item must have a recipient name.');
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) throw new Error('Not authenticated');
+
+      const items: BulkOrderItem[] = createItems.map(({ _key, ...rest }) => {
+        void _key;
+        const cleaned: BulkOrderItem = { recipientName: rest.recipientName.trim() };
+        if (rest.customerId) cleaned.customerId = rest.customerId;
+        if (rest.recipientAddress?.trim()) cleaned.recipientAddress = rest.recipientAddress.trim();
+        if (rest.recipientPhone?.trim()) cleaned.recipientPhone = rest.recipientPhone.trim();
+        if (rest.recipientEmail?.trim()) cleaned.recipientEmail = rest.recipientEmail.trim();
+        if (rest.description?.trim()) cleaned.description = rest.description.trim();
+        if (rest.weight?.trim()) cleaned.weight = rest.weight.trim();
+        if (rest.declaredValue?.trim()) cleaned.declaredValue = rest.declaredValue.trim();
+        if (rest.usePickupRep && rest.pickupRepName?.trim()) {
+          cleaned.pickupRepName = rest.pickupRepName.trim();
+          if (rest.pickupRepPhone?.trim()) cleaned.pickupRepPhone = rest.pickupRepPhone.trim();
+        }
+        return cleaned;
+      });
+
+      await createBulkOrder(token, {
+        origin: 'South Korea',
+        destination: 'Lagos, Nigeria',
+        shipmentType: createShipmentType,
+        notes: createNotes.trim() || undefined,
+        items,
+      });
+
+      setActionMessage('Bulk order created successfully.');
+      resetCreateForm();
+      refetchOrders();
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : 'Failed to create bulk order.');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  // Close client picker on outside click
+  useEffect(() => {
+    if (openClientPicker === null) return;
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.closest('[data-client-picker]')) return;
+      setOpenClientPicker(null);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [openClientPicker]);
 
   // Close status dropdown on outside click
   useEffect(() => {
@@ -160,8 +320,6 @@ export function BulkOrdersPage(): ReactElement {
   };
 
   const handleDelete = async (orderId: string): Promise<void> => {
-    const shouldDelete = window.confirm('Delete this bulk order? This cannot be undone.');
-    if (!shouldDelete) return;
     setActionError(null);
     try {
       const token = localStorage.getItem(TOKEN_KEY);
@@ -171,6 +329,8 @@ export function BulkOrdersPage(): ReactElement {
       if (activeOrder?.id === orderId) setActiveOrder(null);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Failed to delete bulk order.');
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -265,7 +425,7 @@ export function BulkOrdersPage(): ReactElement {
                   </button>
                   <button
                     type="button"
-                    onClick={() => void handleDelete(activeOrder.id)}
+                    onClick={() => setDeleteTarget(activeOrder.id)}
                     className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -318,7 +478,7 @@ export function BulkOrdersPage(): ReactElement {
                               {item.description || '—'}
                             </td>
                             <td className="px-6 py-4 text-gray-600">
-                              {formatWeight(item.weightKg)}
+                              {formatWeight(item.weight ?? item.weightKg)}
                             </td>
                             <td className="px-6 py-4 text-gray-600">
                               {formatValue(item.declaredValue)}
@@ -335,10 +495,356 @@ export function BulkOrdersPage(): ReactElement {
               </div>
             </div>
           </div>
+        ) : showCreateForm ? (
+          /* ── Create Form View ────────────────────────────────── */
+          <div className="space-y-6">
+            <button
+              type="button"
+              onClick={resetCreateForm}
+              className="inline-flex items-center gap-2 text-xl font-semibold text-gray-900"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              Bulk Orders
+            </button>
+
+            <PageHeader
+              title="Create Bulk Order"
+              subtitle="Add multiple items to ship in a single batch."
+            />
+
+            {createError && <AlertBanner tone="error" message={createError} />}
+
+            {/* Order-level fields */}
+            <div className="rounded-3xl border border-gray-200 bg-white p-6">
+              <p className="text-sm font-semibold text-gray-700">Order Details</p>
+
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Shipment Type */}
+                <div>
+                  <span className="text-xs font-semibold uppercase text-gray-500">
+                    Shipment Type
+                  </span>
+                  <div className="mt-2 flex gap-2">
+                    {(['air', 'ocean'] as const).map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setCreateShipmentType(type)}
+                        className={cn(
+                          'flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition',
+                          createShipmentType === type
+                            ? 'border-brand-500 bg-brand-50 text-brand-600'
+                            : 'border-gray-200 text-gray-600 hover:border-gray-300',
+                        )}
+                      >
+                        {type === 'air' ? 'Air Freight' : 'Ocean Freight'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Origin (read-only) */}
+                <div>
+                  <span className="text-xs font-semibold uppercase text-gray-500">Origin</span>
+                  <input
+                    type="text"
+                    value="South Korea"
+                    readOnly
+                    className="mt-2 w-full cursor-not-allowed rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-500"
+                  />
+                </div>
+
+                {/* Destination (read-only) */}
+                <div>
+                  <span className="text-xs font-semibold uppercase text-gray-500">Destination</span>
+                  <input
+                    type="text"
+                    value="Lagos, Nigeria"
+                    readOnly
+                    className="mt-2 w-full cursor-not-allowed rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-500"
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="mt-4">
+                <span className="text-xs font-semibold uppercase text-gray-500">Notes (optional)</span>
+                <textarea
+                  value={createNotes}
+                  onChange={(e) => setCreateNotes(e.target.value)}
+                  rows={2}
+                  placeholder="Internal notes for this batch..."
+                  className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Items */}
+            <div className="rounded-3xl border border-gray-200 bg-white p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-700">
+                    Items ({createItems.length})
+                  </p>
+                  <p className="mt-1 text-xs text-gray-400">
+                    Add recipients for this bulk shipment
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  leftIcon={<Plus className="h-4 w-4" />}
+                  onClick={addItem}
+                >
+                  Add Item
+                </Button>
+              </div>
+
+              <div className="mt-5 space-y-4">
+                {createItems.map((item, index) => {
+                  const searchValue = clientSearch[item._key] ?? '';
+                  const filteredClients = searchValue.trim()
+                    ? clients.filter((c) => {
+                        const name = `${c.firstName} ${c.lastName} ${c.email}`.toLowerCase();
+                        return name.includes(searchValue.toLowerCase());
+                      })
+                    : clients;
+
+                  return (
+                    <div
+                      key={item._key}
+                      className="rounded-2xl border border-gray-200 p-4"
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold uppercase text-gray-400">
+                          Item {index + 1}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item._key)}
+                          className="text-gray-400 transition hover:text-red-500"
+                          aria-label="Remove item"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      {/* Customer picker */}
+                      <div className="relative mt-3" data-client-picker>
+                        <span className="text-xs font-semibold uppercase text-gray-500">
+                          Customer
+                        </span>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={searchValue}
+                            onChange={(e) => {
+                              setClientSearch((prev) => ({ ...prev, [item._key]: e.target.value }));
+                              setOpenClientPicker(item._key);
+                            }}
+                            onFocus={() => setOpenClientPicker(item._key)}
+                            placeholder="Select or search customer..."
+                            className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 pr-10 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
+                          />
+                          <ChevronDown
+                            className={cn(
+                              'pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 transition',
+                              openClientPicker === item._key && 'rotate-180',
+                            )}
+                          />
+                        </div>
+                        {openClientPicker === item._key && (
+                          <div className="absolute left-0 right-0 z-20 mt-1 max-h-52 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+                            {filteredClients.length === 0 ? (
+                              <p className="px-4 py-3 text-xs text-gray-400">No customers found</p>
+                            ) : (
+                              filteredClients.slice(0, 15).map((c) => (
+                                <button
+                                  key={c.id}
+                                  type="button"
+                                  onClick={() => selectClient(item._key, c)}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50"
+                                >
+                                  <span className="font-medium">
+                                    {c.firstName} {c.lastName}
+                                  </span>
+                                  <span className="ml-2 text-xs text-gray-400">{c.email}</span>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Recipient fields */}
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                          <span className="text-xs font-semibold uppercase text-gray-500">
+                            Recipient Name *
+                          </span>
+                          <input
+                            type="text"
+                            value={item.recipientName}
+                            onChange={(e) => updateItem(item._key, 'recipientName', e.target.value)}
+                            placeholder="Full name"
+                            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-xs font-semibold uppercase text-gray-500">
+                            Address
+                          </span>
+                          <input
+                            type="text"
+                            value={item.recipientAddress ?? ''}
+                            onChange={(e) => updateItem(item._key, 'recipientAddress', e.target.value)}
+                            placeholder="Recipient address"
+                            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-xs font-semibold uppercase text-gray-500">Phone</span>
+                          <input
+                            type="tel"
+                            value={item.recipientPhone ?? ''}
+                            onChange={(e) => updateItem(item._key, 'recipientPhone', e.target.value)}
+                            placeholder="+234..."
+                            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-xs font-semibold uppercase text-gray-500">Email</span>
+                          <input
+                            type="email"
+                            value={item.recipientEmail ?? ''}
+                            onChange={(e) => updateItem(item._key, 'recipientEmail', e.target.value)}
+                            placeholder="email@example.com"
+                            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-3">
+                        <Checkbox
+                          label="Someone else will pick up this item"
+                          checked={!!item.usePickupRep}
+                          onChange={(e) => updateItem(item._key, 'usePickupRep', e.target.checked)}
+                        />
+                      </div>
+
+                      {item.usePickupRep && (
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <span className="text-xs font-semibold uppercase text-gray-500">
+                              Representative Name *
+                            </span>
+                            <input
+                              type="text"
+                              value={item.pickupRepName ?? ''}
+                              onChange={(e) => updateItem(item._key, 'pickupRepName', e.target.value)}
+                              placeholder="Full name of representative"
+                              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-xs font-semibold uppercase text-gray-500">
+                              Representative Phone
+                            </span>
+                            <input
+                              type="tel"
+                              value={item.pickupRepPhone ?? ''}
+                              onChange={(e) => updateItem(item._key, 'pickupRepPhone', e.target.value)}
+                              placeholder="+234..."
+                              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                        <div>
+                          <span className="text-xs font-semibold uppercase text-gray-500">
+                            Description
+                          </span>
+                          <input
+                            type="text"
+                            value={item.description ?? ''}
+                            onChange={(e) => updateItem(item._key, 'description', e.target.value)}
+                            placeholder="e.g. Electronics"
+                            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-xs font-semibold uppercase text-gray-500">
+                            Weight (kg)
+                          </span>
+                          <input
+                            type="number"
+                            value={item.weight ?? ''}
+                            onChange={(e) => updateItem(item._key, 'weight', e.target.value)}
+                            placeholder="0"
+                            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-xs font-semibold uppercase text-gray-500">
+                            Declared Value ($)
+                          </span>
+                          <input
+                            type="number"
+                            value={item.declaredValue ?? ''}
+                            onChange={(e) => updateItem(item._key, 'declaredValue', e.target.value)}
+                            placeholder="0"
+                            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {createItems.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-400">
+                    No items yet. Click &quot;Add Item&quot; to start.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Submit */}
+            <div className="flex items-center justify-between">
+              <Button variant="secondary" size="sm" onClick={resetCreateForm}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => void handleCreateSubmit()}
+                disabled={isCreating}
+              >
+                {isCreating ? 'Creating...' : 'Create Bulk Order'}
+              </Button>
+            </div>
+          </div>
         ) : (
           /* ── List View ──────────────────────────────────────── */
           <>
-            <PageHeader title="Bulk Orders" subtitle="Manage bulk shipment orders." />
+            <PageHeader
+              title="Bulk Orders"
+              subtitle="Manage bulk shipment orders."
+              actions={
+                canCreateBulk ? (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    leftIcon={<Plus className="h-4 w-4" />}
+                    className="bg-brand-500 text-white hover:bg-brand-600"
+                    onClick={() => setShowCreateForm(true)}
+                  >
+                    Create Bulk Order
+                  </Button>
+                ) : undefined
+              }
+            />
 
             {ordersError && (
               <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -531,7 +1037,7 @@ export function BulkOrdersPage(): ReactElement {
                                     type="button"
                                     onClick={(event) => {
                                       event.stopPropagation();
-                                      void handleDelete(order.id);
+                                      setDeleteTarget(order.id);
                                       setOpenRowMenuId(null);
                                     }}
                                     className="w-full rounded-lg px-3 py-2 text-sm text-red-600 transition hover:bg-red-50"
@@ -559,12 +1065,31 @@ export function BulkOrdersPage(): ReactElement {
             </div>
           </>
         )}
+        <ConfirmModal
+          isOpen={!!deleteTarget}
+          title="Delete Bulk Order"
+          message="This bulk order will be permanently deleted. This action cannot be undone."
+          confirmLabel="Delete Order"
+          cancelLabel="Cancel"
+          tone="danger"
+          onConfirm={() => { if (deleteTarget) void handleDelete(deleteTarget); }}
+          onCancel={() => setDeleteTarget(null)}
+        />
       </div>
     </AppShell>
   );
 }
 
 // ── Status badge component ──────────────────────────────────────
+
+function formatStatusLabel(statusV2: string, label: string): string {
+  if (label) return label;
+  // Derive readable label from statusV2: "AWAITING_WAREHOUSE_RECEIPT" → "Awaiting Warehouse Receipt"
+  return statusV2
+    .split('_')
+    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
+    .join(' ');
+}
 
 function StatusBadge({ statusV2, label }: { statusV2: string; label: string }): ReactElement {
   const style = getStatusStyle(statusV2);
@@ -577,7 +1102,7 @@ function StatusBadge({ statusV2, label }: { statusV2: string; label: string }): 
       )}
     >
       <span className={cn('h-1.5 w-1.5 rounded-full', style.dotClass)} />
-      {label}
+      {formatStatusLabel(statusV2, label)}
     </span>
   );
 }

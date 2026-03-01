@@ -16,23 +16,31 @@ import type {
 } from '@/types';
 import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost } from '@/lib/apiClient';
 
-export function login(credentials: LoginCredentials): Promise<AuthResponse> {
-  return apiPost<AuthResponse>('/internal/auth/login', {
-    email: credentials.email,
-    password: credentials.password,
-  });
+export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
+  const response = await apiPost<{ success: boolean; data: AuthResponse }>(
+    '/internal/auth/login',
+    {
+      email: credentials.email,
+      password: credentials.password,
+    },
+  );
+  return response.data;
 }
 
-export function getMe(token: string): Promise<User> {
-  return apiGet<User>('/auth/me', token);
+export async function getMe(token: string): Promise<User> {
+  // The response may be wrapped in { success, data: User } or returned directly
+  // depending on the auth type (Clerk vs internal JWT).
+  const response = await apiGet<Record<string, unknown>>('/auth/me', token);
+  const user = (response?.data ?? response) as User;
+  return user;
 }
 
 export function logout(token: string): Promise<void> {
-  return apiPost<void>('/auth/logout', undefined, token);
+  return apiPost<void>('/auth/logout', {}, token);
 }
 
 export async function syncClerkAccount(token: string): Promise<void> {
-  await apiPost('/auth/sync', undefined, token);
+  await apiPost('/auth/sync', {}, token);
 }
 
 export async function getMyProfile(token: string): Promise<CustomerProfile> {
@@ -71,52 +79,6 @@ export async function getMyProfileCompleteness(token: string): Promise<ProfileCo
   };
 }
 
-function toRecord(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  return value as Record<string, unknown>;
-}
-
-function toBoolean(value: unknown): boolean | null {
-  if (typeof value === 'boolean') return value;
-  const record = toRecord(value);
-  if (!record) return null;
-
-  const candidates = [
-    record.enabled,
-    record.isEnabled,
-    record.active,
-    record.isActive,
-    record.value,
-  ];
-
-  for (const candidate of candidates) {
-    if (typeof candidate === 'boolean') return candidate;
-  }
-  return null;
-}
-
-function pickChannel(raw: Record<string, unknown>, keys: string[]): boolean | null {
-  for (const key of keys) {
-    if (!(key in raw)) continue;
-    const value = toBoolean(raw[key]);
-    if (value !== null) return value;
-  }
-  return null;
-}
-
-function mapNotificationPreferences(raw: Record<string, unknown>): NotificationPreferences {
-  return {
-    channels: {
-      email: pickChannel(raw, ['email', 'emails']),
-      sms: pickChannel(raw, ['sms', 'text', 'textMessages']),
-      push: pickChannel(raw, ['push', 'pushNotifications']),
-      inApp: pickChannel(raw, ['inApp', 'in_app', 'inAppNotifications']),
-      whatsapp: pickChannel(raw, ['whatsapp', 'whatsApp']),
-    },
-    raw,
-  };
-}
-
 export async function getMyNotificationPreferences(
   token: string
 ): Promise<NotificationPreferences> {
@@ -124,41 +86,37 @@ export async function getMyNotificationPreferences(
     '/users/me/notification-preferences',
     token
   );
-  const raw = toRecord(response.data) ?? {};
 
-  return mapNotificationPreferences(raw);
-}
-
-function buildNotificationPreferencesPayload(
-  input: NotificationPreferencesUpdateInput
-): Record<string, boolean> {
-  const payload: Record<string, boolean> = {};
-
-  if (typeof input.email === 'boolean') payload.email = input.email;
-  if (typeof input.sms === 'boolean') payload.sms = input.sms;
-  if (typeof input.push === 'boolean') payload.push = input.push;
-  if (typeof input.whatsapp === 'boolean') payload.whatsapp = input.whatsapp;
-  if (typeof input.inApp === 'boolean') {
-    payload.inApp = input.inApp;
-    payload.in_app = input.inApp;
-  }
-
-  return payload;
+  const data = response.data;
+  return {
+    channels: {
+      notifyEmailAlerts: data?.notifyEmailAlerts ?? false,
+      notifySmsAlerts: data?.notifySmsAlerts ?? false,
+      notifyInAppAlerts: data?.notifyInAppAlerts ?? false,
+      consentMarketing: data?.consentMarketing ?? false,
+    },
+  };
 }
 
 export async function updateMyNotificationPreferences(
   token: string,
   input: NotificationPreferencesUpdateInput
-): Promise<NotificationPreferences | null> {
-  const payload = buildNotificationPreferencesPayload(input);
+): Promise<NotificationPreferences> {
   const response = await apiPatch<ApiNotificationPreferencesResponse>(
     '/users/me/notification-preferences',
-    payload,
+    input,
     token
   );
 
-  const raw = toRecord(response.data);
-  return raw ? mapNotificationPreferences(raw) : null;
+  const data = response.data;
+  return {
+    channels: {
+      notifyEmailAlerts: data?.notifyEmailAlerts ?? false,
+      notifySmsAlerts: data?.notifySmsAlerts ?? false,
+      notifyInAppAlerts: data?.notifyInAppAlerts ?? false,
+      consentMarketing: data?.consentMarketing ?? false,
+    },
+  };
 }
 
 function getFilenameFromContentDisposition(
@@ -187,7 +145,7 @@ function getFilenameFromContentDisposition(
 
 export async function exportMyAccountData(token: string): Promise<AccountExportFile> {
   const { blob, headers } = await apiGetBlob('/users/me/export', token);
-  const fallback = `globalexpress-account-export-${new Date().toISOString().slice(0, 10)}.json`;
+  const fallback = `globalexpress-account-export-${new Date().toISOString().slice(0, 10)}.pdf`;
   const filename = getFilenameFromContentDisposition(
     headers.get('content-disposition'),
     fallback
@@ -231,5 +189,6 @@ export async function createInternalUser(
   token: string,
   payload: CreateInternalUserPayload
 ): Promise<User> {
-  return apiPost<User>('/internal/users', payload, token);
+  const response = await apiPost<{ success: boolean; data: User }>('/internal/users', payload, token);
+  return response.data;
 }

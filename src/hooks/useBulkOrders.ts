@@ -9,10 +9,11 @@ interface BulkOrdersState {
   total: number;
   isLoading: boolean;
   error: string | null;
+  refetch: () => void;
 }
 
 export function useBulkOrders(params: { page?: number; limit?: number } = {}): BulkOrdersState {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['bulk-orders', params],
     queryFn: async () => {
       const token = localStorage.getItem(TOKEN_KEY);
@@ -29,5 +30,6 @@ export function useBulkOrders(params: { page?: number; limit?: number } = {}): B
     total: data?.pagination.total ?? 0,
     isLoading,
     error: message,
+    refetch,
   };
 }

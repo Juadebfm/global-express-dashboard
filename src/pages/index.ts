@@ -13,9 +13,10 @@ export { AdminDashboardPage } from './admin';
 export {
   ShipmentsPage,
   TrackShipmentPage,
+  NewShipmentPage,
 } from './shipments';
 export { ClientsPage } from './clients';
-export { UsersPage } from './users';
+
 export { OrdersPage } from './orders';
 export { NotificationsPage } from './notifications';
 export { TeamPage } from './team';

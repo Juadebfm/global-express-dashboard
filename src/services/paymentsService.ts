@@ -33,7 +33,7 @@ export async function verifyPayment(
 
 export async function getPayments(
   token: string,
-  params: { page?: number; limit?: number; userId?: string; status?: string } = {}
+  params: { page?: number; limit?: number; userId?: string; status?: string; isCustomer?: boolean } = {}
 ): Promise<ApiPaymentsResponse['data']> {
   const searchParams = new URLSearchParams();
   if (params.page !== undefined) searchParams.set('page', String(params.page));
@@ -41,8 +41,9 @@ export async function getPayments(
   if (params.userId) searchParams.set('userId', params.userId);
   if (params.status) searchParams.set('status', params.status);
   const qs = searchParams.toString();
+  const basePath = params.isCustomer ? '/payments/me' : '/payments';
   const response = await apiGet<ApiPaymentsResponse>(
-    `/payments${qs ? `?${qs}` : ''}`,
+    `${basePath}${qs ? `?${qs}` : ''}`,
     token
   );
   return response.data;
