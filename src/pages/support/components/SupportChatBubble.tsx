@@ -1,5 +1,7 @@
 import type { ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SupportMessage } from '@/types';
+import i18n from '@/i18n/i18n';
 
 interface SupportChatBubbleProps {
   message: SupportMessage;
@@ -9,18 +11,20 @@ interface SupportChatBubbleProps {
 function formatTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return new Intl.DateTimeFormat('en-US', {
+  const locale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
+  return new Intl.DateTimeFormat(locale, {
     hour: 'numeric',
     minute: '2-digit',
   }).format(d);
 }
 
 export function SupportChatBubble({ message, isCurrentUser }: SupportChatBubbleProps): ReactElement {
+  const { t } = useTranslation('support');
   if (message.isInternal) {
     return (
       <div className="mx-auto my-2 max-w-md rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5">
         <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold text-amber-600">
-          <span>Internal Note</span>
+          <span>{t('chatInput.internalNoteLabel')}</span>
           <span className="font-normal text-amber-500">{message.senderName}</span>
         </div>
         <p className="text-sm text-amber-800 whitespace-pre-wrap">{message.body}</p>

@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useSignIn, useUser } from '@clerk/clerk-react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
@@ -21,6 +22,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 export function ExternalSignInPage(): ReactElement {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { isLoaded, signIn, setActive } = useSignIn();
   const { isSignedIn } = useUser();
@@ -43,8 +45,6 @@ export function ExternalSignInPage(): ReactElement {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [postAuthRedirect, setPostAuthRedirect] = useState<string>(ROUTES.COMPLETE_PROFILE);
 
-  // Tracks whether the current session was created by the user submitting the form.
-  // If true, the stale-session cleanup effect must not sign them out.
   const didUserSignInRef = useRef(false);
 
   const resolvePostAuthRedirect = useCallback(async (): Promise<string> => {
@@ -58,8 +58,6 @@ export function ExternalSignInPage(): ReactElement {
     return completeness.isComplete ? ROUTES.DASHBOARD : ROUTES.COMPLETE_PROFILE;
   }, [getToken]);
 
-  // If user lands on /sign-in with a stale Clerk session, sign them out so they
-  // must authenticate fresh. Skip if the session was just created by the form submission.
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
     if (didUserSignInRef.current) return;
@@ -78,15 +76,15 @@ export function ExternalSignInPage(): ReactElement {
     setFormError(null);
 
     const nextErrors: Record<string, string> = {};
-    if (!email.trim()) nextErrors.email = 'Email is required.';
-    if (!password) nextErrors.password = 'Password is required.';
+    if (!email.trim()) nextErrors.email = t('externalSignIn.validation.emailRequired');
+    if (!password) nextErrors.password = t('externalSignIn.validation.passwordRequired');
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
     }
 
     if (!isLoaded || !signIn) {
-      setFormError('Sign in is not ready yet. Please try again.');
+      setFormError(t('externalSignIn.validation.emailRequired'));
       return;
     }
 
@@ -102,12 +100,11 @@ export function ExternalSignInPage(): ReactElement {
         await setActive({ session: result.createdSessionId });
         const redirectPath = await resolvePostAuthRedirect();
 
-        // Evict any operator session on this device
         localStorage.removeItem('globalxpress_token');
         localStorage.removeItem('globalxpress_refresh');
         navigate(redirectPath, { replace: true });
       } else {
-        setFormError('Sign in could not be completed. Please try again.');
+        setFormError(getErrorMessage(null));
       }
     } catch (error) {
       setFormError(getErrorMessage(error));
@@ -123,7 +120,7 @@ export function ExternalSignInPage(): ReactElement {
     setFormError(null);
 
     if (!resetEmail.trim()) {
-      setErrors({ resetEmail: 'Email is required.' });
+      setErrors({ resetEmail: t('externalSignIn.validation.emailRequired') });
       return;
     }
 
@@ -150,7 +147,7 @@ export function ExternalSignInPage(): ReactElement {
     setFormError(null);
 
     if (!resetCode.trim()) {
-      setErrors({ resetCode: 'Enter the reset code sent to your email.' });
+      setErrors({ resetCode: t('externalSignIn.validation.codeRequired') });
       return;
     }
 
@@ -167,7 +164,7 @@ export function ExternalSignInPage(): ReactElement {
         clearErrors();
         setStep('forgot-reset');
       } else {
-        setFormError('Verification incomplete. Please try again.');
+        setFormError(getErrorMessage(null));
       }
     } catch (error) {
       setFormError(getErrorMessage(error));
@@ -184,12 +181,12 @@ export function ExternalSignInPage(): ReactElement {
 
     const nextErrors: Record<string, string> = {};
     if (!newPassword) {
-      nextErrors.newPassword = 'Password is required.';
+      nextErrors.newPassword = t('externalSignIn.validation.passwordRequired');
     } else if (newPassword.length < 8) {
-      nextErrors.newPassword = 'Password must be at least 8 characters.';
+      nextErrors.newPassword = t('externalSignIn.validation.passwordMinLength');
     }
     if (newPassword !== confirmPassword) {
-      nextErrors.confirmPassword = 'Passwords do not match.';
+      nextErrors.confirmPassword = t('externalSignIn.validation.passwordsDoNotMatch');
     }
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -209,7 +206,7 @@ export function ExternalSignInPage(): ReactElement {
         setPostAuthRedirect(redirectPath);
         setStep('forgot-success');
       } else {
-        setFormError('Password reset could not be completed. Please try again.');
+        setFormError(getErrorMessage(null));
       }
     } catch (error) {
       setFormError(getErrorMessage(error));
@@ -228,7 +225,7 @@ export function ExternalSignInPage(): ReactElement {
           className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-5"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Back to home
+          {t('loginForm.backToHome')}
         </Link>
         <div className="flex justify-center mb-6">
           <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
@@ -238,9 +235,9 @@ export function ExternalSignInPage(): ReactElement {
         {step === 'sign-in' && (
           <div>
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Welcome back</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('externalSignIn.title')}</h2>
               <p className="mt-1 text-sm text-gray-600">
-                Sign in to your customer account.
+                {t('externalSignIn.subtitle')}
               </p>
             </div>
 
@@ -252,18 +249,18 @@ export function ExternalSignInPage(): ReactElement {
 
             <form onSubmit={handleSignIn} className="space-y-4">
               <Input
-                label="Email"
+                label={t('externalSignIn.emailLabel')}
                 type="email"
-                placeholder="you@example.com"
+                placeholder={t('externalSignIn.emailPlaceholder')}
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); clearErrors(); }}
                 error={errors.email}
                 className="text-sm placeholder:text-sm"
               />
               <Input
-                label="Password"
+                label={t('externalSignIn.passwordLabel')}
                 type="password"
-                placeholder="Enter your password"
+                placeholder={t('externalSignIn.passwordPlaceholder')}
                 showPasswordToggle
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); clearErrors(); }}
@@ -277,7 +274,7 @@ export function ExternalSignInPage(): ReactElement {
                   onClick={() => { clearErrors(); setResetEmail(email); setStep('forgot-email'); }}
                   className="text-sm font-medium text-brand-500 hover:text-brand-600"
                 >
-                  Forgot password?
+                  {t('externalSignIn.forgotPassword')}
                 </button>
               </div>
 
@@ -288,14 +285,14 @@ export function ExternalSignInPage(): ReactElement {
                 isLoading={isSubmitting}
                 disabled={!isLoaded}
               >
-                Sign in
+                {t('externalSignIn.signInButton')}
               </Button>
             </form>
 
             <p className="mt-6 text-center text-sm text-gray-500">
-              Don't have an account?{' '}
+              {t('externalSignIn.noAccount')}{' '}
               <Link to={ROUTES.SIGN_UP} className="font-medium text-brand-500 hover:text-brand-600">
-                Sign up
+                {t('externalSignIn.signUp')}
               </Link>
             </p>
           </div>
@@ -305,9 +302,9 @@ export function ExternalSignInPage(): ReactElement {
         {step === 'forgot-email' && (
           <div>
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Forgot password?</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('externalSignIn.forgotTitle')}</h2>
               <p className="mt-1 text-sm text-gray-600">
-                Enter your email and we'll send you a reset code.
+                {t('externalSignIn.forgotSubtitle')}
               </p>
             </div>
 
@@ -319,9 +316,9 @@ export function ExternalSignInPage(): ReactElement {
 
             <form onSubmit={handleForgotEmailSubmit} className="space-y-4">
               <Input
-                label="Email"
+                label={t('externalSignIn.emailLabel')}
                 type="email"
-                placeholder="you@example.com"
+                placeholder={t('externalSignIn.emailPlaceholder')}
                 value={resetEmail}
                 onChange={(e) => { setResetEmail(e.target.value); clearErrors(); }}
                 error={errors.resetEmail}
@@ -333,7 +330,7 @@ export function ExternalSignInPage(): ReactElement {
                 size="lg"
                 isLoading={isSubmitting}
               >
-                Send reset code
+                {t('externalSignIn.sendResetCode')}
               </Button>
             </form>
 
@@ -342,7 +339,7 @@ export function ExternalSignInPage(): ReactElement {
               onClick={() => { clearErrors(); setStep('sign-in'); }}
               className="mt-4 flex w-full items-center justify-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
             >
-              ← Back to sign in
+              {t('externalSignIn.backToSignIn')}
             </button>
           </div>
         )}
@@ -351,9 +348,9 @@ export function ExternalSignInPage(): ReactElement {
         {step === 'forgot-code' && (
           <div>
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Enter reset code</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('externalSignIn.enterResetCode')}</h2>
               <p className="mt-1 text-sm text-gray-600">
-                We sent a code to <span className="font-medium text-gray-800">{resetEmail}</span>.
+                {t('externalSignIn.codeSentTo', { email: resetEmail })}
               </p>
             </div>
 
@@ -365,8 +362,8 @@ export function ExternalSignInPage(): ReactElement {
 
             <form onSubmit={handleForgotCodeSubmit} className="space-y-4">
               <Input
-                label="Reset code"
-                placeholder="Enter code"
+                label={t('externalSignIn.enterResetCode')}
+                placeholder={t('externalSignIn.verifyCode')}
                 value={resetCode}
                 onChange={(e) => { setResetCode(e.target.value); clearErrors(); }}
                 error={errors.resetCode}
@@ -378,7 +375,7 @@ export function ExternalSignInPage(): ReactElement {
                 size="lg"
                 isLoading={isSubmitting}
               >
-                Verify code
+                {t('externalSignIn.verifyCode')}
               </Button>
             </form>
 
@@ -387,7 +384,7 @@ export function ExternalSignInPage(): ReactElement {
               onClick={() => { clearErrors(); setStep('forgot-email'); }}
               className="mt-4 flex w-full items-center justify-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
             >
-              ← Back
+              {t('externalSignIn.back')}
             </button>
           </div>
         )}
@@ -396,9 +393,9 @@ export function ExternalSignInPage(): ReactElement {
         {step === 'forgot-reset' && (
           <div>
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Create new password</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('externalSignIn.createNewPassword')}</h2>
               <p className="mt-1 text-sm text-gray-600">
-                Your new password must be at least 8 characters.
+                {t('externalSignIn.passwordRequirement')}
               </p>
             </div>
 
@@ -410,9 +407,9 @@ export function ExternalSignInPage(): ReactElement {
 
             <form onSubmit={handleForgotResetSubmit} className="space-y-4">
               <Input
-                label="New password"
+                label={t('externalSignIn.newPasswordLabel')}
                 type="password"
-                placeholder="Create a password"
+                placeholder={t('externalSignIn.newPasswordPlaceholder')}
                 showPasswordToggle
                 value={newPassword}
                 onChange={(e) => { setNewPassword(e.target.value); clearErrors(); }}
@@ -420,9 +417,9 @@ export function ExternalSignInPage(): ReactElement {
                 className="text-sm placeholder:text-sm"
               />
               <Input
-                label="Confirm new password"
+                label={t('externalSignIn.confirmPasswordLabel')}
                 type="password"
-                placeholder="Confirm your password"
+                placeholder={t('externalSignIn.confirmPasswordPlaceholder')}
                 showPasswordToggle
                 value={confirmPassword}
                 onChange={(e) => { setConfirmPassword(e.target.value); clearErrors(); }}
@@ -435,7 +432,7 @@ export function ExternalSignInPage(): ReactElement {
                 size="lg"
                 isLoading={isSubmitting}
               >
-                Reset password
+                {t('externalSignIn.resetPasswordButton')}
               </Button>
             </form>
           </div>
@@ -447,9 +444,9 @@ export function ExternalSignInPage(): ReactElement {
             <div className="w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center mb-4">
               <CheckCircle className="w-8 h-8 text-brand-500" />
             </div>
-            <h2 className="text-xl font-semibold text-brand-500 mb-2">Password reset!</h2>
+            <h2 className="text-xl font-semibold text-brand-500 mb-2">{t('externalSignIn.passwordResetSuccess')}</h2>
             <p className="text-sm text-gray-500 mb-6">
-              Your password has been updated. You're now signed in.
+              {t('externalSignIn.passwordResetSuccessDesc')}
             </p>
             <Button
               type="button"
@@ -457,7 +454,7 @@ export function ExternalSignInPage(): ReactElement {
               size="lg"
               onClick={() => navigate(postAuthRedirect, { replace: true })}
             >
-              Continue to dashboard
+              {t('externalSignIn.continueToDashboard')}
             </Button>
           </div>
         )}

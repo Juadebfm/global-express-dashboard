@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import type { DashboardData } from '@/types';
+import { useTranslation } from 'react-i18next';
+import type { DashboardData, ApiDashboardResponse } from '@/types';
 import { fetchDashboardRaw, mapToDashboardData } from '@/services';
 import { useAuth } from './useAuth';
 
@@ -15,31 +17,39 @@ interface DashboardDataState {
 export function useDashboardData(year = new Date().getFullYear()): DashboardDataState {
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
+  const { i18n } = useTranslation();
 
   const isCustomer = isClerkSignedIn && !user;
   const role = user?.role ?? 'user';
   const enabled = isClerkSignedIn || !!user;
 
-  const { data, isLoading, error } = useQuery({
+  // Cache raw API data only — no translations baked in
+  const { data: rawData, isLoading, error } = useQuery({
     queryKey: ['dashboard', 'overview', year, role],
-    queryFn: async (): Promise<DashboardData> => {
+    queryFn: async (): Promise<ApiDashboardResponse['data']> => {
       const token = isCustomer
         ? await getToken()
         : localStorage.getItem(TOKEN_KEY);
 
       if (!token) throw new Error('Not authenticated');
 
-      const raw = await fetchDashboardRaw(token, year);
-      return mapToDashboardData(raw, role);
+      return fetchDashboardRaw(token, year);
     },
     enabled,
   });
+
+  // Re-map when language or raw data changes so translations stay current
+  const data = useMemo(
+    () => (rawData ? mapToDashboardData(rawData, role) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rawData, role, i18n.language],
+  );
 
   const message =
     error instanceof Error ? error.message : error ? 'Failed to load dashboard' : null;
 
   return {
-    data: data ?? null,
+    data,
     isLoading,
     error: message,
   };

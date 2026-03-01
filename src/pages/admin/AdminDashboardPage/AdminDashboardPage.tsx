@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useSearch, useDashboardData } from '@/hooks';
 import type { ActiveDelivery, KpiCard, UiAction } from '@/types';
 import {
@@ -13,6 +14,7 @@ import { AppShell } from '@/pages/shared';
 import { ROUTES } from '@/constants';
 
 export function AdminDashboardPage(): ReactElement {
+  const { t } = useTranslation('dashboard');
   const { query } = useSearch();
   const { data, isLoading, error } = useDashboardData();
   const navigate = useNavigate();
@@ -47,7 +49,7 @@ export function AdminDashboardPage(): ReactElement {
   };
 
   return (
-    <AppShell data={data} isLoading={isLoading} error={error} loadingLabel="Loading dashboard...">
+    <AppShell data={data} isLoading={isLoading} error={error} loadingLabel={t('loadingLabel')}>
       <div className="space-y-8">
         {data && (
           <>
@@ -59,7 +61,7 @@ export function AdminDashboardPage(): ReactElement {
             />
 
             <section>
-              <KpiGrid items={filteredKpis} emptyLabel="No matching KPIs found." />
+              <KpiGrid items={filteredKpis} emptyLabel={t('kpiGrid.emptyLabel')} />
             </section>
 
             <section className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
@@ -68,7 +70,7 @@ export function AdminDashboardPage(): ReactElement {
                 title={data.activeDeliveries.title}
                 subtitle={data.activeDeliveries.subtitle}
                 items={filteredDeliveries}
-                emptyLabel="No matching deliveries found."
+                emptyLabel={t('activeDeliveries.emptyLabel')}
               />
             </section>
           </>

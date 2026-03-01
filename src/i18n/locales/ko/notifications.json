@@ -1,0 +1,25 @@
+{
+  "loadingLabel": "알림 로딩 중...",
+  "pageTitle": "알림",
+  "refresh": "새로고침",
+  "badges": {
+    "new": "새 알림",
+    "saved": "저장됨"
+  },
+  "sections": {
+    "new": "새 알림",
+    "earlier": "이전"
+  },
+  "empty": {
+    "title": "알림이 없습니다",
+    "subtitle": "검색 조건을 변경하여 더 많은 업데이트를 확인하세요."
+  },
+  "bulkBar": {
+    "selected": "{{count}}개 선택",
+    "clearSelection": "선택 해제",
+    "save": "저장",
+    "markRead": "읽음 표시",
+    "delete": "삭제"
+  },
+  "close": "닫기"
+}

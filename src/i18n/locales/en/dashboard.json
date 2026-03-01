@@ -1,0 +1,98 @@
+{
+  "loadingLabel": "Loading dashboard...",
+  "pageTitle": "Dashboard Overview",
+  "subtitle": "Welcome back! Here's what's happening with your Shipment.",
+  "searchPlaceholder": "Search",
+  "kpiGrid": {
+    "emptyLabel": "No matching KPIs found."
+  },
+  "kpis": {
+    "customer": {
+      "allShipments": "All Shipments",
+      "allShipmentsHelper": "Shipment available",
+      "pendingShipment": "Pending Shipment",
+      "pendingShipmentHelper": "Currently in transit",
+      "deliveredShipment": "Delivered Shipment",
+      "deliveredShipmentHelper": "Successful deliveries",
+      "totalSpent": "Total Spent",
+      "totalSpentHelper": "Your total payments"
+    },
+    "operator": {
+      "allOrders": "All Orders",
+      "allOrdersHelper": "Total orders globally",
+      "activeShipments": "Active Shipments",
+      "activeShipmentsHelper": "Currently in transit",
+      "pendingOrders": "Pending Orders",
+      "pendingOrdersHelper": "Awaiting processing",
+      "revenueMtd": "Revenue (MTD)",
+      "revenueMtdHelper": "Month to date"
+    }
+  },
+  "actions": {
+    "export": "Export",
+    "trackClientShipment": "Track Client Shipment",
+    "trackShipment": "Track Shipment",
+    "createClientOrder": "Create Client Order",
+    "preOrder": "Pre-Order"
+  },
+  "charts": {
+    "shipmentTrends": "Shipment Trends",
+    "shipmentTrendsSubtitle": "Monthly shipment and movement performance over the past year",
+    "xAxisLabel": "Month",
+    "yAxisLabel": "Weight (kg)",
+    "delivered": "Delivered",
+    "inTransit": "In Transit"
+  },
+  "activeDeliveries": {
+    "title": "Delivery Schedule",
+    "subtitle": "Active delivery routes",
+    "emptyLabel": "No matching deliveries found.",
+    "onTime": "On time",
+    "delayed": "Delayed",
+    "unknown": "Unknown",
+    "arrived": "Arrived",
+    "tbd": "TBD",
+    "activeShipmentsCount": "{{count}} active shipments",
+    "delivered": "Delivered",
+    "noEta": "No ETA"
+  },
+  "months": {
+    "jan": "Jan",
+    "feb": "Feb",
+    "mar": "Mar",
+    "apr": "Apr",
+    "may": "May",
+    "jun": "Jun",
+    "jul": "Jul",
+    "aug": "Aug",
+    "sep": "Sep",
+    "oct": "Oct",
+    "nov": "Nov",
+    "dec": "Dec"
+  },
+  "shipmentList": {
+    "title": "Shipment List",
+    "tabs": {
+      "all": "All Shipment",
+      "pending": "Pending",
+      "active": "Active",
+      "completed": "Completed",
+      "exception": "Exception"
+    },
+    "table": {
+      "trackingNo": "Tracking No.",
+      "customer": "Customer",
+      "origin": "Origin",
+      "destination": "Destination",
+      "departure": "Departure",
+      "eta": "ETA",
+      "status": "Status",
+      "type": "Type"
+    },
+    "empty": "No shipments found.",
+    "modeLabels": {
+      "air": "air",
+      "ocean": "ocean"
+    }
+  }
+}

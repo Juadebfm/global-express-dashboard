@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SupportTicketStatus } from '@/types';
 
 type FilterValue = SupportTicketStatus | 'all';
@@ -8,18 +9,19 @@ interface SupportTicketFiltersProps {
   onFilterChange: (filter: FilterValue) => void;
 }
 
-const FILTERS: { value: FilterValue; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'open', label: 'New' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'resolved', label: 'Resolved' },
-  { value: 'closed', label: 'Closed' },
+const FILTER_KEYS: { value: FilterValue; key: string }[] = [
+  { value: 'all', key: 'filters.all' },
+  { value: 'open', key: 'filters.open' },
+  { value: 'in_progress', key: 'filters.inProgress' },
+  { value: 'resolved', key: 'filters.resolved' },
+  { value: 'closed', key: 'filters.closed' },
 ];
 
 export function SupportTicketFilters({ activeFilter, onFilterChange }: SupportTicketFiltersProps): ReactElement {
+  const { t } = useTranslation('support');
   return (
     <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
-      {FILTERS.map((f) => (
+      {FILTER_KEYS.map((f) => (
         <button
           key={f.value}
           type="button"
@@ -30,7 +32,7 @@ export function SupportTicketFilters({ activeFilter, onFilterChange }: SupportTi
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
-          {f.label}
+          {t(f.key)}
         </button>
       ))}
     </div>

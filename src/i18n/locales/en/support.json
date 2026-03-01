@@ -1,0 +1,86 @@
+{
+  "loadingLabel": "Loading support...",
+  "listView": {
+    "pageTitle": "Support",
+    "subtitleCustomer": "Get help with your shipments and account.",
+    "subtitleStaff": "Manage support tickets from customers.",
+    "newTicketButton": "New Ticket"
+  },
+  "filters": {
+    "all": "All",
+    "open": "New",
+    "inProgress": "In Progress",
+    "resolved": "Resolved",
+    "closed": "Closed"
+  },
+  "ticketList": {
+    "loadingText": "Loading tickets...",
+    "emptyText": "No support tickets found.",
+    "noDescription": "No description",
+    "byRequester": "By {{name}}"
+  },
+  "detailView": {
+    "loadingText": "Loading ticket...",
+    "ticketNotFound": "Ticket not found.",
+    "backToTickets": "Back to Tickets"
+  },
+  "chatInput": {
+    "closedMessage": "This ticket is closed and cannot receive new messages.",
+    "replyLabel": "Reply",
+    "internalNoteLabel": "Internal Note",
+    "internalPlaceholder": "Write an internal note...",
+    "messagePlaceholder": "Type a message..."
+  },
+  "statusActions": {
+    "startWorking": "Start Working",
+    "markResolved": "Mark Resolved",
+    "closeTicket": "Close Ticket",
+    "reopen": "Reopen"
+  },
+  "ticketForm": {
+    "title": "Create Support Ticket",
+    "subtitle": "Submit an issue and it will be routed directly to the admin support queue.",
+    "subjectLabel": "Subject",
+    "subjectPlaceholder": "Briefly describe your issue",
+    "categoryLabel": "Category",
+    "priorityLabel": "Priority",
+    "trackingNumberLabel": "Related Tracking Number (Optional)",
+    "trackingNumberPlaceholder": "e.g. GX-1234567",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Provide details so our team can resolve this quickly.",
+    "submitButton": "Submit Ticket",
+    "categories": {
+      "shipmentInquiry": "Shipment Inquiry",
+      "paymentIssue": "Payment Issue",
+      "damagedGoods": "Damaged Goods",
+      "documentRequest": "Document Request",
+      "accountIssue": "Account Issue",
+      "general": "General"
+    },
+    "priorities": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "validation": {
+      "subjectMin": "Subject must be at least 5 characters",
+      "subjectMax": "Subject must be 120 characters or less",
+      "categoryRequired": "Please select a valid category",
+      "priorityRequired": "Please select a valid priority",
+      "trackingNumberMax": "Tracking number must be 50 characters or less",
+      "descriptionMin": "Please provide at least 10 characters",
+      "descriptionMax": "Message must be 2000 characters or less"
+    }
+  },
+  "feedbackMessages": {
+    "ticketsLoadError": "Unable to load your support tickets right now. Please try again.",
+    "ticketCreateError": "We could not submit your support ticket. Please try again.",
+    "ticketCreateSuccess": "Ticket submitted successfully. Our support team will follow up soon.",
+    "ticketDetailLoadError": "Unable to load this ticket. Please try again.",
+    "messageSendError": "Your message could not be sent. Please try again.",
+    "ticketClosedError": "This ticket is closed and can no longer receive messages.",
+    "statusUpdateSuccess": "Ticket status updated successfully.",
+    "statusUpdateError": "Unable to update ticket status. Please try again.",
+    "newTicketToast": "A new support ticket has been created."
+  }
+}

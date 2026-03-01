@@ -1,12 +1,15 @@
 import type { ReactElement } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { AppShell } from '@/pages/shared';
-import { useDashboardData, useSearch, useShipmentsDashboard } from '@/hooks';
+import { useAuth, useDashboardData, useSearch, useShipmentsDashboard } from '@/hooks';
 import type { ShipmentFilterTab, ShipmentRecord, StatusCategory } from '@/types';
 import { ShipmentsFilters, ShipmentsHeader, ShipmentsSummary, ShipmentsTable } from '../components';
 import { PageLoader } from '@/components/ui';
 import { ROUTES } from '@/constants';
+import i18n from '@/i18n/i18n';
 
 const matchesQuery = (shipment: ShipmentRecord, query: string): boolean => {
   if (!query) return true;
@@ -23,13 +26,6 @@ const matchesQuery = (shipment: ShipmentRecord, query: string): boolean => {
   return haystack.includes(query.toLowerCase());
 };
 
-const statusLabels: Record<StatusCategory, string> = {
-  pending: 'Pending',
-  active: 'Active',
-  completed: 'Completed',
-  exception: 'Exception',
-};
-
 const escapeCsv = (value: string | number): string => {
   const text = String(value);
   if (/["\n,]/.test(text)) {
@@ -44,18 +40,11 @@ const exportDate = (value: string): string => {
   return date.toISOString().slice(0, 10);
 };
 
-const buildCsv = (rows: ShipmentRecord[]): string => {
-  const header = [
-    'Tracking Number',
-    'Customer',
-    'Origin',
-    'Destination',
-    'Departure',
-    'ETA',
-    'Status',
-    'Type',
-  ];
-
+const buildCsv = (
+  rows: ShipmentRecord[],
+  statusLabels: Record<StatusCategory, string>,
+  csvHeaders: string[],
+): string => {
   const lines = rows.map((shipment) =>
     [
       shipment.sku,
@@ -71,16 +60,38 @@ const buildCsv = (rows: ShipmentRecord[]): string => {
       .join(',')
   );
 
-  return [header.join(','), ...lines].join('\n');
+  return [csvHeaders.join(','), ...lines].join('\n');
 };
 
 export function ShipmentsPage(): ReactElement {
+  const { t } = useTranslation('shipments');
+  const { user } = useAuth();
+  const { isSignedIn: isClerkSignedIn } = useClerkAuth();
+  const isCustomer = isClerkSignedIn && !user;
   const { data: dashboardData, isLoading: isDashboardLoading, error: dashboardError } =
     useDashboardData();
   const { data: shipmentsData, isLoading: isShipmentsLoading, error: shipmentsError } =
     useShipmentsDashboard();
   const { query, setQuery } = useSearch();
   const navigate = useNavigate();
+
+  const statusLabels: Record<StatusCategory, string> = useMemo(() => ({
+    pending: t('statusLabels.pending'),
+    active: t('statusLabels.active'),
+    completed: t('statusLabels.completed'),
+    exception: t('statusLabels.exception'),
+  }), [t]);
+
+  const csvHeaders = useMemo(() => [
+    t('csv.trackingNumber'),
+    t('csv.customer'),
+    t('csv.origin'),
+    t('csv.destination'),
+    t('csv.departure'),
+    t('csv.eta'),
+    t('csv.status'),
+    t('csv.type'),
+  ], [t]);
   const [activeFilter, setActiveFilter] = useState<ShipmentFilterTab['value']>('all');
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
@@ -136,11 +147,12 @@ export function ShipmentsPage(): ReactElement {
     );
 
     const totalShipments = effectiveShipments.length;
-    const averageFormat = new Intl.NumberFormat('en-US', {
+    const locale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
+    const averageFormat = new Intl.NumberFormat(locale, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
-    const currencyAverageFormat = new Intl.NumberFormat('en-US', {
+    const currencyAverageFormat = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
@@ -154,29 +166,30 @@ export function ShipmentsPage(): ReactElement {
     return {
       overview: {
         ...shipmentsData.summary.overview,
+        title: t('summary.totalShipments'),
         total: totalShipments,
         breakdown: [
           {
             id: 'pending',
-            label: 'Pending',
+            label: t('statusLabels.pending'),
             value: totals.statusCounts.pending,
             status: 'pending' as const,
           },
           {
             id: 'active',
-            label: 'Active',
+            label: t('statusLabels.active'),
             value: totals.statusCounts.active,
             status: 'active' as const,
           },
           {
             id: 'completed',
-            label: 'Completed',
+            label: t('statusLabels.completed'),
             value: totals.statusCounts.completed,
             status: 'completed' as const,
           },
           {
             id: 'exception',
-            label: 'Exception',
+            label: t('statusLabels.exception'),
             value: totals.statusCounts.exception,
             status: 'exception' as const,
           },
@@ -185,59 +198,70 @@ export function ShipmentsPage(): ReactElement {
       metrics: [
         {
           ...shipmentsData.summary.metrics[0],
+          title: t('summary.totalWeight'),
           value: totals.totalWeight,
-          helperText: `Average weight per shipment: ${averageFormat.format(averageWeight)} kg`,
+          helperText: t('summary.averageWeight', { value: averageFormat.format(averageWeight) }),
         },
         {
           ...shipmentsData.summary.metrics[1],
+          title: t('summary.totalValue'),
           value: totals.totalValue,
-          helperText: `Average value per shipment: ${currencyAverageFormat.format(averageValue)}`,
+          helperText: t('summary.averageValue', { value: currencyAverageFormat.format(averageValue) }),
         },
         {
           ...shipmentsData.summary.metrics[2],
+          title: t('summary.totalItems'),
           value: totals.totalItems,
-          helperText: `Average item per shipment: ${averageFormat.format(averageItems)}`,
+          helperText: t('summary.averageItems', { value: averageFormat.format(averageItems) }),
         },
       ],
     };
-  }, [shipmentsData, effectiveShipments]);
+  }, [shipmentsData, effectiveShipments, t]);
+
+  const translatedFilters = useMemo(() => [
+    { id: 'all', label: t('filters.all'), value: 'all' as const },
+    { id: 'pending', label: t('filters.pending'), value: 'pending' as const },
+    { id: 'active', label: t('filters.active'), value: 'active' as const },
+    { id: 'completed', label: t('filters.completed'), value: 'completed' as const },
+    { id: 'exception', label: t('filters.exception'), value: 'exception' as const },
+  ], [t]);
 
   const hasRows = filteredShipments.length > 0;
   const totalVisible = statusScopedShipments.length;
   const visibleLabel =
     totalVisible === 0
-      ? 'No shipments available in this view.'
+      ? t('visibleLabel.empty')
       : normalizedQuery
-        ? `Showing ${filteredShipments.length} of ${totalVisible} shipment${
-            totalVisible === 1 ? '' : 's'
-          } for "${normalizedQuery}".`
-        : `Showing ${filteredShipments.length} shipment${
-            filteredShipments.length === 1 ? '' : 's'
-          }.`;
+        ? t('visibleLabel.filtered', {
+            showing: filteredShipments.length,
+            total: totalVisible,
+            query: normalizedQuery,
+          })
+        : t('visibleLabel.default', { count: filteredShipments.length });
 
   const handleCopy = async (): Promise<void> => {
     if (!hasRows) {
-      setActionMessage('No shipments to copy.');
+      setActionMessage(t('actions.nothingToCopy'));
       return;
     }
 
-    const csv = buildCsv(filteredShipments);
+    const csv = buildCsv(filteredShipments, statusLabels, csvHeaders);
 
     try {
       await navigator.clipboard.writeText(csv);
-      setActionMessage(`Copied ${filteredShipments.length} rows.`);
+      setActionMessage(t('actions.copied', { count: filteredShipments.length }));
     } catch {
-      setActionMessage('Copy failed.');
+      setActionMessage(t('actions.copyFailed'));
     }
   };
 
   const handleDownload = (): void => {
     if (!hasRows) {
-      setActionMessage('No shipments to download.');
+      setActionMessage(t('actions.nothingToDownload'));
       return;
     }
 
-    const csv = buildCsv(filteredShipments);
+    const csv = buildCsv(filteredShipments, statusLabels, csvHeaders);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -245,7 +269,7 @@ export function ShipmentsPage(): ReactElement {
     anchor.download = `shipments-${new Date().toISOString().slice(0, 10)}.csv`;
     anchor.click();
     window.URL.revokeObjectURL(url);
-    setActionMessage(`Downloaded ${filteredShipments.length} rows.`);
+    setActionMessage(t('actions.downloaded', { count: filteredShipments.length }));
   };
 
   const handleTrackShipment = (): void => {
@@ -265,14 +289,14 @@ export function ShipmentsPage(): ReactElement {
       data={dashboardData}
       isLoading={isDashboardLoading}
       error={dashboardError}
-      loadingLabel="Loading shipments..."
+      loadingLabel={t('loadingLabel')}
     >
       <div className="space-y-6">
         {shipmentsData ? (
           <>
             <ShipmentsHeader
-              title={shipmentsData.header.title}
-              subtitle={shipmentsData.header.subtitle}
+              title={isCustomer ? t('header.titleCustomer') : t('header.titleOperator')}
+              subtitle={isCustomer ? t('header.subtitleCustomer') : t('header.subtitleOperator')}
               onTrackShipment={handleTrackShipment}
             />
 
@@ -284,7 +308,7 @@ export function ShipmentsPage(): ReactElement {
             )}
 
             <ShipmentsFilters
-              filters={shipmentsData.filters}
+              filters={translatedFilters}
               active={activeFilter}
               onChange={setActiveFilter}
               onCopy={handleCopy}
@@ -294,20 +318,20 @@ export function ShipmentsPage(): ReactElement {
             />
 
             <ShipmentsTable
-              title={shipmentsData.table.title}
+              title={t('shipmentList')}
               items={filteredShipments}
               searchValue={query}
               onSearchChange={handleSearchChange}
               onSearchClear={handleSearchClear}
-              searchPlaceholder="Search by tracking number, customer, origin, destination..."
+              searchPlaceholder={t('searchPlaceholder')}
               searchMeta={visibleLabel}
             />
           </>
         ) : isShipmentsLoading ? (
-          <PageLoader label="Loading shipment list..." />
+          <PageLoader label={t('loadingShipmentList')} />
         ) : (
           <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500">
-            {shipmentsError ?? 'Shipment data unavailable.'}
+            {shipmentsError ?? t('unavailable')}
           </div>
         )}
       </div>

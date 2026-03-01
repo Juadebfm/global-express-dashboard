@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import { Button, Input, Checkbox, Card } from '@/components/ui';
 import { ROUTES } from '@/constants';
@@ -13,6 +14,7 @@ export function LoginForm({
   isLoading = false,
   error,
 }: LoginFormProps): ReactElement {
+  const { t } = useTranslation('auth');
   const {
     register,
     handleSubmit,
@@ -33,7 +35,7 @@ export function LoginForm({
         className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-5"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
-        Back to home
+        {t('loginForm.backToHome')}
       </Link>
 
       {/* Logo */}
@@ -48,7 +50,7 @@ export function LoginForm({
       {/* Heading */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-gray-900">
-          Login to your account
+          {t('loginForm.title')}
         </h2>
       </div>
 
@@ -62,17 +64,17 @@ export function LoginForm({
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <Input
-          label="Email"
+          label={t('loginForm.emailLabel')}
           type="email"
-          placeholder="Enter your email"
+          placeholder={t('loginForm.emailPlaceholder')}
           error={errors.email?.message}
           {...register('email')}
         />
 
         <Input
-          label="Password"
+          label={t('loginForm.passwordLabel')}
           type="password"
-          placeholder="Enter your password"
+          placeholder={t('loginForm.passwordPlaceholder')}
           showPasswordToggle
           error={errors.password?.message}
           {...register('password')}
@@ -80,14 +82,14 @@ export function LoginForm({
 
         <div className="flex items-center justify-between">
           <Checkbox
-            label="Remember password"
+            label={t('loginForm.rememberPassword')}
             {...register('rememberMe')}
           />
           <Link
             to={ROUTES.FORGOT_PASSWORD}
             className="text-sm font-medium text-brand-500 hover:text-brand-600"
           >
-            Forgot password?
+            {t('loginForm.forgotPassword')}
           </Link>
         </div>
 
@@ -97,7 +99,7 @@ export function LoginForm({
           size="lg"
           isLoading={isLoading}
         >
-          Login
+          {t('loginForm.loginButton')}
         </Button>
       </form>
 

@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import {
   Calendar,
@@ -27,6 +28,7 @@ import {
 } from "@/services";
 import type { ShippingEstimate } from "@/services";
 import { cn } from "@/utils";
+import i18n from "@/i18n/i18n";
 
 type StepKey = "shipment" | "addresses" | "packages" | "review";
 
@@ -37,25 +39,16 @@ interface StepDefinition {
 }
 
 
-const steps: StepDefinition[] = [
-  {
-    id: "shipment",
-    label: "Shipment Type",
-    description: "Define shipment basics",
-  },
-  {
-    id: "addresses",
-    label: "Addresses",
-    description: "Origin and destination",
-  },
-  { id: "packages", label: "Package Details", description: "Add item details" },
-
-  { id: "review", label: "Review", description: "Confirm and estimate" },
+const STEP_KEYS: Array<{ id: StepKey; labelKey: string; descKey: string }> = [
+  { id: "shipment", labelKey: "newShipment.steps.shipment.label", descKey: "newShipment.steps.shipment.description" },
+  { id: "addresses", labelKey: "newShipment.steps.addresses.label", descKey: "newShipment.steps.addresses.description" },
+  { id: "packages", labelKey: "newShipment.steps.packages.label", descKey: "newShipment.steps.packages.description" },
+  { id: "review", labelKey: "newShipment.steps.review.label", descKey: "newShipment.steps.review.description" },
 ];
 
-const shipmentTypes = [
-  { value: "air", label: "Air Freight" },
-  { value: "ocean", label: "Ocean Freight" },
+const SHIPMENT_TYPE_KEYS = [
+  { value: "air", labelKey: "newShipment.shipmentType.air" },
+  { value: "ocean", labelKey: "newShipment.shipmentType.ocean" },
 ];
 
 const ORIGIN_WAREHOUSE = {
@@ -80,7 +73,8 @@ function getErrorMessage(error: unknown): string {
 
 const formatDateLabel = (value: Date | null): string => {
   if (!value) return "Select date";
-  return value.toLocaleDateString("en-US", {
+  const locale = i18n.language === "ko" ? "ko-KR" : "en-US";
+  return value.toLocaleDateString(locale, {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -165,7 +159,8 @@ function DatePicker({ label, value, onChange }: DatePickerProps): ReactElement {
 
   const monthLabel = useMemo(() => {
     const date = new Date(Date.UTC(year, month, 1));
-    return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    const locale = i18n.language === "ko" ? "ko-KR" : "en-US";
+    return date.toLocaleDateString(locale, { month: "long", year: "numeric" });
   }, [month, year]);
 
   const days = useMemo(() => buildCalendarDays(year, month), [month, year]);
@@ -494,8 +489,11 @@ function TimePicker({ label, value, onChange }: TimePickerProps): ReactElement {
 }
 
 export function NewShipmentPage(): ReactElement {
+  const { t } = useTranslation("shipments");
   const { data, isLoading, error } = useDashboardData();
   const { user } = useAuth();
+  const steps: StepDefinition[] = STEP_KEYS.map((s) => ({ id: s.id, label: t(s.labelKey), description: t(s.descKey) }));
+  const shipmentTypes = SHIPMENT_TYPE_KEYS.map((s) => ({ value: s.value, label: t(s.labelKey) }));
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
@@ -639,13 +637,13 @@ export function NewShipmentPage(): ReactElement {
       !recipientEmail.trim() ||
       !recipientPhone.trim()
     ) {
-      setCreateError("Please provide recipient name, email, and phone number.");
+      setCreateError(t("newShipment.errors.recipientRequired"));
       setActiveStep(2);
       return;
     }
 
     if (usePickupRep && !pickupRepName.trim()) {
-      setCreateError("Please provide the pickup representative's name.");
+      setCreateError(t("newShipment.errors.pickupRepRequired"));
       setActiveStep(2);
       return;
     }
@@ -698,7 +696,7 @@ export function NewShipmentPage(): ReactElement {
       const message =
         createOrderError instanceof Error
           ? createOrderError.message
-          : "Failed to create shipment order.";
+          : t("newShipment.errors.failedToCreate");
       setCreateError(message);
 
       if (isCustomer && /profile/i.test(message)) {
@@ -716,17 +714,17 @@ export function NewShipmentPage(): ReactElement {
       data={data}
       isLoading={isLoading || isCheckingCompleteness}
       error={completenessError ?? error}
-      loadingLabel="Loading new shipment..."
+      loadingLabel={t("newShipment.loadingLabel")}
     >
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
-            {isCustomer ? "Create New Shipment" : "Create Client Order"}
+            {isCustomer ? t("newShipment.titleCustomer") : t("newShipment.titleOperator")}
           </h1>
           <p className="mt-1 text-sm text-gray-500">
             {isCustomer
-              ? "Follow the steps below to create and schedule your shipment"
-              : "Follow the steps below to create an order on behalf of a client"}
+              ? t("newShipment.subtitleCustomer")
+              : t("newShipment.subtitleOperator")}
           </p>
         </div>
 
@@ -735,9 +733,9 @@ export function NewShipmentPage(): ReactElement {
         <section className="rounded-2xl border border-gray-200 bg-white p-5">
           <div className="flex items-center justify-between text-sm text-gray-500">
             <span>
-              Step {activeStep + 1} of {steps.length}
+              {t("newShipment.progress.step", { current: activeStep + 1, total: steps.length })}
             </span>
-            <span>{progress}% Complete</span>
+            <span>{t("newShipment.progress.complete", { percent: progress })}</span>
           </div>
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-gray-100">
             <div
@@ -768,16 +766,16 @@ export function NewShipmentPage(): ReactElement {
         {activeStep === 0 && (
           <section className="rounded-2xl border border-gray-200 bg-white p-6">
             <h2 className="text-lg font-semibold text-gray-900">
-              Shipment Type
+              {t("newShipment.shipmentType.sectionTitle")}
             </h2>
             <p className="mt-1 text-sm text-gray-500">
-              Select the type of shipment
+              {t("newShipment.shipmentType.sectionSubtitle")}
             </p>
 
             <div className="mt-6">
               <div>
                 <p className="text-sm font-semibold text-gray-700">
-                  Shipment Type
+                  {t("newShipment.shipmentType.sectionTitle")}
                 </p>
                 <div className="mt-4 space-y-3">
                   {shipmentTypes.map((item) => (
@@ -812,12 +810,12 @@ export function NewShipmentPage(): ReactElement {
               <div>
                 <div className="mt-6 grid gap-4 md:grid-cols-2">
                   <DatePicker
-                    label="Pick-up Date"
+                    label={t("newShipment.schedule.pickupDate")}
                     value={pickupDate}
                     onChange={setPickupDate}
                   />
                   <DatePicker
-                    label="Preferred Delivery Date"
+                    label={t("newShipment.schedule.preferredDeliveryDate")}
                     value={deliveryDate}
                     onChange={setDeliveryDate}
                   />
@@ -825,12 +823,12 @@ export function NewShipmentPage(): ReactElement {
 
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                   <TimePicker
-                    label="Pick-up Time"
+                    label={t("newShipment.schedule.pickupTime")}
                     value={pickupTime}
                     onChange={setPickupTime}
                   />
                   <TimePicker
-                    label="Delivery Time"
+                    label={t("newShipment.schedule.deliveryTime")}
                     value={deliveryTime}
                     onChange={setDeliveryTime}
                   />
@@ -848,17 +846,17 @@ export function NewShipmentPage(): ReactElement {
               <div className="flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-brand-500" />
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Origin Address
+                  {t("newShipment.originAddress.title")}
                 </h3>
               </div>
               <p className="mt-1 text-sm text-gray-400">
-                Fixed pickup location — Global Express Korea Warehouse
+                {t("newShipment.originAddress.subtitle")}
               </p>
 
               <div className="mt-6 grid gap-4 lg:grid-cols-2">
                 <div>
                   <span className="text-xs font-semibold uppercase text-gray-500">
-                    Company Name
+                    {t("newShipment.originAddress.companyName")}
                   </span>
                   <input
                     type="text"
@@ -869,7 +867,7 @@ export function NewShipmentPage(): ReactElement {
                 </div>
                 <div>
                   <span className="text-xs font-semibold uppercase text-gray-500">
-                    Phone Number
+                    {t("newShipment.originAddress.phoneNumber")}
                   </span>
                   <input
                     type="tel"
@@ -880,7 +878,7 @@ export function NewShipmentPage(): ReactElement {
                 </div>
                 <div className="lg:col-span-2">
                   <span className="text-xs font-semibold uppercase text-gray-500">
-                    Address
+                    {t("newShipment.originAddress.address")}
                   </span>
                   <input
                     type="text"
@@ -897,17 +895,17 @@ export function NewShipmentPage(): ReactElement {
               <div className="flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-brand-500" />
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Destination Address
+                  {t("newShipment.destinationAddress.title")}
                 </h3>
               </div>
               <p className="mt-1 text-sm text-gray-400">
-                Fixed delivery location — Global Express Lagos Office
+                {t("newShipment.destinationAddress.subtitle")}
               </p>
 
               <div className="mt-6 grid gap-4 lg:grid-cols-2">
                 <div>
                   <span className="text-xs font-semibold uppercase text-gray-500">
-                    Company Name
+                    {t("newShipment.originAddress.companyName")}
                   </span>
                   <input
                     type="text"
@@ -918,7 +916,7 @@ export function NewShipmentPage(): ReactElement {
                 </div>
                 <div>
                   <span className="text-xs font-semibold uppercase text-gray-500">
-                    Phone Number
+                    {t("newShipment.destinationAddress.phoneNumber")}
                   </span>
                   <input
                     type="tel"
@@ -929,7 +927,7 @@ export function NewShipmentPage(): ReactElement {
                 </div>
                 <div className="lg:col-span-2">
                   <span className="text-xs font-semibold uppercase text-gray-500">
-                    Address
+                    {t("newShipment.destinationAddress.address")}
                   </span>
                   <input
                     type="text"
@@ -950,17 +948,17 @@ export function NewShipmentPage(): ReactElement {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    Package Details
+                    {t("newShipment.packageDetails.title")}
                   </h3>
                   <p className="mt-1 text-sm text-gray-400">
-                    Describe your shipment contents
+                    {t("newShipment.packageDetails.subtitle")}
                   </p>
                 </div>
               </div>
 
               <div className="mt-6">
                 <span className="text-xs font-semibold uppercase text-gray-500">
-                  Description
+                  {t("newShipment.packageDetails.descriptionLabel")}
                 </span>
                 <input
                   type="text"
@@ -968,7 +966,7 @@ export function NewShipmentPage(): ReactElement {
                   onChange={(event) =>
                     setPackageDescription(event.target.value)
                   }
-                  placeholder="Describe package contents (e.g. Electronics — laptop)"
+                  placeholder={t("newShipment.packageDetails.descriptionPlaceholder")}
                   className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                 />
               </div>
@@ -977,7 +975,7 @@ export function NewShipmentPage(): ReactElement {
                 {shipmentType === "air" ? (
                   <div>
                     <span className="text-xs font-semibold uppercase text-gray-500">
-                      Weight (kg)
+                      {t("newShipment.packageDetails.weightLabel")}
                     </span>
                     <input
                       type="number"
@@ -985,27 +983,27 @@ export function NewShipmentPage(): ReactElement {
                       onChange={(event) =>
                         setPackageWeightKg(event.target.value)
                       }
-                      placeholder="Enter weight in kg"
+                      placeholder={t("newShipment.packageDetails.weightPlaceholder")}
                       className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                     />
                   </div>
                 ) : (
                   <div>
                     <span className="text-xs font-semibold uppercase text-gray-500">
-                      Volume (CBM)
+                      {t("newShipment.packageDetails.volumeLabel")}
                     </span>
                     <input
                       type="number"
                       value={packageCbm}
                       onChange={(event) => setPackageCbm(event.target.value)}
-                      placeholder="Enter volume in cubic meters"
+                      placeholder={t("newShipment.packageDetails.volumePlaceholder")}
                       className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                     />
                   </div>
                 )}
                 <div>
                   <span className="text-xs font-semibold uppercase text-gray-500">
-                    Declared Value ($)
+                    {t("newShipment.packageDetails.declaredValueLabel")}
                   </span>
                   <input
                     type="number"
@@ -1013,7 +1011,7 @@ export function NewShipmentPage(): ReactElement {
                     onChange={(event) =>
                       setPackageDeclaredValue(event.target.value)
                     }
-                    placeholder="Enter declared value"
+                    placeholder={t("newShipment.packageDetails.declaredValuePlaceholder")}
                     className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                   />
                 </div>
@@ -1021,24 +1019,24 @@ export function NewShipmentPage(): ReactElement {
 
               <div className="mt-6 border-t border-gray-200 pt-6">
                 <p className="text-sm font-semibold text-gray-700">
-                  Recipient Information
+                  {t("newShipment.recipientInfo.sectionTitle")}
                 </p>
                 <div className="mt-4 grid gap-4 lg:grid-cols-3">
                   <div>
                     <span className="text-xs font-semibold uppercase text-gray-500">
-                      Recipient Name
+                      {t("newShipment.recipientInfo.nameLabel")}
                     </span>
                     <input
                       type="text"
                       value={recipientName}
                       onChange={(event) => setRecipientName(event.target.value)}
-                      placeholder="Full name"
+                      placeholder={t("newShipment.recipientInfo.namePlaceholder")}
                       className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                     />
                   </div>
                   <div>
                     <span className="text-xs font-semibold uppercase text-gray-500">
-                      Email
+                      {t("newShipment.recipientInfo.emailLabel")}
                     </span>
                     <input
                       type="email"
@@ -1046,13 +1044,13 @@ export function NewShipmentPage(): ReactElement {
                       onChange={(event) =>
                         setRecipientEmail(event.target.value)
                       }
-                      placeholder="recipient@example.com"
+                      placeholder={t("newShipment.recipientInfo.emailPlaceholder")}
                       className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                     />
                   </div>
                   <div>
                     <span className="text-xs font-semibold uppercase text-gray-500">
-                      Phone Number
+                      {t("newShipment.recipientInfo.phoneLabel")}
                     </span>
                     <input
                       type="tel"
@@ -1060,7 +1058,7 @@ export function NewShipmentPage(): ReactElement {
                       onChange={(event) =>
                         setRecipientPhone(event.target.value)
                       }
-                      placeholder="+234..."
+                      placeholder={t("newShipment.recipientInfo.phonePlaceholder")}
                       className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                     />
                   </div>
@@ -1068,7 +1066,7 @@ export function NewShipmentPage(): ReactElement {
 
                 <div className="mt-5">
                   <Checkbox
-                    label="Someone else will pick up this shipment"
+                    label={t("newShipment.recipientInfo.usePickupRepLabel")}
                     checked={usePickupRep}
                     onChange={(e) => setUsePickupRep(e.target.checked)}
                   />
@@ -1078,25 +1076,25 @@ export function NewShipmentPage(): ReactElement {
                   <div className="mt-4 grid gap-4 lg:grid-cols-2">
                     <div>
                       <span className="text-xs font-semibold uppercase text-gray-500">
-                        Representative Name *
+                        {t("newShipment.recipientInfo.repNameLabel")}
                       </span>
                       <input
                         type="text"
                         value={pickupRepName}
                         onChange={(e) => setPickupRepName(e.target.value)}
-                        placeholder="Full name of representative"
+                        placeholder={t("newShipment.recipientInfo.repNamePlaceholder")}
                         className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                       />
                     </div>
                     <div>
                       <span className="text-xs font-semibold uppercase text-gray-500">
-                        Representative Phone
+                        {t("newShipment.recipientInfo.repPhoneLabel")}
                       </span>
                       <input
                         type="tel"
                         value={pickupRepPhone}
                         onChange={(e) => setPickupRepPhone(e.target.value)}
-                        placeholder="+234..."
+                        placeholder={t("newShipment.recipientInfo.repPhonePlaceholder")}
                         className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                       />
                     </div>
@@ -1118,7 +1116,7 @@ export function NewShipmentPage(): ReactElement {
                         : "0.0 CBM"}
                   </p>
                   <p className="text-xs uppercase text-gray-500">
-                    {shipmentType === "air" ? "Total Weight" : "Total Volume"}
+                    {shipmentType === "air" ? t("newShipment.review.totalWeightLabel") : t("newShipment.review.totalVolumeLabel")}
                   </p>
                 </div>
                 <div>
@@ -1126,7 +1124,7 @@ export function NewShipmentPage(): ReactElement {
                     ${packageDeclaredValue.trim() || "0.00"}
                   </p>
                   <p className="text-xs uppercase text-gray-500">
-                    Declared Value
+                    {t("newShipment.review.declaredValueLabel")}
                   </p>
                 </div>
               </div>
@@ -1138,32 +1136,32 @@ export function NewShipmentPage(): ReactElement {
         {activeStep === 3 && (
           <section className="rounded-2xl border border-gray-200 bg-white p-6">
             <h2 className="text-lg font-semibold text-gray-900">
-              Review & Cost Estimate
+              {t("newShipment.review.title")}
             </h2>
             <p className="mt-1 text-sm text-gray-400">
-              Review your shipment details and get a cost estimate
+              {t("newShipment.review.subtitle")}
             </p>
 
             <div className="mt-6 grid gap-6 lg:grid-cols-[1.3fr_1fr]">
               <div className="space-y-6">
                 <div>
                   <p className="text-sm font-semibold text-gray-700">
-                    Shipment Summary
+                    {t("newShipment.review.shipmentSummary")}
                   </p>
                   <div className="mt-3 space-y-2 text-sm text-gray-600">
                     <div className="flex items-center justify-between">
-                      <span>Type</span>
+                      <span>{t("newShipment.review.typeLabel")}</span>
                       <span className="font-semibold text-gray-800 capitalize">
                         {shipmentType === "air"
-                          ? "Air Freight"
-                          : "Ocean Freight"}
+                          ? t("newShipment.review.airFreight")
+                          : t("newShipment.review.oceanFreight")}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>
                         {shipmentType === "air"
-                          ? "Total Weight"
-                          : "Total Volume"}
+                          ? t("newShipment.review.totalWeightLabel")
+                          : t("newShipment.review.totalVolumeLabel")}
                       </span>
                       <span className="font-semibold text-gray-800">
                         {shipmentType === "air"
@@ -1176,7 +1174,7 @@ export function NewShipmentPage(): ReactElement {
                       </span>
                     </div>
                     <div className="flex items-center justify-between border-t border-gray-200 pt-3">
-                      <span>Declared Value</span>
+                      <span>{t("newShipment.review.declaredValueLabel")}</span>
                       <span className="font-semibold text-gray-800">
                         ${packageDeclaredValue.trim() || "0.00"}
                       </span>
@@ -1185,16 +1183,16 @@ export function NewShipmentPage(): ReactElement {
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold text-gray-700">Route</p>
+                  <p className="text-sm font-semibold text-gray-700">{t("newShipment.review.route")}</p>
                   <div className="mt-3 text-sm text-gray-600">
-                    <p className="font-semibold text-gray-800">From</p>
+                    <p className="font-semibold text-gray-800">{t("newShipment.review.from")}</p>
                     <p className="text-xs text-gray-400">
                       {ORIGIN_WAREHOUSE.company}
                     </p>
                     <p>{ORIGIN_WAREHOUSE.address}</p>
                   </div>
                   <div className="mt-4 text-sm text-gray-600">
-                    <p className="font-semibold text-gray-800">To</p>
+                    <p className="font-semibold text-gray-800">{t("newShipment.review.to")}</p>
                     <p className="text-xs text-gray-400">
                       {DESTINATION_OFFICE.company}
                     </p>
@@ -1204,7 +1202,7 @@ export function NewShipmentPage(): ReactElement {
 
                 <div>
                   <p className="text-sm font-semibold text-gray-700">
-                    Recipient
+                    {t("newShipment.review.recipient")}
                   </p>
                   <div className="mt-3 space-y-1 text-sm text-gray-600">
                     <p>{recipientName || "—"}</p>
@@ -1216,7 +1214,7 @@ export function NewShipmentPage(): ReactElement {
                 {usePickupRep && pickupRepName.trim() && (
                   <div>
                     <p className="text-sm font-semibold text-gray-700">
-                      Pickup Representative
+                      {t("newShipment.review.pickupRepresentative")}
                     </p>
                     <div className="mt-3 space-y-1 text-sm text-gray-600">
                       <p>{pickupRepName}</p>
@@ -1229,22 +1227,22 @@ export function NewShipmentPage(): ReactElement {
               <div className="rounded-2xl border border-gray-200 p-5">
                 <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                   <Package className="h-4 w-4 text-brand-500" />
-                  Cost Estimate
+                  {t("newShipment.review.costEstimate")}
                 </div>
 
                 {estimateLoading ? (
                   <div className="mt-6 flex items-center justify-center gap-2 py-6 text-sm text-gray-400">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Calculating estimate…
+                    {t("newShipment.review.calculatingEstimate")}
                   </div>
                 ) : estimate ? (
                   <>
                     <div className="mt-4 space-y-3 text-sm text-gray-600">
                       <div className="flex items-center justify-between">
-                        <span>Estimated Shipping Cost</span>
+                        <span>{t("newShipment.review.estimatedShippingCost")}</span>
                         <span className="font-semibold text-gray-800">
                           $
-                          {estimate.estimatedCostUsd.toLocaleString("en-US", {
+                          {estimate.estimatedCostUsd.toLocaleString(i18n.language === "ko" ? "ko-KR" : "en-US", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
@@ -1270,7 +1268,7 @@ export function NewShipmentPage(): ReactElement {
                       className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-brand-500 px-3 py-2 text-xs font-semibold text-brand-600 hover:bg-brand-50"
                     >
                       <Check className="h-4 w-4" />
-                      Recalculate Estimation
+                      {t("newShipment.review.recalculate")}
                     </button>
 
                     <p className="mt-4 text-xs text-gray-400">
@@ -1280,8 +1278,8 @@ export function NewShipmentPage(): ReactElement {
                 ) : (
                   <p className="mt-6 py-6 text-center text-sm text-gray-400">
                     {shipmentType === "air"
-                      ? "Enter weight to see estimate"
-                      : "Enter volume (CBM) to see estimate"}
+                      ? t("newShipment.review.enterWeightForEstimate")
+                      : t("newShipment.review.enterVolumeForEstimate")}
                   </p>
                 )}
               </div>
@@ -1291,11 +1289,11 @@ export function NewShipmentPage(): ReactElement {
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Button variant="secondary" size="sm" onClick={goPrevious}>
-            Previous
+            {t("newShipment.navigation.previous")}
           </Button>
           <div className="flex items-center gap-3">
             <Button variant="secondary" size="sm" className="border-gray-300">
-              Save Draft
+              {t("newShipment.navigation.saveDraft")}
             </Button>
             <Button
               size="sm"
@@ -1305,12 +1303,12 @@ export function NewShipmentPage(): ReactElement {
               {activeStep === steps.length - 1
                 ? isCreatingOrder
                   ? isCustomer
-                    ? "Creating Shipment..."
-                    : "Creating Order..."
+                    ? t("newShipment.navigation.creatingShipment")
+                    : t("newShipment.navigation.creatingOrder")
                   : isCustomer
-                    ? "Create Shipment"
-                    : "Create Order"
-                : "Next"}
+                    ? t("newShipment.navigation.createShipment")
+                    : t("newShipment.navigation.createOrder")
+                : t("newShipment.navigation.next")}
             </Button>
           </div>
         </div>
@@ -1334,16 +1332,16 @@ export function NewShipmentPage(): ReactElement {
               </span>
               <div>
                 <p className="text-lg font-semibold text-gray-900">
-                  {isCustomer ? "Shipment created" : "Client order created"}
+                  {isCustomer ? t("newShipment.confirmation.shipmentCreated") : t("newShipment.confirmation.orderCreated")}
                 </p>
                 <p className="text-sm text-gray-500">
                   {isCustomer
-                    ? "Your shipment has been saved successfully."
-                    : "The client order has been saved successfully."}
+                    ? t("newShipment.confirmation.shipmentSaved")
+                    : t("newShipment.confirmation.orderSaved")}
                 </p>
                 {createdTrackingNumber && (
                   <p className="mt-1 text-xs font-semibold text-brand-600">
-                    Tracking Number: {createdTrackingNumber}
+                    {t("newShipment.confirmation.trackingNumber", { number: createdTrackingNumber })}
                   </p>
                 )}
               </div>
@@ -1351,15 +1349,15 @@ export function NewShipmentPage(): ReactElement {
 
             <div className="mt-5 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
               {isCustomer
-                ? "Your pre-order has been submitted. Pricing will be confirmed once the warehouse verifies your package."
-                : "The client order has been submitted. Pricing will be confirmed after warehouse verification."}
+                ? t("newShipment.confirmation.customerNote")
+                : t("newShipment.confirmation.operatorNote")}
             </div>
 
             {/* Share buttons */}
             {createdTrackingNumber && (
               <div className="mt-4">
                 <p className="text-xs font-semibold uppercase text-gray-400">
-                  Share Details
+                  {t("newShipment.confirmation.shareDetails")}
                 </p>
                 <div className="mt-2 flex items-center gap-2">
                   {(() => {
@@ -1367,7 +1365,7 @@ export function NewShipmentPage(): ReactElement {
                     const typeLabel =
                       shipmentType === "air" ? "Air Freight" : "Ocean Freight";
                     const costLabel = estimate
-                      ? `$${estimate.estimatedCostUsd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                      ? `$${estimate.estimatedCostUsd.toLocaleString(i18n.language === "ko" ? "ko-KR" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                       : "";
                     const lines = [
                       "Global Express — Order Confirmation",
@@ -1403,13 +1401,13 @@ export function NewShipmentPage(): ReactElement {
                           ) : (
                             <Copy className="h-3.5 w-3.5" />
                           )}
-                          {copied ? "Copied!" : "Copy"}
+                          {copied ? t("newShipment.confirmation.copied") : t("newShipment.confirmation.copy")}
                         </button>
                         {/* Email */}
                         <a
                           href={`mailto:?subject=${encodeURIComponent(`Global Express — Tracking ${createdTrackingNumber}`)}&body=${encodeURIComponent(body)}`}
                           className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:border-brand-400 hover:text-brand-500"
-                          title="Share via Email"
+                          title={t("newShipment.confirmation.shareViaEmail")}
                         >
                           <Mail className="h-4 w-4" />
                         </a>
@@ -1419,7 +1417,7 @@ export function NewShipmentPage(): ReactElement {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:border-green-500 hover:text-green-500"
-                          title="Share via WhatsApp"
+                          title={t("newShipment.confirmation.shareViaWhatsApp")}
                         >
                           <svg
                             className="h-4 w-4"
@@ -1435,7 +1433,7 @@ export function NewShipmentPage(): ReactElement {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:border-yellow-500 hover:text-yellow-500"
-                          title="Share via KakaoTalk"
+                          title={t("newShipment.confirmation.shareViaKakaoTalk")}
                         >
                           <svg
                             className="h-4 w-4"
@@ -1460,7 +1458,7 @@ export function NewShipmentPage(): ReactElement {
                   navigate(ROUTES.ORDERS);
                 }}
               >
-                Done
+                {t("newShipment.confirmation.done")}
               </Button>
             </div>
           </div>

@@ -1,0 +1,231 @@
+{
+  "loadingLabel": "Loading shipments...",
+  "loadingListLabel": "Loading shipment list...",
+  "unavailable": "Shipment data unavailable.",
+  "statusLabels": {
+    "pending": "Pending",
+    "active": "Active",
+    "completed": "Completed",
+    "exception": "Exception"
+  },
+  "csv": {
+    "trackingNumber": "Tracking Number",
+    "customer": "Customer",
+    "origin": "Origin",
+    "destination": "Destination",
+    "departure": "Departure",
+    "eta": "ETA",
+    "status": "Status",
+    "type": "Type"
+  },
+  "visibleLabel": {
+    "empty": "No shipments available in this view.",
+    "filtered": "Showing {{showing}} of {{total}} shipment(s) for \"{{query}}\".",
+    "default": "Showing {{count}} shipment(s)."
+  },
+  "searchPlaceholder": "Search by tracking number, customer, origin, destination...",
+  "loadingShipmentList": "Loading shipment list...",
+  "actions": {
+    "nothingToCopy": "No shipments to copy.",
+    "copied": "Copied {{count}} rows.",
+    "copyFailed": "Copy failed.",
+    "nothingToDownload": "No shipments to download.",
+    "downloaded": "Downloaded {{count}} rows."
+  },
+  "header": {
+    "titleOperator": "Shipments",
+    "subtitleOperator": "Track and manage your shipments",
+    "titleCustomer": "My Shipments",
+    "subtitleCustomer": "Track your orders and bulk shipment items",
+    "trackShipment": "Track Your Shipment"
+  },
+  "summary": {
+    "totalShipments": "Total Shipments",
+    "totalWeight": "Total Weight",
+    "totalValue": "Total Value",
+    "totalItems": "Total Items",
+    "averageWeight": "Average weight per shipment: {{value}} kg",
+    "averageValue": "Average value per shipment: {{value}}",
+    "averageItems": "Average item per shipment: {{value}}"
+  },
+  "filters": {
+    "all": "All",
+    "pending": "Pending",
+    "active": "Active",
+    "completed": "Completed",
+    "exception": "Exception"
+  },
+  "shipmentList": "Shipment List",
+  "statusV2": {
+    "PREORDER_SUBMITTED": "Pre-order Submitted",
+    "AWAITING_WAREHOUSE_RECEIPT": "Awaiting Warehouse Receipt",
+    "WAREHOUSE_RECEIVED": "Warehouse Received",
+    "WAREHOUSE_VERIFIED_PRICED": "Verified & Priced",
+    "DISPATCHED_TO_ORIGIN_AIRPORT": "Dispatched to Airport",
+    "AT_ORIGIN_AIRPORT": "At Origin Airport",
+    "BOARDED_ON_FLIGHT": "Boarded on Flight",
+    "FLIGHT_DEPARTED": "Flight Departed",
+    "FLIGHT_LANDED_LAGOS": "Flight Landed Lagos",
+    "DISPATCHED_TO_ORIGIN_PORT": "Dispatched to Port",
+    "AT_ORIGIN_PORT": "At Origin Port",
+    "LOADED_ON_VESSEL": "Loaded on Vessel",
+    "VESSEL_DEPARTED": "Vessel Departed",
+    "VESSEL_ARRIVED_LAGOS_PORT": "Vessel Arrived Lagos",
+    "CUSTOMS_CLEARED_LAGOS": "Customs Cleared",
+    "IN_TRANSIT_TO_LAGOS_OFFICE": "In Transit to Lagos Office",
+    "READY_FOR_PICKUP": "Ready for Pickup",
+    "PICKED_UP_COMPLETED": "Picked Up / Completed",
+    "ON_HOLD": "On Hold",
+    "CANCELLED": "Cancelled",
+    "RESTRICTED_ITEM_REJECTED": "Restricted Item Rejected",
+    "RESTRICTED_ITEM_OVERRIDE_APPROVED": "Override Approved"
+  },
+  "locations": {
+    "South Korea": "South Korea",
+    "Korea": "Korea",
+    "Seoul, South Korea": "Seoul, South Korea",
+    "Lagos, Nigeria": "Lagos, Nigeria",
+    "Nigeria": "Nigeria",
+    "Lagos": "Lagos"
+  },
+  "table": {
+    "searchPlaceholder": "Search by tracking number, customer, origin, destination...",
+    "columns": {
+      "trackingNo": "Tracking No.",
+      "customer": "Customer",
+      "origin": "Origin",
+      "destination": "Destination",
+      "departure": "Departure",
+      "eta": "ETA",
+      "status": "Status",
+      "type": "Type"
+    },
+    "modeLabels": {
+      "air": "Air",
+      "ocean": "Ocean"
+    },
+    "empty": "No shipments match your current filters."
+  },
+  "newShipment": {
+    "loadingLabel": "Loading new shipment...",
+    "titleCustomer": "Create New Shipment",
+    "titleOperator": "Create Client Order",
+    "subtitleCustomer": "Follow the steps below to create and schedule your shipment",
+    "subtitleOperator": "Follow the steps below to create an order on behalf of a client",
+    "progress": {
+      "step": "Step {{current}} of {{total}}",
+      "complete": "{{percent}}% Complete"
+    },
+    "steps": {
+      "shipment": { "label": "Shipment Type", "description": "Define shipment basics" },
+      "addresses": { "label": "Addresses", "description": "Origin and destination" },
+      "packages": { "label": "Package Details", "description": "Add item details" },
+      "review": { "label": "Review", "description": "Confirm and estimate" }
+    },
+    "shipmentType": {
+      "sectionTitle": "Shipment Type",
+      "sectionSubtitle": "Select the type of shipment",
+      "air": "Air Freight",
+      "ocean": "Ocean Freight"
+    },
+    "schedule": {
+      "pickupDate": "Pick-up Date",
+      "preferredDeliveryDate": "Preferred Delivery Date",
+      "pickupTime": "Pick-up Time",
+      "deliveryTime": "Delivery Time",
+      "apply": "Apply"
+    },
+    "originAddress": {
+      "title": "Origin Address",
+      "subtitle": "Fixed pickup location — Global Express Korea Warehouse",
+      "companyName": "Company Name",
+      "phoneNumber": "Phone Number",
+      "address": "Address"
+    },
+    "destinationAddress": {
+      "title": "Destination Address",
+      "subtitle": "Fixed delivery location — Global Express Lagos Office",
+      "companyName": "Company Name",
+      "phoneNumber": "Phone Number",
+      "address": "Address"
+    },
+    "packageDetails": {
+      "title": "Package Details",
+      "subtitle": "Describe your shipment contents",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Describe package contents (e.g. Electronics — laptop)",
+      "weightLabel": "Weight (kg)",
+      "weightPlaceholder": "Enter weight in kg",
+      "volumeLabel": "Volume (CBM)",
+      "volumePlaceholder": "Enter volume in cubic meters",
+      "declaredValueLabel": "Declared Value ($)",
+      "declaredValuePlaceholder": "Enter declared value"
+    },
+    "recipientInfo": {
+      "sectionTitle": "Recipient Information",
+      "nameLabel": "Recipient Name",
+      "namePlaceholder": "Full name",
+      "emailLabel": "Email",
+      "emailPlaceholder": "recipient@example.com",
+      "phoneLabel": "Phone Number",
+      "phonePlaceholder": "+234...",
+      "usePickupRepLabel": "Someone else will pick up this shipment",
+      "repNameLabel": "Representative Name *",
+      "repNamePlaceholder": "Full name of representative",
+      "repPhoneLabel": "Representative Phone",
+      "repPhonePlaceholder": "+234..."
+    },
+    "review": {
+      "title": "Review & Cost Estimate",
+      "subtitle": "Review your shipment details and get a cost estimate",
+      "shipmentSummary": "Shipment Summary",
+      "typeLabel": "Type",
+      "airFreight": "Air Freight",
+      "oceanFreight": "Ocean Freight",
+      "totalWeightLabel": "Total Weight",
+      "totalVolumeLabel": "Total Volume",
+      "declaredValueLabel": "Declared Value",
+      "route": "Route",
+      "from": "From",
+      "to": "To",
+      "recipient": "Recipient",
+      "pickupRepresentative": "Pickup Representative",
+      "costEstimate": "Cost Estimate",
+      "calculatingEstimate": "Calculating estimate…",
+      "estimatedShippingCost": "Estimated Shipping Cost",
+      "recalculate": "Recalculate Estimation",
+      "enterWeightForEstimate": "Enter weight to see estimate",
+      "enterVolumeForEstimate": "Enter volume (CBM) to see estimate"
+    },
+    "navigation": {
+      "previous": "Previous",
+      "saveDraft": "Save Draft",
+      "next": "Next",
+      "createShipment": "Create Shipment",
+      "createOrder": "Create Order",
+      "creatingShipment": "Creating Shipment...",
+      "creatingOrder": "Creating Order..."
+    },
+    "errors": {
+      "recipientRequired": "Please provide recipient name, email, and phone number.",
+      "pickupRepRequired": "Please provide the pickup representative's name.",
+      "failedToCreate": "Failed to create shipment order."
+    },
+    "confirmation": {
+      "shipmentCreated": "Shipment created",
+      "orderCreated": "Client order created",
+      "shipmentSaved": "Your shipment has been saved successfully.",
+      "orderSaved": "The client order has been saved successfully.",
+      "trackingNumber": "Tracking Number: {{number}}",
+      "customerNote": "Your pre-order has been submitted. Pricing will be confirmed once the warehouse verifies your package.",
+      "operatorNote": "The client order has been submitted. Pricing will be confirmed after warehouse verification.",
+      "shareDetails": "Share Details",
+      "copy": "Copy",
+      "copied": "Copied!",
+      "shareViaEmail": "Share via Email",
+      "shareViaWhatsApp": "Share via WhatsApp",
+      "shareViaKakaoTalk": "Share via KakaoTalk",
+      "done": "Done"
+    }
+  }
+}

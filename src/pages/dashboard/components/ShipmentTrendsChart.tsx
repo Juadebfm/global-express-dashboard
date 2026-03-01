@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import type { ShipmentTrendsChart as ShipmentTrendsChartType } from '@/types';
+import i18n from '@/i18n/i18n';
 
 interface ShipmentTrendsChartProps {
   chart: ShipmentTrendsChartType;
@@ -91,7 +92,7 @@ export function ShipmentTrendsChart({
                 fontSize="10"
                 fill="#9CA3AF"
               >
-                {Math.round(tick.value).toLocaleString('en-US')}
+                {Math.round(tick.value).toLocaleString(i18n.language === 'ko' ? 'ko-KR' : 'en-US')}
               </text>
             </g>
           ))}

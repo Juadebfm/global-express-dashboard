@@ -1,11 +1,14 @@
 import type { ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronDown, Globe, LogOut, Menu, Moon, Search, Sun } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Menu, Moon, Search, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { DashboardUser } from '@/types';
-import { useAuth, useNotificationCount, useInternalNotificationCount, useSearch, useTheme } from '@/hooks';
+import type { Language } from '@/store/language/language.types';
+import { useAuth, useLanguage, useNotificationCount, useInternalNotificationCount, useSearch, useTheme } from '@/hooks';
 import { ROUTES } from '@/constants';
+import { FlagIcon } from '@/components/ui';
 
 interface TopbarProps {
   searchPlaceholder: string;
@@ -13,13 +16,20 @@ interface TopbarProps {
   onOpenMobile: () => void;
 }
 
+const LANGUAGE_OPTIONS: { code: Language; flagCode: 'us' | 'kr'; label: string }[] = [
+  { code: 'en', flagCode: 'us', label: 'English' },
+  { code: 'ko', flagCode: 'kr', label: '한국어' },
+];
+
 export function Topbar({
   searchPlaceholder,
   user,
   onOpenMobile,
 }: TopbarProps): ReactElement {
+  const { t } = useTranslation('nav');
   const { query, setQuery } = useSearch();
   const { mode, toggle } = useTheme();
+  const { language, setLanguage } = useLanguage();
   const isDark = mode === 'dark';
 
   const navigate = useNavigate();
@@ -35,33 +45,32 @@ export function Topbar({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (!isDropdownOpen) return;
+    if (!isDropdownOpen && !isLangOpen) return;
     const handleClick = (event: MouseEvent) => {
-      if (!dropdownRef.current?.contains(event.target as Node)) {
+      if (isDropdownOpen && !dropdownRef.current?.contains(event.target as Node)) {
         setIsDropdownOpen(false);
+      }
+      if (isLangOpen && !langRef.current?.contains(event.target as Node)) {
+        setIsLangOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [isDropdownOpen]);
-
-  const roleLabelMap: Record<string, string> = {
-    superadmin: 'Super Admin',
-    admin: 'Admin',
-    staff: 'Staff',
-    user: 'Customer',
-  };
+  }, [isDropdownOpen, isLangOpen]);
 
   const effectiveRole = authUser?.role ?? (isClerkSignedIn ? 'user' : null);
-  const roleLabel = effectiveRole ? (roleLabelMap[effectiveRole] ?? effectiveRole) : null;
+  const roleLabel = effectiveRole ? t(`common:roles.${effectiveRole}`, effectiveRole) : null;
 
   const memberSinceDate: Date | null = authUser?.createdAt
     ? new Date(authUser.createdAt)
     : (clerkUser?.createdAt ?? null);
 
   const memberSince = memberSinceDate
-    ? new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(memberSinceDate)
+    ? new Intl.DateTimeFormat(language === 'ko' ? 'ko-KR' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(memberSinceDate)
     : null;
 
   const handleLogout = async (): Promise<void> => {
@@ -83,7 +92,7 @@ export function Topbar({
             type="button"
             onClick={onOpenMobile}
             className="flex items-center justify-center rounded-lg border border-gray-200 p-2 text-gray-600 hover:bg-gray-50 lg:hidden"
-            aria-label="Open menu"
+            aria-label={t('topbar.openMenuAriaLabel')}
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -106,14 +115,14 @@ export function Topbar({
             type="button"
             onClick={toggle}
             className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gx-control-bg)] text-gray-600 transition hover:bg-[var(--gx-control-bg-hover)] hover:text-gray-800"
-            aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+            aria-label={isDark ? t('topbar.switchToLightTheme') : t('topbar.switchToDarkTheme')}
           >
             {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
           <button
             type="button"
             className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gx-control-bg)] text-gray-600 transition hover:bg-[var(--gx-control-bg-hover)] hover:text-gray-800"
-            aria-label="Notifications"
+            aria-label={t('topbar.notificationsAriaLabel')}
           >
             <Bell className="h-4 w-4" />
             {notificationsCount > 0 && (
@@ -122,13 +131,41 @@ export function Topbar({
               </span>
             )}
           </button>
-          <button
-            type="button"
-            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gx-control-bg)] text-gray-600 transition hover:bg-[var(--gx-control-bg-hover)] hover:text-gray-800"
-            aria-label="Language"
-          >
-            <Globe className="h-4 w-4" />
-          </button>
+
+          {/* Language dropdown */}
+          <div ref={langRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setIsLangOpen((prev) => !prev)}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gx-control-bg)] text-gray-600 transition hover:bg-[var(--gx-control-bg-hover)] hover:text-gray-800"
+              aria-label={t('topbar.languageAriaLabel')}
+              aria-expanded={isLangOpen}
+              aria-haspopup="true"
+            >
+              <FlagIcon code={LANGUAGE_OPTIONS.find((opt) => opt.code === language)?.flagCode ?? 'us'} size="md" />
+            </button>
+
+            {isLangOpen && (
+              <div className="absolute right-0 top-full mt-2 w-40 rounded-xl border border-gray-200 bg-white shadow-xl z-50 py-1">
+                {LANGUAGE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.code}
+                    type="button"
+                    onClick={() => {
+                      setLanguage(opt.code);
+                      setIsLangOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-sm transition hover:bg-gray-50 ${
+                      language === opt.code ? 'font-semibold text-brand-600 bg-brand-50' : 'text-gray-700'
+                    }`}
+                  >
+                    <FlagIcon code={opt.flagCode} size="sm" />
+                    <span>{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Avatar dropdown */}
           <div ref={dropdownRef} className="relative">
@@ -136,7 +173,7 @@ export function Topbar({
               type="button"
               onClick={() => setIsDropdownOpen((prev) => !prev)}
               className="flex items-center gap-1.5 rounded-xl p-1 transition hover:bg-gray-100"
-              aria-label="Account menu"
+              aria-label={t('topbar.accountMenuAriaLabel')}
               aria-expanded={isDropdownOpen}
               aria-haspopup="true"
             >
@@ -175,7 +212,7 @@ export function Topbar({
                 <div className="space-y-3 p-4">
                   {roleLabel && (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">Role</span>
+                      <span className="text-xs text-gray-500">{t('topbar.roleLabel')}</span>
                       <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
                         {roleLabel}
                       </span>
@@ -183,7 +220,7 @@ export function Topbar({
                   )}
                   {memberSince && (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">Member since</span>
+                      <span className="text-xs text-gray-500">{t('topbar.memberSince')}</span>
                       <span className="text-xs font-medium text-gray-700">{memberSince}</span>
                     </div>
                   )}
@@ -197,7 +234,7 @@ export function Topbar({
                     className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-500 transition hover:bg-red-50 hover:text-red-600"
                   >
                     <LogOut className="h-4 w-4" />
-                    Sign out
+                    {t('topbar.signOut')}
                   </button>
                 </div>
               </div>

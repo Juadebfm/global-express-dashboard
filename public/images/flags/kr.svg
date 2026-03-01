@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40">
+  <!-- White background -->
+  <rect width="60" height="40" fill="#fff"/>
+  <!-- Trigrams (simplified bars) -->
+  <g transform="translate(30,20) rotate(-56.31)">
+    <!-- Top-left: geon (3 solid bars) -->
+    <rect x="-4" y="-19" width="8" height="1.5" fill="#000"/>
+    <rect x="-4" y="-16.5" width="8" height="1.5" fill="#000"/>
+    <rect x="-4" y="-14" width="8" height="1.5" fill="#000"/>
+    <!-- Bottom-right: gon (3 broken bars) -->
+    <rect x="-4" y="14" width="3.5" height="1.5" fill="#000"/>
+    <rect x="0.5" y="14" width="3.5" height="1.5" fill="#000"/>
+    <rect x="-4" y="16.5" width="3.5" height="1.5" fill="#000"/>
+    <rect x="0.5" y="16.5" width="3.5" height="1.5" fill="#000"/>
+    <rect x="-4" y="19" width="3.5" height="1.5" fill="#000"/>
+    <rect x="0.5" y="19" width="3.5" height="1.5" fill="#000"/>
+  </g>
+  <g transform="translate(30,20) rotate(56.31)">
+    <!-- Top-right: gam (broken-solid-broken) -->
+    <rect x="-4" y="-19" width="3.5" height="1.5" fill="#000"/>
+    <rect x="0.5" y="-19" width="3.5" height="1.5" fill="#000"/>
+    <rect x="-4" y="-16.5" width="8" height="1.5" fill="#000"/>
+    <rect x="-4" y="-14" width="3.5" height="1.5" fill="#000"/>
+    <rect x="0.5" y="-14" width="3.5" height="1.5" fill="#000"/>
+    <!-- Bottom-left: ri (solid-broken-solid) -->
+    <rect x="-4" y="14" width="8" height="1.5" fill="#000"/>
+    <rect x="-4" y="16.5" width="3.5" height="1.5" fill="#000"/>
+    <rect x="0.5" y="16.5" width="3.5" height="1.5" fill="#000"/>
+    <rect x="-4" y="19" width="8" height="1.5" fill="#000"/>
+  </g>
+  <!-- Taeguk (yin-yang) -->
+  <circle cx="30" cy="20" r="10" fill="#C60C30"/>
+  <path d="M40,20 A5,5,0,0,1,30,20 A5,5,0,0,0,20,20 A10,10,0,0,0,40,20Z" fill="#003478"/>
+</svg>

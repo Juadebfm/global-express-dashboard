@@ -5,6 +5,7 @@ import type {
   ShipmentOverviewCard,
   StatusCategory,
 } from '@/types';
+import i18n from '@/i18n/i18n';
 
 interface ShipmentsSummaryProps {
   overview: ShipmentOverviewCard;
@@ -24,18 +25,21 @@ const metricIcons: Record<ShipmentMetricCard['icon'], ReactElement> = {
   items: <Layers className="h-4 w-4" />,
 };
 
-const numberFormat = new Intl.NumberFormat('en-US');
+function getLocale(): string {
+  return i18n.language === 'ko' ? 'ko-KR' : 'en-US';
+}
 
 const formatValue = (metric: ShipmentMetricCard): string => {
+  const locale = getLocale();
   if (metric.unit === 'USD') {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'USD',
       maximumFractionDigits: 0,
     }).format(metric.value);
   }
 
-  return `${numberFormat.format(metric.value)} ${metric.unit}`;
+  return `${new Intl.NumberFormat(locale).format(metric.value)} ${metric.unit}`;
 };
 
 export function ShipmentsSummary({

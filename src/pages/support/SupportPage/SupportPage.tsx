@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { AlertBanner, Button } from '@/components/ui';
 import {
@@ -28,6 +29,7 @@ import {
 // ── List View ────────────────────────────────────────────────────
 
 function SupportListView(): ReactElement {
+  const { t } = useTranslation('support');
   const { user } = useAuth();
   const { query } = useSearch();
   const isStaff = !!user && user.role !== 'user';
@@ -65,8 +67,8 @@ function SupportListView(): ReactElement {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader
-          title="Support"
-          subtitle={isStaff ? 'Manage support tickets from customers.' : 'Get help with your shipments and account.'}
+          title={t('listView.pageTitle')}
+          subtitle={isStaff ? t('listView.subtitleStaff') : t('listView.subtitleCustomer')}
         />
         <Button
           type="button"
@@ -75,7 +77,7 @@ function SupportListView(): ReactElement {
           leftIcon={<Plus className="h-4 w-4" />}
           onClick={() => setModalOpen(true)}
         >
-          New Ticket
+          {t('listView.newTicketButton')}
         </Button>
       </div>
 
@@ -100,6 +102,7 @@ function SupportListView(): ReactElement {
 // ── Detail / Chat View ───────────────────────────────────────────
 
 function SupportDetailView({ ticketId }: { ticketId: string }): ReactElement {
+  const { t } = useTranslation('support');
   const { user } = useAuth();
   const navigate = useNavigate();
   const isStaff = !!user && user.role !== 'user';
@@ -126,7 +129,7 @@ function SupportDetailView({ ticketId }: { ticketId: string }): ReactElement {
   if (isLoading) {
     return (
       <div className="flex h-96 items-center justify-center text-sm text-gray-500">
-        Loading ticket...
+        {t('detailView.loadingText')}
       </div>
     );
   }
@@ -134,9 +137,9 @@ function SupportDetailView({ ticketId }: { ticketId: string }): ReactElement {
   if (error || !ticket) {
     return (
       <div className="space-y-4 p-4">
-        <AlertBanner tone="error" message={error ?? 'Ticket not found.'} />
+        <AlertBanner tone="error" message={error ?? t('detailView.ticketNotFound')} />
         <Button type="button" variant="secondary" size="sm" onClick={() => navigate(ROUTES.SUPPORT)}>
-          Back to Tickets
+          {t('detailView.backToTickets')}
         </Button>
       </div>
     );
@@ -175,11 +178,12 @@ function SupportDetailView({ ticketId }: { ticketId: string }): ReactElement {
 // ── Page Shell ───────────────────────────────────────────────────
 
 export function SupportPage(): ReactElement {
+  const { t } = useTranslation('support');
   const { ticketId } = useParams<{ ticketId?: string }>();
   const { data, isLoading, error } = useDashboardData();
 
   return (
-    <AppShell data={data} isLoading={isLoading} error={error} loadingLabel="Loading support...">
+    <AppShell data={data} isLoading={isLoading} error={error} loadingLabel={t('loadingLabel')}>
       {ticketId ? <SupportDetailView ticketId={ticketId} /> : <SupportListView />}
     </AppShell>
   );

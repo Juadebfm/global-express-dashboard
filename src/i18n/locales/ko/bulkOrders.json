@@ -1,0 +1,125 @@
+{
+  "loadingLabel": "대량 주문 로딩 중...",
+  "pageTitle": "대량 주문",
+  "subtitle": "대량 배송 주문을 관리합니다.",
+  "createButton": "대량 주문 생성",
+  "summary": {
+    "totalBulkOrders": "총 대량 주문",
+    "totalItems": "총 품목",
+    "acrossAllOrders": "전체 대량 주문 기준",
+    "activeOrders": "활성 주문",
+    "currentlyInPipeline": "현재 물류 처리 중"
+  },
+  "queue": {
+    "title": "대량 주문 대기열",
+    "descriptionWithCount": "{{count}}개 대량 주문이 있습니다.",
+    "descriptionEmpty": "대량 주문이 여기에 표시됩니다.",
+    "searchPlaceholder": "ID, 출발지, 도착지로 검색...",
+    "statusFilter": {
+      "all": "전체 상태",
+      "pending": "대기 중",
+      "active": "진행 중",
+      "completed": "완료",
+      "exception": "예외"
+    }
+  },
+  "table": {
+    "title": "주문 목록",
+    "columns": {
+      "orderId": "주문 ID",
+      "route": "경로",
+      "items": "품목",
+      "status": "상태",
+      "created": "생성일",
+      "actions": "작업"
+    },
+    "viewDetails": "상세 보기",
+    "deleteOrder": "주문 삭제",
+    "empty": "대량 주문이 없습니다.",
+    "emptyFiltered": "필터와 일치하는 대량 주문이 없습니다."
+  },
+  "detail": {
+    "backLabel": "대량 주문",
+    "sectionTitle": "대량 주문 상세",
+    "fields": {
+      "orderId": "주문 ID",
+      "route": "경로",
+      "status": "상태",
+      "items": "품목",
+      "created": "생성일",
+      "notes": "비고"
+    },
+    "markReceived": "수령 완료",
+    "deleteOrder": "주문 삭제",
+    "itemsTitle": "품목 ({{count}})",
+    "loadingItems": "품목 로딩 중...",
+    "noItems": "이 대량 주문의 품목이 없습니다.",
+    "itemsTable": {
+      "trackingNo": "운송장 번호",
+      "recipient": "수취인",
+      "description": "설명",
+      "weight": "무게",
+      "value": "가격",
+      "date": "날짜"
+    }
+  },
+  "createForm": {
+    "backLabel": "대량 주문",
+    "title": "대량 주문 생성",
+    "subtitle": "하나의 배치로 여러 품목을 추가하세요.",
+    "orderDetails": "주문 상세",
+    "shipmentType": "배송 유형",
+    "airFreight": "항공 화물",
+    "oceanFreight": "해상 화물",
+    "originLabel": "출발지",
+    "originValue": "한국",
+    "destinationLabel": "도착지",
+    "destinationValue": "나이지리아 라고스",
+    "notesLabel": "비고 (선택사항)",
+    "notesPlaceholder": "이 배치에 대한 내부 메모...",
+    "items": {
+      "sectionTitle": "품목 ({{count}})",
+      "sectionSubtitle": "이 대량 배송의 수취인을 추가하세요",
+      "addItemButton": "품목 추가",
+      "itemLabel": "품목 {{number}}",
+      "removeAriaLabel": "품목 제거",
+      "customerLabel": "고객",
+      "customerPlaceholder": "고객을 선택하거나 검색...",
+      "noCustomersFound": "고객을 찾을 수 없습니다",
+      "recipientNameLabel": "수취인 이름 *",
+      "recipientNamePlaceholder": "이름 전체",
+      "addressLabel": "주소",
+      "addressPlaceholder": "수취인 주소",
+      "phoneLabel": "전화",
+      "phonePlaceholder": "+234...",
+      "emailLabel": "이메일",
+      "emailPlaceholder": "email@example.com",
+      "usePickupRepLabel": "다른 사람이 이 품목을 수령합니다",
+      "repNameLabel": "대리인 이름 *",
+      "repNamePlaceholder": "대리인 이름 전체",
+      "repPhoneLabel": "대리인 전화번호",
+      "repPhonePlaceholder": "+234...",
+      "descriptionLabel": "설명",
+      "descriptionPlaceholder": "예: 전자기기",
+      "weightLabel": "무게 (kg)",
+      "declaredValueLabel": "신고 가격 ($)",
+      "emptyMessage": "아직 품목이 없습니다. \"품목 추가\"를 클릭하여 시작하세요."
+    },
+    "cancelButton": "취소",
+    "submitButton": "대량 주문 생성",
+    "submittingButton": "생성 중..."
+  },
+  "deleteModal": {
+    "title": "대량 주문 삭제",
+    "message": "이 대량 주문이 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+    "confirmLabel": "주문 삭제",
+    "cancelLabel": "취소"
+  },
+  "messages": {
+    "deleted": "대량 주문이 삭제되었습니다.",
+    "statusUpdated": "상태가 업데이트되었습니다.",
+    "failedToDelete": "대량 주문 삭제에 실패했습니다.",
+    "failedToLoadDetail": "대량 주문 상세 로딩에 실패했습니다.",
+    "failedToUpdateStatus": "상태 업데이트에 실패했습니다."
+  }
+}

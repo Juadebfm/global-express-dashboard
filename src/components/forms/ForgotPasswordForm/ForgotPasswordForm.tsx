@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { Button, Input, Card, OtpInput } from '@/components/ui';
 import { ROUTES } from '@/constants';
@@ -32,6 +33,7 @@ export function ForgotPasswordForm({
   isLoading = false,
   error,
 }: ForgotPasswordFormProps): ReactElement {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
@@ -83,9 +85,9 @@ export function ForgotPasswordForm({
         </div>
 
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Forgot password?</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('forgotPasswordForm.title')}</h2>
           <p className="text-sm text-gray-500 mt-1">
-            No worries! Enter your email and we'll send you a code.
+            {t('forgotPasswordForm.subtitle')}
           </p>
         </div>
 
@@ -97,9 +99,9 @@ export function ForgotPasswordForm({
 
         <form onSubmit={emailForm.handleSubmit(handleEmailSubmit)} className="space-y-5">
           <Input
-            label="Email"
+            label={t('forgotPasswordForm.emailLabel')}
             type="email"
-            placeholder="Enter your email"
+            placeholder={t('forgotPasswordForm.emailPlaceholder')}
             error={emailForm.formState.errors.email?.message}
             {...emailForm.register('email')}
           />
@@ -110,7 +112,7 @@ export function ForgotPasswordForm({
             size="lg"
             isLoading={isLoading}
           >
-            Continue
+            {t('forgotPasswordForm.continueButton')}
           </Button>
         </form>
 
@@ -119,7 +121,7 @@ export function ForgotPasswordForm({
           className="mt-6 flex items-center justify-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to login
+          {t('forgotPasswordForm.backToLogin')}
         </Link>
       </Card>
     );
@@ -134,9 +136,9 @@ export function ForgotPasswordForm({
         </div>
 
         <div className="mb-6 text-center">
-          <h2 className="text-xl font-semibold text-gray-900">Enter code</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('forgotPasswordForm.otpTitle')}</h2>
           <p className="text-sm text-gray-500 mt-1">
-            We've sent a 4-digit code to {email}
+            {t('forgotPasswordForm.otpSubtitle', { email })}
           </p>
         </div>
 
@@ -166,7 +168,7 @@ export function ForgotPasswordForm({
             size="lg"
             isLoading={isLoading}
           >
-            Continue
+            {t('forgotPasswordForm.continueButton')}
           </Button>
         </form>
 
@@ -176,7 +178,7 @@ export function ForgotPasswordForm({
           className="mt-6 w-full flex items-center justify-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t('forgotPasswordForm.back')}
         </button>
       </Card>
     );
@@ -191,9 +193,9 @@ export function ForgotPasswordForm({
         </div>
 
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Create new password</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('forgotPasswordForm.newPasswordTitle')}</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Your new password must be different from previously used passwords.
+            {t('forgotPasswordForm.newPasswordSubtitle')}
           </p>
         </div>
 
@@ -205,18 +207,18 @@ export function ForgotPasswordForm({
 
         <form onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)} className="space-y-5">
           <Input
-            label="Enter new password"
+            label={t('forgotPasswordForm.newPasswordLabel')}
             type="password"
-            placeholder="Enter your password"
+            placeholder={t('forgotPasswordForm.newPasswordPlaceholder')}
             showPasswordToggle
             error={passwordForm.formState.errors.password?.message}
             {...passwordForm.register('password')}
           />
 
           <Input
-            label="Re-enter password"
+            label={t('forgotPasswordForm.confirmPasswordLabel')}
             type="password"
-            placeholder="Confirm your password"
+            placeholder={t('forgotPasswordForm.confirmPasswordPlaceholder')}
             showPasswordToggle
             error={passwordForm.formState.errors.confirmPassword?.message}
             {...passwordForm.register('confirmPassword')}
@@ -228,7 +230,7 @@ export function ForgotPasswordForm({
             size="lg"
             isLoading={isLoading}
           >
-            Continue
+            {t('forgotPasswordForm.continueButton')}
           </Button>
         </form>
 
@@ -238,7 +240,7 @@ export function ForgotPasswordForm({
           className="mt-6 w-full flex items-center justify-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t('forgotPasswordForm.back')}
         </button>
       </Card>
     );
@@ -255,9 +257,9 @@ export function ForgotPasswordForm({
         <div className="w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center mb-4">
           <CheckCircle className="w-8 h-8 text-brand-500" />
         </div>
-        <h2 className="text-xl font-semibold text-brand-500 mb-2">Successfully changed</h2>
+        <h2 className="text-xl font-semibold text-brand-500 mb-2">{t('forgotPasswordForm.successTitle')}</h2>
         <p className="text-sm text-gray-500">
-          Your password has been reset successfully.
+          {t('forgotPasswordForm.successDesc')}
         </p>
       </div>
 
@@ -267,7 +269,7 @@ export function ForgotPasswordForm({
         size="lg"
         onClick={handleSuccessContinue}
       >
-        Continue
+        {t('forgotPasswordForm.continueButton')}
       </Button>
     </Card>
   );

@@ -1,5 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { DashboardUi, DashboardUser, SidebarItem } from '@/types';
 import { Sidebar } from './Sidebar';
@@ -17,49 +18,43 @@ interface AppLayoutProps {
 // ── Role-based nav definitions ────────────────────────────────────────────────
 
 const CUSTOMER_NAV: SidebarItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', href: ROUTES.DASHBOARD },
-  { id: 'shipments', label: 'Shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
-  { id: 'deliverySchedule', label: 'Delivery Schedule', icon: 'calendar', href: ROUTES.DELIVERY_SCHEDULE },
-  { id: 'payments', label: 'Payments', icon: 'wallet', href: ROUTES.PAYMENTS },
-  { id: 'notification', label: 'Notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
+  { id: 'dashboard', icon: 'dashboard', href: ROUTES.DASHBOARD },
+  { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
+  { id: 'deliverySchedule', icon: 'calendar', href: ROUTES.DELIVERY_SCHEDULE },
+  { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
+  { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
 ];
 
 const OPERATOR_NAV: SidebarItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
-  { id: 'shipments', label: 'Shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
-  { id: 'orders', label: 'Orders', icon: 'clipboard', href: ROUTES.ORDERS },
-  { id: 'bulkOrders', label: 'Bulk Orders', icon: 'package', href: ROUTES.BULK_ORDERS },
-  { id: 'clients', label: 'Clients', icon: 'users', href: ROUTES.CLIENTS },
-  { id: 'payments', label: 'Payments', icon: 'wallet', href: ROUTES.PAYMENTS },
-  { id: 'notification', label: 'Notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
+  { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
+  { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
+  { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
+  { id: 'bulkOrders', icon: 'package', href: ROUTES.BULK_ORDERS },
+  { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
+  { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
+  { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
 ];
 
 const ADMIN_EXTRA_NAV: SidebarItem[] = [
-  { id: 'team', label: 'Team', icon: 'team', href: ROUTES.TEAM },
-  { id: 'reports', label: 'Reports', icon: 'chart', href: ROUTES.REPORTS },
+  { id: 'team', icon: 'team', href: ROUTES.TEAM },
+  { id: 'reports', icon: 'chart', href: ROUTES.REPORTS },
 ];
 
 const FOOTER_NAV: SidebarItem[] = [
-  { id: 'settings', label: 'Settings', icon: 'settings', href: ROUTES.SETTINGS },
-  { id: 'support', label: 'Support', icon: 'help', href: ROUTES.SUPPORT },
+  { id: 'settings', icon: 'settings', href: ROUTES.SETTINGS },
+  { id: 'support', icon: 'help', href: ROUTES.SUPPORT },
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement {
+  const { t } = useTranslation('nav');
   const { user: authUser } = useAuth();
   const { isSignedIn: isClerkSignedIn } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
   useWebSocket();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-
-  const roleLabelMap: Record<string, string> = {
-    superadmin: 'Super Admin',
-    admin: 'Admin',
-    staff: 'Staff',
-    user: 'User',
-  };
 
   const effectiveRole = authUser?.role ?? (isClerkSignedIn ? 'user' : null);
   const isCustomer = effectiveRole === 'user';
@@ -71,13 +66,24 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
       ? [...OPERATOR_NAV, ...ADMIN_EXTRA_NAV]
       : OPERATOR_NAV;
 
+  const roleLabel = effectiveRole && !isCustomer
+    ? t(`common:roles.${effectiveRole}`, effectiveRole)
+    : null;
+
   const effectiveUser: DashboardUser = (() => {
     if (authUser) {
+      const translatedRole = t(`common:roles.${authUser.role}`, 'User');
+      const englishRole = t(`common:roles.${authUser.role}`, { lng: 'en' }) as string;
+      const rawName =
+        authUser.firstName && authUser.lastName
+          ? `${authUser.firstName} ${authUser.lastName}`
+          : null;
+      const displayName =
+        rawName && rawName.toLowerCase() !== englishRole.toLowerCase()
+          ? rawName
+          : translatedRole;
       return {
-        displayName:
-          authUser.firstName && authUser.lastName
-            ? `${authUser.firstName} ${authUser.lastName}`
-            : roleLabelMap[authUser.role] ?? 'User',
+        displayName,
         email: authUser.email,
         avatarUrl: '/images/favicon.svg',
       };
@@ -102,7 +108,7 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
         items={navItems}
         footerItems={FOOTER_NAV}
         user={effectiveUser}
-        roleLabel={effectiveRole && !isCustomer ? roleLabelMap[effectiveRole] ?? null : null}
+        roleLabel={roleLabel}
         isCollapsed={isSidebarCollapsed}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}

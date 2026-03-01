@@ -1,0 +1,18 @@
+{
+  "loadingLabel": "배송 일정 로딩 중...",
+  "title": "배송 일정",
+  "subtitle": "배송 데이터를 기반으로 한 실시간 예정 배송 정보입니다.",
+  "upcomingDeliveries": "예정된 배송",
+  "deliveryCount_one": "{{count}}건 배송",
+  "deliveryCount_other": "{{count}}건 배송",
+  "matchSearch": " 검색 결과 일치",
+  "scheduled": " 예정됨",
+  "noMatchSearch": "검색과 일치하는 배송 일정이 없습니다.",
+  "noUpcoming": "아직 예정된 배송이 없습니다.",
+  "routeLabel": "{{origin}} → {{destination}}",
+  "customerLabel": "고객: {{customer}}",
+  "packagesLabel": "패키지: {{count}}",
+  "departureLabel": "출발: {{date}}",
+  "etaLabel": "도착 예정: {{date}}",
+  "tbd": "미정"
+}

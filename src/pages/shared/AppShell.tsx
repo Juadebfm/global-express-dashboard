@@ -1,5 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { WifiOff, RefreshCw } from 'lucide-react';
 import type { DashboardData } from '@/types';
 import { AppLayout } from '@/components/layout';
@@ -22,6 +23,7 @@ export function AppShell({
   loadingLabel = 'Loading...',
   children,
 }: AppShellProps): ReactElement {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
@@ -39,9 +41,9 @@ export function AppShell({
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900">Something went wrong</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('appShell.errorTitle')}</h1>
           <p className="mt-3 text-sm text-gray-500">
-            {error ?? 'We couldn\'t load this page. The service may be temporarily unavailable.'}
+            {error ?? t('appShell.errorDefault')}
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -51,14 +53,14 @@ export function AppShell({
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-brand-600"
             >
               <RefreshCw className="h-4 w-4" />
-              Try Again
+              {t('appShell.tryAgain')}
             </button>
             <button
               type="button"
               onClick={() => navigate(isAuthenticated ? ROUTES.DASHBOARD : ROUTES.HOME, { replace: true })}
               className="rounded-xl border border-gray-200 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
             >
-              {isAuthenticated ? 'Back to Dashboard' : 'Go to Home'}
+              {isAuthenticated ? t('appShell.backToDashboard') : t('appShell.goToHome')}
             </button>
           </div>
         </div>

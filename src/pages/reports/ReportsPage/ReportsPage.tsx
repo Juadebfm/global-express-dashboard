@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   BarChart,
   Bar,
@@ -28,6 +29,7 @@ import { useAuth, useDashboardData } from '@/hooks';
 import { useReportSummary } from '@/hooks/useReports';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { cn } from '@/utils';
+import i18n from '@/i18n/i18n';
 import {
   getRevenueAnalytics,
   getShipmentVolume,
@@ -61,28 +63,35 @@ const PHASE_COLORS: Record<string, string> = {
   terminal: '#10b981',
 };
 
+function getLocale(): string {
+  return i18n.language === 'ko' ? 'ko-KR' : 'en-US';
+}
+
 function fmtPeriod(iso: unknown): string {
   if (typeof iso !== 'string') return String(iso ?? '');
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+  return d.toLocaleDateString(getLocale(), { month: 'short', year: '2-digit' });
 }
 
-function fmtUsd(val: string | number): string {
+function fmtUsd(val: string | number | null | undefined): string {
+  if (val == null) return '$0';
   const n = typeof val === 'string' ? parseFloat(val) : val;
   if (Number.isNaN(n)) return '$0';
-  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  return `$${n.toLocaleString(getLocale(), { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
-function fmtNum(val: string | number): string {
+function fmtNum(val: string | number | null | undefined): string {
+  if (val == null) return '0';
   const n = typeof val === 'string' ? parseFloat(val) : val;
   if (Number.isNaN(n)) return '0';
-  return n.toLocaleString('en-US', { maximumFractionDigits: 1 });
+  return n.toLocaleString(getLocale(), { maximumFractionDigits: 1 });
 }
 
 // ── Component ───────────────────────────────────────────────
 
 export function ReportsPage(): ReactElement {
+  const { t } = useTranslation('reports');
   const { data, isLoading, error } = useDashboardData();
   const { data: summary, isLoading: summaryLoading } = useReportSummary();
   const { user } = useAuth();
@@ -165,12 +174,12 @@ export function ReportsPage(): ReactElement {
       data={data}
       isLoading={isLoading || summaryLoading}
       error={error}
-      loadingLabel="Loading reports..."
+      loadingLabel={t('loading')}
     >
       <div className="space-y-6">
         {/* Header + date range */}
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <PageHeader title="Reports" subtitle="Business analytics and insights." />
+          <PageHeader title={t('pageTitle')} subtitle={t('subtitle')} />
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-gray-400" />
@@ -180,7 +189,7 @@ export function ReportsPage(): ReactElement {
                 onChange={(e) => setDateFrom(e.target.value)}
                 className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
               />
-              <span className="text-sm text-gray-400">to</span>
+              <span className="text-sm text-gray-400">{t('dateRange.to')}</span>
               <input
                 type="date"
                 value={dateTo}
@@ -195,24 +204,24 @@ export function ReportsPage(): ReactElement {
         {reportsLoading && (
           <div className="flex items-center gap-2 text-sm text-gray-400">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading report data…
+            {t('loading')}
           </div>
         )}
 
         {/* ── KPI Summary Cards ───────────────────────────── */}
         {summary && (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <KpiCard label="Total Orders" value={String(summary.totalOrders)} />
-            <KpiCard label="Total Users" value={String(summary.totalUsers)} />
+            <KpiCard label={t('kpis.totalOrders')} value={String(summary.totalOrders)} />
+            <KpiCard label={t('kpis.totalUsers')} value={String(summary.totalUsers)} />
             {isSuperAdmin && (
               <KpiCard
-                label="Total Revenue"
-                value={`${summary.currency === 'NGN' ? '₦' : summary.currency} ${nairaFormatter.format(parseFloat(summary.totalRevenue) || 0)}`}
+                label={t('kpis.totalRevenue')}
+                value={`${summary.currency === 'NGN' ? '₦' : summary.currency ?? '₦'} ${nairaFormatter.format(parseFloat(summary.totalRevenue || '0') || 0)}`}
               />
             )}
-            {revenue?.comparison && isSuperAdmin && (
+            {revenue?.comparison?.revenueChange && isSuperAdmin && (
               <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                <p className="text-sm text-gray-500">Revenue Change</p>
+                <p className="text-sm text-gray-500">{t('kpis.revenueChange')}</p>
                 <div className="mt-2 flex items-center gap-2">
                   {revenue.comparison.revenueChange.direction === 'up' ? (
                     <ArrowUp className="h-5 w-5 text-emerald-500" />
@@ -230,7 +239,7 @@ export function ReportsPage(): ReactElement {
                     {revenue.comparison.revenueChange.value}%
                   </p>
                 </div>
-                <p className="mt-1 text-xs text-gray-400">vs previous period</p>
+                <p className="mt-1 text-xs text-gray-400">{t('kpis.vsPreviousPeriod')}</p>
               </div>
             )}
           </div>
@@ -241,12 +250,12 @@ export function ReportsPage(): ReactElement {
           <div className="rounded-2xl border border-gray-200 bg-white p-6">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-brand-500" />
-              <h3 className="text-sm font-semibold text-gray-900">Revenue Analytics</h3>
+              <h3 className="text-sm font-semibold text-gray-900">{t('revenueAnalytics.title')}</h3>
             </div>
             <div className="mt-2 flex gap-6 text-sm text-gray-500">
-              <span>Total: {fmtUsd(revenue.totals.totalRevenue)}</span>
-              <span>Payments: {revenue.totals.totalPayments}</span>
-              <span>Avg Order: {fmtUsd(revenue.totals.avgOrderValue)}</span>
+              <span>{t('revenueAnalytics.total', { value: fmtUsd(revenue.totals.totalRevenue) })}</span>
+              <span>{t('revenueAnalytics.payments', { value: revenue.totals.totalPayments })}</span>
+              <span>{t('revenueAnalytics.avgOrder', { value: fmtUsd(revenue.totals.avgOrderValue) })}</span>
             </div>
             <div className="mt-4 h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -255,7 +264,7 @@ export function ReportsPage(): ReactElement {
                   <XAxis dataKey="period" tickFormatter={fmtPeriod} tick={{ fontSize: 12 }} />
                   <YAxis tickFormatter={(v) => fmtUsd(v)} tick={{ fontSize: 12 }} />
                   <Tooltip
-                    formatter={(v) => [fmtUsd(v as number), 'Revenue']}
+                    formatter={(v) => [fmtUsd(v as number), t('airVsSea.revenue')]}
                     labelFormatter={fmtPeriod}
                   />
                   <Bar dataKey="revenue" fill={BRAND} radius={[4, 4, 0, 0]} />
@@ -268,11 +277,11 @@ export function ReportsPage(): ReactElement {
         {/* ── Shipment Volume (admin+) ────────────────────── */}
         {isAdminPlus && shipmentVol && shipmentVol.periods.length > 0 && (
           <div className="rounded-2xl border border-gray-200 bg-white p-6">
-            <h3 className="text-sm font-semibold text-gray-900">Shipment Volume</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{t('shipmentVolume.title')}</h3>
             <div className="mt-2 flex gap-6 text-sm text-gray-500">
-              <span>Total: {shipmentVol.totals.totalShipments}</span>
-              <span className="flex items-center gap-1"><Plane className="h-3 w-3" /> Air: {shipmentVol.totals.airShipments}</span>
-              <span className="flex items-center gap-1"><Ship className="h-3 w-3" /> Sea: {shipmentVol.totals.seaShipments}</span>
+              <span>{t('shipmentVolume.total', { value: shipmentVol.totals.totalShipments })}</span>
+              <span className="flex items-center gap-1"><Plane className="h-3 w-3" /> {t('shipmentVolume.air', { value: shipmentVol.totals.airShipments })}</span>
+              <span className="flex items-center gap-1"><Ship className="h-3 w-3" /> {t('shipmentVolume.sea', { value: shipmentVol.totals.seaShipments })}</span>
             </div>
             <div className="mt-4 h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -282,8 +291,8 @@ export function ReportsPage(): ReactElement {
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip labelFormatter={fmtPeriod} />
                   <Legend />
-                  <Bar dataKey="air" stackId="a" fill={BRAND} name="Air" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="sea" stackId="a" fill={SEA_COLOR} name="Sea" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="air" stackId="a" fill={BRAND} name={t('shipmentVolume.barLabelAir')} radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="sea" stackId="a" fill={SEA_COLOR} name={t('shipmentVolume.barLabelSea')} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -296,9 +305,9 @@ export function ReportsPage(): ReactElement {
             {/* Status Pipeline */}
             {pipeline && pipeline.pipeline.length > 0 && (
               <div className="rounded-2xl border border-gray-200 bg-white p-6">
-                <h3 className="text-sm font-semibold text-gray-900">Status Pipeline</h3>
+                <h3 className="text-sm font-semibold text-gray-900">{t('statusPipeline.title')}</h3>
                 <p className="mt-1 text-xs text-gray-400">
-                  {pipeline.totalActive} active / {pipeline.totalAll} total
+                  {t('statusPipeline.summary', { active: pipeline.totalActive, total: pipeline.totalAll })}
                 </p>
                 <div className="mt-4 space-y-2">
                   {pipeline.pipeline.map((entry) => (
@@ -329,7 +338,7 @@ export function ReportsPage(): ReactElement {
             {/* Air vs Sea Comparison */}
             {shipComp && shipComp.comparison.length > 0 && (
               <div className="rounded-2xl border border-gray-200 bg-white p-6">
-                <h3 className="text-sm font-semibold text-gray-900">Air vs Sea Comparison</h3>
+                <h3 className="text-sm font-semibold text-gray-900">{t('airVsSea.title')}</h3>
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   {shipComp.comparison.map((mode) => (
                     <div
@@ -351,24 +360,24 @@ export function ReportsPage(): ReactElement {
                       </div>
                       <div className="mt-3 space-y-1 text-xs text-gray-600">
                         <div className="flex justify-between">
-                          <span>Orders</span>
+                          <span>{t('airVsSea.orders')}</span>
                           <span className="font-semibold text-gray-900">{mode.orderCount}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Total Weight</span>
+                          <span>{t('airVsSea.totalWeight')}</span>
                           <span className="font-semibold text-gray-900">{fmtNum(mode.totalWeight)} kg</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Completion</span>
+                          <span>{t('airVsSea.completion')}</span>
                           <span className="font-semibold text-gray-900">{parseFloat(mode.completionRate).toFixed(1)}%</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Avg Delivery</span>
-                          <span className="font-semibold text-gray-900">{fmtNum(mode.avgDeliveryDays)} days</span>
+                          <span>{t('airVsSea.avgDelivery')}</span>
+                          <span className="font-semibold text-gray-900">{t('airVsSea.avgDeliveryValue', { value: fmtNum(mode.avgDeliveryDays) })}</span>
                         </div>
                         {isSuperAdmin && mode.totalRevenue && (
                           <div className="flex justify-between border-t border-gray-200 pt-1">
-                            <span>Revenue</span>
+                            <span>{t('airVsSea.revenue')}</span>
                             <span className="font-semibold text-gray-900">{fmtUsd(mode.totalRevenue)}</span>
                           </div>
                         )}
@@ -387,16 +396,16 @@ export function ReportsPage(): ReactElement {
             {/* Top Customers */}
             {topCust && topCust.length > 0 && (
               <div className="rounded-2xl border border-gray-200 bg-white p-6">
-                <h3 className="text-sm font-semibold text-gray-900">Top Customers</h3>
+                <h3 className="text-sm font-semibold text-gray-900">{t('topCustomers.title')}</h3>
                 <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-gray-50 text-[10px] font-semibold uppercase text-gray-500">
                       <tr>
-                        <th className="px-3 py-2">#</th>
-                        <th className="px-3 py-2">Customer</th>
-                        <th className="px-3 py-2 text-right">Orders</th>
-                        <th className="px-3 py-2 text-right">Weight</th>
-                        {isSuperAdmin && <th className="px-3 py-2 text-right">Revenue</th>}
+                        <th className="px-3 py-2">{t('topCustomers.columns.rank')}</th>
+                        <th className="px-3 py-2">{t('topCustomers.columns.customer')}</th>
+                        <th className="px-3 py-2 text-right">{t('topCustomers.columns.orders')}</th>
+                        <th className="px-3 py-2 text-right">{t('topCustomers.columns.weight')}</th>
+                        {isSuperAdmin && <th className="px-3 py-2 text-right">{t('topCustomers.columns.revenue')}</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -425,7 +434,7 @@ export function ReportsPage(): ReactElement {
             {/* Delivery Performance */}
             {deliveryPerf && (
               <div className="rounded-2xl border border-gray-200 bg-white p-6">
-                <h3 className="text-sm font-semibold text-gray-900">Delivery Performance</h3>
+                <h3 className="text-sm font-semibold text-gray-900">{t('deliveryPerformance.title')}</h3>
 
                 {/* KPI cards */}
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -433,19 +442,19 @@ export function ReportsPage(): ReactElement {
                     <p className="text-xl font-semibold text-gray-900">
                       {fmtNum(deliveryPerf.overall.avgDaysToDeliver)}
                     </p>
-                    <p className="text-[10px] uppercase text-gray-500">Avg Days</p>
+                    <p className="text-[10px] uppercase text-gray-500">{t('deliveryPerformance.avgDays')}</p>
                   </div>
                   <div className="rounded-xl bg-gray-50 p-3 text-center">
                     <p className="text-xl font-semibold text-gray-900">
                       {fmtNum(deliveryPerf.overall.medianDaysToDeliver)}
                     </p>
-                    <p className="text-[10px] uppercase text-gray-500">Median Days</p>
+                    <p className="text-[10px] uppercase text-gray-500">{t('deliveryPerformance.medianDays')}</p>
                   </div>
                   <div className="rounded-xl bg-gray-50 p-3 text-center">
                     <p className="text-xl font-semibold text-gray-900">
                       {deliveryPerf.overall.totalDelivered}
                     </p>
-                    <p className="text-[10px] uppercase text-gray-500">Delivered</p>
+                    <p className="text-[10px] uppercase text-gray-500">{t('deliveryPerformance.delivered')}</p>
                   </div>
                 </div>
 
@@ -465,10 +474,10 @@ export function ReportsPage(): ReactElement {
                         <span className="capitalize font-medium text-gray-700">{m.transportMode}</span>
                       </div>
                       <div className="flex gap-4 text-gray-600">
-                        <span>Avg {fmtNum(m.avgDaysToDeliver)}d</span>
-                        <span>Min {fmtNum(m.minDays)}d</span>
-                        <span>Max {fmtNum(m.maxDays)}d</span>
-                        <span className="font-semibold text-gray-900">{m.totalDelivered} done</span>
+                        <span>{t('deliveryPerformance.avgValue', { value: fmtNum(m.avgDaysToDeliver) })}</span>
+                        <span>{t('deliveryPerformance.minValue', { value: fmtNum(m.minDays) })}</span>
+                        <span>{t('deliveryPerformance.maxValue', { value: fmtNum(m.maxDays) })}</span>
+                        <span className="font-semibold text-gray-900">{t('deliveryPerformance.doneCount', { count: m.totalDelivered })}</span>
                       </div>
                     </div>
                   ))}
@@ -489,7 +498,7 @@ export function ReportsPage(): ReactElement {
                           stroke={BRAND}
                           strokeWidth={2}
                           dot={{ r: 3 }}
-                          name="Avg Days"
+                          name={t('deliveryPerformance.lineLabel')}
                         />
                       </LineChart>
                     </ResponsiveContainer>
@@ -503,13 +512,13 @@ export function ReportsPage(): ReactElement {
         {/* ── Payment Breakdown (superadmin) ──────────────── */}
         {isSuperAdmin && payBreakdown && (
           <div className="rounded-2xl border border-gray-200 bg-white p-6">
-            <h3 className="text-sm font-semibold text-gray-900">Payment Breakdown</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{t('paymentBreakdown.title')}</h3>
 
             <div className="mt-4 grid gap-6 lg:grid-cols-3">
               {/* Donut — by type */}
               {payBreakdown.byType.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold uppercase text-gray-500">By Type</p>
+                  <p className="text-xs font-semibold uppercase text-gray-500">{t('paymentBreakdown.byType')}</p>
                   <div className="mt-2 h-52">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -536,20 +545,20 @@ export function ReportsPage(): ReactElement {
                     </ResponsiveContainer>
                   </div>
                   <div className="mt-2 space-y-1">
-                    {payBreakdown.byType.map((t) => (
-                      <div key={t.paymentType} className="flex items-center justify-between text-xs">
-                        <span className="capitalize text-gray-600">{t.paymentType}</span>
+                    {payBreakdown.byType.map((pt) => (
+                      <div key={pt.paymentType} className="flex items-center justify-between text-xs">
+                        <span className="capitalize text-gray-600">{pt.paymentType}</span>
                         <span
                           className={cn(
                             'rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                            parseFloat(t.successRate) >= 90
+                            parseFloat(pt.successRate) >= 90
                               ? 'bg-emerald-50 text-emerald-700'
-                              : parseFloat(t.successRate) >= 70
+                              : parseFloat(pt.successRate) >= 70
                                 ? 'bg-amber-50 text-amber-700'
                                 : 'bg-red-50 text-red-700',
                           )}
                         >
-                          {parseFloat(t.successRate).toFixed(0)}% success
+                          {t('paymentBreakdown.successRate', { value: parseFloat(pt.successRate).toFixed(0) })}
                         </span>
                       </div>
                     ))}
@@ -560,13 +569,13 @@ export function ReportsPage(): ReactElement {
               {/* By status */}
               {payBreakdown.byStatus.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold uppercase text-gray-500">By Status</p>
+                  <p className="text-xs font-semibold uppercase text-gray-500">{t('paymentBreakdown.byStatus')}</p>
                   <div className="mt-2 space-y-2">
                     {payBreakdown.byStatus.map((s) => (
                       <div key={s.status} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-xs">
                         <span className="capitalize font-medium text-gray-700">{s.status}</span>
                         <div className="flex gap-3 text-gray-600">
-                          <span>{s.count} payments</span>
+                          <span>{t('paymentBreakdown.paymentCount', { count: s.count })}</span>
                           <span className="font-semibold text-gray-900">{fmtUsd(s.amount)}</span>
                         </div>
                       </div>
@@ -578,7 +587,7 @@ export function ReportsPage(): ReactElement {
               {/* Collection status */}
               {payBreakdown.collectionStatus.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold uppercase text-gray-500">Collection Status</p>
+                  <p className="text-xs font-semibold uppercase text-gray-500">{t('paymentBreakdown.collectionStatus')}</p>
                   <div className="mt-2 space-y-2">
                     {payBreakdown.collectionStatus.map((c) => (
                       <div key={c.status} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-xs">
@@ -586,7 +595,7 @@ export function ReportsPage(): ReactElement {
                           {c.status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (ch) => ch.toUpperCase())}
                         </span>
                         <div className="flex gap-3 text-gray-600">
-                          <span>{c.orderCount} orders</span>
+                          <span>{t('paymentBreakdown.orderCount', { count: c.orderCount })}</span>
                           <span className="font-semibold text-gray-900">{fmtUsd(c.totalCharge)}</span>
                         </div>
                       </div>

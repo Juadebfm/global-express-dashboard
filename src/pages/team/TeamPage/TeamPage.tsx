@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, Mail, Search, User, UserPlus, X } from 'lucide-react';
 import { useAuth, useDashboardData, useSearch, useTeam } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
@@ -62,6 +63,7 @@ const buildInitials = (name: string): string => {
 };
 
 export function TeamPage(): ReactElement {
+  const { t } = useTranslation('team');
   const { data, isLoading, error } = useDashboardData();
   const { query, setQuery } = useSearch();
   const { user } = useAuth();
@@ -194,7 +196,7 @@ export function TeamPage(): ReactElement {
 
   const handleSave = (): void => {
     if (!formState.fullName.trim() || !formState.email.trim()) {
-      setFormError('Name and email are required.');
+      setFormError(t('modals.formError'));
       return;
     }
 
@@ -256,11 +258,11 @@ export function TeamPage(): ReactElement {
   };
 
   return (
-    <AppShell data={data} isLoading={isLoading || teamLoading} error={error} loadingLabel="Loading team...">
+    <AppShell data={data} isLoading={isLoading || teamLoading} error={error} loadingLabel={t('loadingLabel')}>
       <div className="space-y-6">
         <PageHeader
-          title="Team"
-          subtitle="Here are your teams so far"
+          title={t('pageTitle')}
+          subtitle={t('subtitle')}
           actions={
             <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
               <div className="relative w-full sm:max-w-xs">
@@ -269,7 +271,7 @@ export function TeamPage(): ReactElement {
                   type="search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search"
+                  placeholder={t('searchPlaceholder')}
                   className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-800 outline-none transition focus:border-brand-500"
                 />
               </div>
@@ -280,7 +282,7 @@ export function TeamPage(): ReactElement {
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-600 shadow-sm transition hover:border-brand-500 hover:text-brand-700 whitespace-nowrap"
                 >
                   <UserPlus className="h-4 w-4" />
-                  Add team
+                  {t('addTeamButton')}
                 </button>
               )}
             </div>
@@ -289,18 +291,18 @@ export function TeamPage(): ReactElement {
 
         {!hasAccess ? (
           <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-10 text-center">
-            <p className="text-lg font-semibold text-gray-800">Access restricted</p>
+            <p className="text-lg font-semibold text-gray-800">{t('accessRestricted.title')}</p>
             <p className="mt-2 text-sm text-gray-500">
-              Team management is available to Admin and Super Admin accounts only.
+              {t('accessRestricted.message')}
             </p>
           </div>
         ) : (
           <div className="rounded-2xl border border-gray-200 bg-white p-6">
             <div className="flex flex-wrap items-center gap-6 border-b border-gray-100 pb-4">
               {([
-                { id: 'all', label: 'All team' },
-                { id: 'admin', label: 'Admin' },
-                { id: 'non-admin', label: 'Non Admin' },
+                { id: 'all', label: t('tabs.all') },
+                { id: 'admin', label: t('tabs.admin') },
+                { id: 'non-admin', label: t('tabs.nonAdmin') },
               ] as Array<{ id: TeamTab; label: string }>).map((tab) => (
                 <button
                   key={tab.id}
@@ -324,9 +326,9 @@ export function TeamPage(): ReactElement {
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-gray-500">
                   <User className="h-6 w-6" />
                 </div>
-                <p className="text-sm font-semibold text-gray-700">No Admin available to manage</p>
+                <p className="text-sm font-semibold text-gray-700">{t('emptyState.title')}</p>
                 <p className="mt-1 text-sm text-gray-500">
-                  Expand your business by create teams
+                  {t('emptyState.subtitle')}
                 </p>
                 <button
                   type="button"
@@ -334,7 +336,7 @@ export function TeamPage(): ReactElement {
                   className="mt-4 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-brand-600 shadow-sm"
                 >
                   <UserPlus className="h-4 w-4" />
-                  Add team
+                  {t('addTeamButton')}
                 </button>
               </div>
             ) : (
@@ -342,10 +344,10 @@ export function TeamPage(): ReactElement {
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <tr>
-                      <th className="px-6 py-4">Name</th>
-                      <th className="px-6 py-4">Email</th>
-                      <th className="px-6 py-4">Role</th>
-                      <th className="px-6 py-4">Permission</th>
+                      <th className="px-6 py-4">{t('table.columns.name')}</th>
+                      <th className="px-6 py-4">{t('table.columns.email')}</th>
+                      <th className="px-6 py-4">{t('table.columns.role')}</th>
+                      <th className="px-6 py-4">{t('table.columns.permission')}</th>
                       <th className="px-6 py-4"></th>
                     </tr>
                   </thead>
@@ -368,7 +370,7 @@ export function TeamPage(): ReactElement {
                                 <p className="font-semibold text-gray-800">{member.fullName}</p>
                                 {member.approvalStatus === 'pending' && (
                                   <span className="mt-1 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 whitespace-nowrap">
-                                    Pending approval
+                                    {t('table.pendingApproval')}
                                   </span>
                                 )}
                               </div>
@@ -390,7 +392,7 @@ export function TeamPage(): ReactElement {
                                   }}
                                   className="rounded-full bg-emerald-500 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-600"
                                 >
-                                  Approve
+                                  {t('table.approve')}
                                 </button>
                               )}
                               <button
@@ -407,12 +409,12 @@ export function TeamPage(): ReactElement {
                                     : 'cursor-not-allowed bg-gray-200 text-gray-400'
                                 )}
                               >
-                                Remove
+                                {t('table.remove')}
                               </button>
                             </div>
                             {!canEdit && (
                               <p className="mt-2 text-xs text-gray-400">
-                                Requires Super Admin
+                                {t('table.requiresSuperAdmin')}
                               </p>
                             )}
                           </td>
@@ -441,7 +443,7 @@ export function TeamPage(): ReactElement {
 
             {activeModal === 'profile' && selectedMember && (
               <div className="text-center">
-                <h2 className="text-xl font-semibold text-gray-800">View team profile</h2>
+                <h2 className="text-xl font-semibold text-gray-800">{t('modals.profile.title')}</h2>
                 <div className="mt-6 flex flex-col items-center gap-4">
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-50 text-2xl font-semibold text-brand-600">
                     {buildInitials(selectedMember.fullName)}
@@ -456,11 +458,11 @@ export function TeamPage(): ReactElement {
 
                 <div className="mt-6 space-y-3 text-sm text-gray-600">
                   <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                    <span className="font-medium">Teammate role</span>
+                    <span className="font-medium">{t('modals.profile.teammateRole')}</span>
                     <span>{roleLabels[selectedMember.role]}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">Permission</span>
+                    <span className="font-medium">{t('modals.profile.permission')}</span>
                     <span>{permissionSummary(selectedMember)}</span>
                   </div>
                 </div>
@@ -477,7 +479,7 @@ export function TeamPage(): ReactElement {
                         : 'cursor-not-allowed border-gray-200 text-gray-300'
                     )}
                   >
-                    Remove
+                    {t('modals.profile.removeButton')}
                   </button>
                   <button
                     type="button"
@@ -490,7 +492,7 @@ export function TeamPage(): ReactElement {
                         : 'cursor-not-allowed bg-gray-200 text-gray-400'
                     )}
                   >
-                    Edit
+                    {t('modals.profile.editButton')}
                   </button>
                   {canApproveMember(selectedMember) && (
                     <button
@@ -498,7 +500,7 @@ export function TeamPage(): ReactElement {
                       onClick={handleApprove}
                       className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600"
                     >
-                      Approve
+                      {t('modals.profile.approveButton')}
                     </button>
                   )}
                 </div>
@@ -508,7 +510,7 @@ export function TeamPage(): ReactElement {
             {(activeModal === 'invite' || activeModal === 'edit') && (
               <div>
                 <h2 className="text-center text-xl font-semibold text-gray-800">
-                  {activeModal === 'invite' ? 'Invite Team member' : 'Edit Team member'}
+                  {activeModal === 'invite' ? t('modals.invite.title') : t('modals.edit.title')}
                 </h2>
 
                 <div className="mt-6 space-y-4">
@@ -520,7 +522,7 @@ export function TeamPage(): ReactElement {
                       onChange={(event) =>
                         setFormState((prev) => ({ ...prev, fullName: event.target.value }))
                       }
-                      placeholder="Enter teammate name"
+                      placeholder={t('modals.invite.namePlaceholder')}
                       className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-500"
                     />
                   </div>
@@ -532,7 +534,7 @@ export function TeamPage(): ReactElement {
                       onChange={(event) =>
                         setFormState((prev) => ({ ...prev, email: event.target.value }))
                       }
-                      placeholder="Enter teammate email"
+                      placeholder={t('modals.invite.emailPlaceholder')}
                       className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-500"
                     />
                   </div>
@@ -553,10 +555,10 @@ export function TeamPage(): ReactElement {
                 </div>
 
                 <div className="mt-6">
-                  <h3 className="text-sm font-semibold text-gray-700">Permissions</h3>
+                  <h3 className="text-sm font-semibold text-gray-700">{t('modals.permissions.sectionTitle')}</h3>
                   <div className="mt-3 space-y-3 text-sm text-gray-600">
                     <div className="flex items-center justify-between">
-                      <span>Make as an Admin</span>
+                      <span>{t('modals.permissions.makeAdmin')}</span>
                       <button
                         type="button"
                         onClick={handleAdminToggle}
@@ -576,7 +578,7 @@ export function TeamPage(): ReactElement {
                       </button>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span>Can transfer funds and view</span>
+                      <span>{t('modals.permissions.canTransfer')}</span>
                       <button
                         type="button"
                         onClick={() => handlePermissionToggle('canTransfer')}
@@ -594,7 +596,7 @@ export function TeamPage(): ReactElement {
                       </button>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span>Can view only</span>
+                      <span>{t('modals.permissions.viewOnly')}</span>
                       <button
                         type="button"
                         onClick={() => handlePermissionToggle('viewOnly')}
@@ -613,7 +615,7 @@ export function TeamPage(): ReactElement {
                     </div>
                     {isAdmin && (
                       <p className="text-xs text-amber-600">
-                        Staff created by Admin require Super Admin approval.
+                        {t('modals.permissions.adminApprovalNote')}
                       </p>
                     )}
                   </div>
@@ -627,14 +629,14 @@ export function TeamPage(): ReactElement {
                     onClick={closeModal}
                     className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-200"
                   >
-                    Cancel
+                    {t('modals.cancelButton')}
                   </button>
                   <button
                     type="button"
                     onClick={handleSave}
                     className="flex-1 rounded-2xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600"
                   >
-                    Save
+                    {t('modals.saveButton')}
                   </button>
                 </div>
               </div>
@@ -642,10 +644,9 @@ export function TeamPage(): ReactElement {
 
             {activeModal === 'remove' && selectedMember && (
               <div className="text-center">
-                <h2 className="text-2xl font-semibold text-gray-800">Remove user account</h2>
+                <h2 className="text-2xl font-semibold text-gray-800">{t('modals.remove.title')}</h2>
                 <p className="mt-4 text-sm text-gray-500">
-                  Are you sure you want to remove {selectedMember.fullName}&rsquo;s account?
-                  They will lose their access to login back
+                  {t('modals.remove.message', { name: selectedMember.fullName })}
                 </p>
                 <div className="mt-6 flex items-center gap-4 rounded-2xl bg-gray-50 px-4 py-4 text-left">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-600">
@@ -671,14 +672,14 @@ export function TeamPage(): ReactElement {
                         : 'cursor-not-allowed bg-gray-200 text-gray-400'
                     )}
                   >
-                    Remove
+                    {t('modals.remove.removeButton')}
                   </button>
                   <button
                     type="button"
                     onClick={closeModal}
                     className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-200"
                   >
-                    Cancel
+                    {t('modals.remove.cancelButton')}
                   </button>
                 </div>
               </div>

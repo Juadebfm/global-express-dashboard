@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
   Truck,
@@ -54,6 +55,7 @@ export function Sidebar({
   onCloseMobile,
   onToggleCollapse,
 }: SidebarProps): ReactElement {
+  const { t } = useTranslation('nav');
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -78,6 +80,7 @@ export function Sidebar({
   const renderItem = (item: SidebarItem): ReactElement => {
     const active = isActive(item.href);
     const icon = iconMap[item.icon] ?? <LayoutDashboard className="h-5 w-5" />;
+    const label = t(`items.${item.id}`, item.id);
 
     return (
       <Link
@@ -93,7 +96,7 @@ export function Sidebar({
         )}
       >
         {icon}
-        {showLabels && <span>{item.label}</span>}
+        {showLabels && <span>{label}</span>}
       </Link>
     );
   };
@@ -132,7 +135,7 @@ export function Sidebar({
               'flex items-center gap-3 text-left',
               showLabels ? '' : 'justify-center w-full'
             )}
-            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={isCollapsed ? t('sidebar.expandAriaLabel') : t('sidebar.collapseAriaLabel')}
           >
             <img
               src={logoSrc}
@@ -142,7 +145,7 @@ export function Sidebar({
           </button>
           {showLabels && roleLabel && (
             <span className="mt-2 self-start text-[10px] font-semibold uppercase tracking-wider text-white/50">
-              {roleLabel} Panel
+              {t('rolePanel', { role: roleLabel })}
             </span>
           )}
         </div>
@@ -183,7 +186,7 @@ export function Sidebar({
                 'rounded-lg p-2 text-red-400 transition hover:text-red-300 hover:bg-white/10',
                 showLabels ? 'ml-auto' : 'self-center'
               )}
-              aria-label="Sign out"
+              aria-label={t('sidebar.signOutAriaLabel')}
             >
               <LogOut className="h-4 w-4" />
             </button>
@@ -200,9 +203,9 @@ export function Sidebar({
                 <LogOut className="h-5 w-5 text-red-500" />
               </div>
             </div>
-            <h3 className="text-center text-base font-semibold text-gray-900">Sign out</h3>
+            <h3 className="text-center text-base font-semibold text-gray-900">{t('signOutModal.title')}</h3>
             <p className="mt-2 text-center text-sm text-gray-500">
-              Are you sure you want to sign out of your account?
+              {t('signOutModal.message')}
             </p>
             <div className="mt-6 flex gap-3">
               <button
@@ -210,14 +213,14 @@ export function Sidebar({
                 onClick={() => setShowLogoutConfirm(false)}
                 className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
               >
-                Cancel
+                {t('signOutModal.cancel')}
               </button>
               <button
                 type="button"
                 onClick={handleLogout}
                 className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-medium text-white transition hover:bg-red-600"
               >
-                Sign out
+                {t('signOutModal.confirm')}
               </button>
             </div>
           </div>

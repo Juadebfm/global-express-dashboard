@@ -1,0 +1,39 @@
+{
+  "items": {
+    "dashboard": "Dashboard",
+    "shipments": "Shipments",
+    "deliverySchedule": "Delivery Schedule",
+    "payments": "Payments",
+    "notification": "Notification",
+    "orders": "Orders",
+    "bulkOrders": "Bulk Orders",
+    "clients": "Clients",
+    "team": "Team",
+    "reports": "Reports",
+    "settings": "Settings",
+    "support": "Support"
+  },
+  "rolePanel": "{{role}} Panel",
+  "sidebar": {
+    "expandAriaLabel": "Expand sidebar",
+    "collapseAriaLabel": "Collapse sidebar",
+    "signOutAriaLabel": "Sign out"
+  },
+  "signOutModal": {
+    "title": "Sign out",
+    "message": "Are you sure you want to sign out of your account?",
+    "cancel": "Cancel",
+    "confirm": "Sign out"
+  },
+  "topbar": {
+    "openMenuAriaLabel": "Open menu",
+    "switchToLightTheme": "Switch to light theme",
+    "switchToDarkTheme": "Switch to dark theme",
+    "notificationsAriaLabel": "Notifications",
+    "languageAriaLabel": "Language",
+    "accountMenuAriaLabel": "Account menu",
+    "roleLabel": "Role",
+    "memberSince": "Member since",
+    "signOut": "Sign out"
+  }
+}

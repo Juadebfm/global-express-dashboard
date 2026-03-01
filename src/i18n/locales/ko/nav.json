@@ -1,0 +1,39 @@
+{
+  "items": {
+    "dashboard": "대시보드",
+    "shipments": "배송",
+    "deliverySchedule": "배송 일정",
+    "payments": "결제",
+    "notification": "알림",
+    "orders": "주문",
+    "bulkOrders": "대량 주문",
+    "clients": "고객",
+    "team": "팀",
+    "reports": "보고서",
+    "settings": "설정",
+    "support": "지원"
+  },
+  "rolePanel": "{{role}} 패널",
+  "sidebar": {
+    "expandAriaLabel": "사이드바 펼치기",
+    "collapseAriaLabel": "사이드바 접기",
+    "signOutAriaLabel": "로그아웃"
+  },
+  "signOutModal": {
+    "title": "로그아웃",
+    "message": "정말로 계정에서 로그아웃하시겠습니까?",
+    "cancel": "취소",
+    "confirm": "로그아웃"
+  },
+  "topbar": {
+    "openMenuAriaLabel": "메뉴 열기",
+    "switchToLightTheme": "라이트 모드로 전환",
+    "switchToDarkTheme": "다크 모드로 전환",
+    "notificationsAriaLabel": "알림",
+    "languageAriaLabel": "언어",
+    "accountMenuAriaLabel": "계정 메뉴",
+    "roleLabel": "역할",
+    "memberSince": "가입일",
+    "signOut": "로그아웃"
+  }
+}

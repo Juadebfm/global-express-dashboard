@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SupportTicketStatus } from '@/types';
 
 interface SupportStatusActionsProps {
@@ -7,20 +8,21 @@ interface SupportStatusActionsProps {
   isPending: boolean;
 }
 
-const TRANSITIONS: Record<string, { next: SupportTicketStatus; label: string; className: string }[]> = {
+const TRANSITIONS: Record<string, { next: SupportTicketStatus; labelKey: string; className: string }[]> = {
   open: [
-    { next: 'in_progress', label: 'Start Working', className: 'bg-blue-600 hover:bg-blue-700 text-white' },
+    { next: 'in_progress', labelKey: 'statusActions.startWorking', className: 'bg-blue-600 hover:bg-blue-700 text-white' },
   ],
   in_progress: [
-    { next: 'resolved', label: 'Mark Resolved', className: 'bg-emerald-600 hover:bg-emerald-700 text-white' },
+    { next: 'resolved', labelKey: 'statusActions.markResolved', className: 'bg-emerald-600 hover:bg-emerald-700 text-white' },
   ],
   resolved: [
-    { next: 'closed', label: 'Close Ticket', className: 'bg-gray-600 hover:bg-gray-700 text-white' },
-    { next: 'in_progress', label: 'Reopen', className: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50' },
+    { next: 'closed', labelKey: 'statusActions.closeTicket', className: 'bg-gray-600 hover:bg-gray-700 text-white' },
+    { next: 'in_progress', labelKey: 'statusActions.reopen', className: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50' },
   ],
 };
 
 export function SupportStatusActions({ currentStatus, onStatusChange, isPending }: SupportStatusActionsProps): ReactElement | null {
+  const { t } = useTranslation('support');
   const actions = TRANSITIONS[currentStatus];
   if (!actions || actions.length === 0) return null;
 
@@ -35,7 +37,7 @@ export function SupportStatusActions({ currentStatus, onStatusChange, isPending 
           onClick={() => onStatusChange(action.next)}
           className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${action.className}`}
         >
-          {action.label}
+          {t(action.labelKey)}
         </button>
       ))}
     </div>

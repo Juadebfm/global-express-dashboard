@@ -1,4 +1,5 @@
 export { useAuth } from './useAuth';
+export { useLanguage } from './useLanguage';
 export { useSearch } from './useSearch';
 export { useDashboardData } from './useDashboardData';
 export { useShipmentsDashboard } from './useShipmentsDashboard';

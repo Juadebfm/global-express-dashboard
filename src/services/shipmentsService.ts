@@ -22,9 +22,9 @@ function mapApiShipment(s: ApiShipmentRecord): ShipmentRecord {
     statusV2: s.statusV2,
     statusLabel: s.statusLabel,
     mode: s.shipmentType,
-    packageCount: s.numberOfPackages,
+    packageCount: Number(s.numberOfPackages) || 0,
     weightKg: parseFloat(s.weight) || 0,
-    valueUSD: s.declaredValue,
+    valueUSD: Number(s.declaredValue) || 0,
   };
 }
 

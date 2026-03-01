@@ -1,10 +1,12 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Bookmark, Info, RotateCcw, Trash2 } from 'lucide-react';
 import { useDashboardData, useNotifications, useSearch } from '@/hooks';
 import type { ApiNotification } from '@/types';
 import { AppShell } from '@/pages/shared';
 import { cn } from '@/utils';
+import i18n from '@/i18n/i18n';
 
 interface NotificationItem {
   id: string;
@@ -17,7 +19,12 @@ interface NotificationItem {
   saved: boolean;
 }
 
+function getLocale(): string {
+  return i18n.language === 'ko' ? 'ko-KR' : 'en-US';
+}
+
 function formatTime(iso: string): string {
+  const locale = getLocale();
   const date = new Date(iso);
   const now = new Date();
   const isToday =
@@ -25,21 +32,22 @@ function formatTime(iso: string): string {
     date.getMonth() === now.getMonth() &&
     date.getDate() === now.getDate();
   if (isToday) {
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return date.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
   }
   return (
-    date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+    date.toLocaleDateString(locale, { month: 'short', day: 'numeric' }) +
     ', ' +
-    date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    date.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })
   );
 }
 
 function formatDateTime(iso: string): string {
+  const locale = getLocale();
   const date = new Date(iso);
   return (
-    date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+    date.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' }) +
     ' - ' +
-    date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    date.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })
   );
 }
 
@@ -59,6 +67,7 @@ function mapApiNotification(n: ApiNotification): NotificationItem {
 }
 
 export function NotificationsPage(): ReactElement {
+  const { t } = useTranslation('notifications');
   const { data, isLoading, error } = useDashboardData();
   const { query } = useSearch();
   const {
@@ -204,12 +213,12 @@ export function NotificationsPage(): ReactElement {
               <p className="text-sm font-semibold text-gray-800">{item.title}</p>
               {item.unread && (
                 <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-600">
-                  New
+                  {t('badges.new')}
                 </span>
               )}
               {item.saved && (
                 <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                  Saved
+                  {t('badges.saved')}
                 </span>
               )}
             </div>
@@ -226,11 +235,11 @@ export function NotificationsPage(): ReactElement {
       data={data}
       isLoading={isLoading || notifLoading}
       error={error}
-      loadingLabel="Loading notifications..."
+      loadingLabel={t('loadingLabel')}
     >
       <div className="rounded-3xl border border-gray-200 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 px-6 py-5">
-          <h1 className="text-xl font-semibold text-gray-900">Notification</h1>
+          <h1 className="text-xl font-semibold text-gray-900">{t('pageTitle')}</h1>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -238,7 +247,7 @@ export function NotificationsPage(): ReactElement {
               className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-800"
             >
               <RotateCcw className="h-4 w-4" />
-              Refresh
+              {t('refresh')}
             </button>
             <div className="inline-flex overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               <button
@@ -289,22 +298,22 @@ export function NotificationsPage(): ReactElement {
 
         {filteredItems.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <p className="text-sm font-semibold text-gray-700">No notifications found</p>
+            <p className="text-sm font-semibold text-gray-700">{t('empty.title')}</p>
             <p className="mt-2 text-sm text-gray-500">
-              Try adjusting your search to see more updates.
+              {t('empty.subtitle')}
             </p>
           </div>
         ) : (
           <div className={cn('divide-y divide-gray-200', hasSelection && 'pb-24')}>
             {newItems.length > 0 && (
               <div className="bg-gray-50/70 px-6 py-2 text-xs font-semibold uppercase text-gray-500">
-                New
+                {t('sections.new')}
               </div>
             )}
             {newItems.map((item) => renderNotificationRow(item))}
             {oldItems.length > 0 && (
               <div className="bg-gray-50/70 px-6 py-2 text-xs font-semibold uppercase text-gray-500">
-                Earlier
+                {t('sections.earlier')}
               </div>
             )}
             {oldItems.map((item) => renderNotificationRow(item))}
@@ -316,14 +325,14 @@ export function NotificationsPage(): ReactElement {
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-lg">
               <div className="flex items-center gap-3">
                 <span className="text-sm font-semibold text-gray-800">
-                  {selectedIds.size} selected
+                  {t('bulkBar.selected', { count: selectedIds.size })}
                 </span>
                 <button
                   type="button"
                   onClick={() => setSelectedIds(new Set())}
                   className="text-xs font-semibold text-gray-500 hover:text-gray-700"
                 >
-                  Clear selection
+                  {t('bulkBar.clearSelection')}
                 </button>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -333,7 +342,7 @@ export function NotificationsPage(): ReactElement {
                   className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-800"
                 >
                   <Bookmark className="h-4 w-4" />
-                  Save
+                  {t('bulkBar.save')}
                 </button>
                 <button
                   type="button"
@@ -341,7 +350,7 @@ export function NotificationsPage(): ReactElement {
                   className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-800"
                 >
                   <Info className="h-4 w-4" />
-                  Mark read
+                  {t('bulkBar.markRead')}
                 </button>
                 <button
                   type="button"
@@ -349,7 +358,7 @@ export function NotificationsPage(): ReactElement {
                   className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-3 py-2 text-xs font-semibold text-white hover:bg-red-600"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Delete
+                  {t('bulkBar.delete')}
                 </button>
               </div>
             </div>
@@ -372,7 +381,7 @@ export function NotificationsPage(): ReactElement {
               </div>
               {activeNotification.saved && (
                 <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                  Saved
+                  {t('badges.saved')}
                 </span>
               )}
             </div>
@@ -401,14 +410,14 @@ export function NotificationsPage(): ReactElement {
                 className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-600"
               >
                 <Trash2 className="h-4 w-4" />
-                Delete
+                {t('bulkBar.delete')}
               </button>
               <button
                 type="button"
                 onClick={() => setActiveNotification(null)}
                 className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200"
               >
-                Close
+                {t('close')}
               </button>
             </div>
           </div>
