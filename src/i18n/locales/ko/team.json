@@ -53,8 +53,12 @@
     },
     "invite": {
       "title": "팀원 초대",
-      "namePlaceholder": "팀원 이름 입력",
-      "emailPlaceholder": "팀원 이메일 입력"
+      "firstNamePlaceholder": "이름",
+      "lastNamePlaceholder": "성",
+      "emailPlaceholder": "팀원 이메일 입력",
+      "passwordPlaceholder": "임시 비밀번호",
+      "inviteSuccess": "팀원이 성공적으로 초대되었습니다.",
+      "inviteError": "팀원 초대에 실패했습니다."
     },
     "edit": {
       "title": "팀원 수정",
