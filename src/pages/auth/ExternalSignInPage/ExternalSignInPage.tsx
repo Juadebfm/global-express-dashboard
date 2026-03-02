@@ -9,7 +9,7 @@ import { Button, Card, Input } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import { getMyProfileCompleteness, syncClerkAccount } from '@/services';
 
-type Step = 'sign-in' | 'forgot-email' | 'forgot-code' | 'forgot-reset' | 'forgot-success';
+type Step = 'sign-in' | 'verify-2fa' | 'forgot-email' | 'forgot-code' | 'forgot-reset' | 'forgot-success';
 
 function getErrorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'errors' in error) {
@@ -33,6 +33,9 @@ export function ExternalSignInPage(): ReactElement {
   // Sign-in fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // 2FA field
+  const [twoFaCode, setTwoFaCode] = useState('');
 
   // Forgot password fields
   const [resetEmail, setResetEmail] = useState('');
@@ -94,6 +97,48 @@ export function ExternalSignInPage(): ReactElement {
       const result = await signIn.create({
         identifier: email.trim(),
         password,
+      });
+
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId });
+        const redirectPath = await resolvePostAuthRedirect();
+
+        localStorage.removeItem('globalxpress_token');
+        localStorage.removeItem('globalxpress_refresh');
+        navigate(redirectPath, { replace: true });
+      } else if (result.status === 'needs_second_factor') {
+        await signIn.prepareSecondFactor({ strategy: 'email_code' });
+        clearErrors();
+        setTwoFaCode('');
+        setStep('verify-2fa');
+      } else {
+        setFormError(getErrorMessage(null));
+      }
+    } catch (error) {
+      setFormError(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ── 2FA verification ────────────────────────────────────────────────────────
+
+  const handleVerify2fa = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFormError(null);
+
+    if (!twoFaCode.trim()) {
+      setErrors({ twoFaCode: t('externalSignIn.validation.codeRequired') });
+      return;
+    }
+
+    if (!isLoaded || !signIn) return;
+
+    setIsSubmitting(true);
+    try {
+      const result = await signIn.attemptSecondFactor({
+        strategy: 'email_code',
+        code: twoFaCode.trim(),
       });
 
       if (result.status === 'complete') {
@@ -295,6 +340,51 @@ export function ExternalSignInPage(): ReactElement {
                 {t('externalSignIn.signUp')}
               </Link>
             </p>
+          </div>
+        )}
+
+        {/* STEP: 2FA verification */}
+        {step === 'verify-2fa' && (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">{t('externalSignIn.verifyTitle')}</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                {t('externalSignIn.verifySubtitle', { email })}
+              </p>
+            </div>
+
+            {formError && (
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
+                <p className="text-sm text-red-600">{formError}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleVerify2fa} className="space-y-4">
+              <Input
+                label={t('externalSignIn.verifyCodeLabel')}
+                placeholder={t('externalSignIn.verifyCodePlaceholder')}
+                value={twoFaCode}
+                onChange={(e) => { setTwoFaCode(e.target.value); clearErrors(); }}
+                error={errors.twoFaCode}
+                className="text-sm placeholder:text-sm"
+              />
+              <Button
+                type="submit"
+                className="w-full text-sm"
+                size="lg"
+                isLoading={isSubmitting}
+              >
+                {t('externalSignIn.verifyButton')}
+              </Button>
+            </form>
+
+            <button
+              type="button"
+              onClick={() => { clearErrors(); setStep('sign-in'); }}
+              className="mt-4 flex w-full items-center justify-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
+            >
+              {t('externalSignIn.backToSignIn')}
+            </button>
           </div>
         )}
 

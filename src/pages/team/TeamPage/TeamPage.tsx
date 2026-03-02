@@ -75,6 +75,7 @@ export function TeamPage(): ReactElement {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [formState, setFormState] = useState<TeamFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
 
   const updateMembers = (updater: (current: TeamMember[]) => TeamMember[]): void => {
     setMembersOverride((prev) => updater(prev ?? apiMembers));
@@ -143,6 +144,7 @@ export function TeamPage(): ReactElement {
   const closeModal = (): void => {
     setActiveModal(null);
     setFormError(null);
+    setRoleDropdownOpen(false);
   };
 
   const handleRoleChange = (value: TeamRole): void => {
@@ -157,13 +159,31 @@ export function TeamPage(): ReactElement {
   };
 
   const handlePermissionToggle = (key: keyof TeamPermissions): void => {
-    setFormState((prev) => ({
-      ...prev,
-      permissions: {
-        ...prev.permissions,
-        [key]: !prev.permissions[key],
-      },
-    }));
+    setFormState((prev) => {
+      const next = !prev.permissions[key];
+
+      if (key === 'viewOnly' && next) {
+        // viewOnly ON → turn off everything else
+        return {
+          ...prev,
+          permissions: { makeAdmin: false, canTransfer: false, viewOnly: true },
+          role: 'staff',
+        };
+      }
+
+      if (key !== 'viewOnly' && next) {
+        // any other permission ON → turn off viewOnly
+        return {
+          ...prev,
+          permissions: { ...prev.permissions, [key]: true, viewOnly: false },
+        };
+      }
+
+      return {
+        ...prev,
+        permissions: { ...prev.permissions, [key]: next },
+      };
+    });
   };
 
   const handleAdminToggle = (): void => {
@@ -539,18 +559,37 @@ export function TeamPage(): ReactElement {
                     />
                   </div>
                   <div className="relative">
-                    <select
-                      value={formState.role}
-                      onChange={(event) => handleRoleChange(event.target.value as TeamRole)}
-                      className="w-full appearance-none rounded-2xl border border-gray-200 bg-white py-3 pl-4 pr-10 text-sm text-gray-700 outline-none transition focus:border-brand-500"
+                    <button
+                      type="button"
+                      onClick={() => setRoleDropdownOpen((prev) => !prev)}
+                      className="flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-white py-3 pl-4 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-500"
                     >
-                      {roleOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {roleLabels[option]}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      <span>{roleLabels[formState.role]}</span>
+                      <ChevronDown className={cn('h-4 w-4 text-gray-400 transition', roleDropdownOpen && 'rotate-180')} />
+                    </button>
+                    {roleDropdownOpen && (
+                      <ul className="absolute left-0 right-0 z-10 mt-1 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
+                        {roleOptions.map((option) => (
+                          <li key={option}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleRoleChange(option);
+                                setRoleDropdownOpen(false);
+                              }}
+                              className={cn(
+                                'flex w-full items-center px-4 py-2.5 text-sm transition hover:bg-brand-50 hover:text-brand-600',
+                                formState.role === option
+                                  ? 'bg-brand-50 font-semibold text-brand-600'
+                                  : 'text-gray-700'
+                              )}
+                            >
+                              {roleLabels[option]}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </div>
 
@@ -558,15 +597,15 @@ export function TeamPage(): ReactElement {
                   <h3 className="text-sm font-semibold text-gray-700">{t('modals.permissions.sectionTitle')}</h3>
                   <div className="mt-3 space-y-3 text-sm text-gray-600">
                     <div className="flex items-center justify-between">
-                      <span>{t('modals.permissions.makeAdmin')}</span>
+                      <span className={cn(formState.permissions.viewOnly && 'text-gray-400')}>{t('modals.permissions.makeAdmin')}</span>
                       <button
                         type="button"
                         onClick={handleAdminToggle}
-                        disabled={!isSuperAdmin}
+                        disabled={!isSuperAdmin || formState.permissions.viewOnly}
                         className={cn(
                           'relative h-6 w-11 rounded-full transition',
                           formState.permissions.makeAdmin ? 'bg-brand-500' : 'bg-gray-200',
-                          !isSuperAdmin && 'cursor-not-allowed opacity-50'
+                          (!isSuperAdmin || formState.permissions.viewOnly) && 'cursor-not-allowed opacity-50'
                         )}
                       >
                         <span
@@ -578,13 +617,15 @@ export function TeamPage(): ReactElement {
                       </button>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span>{t('modals.permissions.canTransfer')}</span>
+                      <span className={cn(formState.permissions.viewOnly && 'text-gray-400')}>{t('modals.permissions.canTransfer')}</span>
                       <button
                         type="button"
                         onClick={() => handlePermissionToggle('canTransfer')}
+                        disabled={formState.permissions.viewOnly}
                         className={cn(
                           'relative h-6 w-11 rounded-full transition',
-                          formState.permissions.canTransfer ? 'bg-brand-500' : 'bg-gray-200'
+                          formState.permissions.canTransfer ? 'bg-brand-500' : 'bg-gray-200',
+                          formState.permissions.viewOnly && 'cursor-not-allowed opacity-50'
                         )}
                       >
                         <span
