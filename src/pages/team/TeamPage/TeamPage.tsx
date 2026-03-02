@@ -1,25 +1,30 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, Mail, Search, User, UserPlus, X } from 'lucide-react';
+import { ChevronDown, Lock, Mail, Search, User, UserPlus, X } from 'lucide-react';
 import { useAuth, useDashboardData, useSearch, useTeam } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
 import type { TeamMember, TeamPermissions, TeamRole } from '@/types';
 import { cn } from '@/utils';
+import { useFeedbackStore } from '@/store';
 
 type TeamTab = 'all' | 'admin' | 'non-admin';
 type ActiveModal = 'invite' | 'edit' | 'profile' | 'remove' | null;
 
 interface TeamFormState {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
+  password: string;
   role: TeamRole;
   permissions: TeamPermissions;
 }
 
 const emptyForm: TeamFormState = {
-  fullName: '',
+  firstName: '',
+  lastName: '',
   email: '',
+  password: '',
   role: 'staff',
   permissions: {
     makeAdmin: false,
@@ -67,7 +72,8 @@ export function TeamPage(): ReactElement {
   const { data, isLoading, error } = useDashboardData();
   const { query, setQuery } = useSearch();
   const { user } = useAuth();
-  const { members: apiMembers, isLoading: teamLoading, approveMember: approveApi } = useTeam();
+  const { members: apiMembers, isLoading: teamLoading, approveMember: approveApi, inviteMember, isInviting } = useTeam();
+  const pushMessage = useFeedbackStore((state) => state.pushMessage);
   const [activeTab, setActiveTab] = useState<TeamTab>('all');
   const [membersOverride, setMembersOverride] = useState<TeamMember[] | null>(null);
   const members = membersOverride ?? apiMembers;
@@ -121,9 +127,12 @@ export function TeamPage(): ReactElement {
 
   const openEdit = (member: TeamMember): void => {
     setSelectedMember(member);
+    const nameParts = member.fullName.trim().split(' ');
     setFormState({
-      fullName: member.fullName,
+      firstName: nameParts[0] ?? '',
+      lastName: nameParts.slice(1).join(' '),
       email: member.email,
+      password: '',
       role: member.role,
       permissions: { ...member.permissions },
     });
@@ -214,37 +223,44 @@ export function TeamPage(): ReactElement {
   const canApproveMember = (member: TeamMember): boolean =>
     isSuperAdmin && member.approvalStatus === 'pending';
 
-  const handleSave = (): void => {
-    if (!formState.fullName.trim() || !formState.email.trim()) {
+  const handleSave = async (): Promise<void> => {
+    if (!formState.firstName.trim() || !formState.email.trim()) {
       setFormError(t('modals.formError'));
       return;
     }
 
     if (activeModal === 'invite') {
-      const approvalStatus = formState.role === 'staff' && isAdmin ? 'pending' : 'approved';
+      if (!formState.password.trim()) {
+        setFormError(t('modals.formError'));
+        return;
+      }
 
-      const newMember: TeamMember = {
-        id: `team-${Date.now()}`,
-        fullName: formState.fullName.trim(),
-        email: formState.email.trim().toLowerCase(),
-        role: formState.role,
-        permissions: { ...formState.permissions },
-        approvalStatus,
-      };
-
-      updateMembers((prev) => [newMember, ...prev]);
-      setActiveTab('all');
-      closeModal();
+      try {
+        await inviteMember({
+          firstName: formState.firstName.trim(),
+          lastName: formState.lastName.trim(),
+          email: formState.email.trim().toLowerCase(),
+          password: formState.password,
+          role: formState.role,
+        });
+        pushMessage({ tone: 'success', message: t('modals.invite.inviteSuccess') });
+        setActiveTab('all');
+        closeModal();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : t('modals.invite.inviteError');
+        setFormError(msg);
+      }
       return;
     }
 
     if (activeModal === 'edit' && selectedMember) {
+      const fullName = `${formState.firstName.trim()} ${formState.lastName.trim()}`.trim();
       updateMembers((prev) =>
         prev.map((member) =>
           member.id === selectedMember.id
             ? {
                 ...member,
-                fullName: formState.fullName.trim(),
+                fullName,
                 email: formState.email.trim().toLowerCase(),
                 role: formState.role,
                 permissions: { ...formState.permissions },
@@ -534,17 +550,31 @@ export function TeamPage(): ReactElement {
                 </h2>
 
                 <div className="mt-6 space-y-4">
-                  <div className="relative">
-                    <User className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      value={formState.fullName}
-                      onChange={(event) =>
-                        setFormState((prev) => ({ ...prev, fullName: event.target.value }))
-                      }
-                      placeholder={t('modals.invite.namePlaceholder')}
-                      className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-500"
-                    />
+                  <div className="flex gap-3">
+                    <div className="relative flex-1">
+                      <User className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formState.firstName}
+                        onChange={(event) =>
+                          setFormState((prev) => ({ ...prev, firstName: event.target.value }))
+                        }
+                        placeholder={t('modals.invite.firstNamePlaceholder')}
+                        className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-500"
+                      />
+                    </div>
+                    <div className="relative flex-1">
+                      <User className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formState.lastName}
+                        onChange={(event) =>
+                          setFormState((prev) => ({ ...prev, lastName: event.target.value }))
+                        }
+                        placeholder={t('modals.invite.lastNamePlaceholder')}
+                        className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-500"
+                      />
+                    </div>
                   </div>
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -558,6 +588,20 @@ export function TeamPage(): ReactElement {
                       className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-500"
                     />
                   </div>
+                  {activeModal === 'invite' && (
+                    <div className="relative">
+                      <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="password"
+                        value={formState.password}
+                        onChange={(event) =>
+                          setFormState((prev) => ({ ...prev, password: event.target.value }))
+                        }
+                        placeholder={t('modals.invite.passwordPlaceholder')}
+                        className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-500"
+                      />
+                    </div>
+                  )}
                   <div className="relative">
                     <button
                       type="button"
@@ -668,16 +712,18 @@ export function TeamPage(): ReactElement {
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-200"
+                    disabled={isInviting}
+                    className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-200 disabled:opacity-50"
                   >
                     {t('modals.cancelButton')}
                   </button>
                   <button
                     type="button"
-                    onClick={handleSave}
-                    className="flex-1 rounded-2xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600"
+                    onClick={() => void handleSave()}
+                    disabled={isInviting}
+                    className="flex-1 rounded-2xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
                   >
-                    {t('modals.saveButton')}
+                    {isInviting ? '...' : t('modals.saveButton')}
                   </button>
                 </div>
               </div>

@@ -53,8 +53,12 @@
     },
     "invite": {
       "title": "Invite Team member",
-      "namePlaceholder": "Enter teammate name",
-      "emailPlaceholder": "Enter teammate email"
+      "firstNamePlaceholder": "First name",
+      "lastNamePlaceholder": "Last name",
+      "emailPlaceholder": "Enter teammate email",
+      "passwordPlaceholder": "Temporary password",
+      "inviteSuccess": "Team member invited successfully.",
+      "inviteError": "Failed to invite team member."
     },
     "edit": {
       "title": "Edit Team member",

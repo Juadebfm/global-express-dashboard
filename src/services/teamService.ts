@@ -1,5 +1,20 @@
 import type { ApiTeamResponse } from '@/types';
-import { apiGet, apiPatch } from '@/lib/apiClient';
+import { apiGet, apiPatch, apiPost } from '@/lib/apiClient';
+
+export interface CreateTeamMemberPayload {
+  email: string;
+  password: string;
+  role: string;
+  firstName: string;
+  lastName: string;
+}
+
+export async function createTeamMember(
+  token: string,
+  payload: CreateTeamMemberPayload
+): Promise<void> {
+  await apiPost('/internal/users', payload, token);
+}
 
 export async function getTeam(
   token: string,

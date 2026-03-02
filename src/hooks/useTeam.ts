@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { TeamMember, TeamPermissions, TeamRole, ApiTeamMember } from '@/types';
-import { getTeam, approveTeamMember } from '@/services';
+import { getTeam, approveTeamMember, createTeamMember } from '@/services';
+import type { CreateTeamMemberPayload } from '@/services';
 import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -32,6 +33,8 @@ interface TeamState {
   isLoading: boolean;
   error: string | null;
   approveMember: (id: string) => void;
+  inviteMember: (payload: CreateTeamMemberPayload) => Promise<void>;
+  isInviting: boolean;
 }
 
 export function useTeam(): TeamState {
@@ -70,6 +73,17 @@ export function useTeam(): TeamState {
     },
   });
 
+  const inviteMutation = useMutation({
+    mutationFn: async (payload: CreateTeamMemberPayload) => {
+      const token = await getToken_();
+      if (!token) throw new Error('Not authenticated');
+      return createTeamMember(token, payload);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['team'] });
+    },
+  });
+
   const message =
     error instanceof Error ? error.message : error ? 'Failed to load team' : null;
 
@@ -78,5 +92,7 @@ export function useTeam(): TeamState {
     isLoading,
     error: message,
     approveMember: (id: string) => approveMutation.mutate(id),
+    inviteMember: (payload: CreateTeamMemberPayload) => inviteMutation.mutateAsync(payload),
+    isInviting: inviteMutation.isPending,
   };
 }
