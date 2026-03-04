@@ -129,14 +129,12 @@ export function ShipmentsPage(): ReactElement {
       (acc, shipment) => {
         acc.totalWeight += shipment.weightKg;
         acc.totalItems += shipment.packageCount;
-        acc.totalValue += shipment.valueUSD;
         acc.statusCounts[shipment.status] += 1;
         return acc;
       },
       {
         totalWeight: 0,
         totalItems: 0,
-        totalValue: 0,
         statusCounts: {
           pending: 0,
           active: 0,
@@ -152,15 +150,7 @@ export function ShipmentsPage(): ReactElement {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
-    const currencyAverageFormat = new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-
     const averageWeight = totalShipments === 0 ? 0 : totals.totalWeight / totalShipments;
-    const averageValue = totalShipments === 0 ? 0 : totals.totalValue / totalShipments;
     const averageItems = totalShipments === 0 ? 0 : totals.totalItems / totalShipments;
 
     return {
@@ -201,12 +191,6 @@ export function ShipmentsPage(): ReactElement {
           title: t('summary.totalWeight'),
           value: totals.totalWeight,
           helperText: t('summary.averageWeight', { value: averageFormat.format(averageWeight) }),
-        },
-        {
-          ...shipmentsData.summary.metrics[1],
-          title: t('summary.totalValue'),
-          value: totals.totalValue,
-          helperText: t('summary.averageValue', { value: currencyAverageFormat.format(averageValue) }),
         },
         {
           ...shipmentsData.summary.metrics[2],
