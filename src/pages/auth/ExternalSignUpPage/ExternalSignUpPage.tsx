@@ -14,7 +14,8 @@ import { useTranslation } from 'react-i18next';
 import { AuthLayout } from '@/components/layout';
 import { Button, Card, Checkbox, Input } from '@/components/ui';
 import { ROUTES } from '@/constants';
-import { syncClerkAccount } from '@/services';
+import { apiPatch } from '@/lib/apiClient';
+import { syncClerkAccount, updateMyNotificationPreferences } from '@/services';
 
 type SignUpStep = 'account' | 'verify' | 'details';
 type AccountType = 'individual' | 'business';
@@ -41,6 +42,7 @@ interface SignUpFormState {
   password: string;
   phone: string;
   whatsappNumber: string;
+  consentMarketing: boolean;
   addressStreet: string;
   addressCity: string;
   addressState: string;
@@ -56,6 +58,7 @@ const initialFormState: SignUpFormState = {
   password: '',
   phone: '',
   whatsappNumber: '',
+  consentMarketing: false,
   addressStreet: '',
   addressCity: '',
   addressState: '',
@@ -220,11 +223,13 @@ export function ExternalSignUpPage(): ReactElement {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
+  // Only redirect already-completed users away from the signup page.
+  // Do NOT redirect mid-signup (after setActive but before details step).
   useEffect(() => {
-    if (isSignedIn) {
+    if (isSignedIn && clerkUser?.unsafeMetadata?.profileCompleted === true) {
       navigate(ROUTES.DASHBOARD, { replace: true });
     }
-  }, [isSignedIn, navigate]);
+  }, [isSignedIn, navigate, clerkUser]);
 
   const selectedCountryOption =
     COUNTRY_OPTIONS.find((item) => item.code === selectedCountry) ||
@@ -393,9 +398,8 @@ export function ExternalSignUpPage(): ReactElement {
       nextErrors.phone = t('externalSignUp.validation.phoneInvalid');
     }
 
-    if (!form.whatsappNumber.trim()) {
-      nextErrors.whatsappNumber = t('externalSignUp.validation.whatsappRequired');
-    } else if (!isValidPhone(form.whatsappNumber)) {
+    // whatsappNumber is optional — only validate format if provided
+    if (form.whatsappNumber.trim() && !isValidPhone(form.whatsappNumber)) {
       nextErrors.whatsappNumber = t('externalSignUp.validation.whatsappInvalid');
     }
 
@@ -424,48 +428,42 @@ export function ExternalSignUpPage(): ReactElement {
       return;
     }
 
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-    if (!apiBaseUrl) {
-      setFormError('Missing API base URL.');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const token = await getToken();
       if (!token) {
         throw new Error('Authentication token is missing.');
       }
+
+      // Auto-provision backend user before saving profile
       await syncClerkAccount(token);
 
-      const response = await fetch(`${apiBaseUrl}/users/me`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+      // PATCH /users/me with all profile fields
+      await apiPatch(
+        '/users/me',
+        {
           firstName: form.firstName.trim() || undefined,
           lastName: form.lastName.trim() || undefined,
           businessName: form.businessName.trim() || undefined,
           phone: buildE164(form.phone),
-          whatsappNumber: buildE164(form.whatsappNumber),
+          whatsappNumber: form.whatsappNumber.trim()
+            ? buildE164(form.whatsappNumber)
+            : undefined,
           addressStreet: form.addressStreet.trim(),
           addressCity: form.addressCity.trim(),
           addressState: form.addressState.trim(),
           addressCountry: form.addressCountry.trim(),
           addressPostalCode: form.addressPostalCode.trim(),
-        }),
-      });
+        },
+        token
+      );
 
-      const payload = await response.json().catch(() => null);
-
-      if (!response.ok || !payload?.success) {
-        const message = payload?.message || 'Unable to save your details.';
-        throw new Error(message);
+      // Save marketing consent if opted in
+      if (form.consentMarketing) {
+        await updateMyNotificationPreferences(token, { consentMarketing: true });
       }
 
-      // Mark profile complete so /complete-profile is skipped on future logins
+      // Mark profile complete so returning users skip this step
       await clerkUser?.update({ unsafeMetadata: { profileCompleted: true } });
 
       navigate(ROUTES.DASHBOARD, { replace: true });
@@ -488,8 +486,7 @@ export function ExternalSignUpPage(): ReactElement {
   const isDetailsStepValid =
     !!form.phone.trim() &&
     isValidPhone(form.phone) &&
-    !!form.whatsappNumber.trim() &&
-    isValidPhone(form.whatsappNumber) &&
+    (!form.whatsappNumber.trim() || isValidPhone(form.whatsappNumber)) &&
     !!form.addressStreet.trim() &&
     !!form.addressCity.trim() &&
     !!form.addressState.trim() &&
@@ -819,6 +816,12 @@ export function ExternalSignUpPage(): ReactElement {
                   className={inputClassName}
                 />
               </div>
+
+              <Checkbox
+                label={t('externalSignUp.consentMarketing')}
+                checked={form.consentMarketing}
+                onChange={(event) => updateField('consentMarketing', event.target.checked)}
+              />
 
               <Button
                 type="submit"

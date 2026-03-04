@@ -38,12 +38,27 @@ interface StepDefinition {
   description: string;
 }
 
-
 const STEP_KEYS: Array<{ id: StepKey; labelKey: string; descKey: string }> = [
-  { id: "shipment", labelKey: "newShipment.steps.shipment.label", descKey: "newShipment.steps.shipment.description" },
-  { id: "addresses", labelKey: "newShipment.steps.addresses.label", descKey: "newShipment.steps.addresses.description" },
-  { id: "packages", labelKey: "newShipment.steps.packages.label", descKey: "newShipment.steps.packages.description" },
-  { id: "review", labelKey: "newShipment.steps.review.label", descKey: "newShipment.steps.review.description" },
+  {
+    id: "shipment",
+    labelKey: "newShipment.steps.shipment.label",
+    descKey: "newShipment.steps.shipment.description",
+  },
+  {
+    id: "addresses",
+    labelKey: "newShipment.steps.addresses.label",
+    descKey: "newShipment.steps.addresses.description",
+  },
+  {
+    id: "packages",
+    labelKey: "newShipment.steps.packages.label",
+    descKey: "newShipment.steps.packages.description",
+  },
+  {
+    id: "review",
+    labelKey: "newShipment.steps.review.label",
+    descKey: "newShipment.steps.review.description",
+  },
 ];
 
 const SHIPMENT_TYPE_KEYS = [
@@ -492,8 +507,15 @@ export function NewShipmentPage(): ReactElement {
   const { t } = useTranslation("shipments");
   const { data, isLoading, error } = useDashboardData();
   const { user } = useAuth();
-  const steps: StepDefinition[] = STEP_KEYS.map((s) => ({ id: s.id, label: t(s.labelKey), description: t(s.descKey) }));
-  const shipmentTypes = SHIPMENT_TYPE_KEYS.map((s) => ({ value: s.value, label: t(s.labelKey) }));
+  const steps: StepDefinition[] = STEP_KEYS.map((s) => ({
+    id: s.id,
+    label: t(s.labelKey),
+    description: t(s.descKey),
+  }));
+  const shipmentTypes = SHIPMENT_TYPE_KEYS.map((s) => ({
+    value: s.value,
+    label: t(s.labelKey),
+  }));
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
@@ -682,10 +704,11 @@ export function NewShipmentPage(): ReactElement {
           shipmentType: shipmentType as "air" | "ocean",
           departureDate: pickupDate?.toISOString(),
           eta: deliveryDate?.toISOString(),
-          ...(usePickupRep && pickupRepName.trim() && {
-            pickupRepName: pickupRepName.trim(),
-            pickupRepPhone: pickupRepPhone.trim() || undefined,
-          }),
+          ...(usePickupRep &&
+            pickupRepName.trim() && {
+              pickupRepName: pickupRepName.trim(),
+              pickupRepPhone: pickupRepPhone.trim() || undefined,
+            }),
         },
         token,
       );
@@ -719,7 +742,9 @@ export function NewShipmentPage(): ReactElement {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
-            {isCustomer ? t("newShipment.titleCustomer") : t("newShipment.titleOperator")}
+            {isCustomer
+              ? t("newShipment.titleCustomer")
+              : t("newShipment.titleOperator")}
           </h1>
           <p className="mt-1 text-sm text-gray-500">
             {isCustomer
@@ -733,9 +758,14 @@ export function NewShipmentPage(): ReactElement {
         <section className="rounded-2xl border border-gray-200 bg-white p-5">
           <div className="flex items-center justify-between text-sm text-gray-500">
             <span>
-              {t("newShipment.progress.step", { current: activeStep + 1, total: steps.length })}
+              {t("newShipment.progress.step", {
+                current: activeStep + 1,
+                total: steps.length,
+              })}
             </span>
-            <span>{t("newShipment.progress.complete", { percent: progress })}</span>
+            <span>
+              {t("newShipment.progress.complete", { percent: progress })}
+            </span>
           </div>
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-gray-100">
             <div
@@ -966,7 +996,9 @@ export function NewShipmentPage(): ReactElement {
                   onChange={(event) =>
                     setPackageDescription(event.target.value)
                   }
-                  placeholder={t("newShipment.packageDetails.descriptionPlaceholder")}
+                  placeholder={t(
+                    "newShipment.packageDetails.descriptionPlaceholder",
+                  )}
                   className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                 />
               </div>
@@ -983,7 +1015,9 @@ export function NewShipmentPage(): ReactElement {
                       onChange={(event) =>
                         setPackageWeightKg(event.target.value)
                       }
-                      placeholder={t("newShipment.packageDetails.weightPlaceholder")}
+                      placeholder={t(
+                        "newShipment.packageDetails.weightPlaceholder",
+                      )}
                       className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                     />
                   </div>
@@ -996,7 +1030,9 @@ export function NewShipmentPage(): ReactElement {
                       type="number"
                       value={packageCbm}
                       onChange={(event) => setPackageCbm(event.target.value)}
-                      placeholder={t("newShipment.packageDetails.volumePlaceholder")}
+                      placeholder={t(
+                        "newShipment.packageDetails.volumePlaceholder",
+                      )}
                       className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                     />
                   </div>
@@ -1011,7 +1047,9 @@ export function NewShipmentPage(): ReactElement {
                     onChange={(event) =>
                       setPackageDeclaredValue(event.target.value)
                     }
-                    placeholder={t("newShipment.packageDetails.declaredValuePlaceholder")}
+                    placeholder={t(
+                      "newShipment.packageDetails.declaredValuePlaceholder",
+                    )}
                     className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                   />
                 </div>
@@ -1030,7 +1068,9 @@ export function NewShipmentPage(): ReactElement {
                       type="text"
                       value={recipientName}
                       onChange={(event) => setRecipientName(event.target.value)}
-                      placeholder={t("newShipment.recipientInfo.namePlaceholder")}
+                      placeholder={t(
+                        "newShipment.recipientInfo.namePlaceholder",
+                      )}
                       className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                     />
                   </div>
@@ -1044,7 +1084,9 @@ export function NewShipmentPage(): ReactElement {
                       onChange={(event) =>
                         setRecipientEmail(event.target.value)
                       }
-                      placeholder={t("newShipment.recipientInfo.emailPlaceholder")}
+                      placeholder={t(
+                        "newShipment.recipientInfo.emailPlaceholder",
+                      )}
                       className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                     />
                   </div>
@@ -1058,7 +1100,9 @@ export function NewShipmentPage(): ReactElement {
                       onChange={(event) =>
                         setRecipientPhone(event.target.value)
                       }
-                      placeholder={t("newShipment.recipientInfo.phonePlaceholder")}
+                      placeholder={t(
+                        "newShipment.recipientInfo.phonePlaceholder",
+                      )}
                       className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                     />
                   </div>
@@ -1082,7 +1126,9 @@ export function NewShipmentPage(): ReactElement {
                         type="text"
                         value={pickupRepName}
                         onChange={(e) => setPickupRepName(e.target.value)}
-                        placeholder={t("newShipment.recipientInfo.repNamePlaceholder")}
+                        placeholder={t(
+                          "newShipment.recipientInfo.repNamePlaceholder",
+                        )}
                         className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                       />
                     </div>
@@ -1094,7 +1140,9 @@ export function NewShipmentPage(): ReactElement {
                         type="tel"
                         value={pickupRepPhone}
                         onChange={(e) => setPickupRepPhone(e.target.value)}
-                        placeholder={t("newShipment.recipientInfo.repPhonePlaceholder")}
+                        placeholder={t(
+                          "newShipment.recipientInfo.repPhonePlaceholder",
+                        )}
                         className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
                       />
                     </div>
@@ -1116,7 +1164,9 @@ export function NewShipmentPage(): ReactElement {
                         : "0.0 CBM"}
                   </p>
                   <p className="text-xs uppercase text-gray-500">
-                    {shipmentType === "air" ? t("newShipment.review.totalWeightLabel") : t("newShipment.review.totalVolumeLabel")}
+                    {shipmentType === "air"
+                      ? t("newShipment.review.totalWeightLabel")
+                      : t("newShipment.review.totalVolumeLabel")}
                   </p>
                 </div>
                 <div>
@@ -1183,16 +1233,22 @@ export function NewShipmentPage(): ReactElement {
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold text-gray-700">{t("newShipment.review.route")}</p>
+                  <p className="text-sm font-semibold text-gray-700">
+                    {t("newShipment.review.route")}
+                  </p>
                   <div className="mt-3 text-sm text-gray-600">
-                    <p className="font-semibold text-gray-800">{t("newShipment.review.from")}</p>
+                    <p className="font-semibold text-gray-800">
+                      {t("newShipment.review.from")}
+                    </p>
                     <p className="text-xs text-gray-400">
                       {ORIGIN_WAREHOUSE.company}
                     </p>
                     <p>{ORIGIN_WAREHOUSE.address}</p>
                   </div>
                   <div className="mt-4 text-sm text-gray-600">
-                    <p className="font-semibold text-gray-800">{t("newShipment.review.to")}</p>
+                    <p className="font-semibold text-gray-800">
+                      {t("newShipment.review.to")}
+                    </p>
                     <p className="text-xs text-gray-400">
                       {DESTINATION_OFFICE.company}
                     </p>
@@ -1239,13 +1295,18 @@ export function NewShipmentPage(): ReactElement {
                   <>
                     <div className="mt-4 space-y-3 text-sm text-gray-600">
                       <div className="flex items-center justify-between">
-                        <span>{t("newShipment.review.estimatedShippingCost")}</span>
+                        <span>
+                          {t("newShipment.review.estimatedShippingCost")}
+                        </span>
                         <span className="font-semibold text-gray-800">
                           $
-                          {estimate.estimatedCostUsd.toLocaleString(i18n.language === "ko" ? "ko-KR" : "en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+                          {estimate.estimatedCostUsd.toLocaleString(
+                            i18n.language === "ko" ? "ko-KR" : "en-US",
+                            {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            },
+                          )}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -1332,7 +1393,9 @@ export function NewShipmentPage(): ReactElement {
               </span>
               <div>
                 <p className="text-lg font-semibold text-gray-900">
-                  {isCustomer ? t("newShipment.confirmation.shipmentCreated") : t("newShipment.confirmation.orderCreated")}
+                  {isCustomer
+                    ? t("newShipment.confirmation.shipmentCreated")
+                    : t("newShipment.confirmation.orderCreated")}
                 </p>
                 <p className="text-sm text-gray-500">
                   {isCustomer
@@ -1341,7 +1404,9 @@ export function NewShipmentPage(): ReactElement {
                 </p>
                 {createdTrackingNumber && (
                   <p className="mt-1 text-xs font-semibold text-brand-600">
-                    {t("newShipment.confirmation.trackingNumber", { number: createdTrackingNumber })}
+                    {t("newShipment.confirmation.trackingNumber", {
+                      number: createdTrackingNumber,
+                    })}
                   </p>
                 )}
               </div>
@@ -1401,7 +1466,9 @@ export function NewShipmentPage(): ReactElement {
                           ) : (
                             <Copy className="h-3.5 w-3.5" />
                           )}
-                          {copied ? t("newShipment.confirmation.copied") : t("newShipment.confirmation.copy")}
+                          {copied
+                            ? t("newShipment.confirmation.copied")
+                            : t("newShipment.confirmation.copy")}
                         </button>
                         {/* Email */}
                         <a
@@ -1433,7 +1500,9 @@ export function NewShipmentPage(): ReactElement {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:border-yellow-500 hover:text-yellow-500"
-                          title={t("newShipment.confirmation.shareViaKakaoTalk")}
+                          title={t(
+                            "newShipment.confirmation.shareViaKakaoTalk",
+                          )}
                         >
                           <svg
                             className="h-4 w-4"
