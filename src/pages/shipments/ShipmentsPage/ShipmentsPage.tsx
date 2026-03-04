@@ -34,9 +34,10 @@ const escapeCsv = (value: string | number): string => {
   return text;
 };
 
-const exportDate = (value: string): string => {
+const exportDate = (value: string | null | undefined): string => {
+  if (!value) return '';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  if (Number.isNaN(date.getTime())) return '';
   return date.toISOString().slice(0, 10);
 };
 

@@ -206,9 +206,14 @@
       "creatingShipment": "Creating Shipment...",
       "creatingOrder": "Creating Order..."
     },
+    "customerSelect": {
+      "label": "Customer (order on behalf of)",
+      "placeholder": "Select a customer..."
+    },
     "errors": {
       "recipientRequired": "Please provide recipient name, email, and phone number.",
       "pickupRepRequired": "Please provide the pickup representative's name.",
+      "senderRequired": "Please select a customer to create this order for.",
       "failedToCreate": "Failed to create shipment order."
     },
     "confirmation": {

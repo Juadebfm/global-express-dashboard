@@ -8,13 +8,15 @@ import { AppShell, PageHeader } from '@/pages/shared';
 import { getStatusStyle } from '@/lib/statusUtils';
 import { resolveLocation } from '@/utils';
 
-function toTimestamp(value: string): number {
+function toTimestamp(value: string | null): number {
+  if (!value) return Number.MAX_SAFE_INTEGER;
   const date = new Date(value);
   const timestamp = date.getTime();
   return Number.isNaN(timestamp) ? Number.MAX_SAFE_INTEGER : timestamp;
 }
 
-function formatDate(value: string, tbd: string, locale: string = 'en-US'): string {
+function formatDate(value: string | null, tbd: string, locale: string = 'en-US'): string {
+  if (!value) return tbd;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return tbd;
   return date.toLocaleDateString(locale, {

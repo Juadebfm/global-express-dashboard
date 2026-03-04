@@ -21,9 +21,10 @@ const modeIcons: Record<ShipmentMode, ReactElement> = {
   ocean: <Ship className="h-4 w-4" />,
 };
 
-const formatDate = (value: string): string => {
+const formatDate = (value: string | null | undefined): string => {
+  if (!value) return '—';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  if (Number.isNaN(date.getTime())) return '—';
   const day = String(date.getUTCDate()).padStart(2, '0');
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');
   const year = date.getUTCFullYear();

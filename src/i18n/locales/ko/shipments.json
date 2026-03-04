@@ -206,9 +206,14 @@
       "creatingShipment": "배송 생성 중...",
       "creatingOrder": "주문 생성 중..."
     },
+    "customerSelect": {
+      "label": "고객 (대신 주문하기)",
+      "placeholder": "고객을 선택하세요..."
+    },
     "errors": {
       "recipientRequired": "수취인 이름, 이메일, 전화번호를 입력해 주세요.",
       "pickupRepRequired": "픽업 대리인의 이름을 입력해 주세요.",
+      "senderRequired": "이 주문을 위한 고객을 선택해 주세요.",
       "failedToCreate": "배송 주문 생성에 실패했습니다."
     },
     "confirmation": {
