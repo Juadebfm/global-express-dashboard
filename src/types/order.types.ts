@@ -2,17 +2,16 @@ export type OrderDirection = 'outbound' | 'inbound';
 
 export interface CreateOrderPayload {
   recipientName: string;
-  recipientAddress: string;
+  // recipientAddress omitted — hardcoded to Lagos office on the backend
   recipientPhone: string;
   recipientEmail: string;
   orderDirection: OrderDirection;
-  weight: string;
-  declaredValue: string;
+  weight: string;        // format: "10kg" (air) or "0.5cbm" (ocean)
+  declaredValue: string; // string, not number
   description: string;
   shipmentType: 'air' | 'ocean';
-  departureDate?: string;
-  eta?: string;
-  senderId?: string;
+  // departureDate/eta omitted — set by warehouse staff only, not customers
+  senderId?: string;     // required when staff creates on behalf of a customer
   pickupRepName?: string;
   pickupRepPhone?: string;
 }

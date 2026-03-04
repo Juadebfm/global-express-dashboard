@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/pages/shared";
 import { AlertBanner, Button, Checkbox } from "@/components/ui";
-import { useAuth, useDashboardData } from "@/hooks";
+import { useAuth, useClients, useDashboardData } from "@/hooks";
 import { ROUTES } from "@/constants";
 import {
   createOrder,
@@ -549,9 +549,13 @@ export function NewShipmentPage(): ReactElement {
     string | null
   >(null);
   const [copied, setCopied] = useState(false);
+  const [selectedSenderId, setSelectedSenderId] = useState<string>("");
 
   const progress = Math.round(((activeStep + 1) / steps.length) * 100);
   const isCustomer = isClerkSignedIn && !user;
+
+  // Staff need to select a customer to create an order on their behalf
+  const { clients } = useClients();
 
   useEffect(() => {
     if (!isCustomer) return;
@@ -607,24 +611,19 @@ export function NewShipmentPage(): ReactElement {
 
     setEstimateLoading(true);
     try {
-      const token = isCustomer
-        ? await getToken()
-        : localStorage.getItem(INTERNAL_TOKEN_KEY);
-      if (!token) return;
-
       const payload =
         shipmentType === "air"
           ? { shipmentType: "air" as const, weightKg: weightVal }
           : { shipmentType: "ocean" as const, cbm: cbmVal };
 
-      const result = await estimateShippingCost(token, payload);
+      const result = await estimateShippingCost(payload);
       setEstimate(result);
     } catch {
       /* Silently ignore — estimate is non-critical */
     } finally {
       setEstimateLoading(false);
     }
-  }, [shipmentType, packageWeightKg, packageCbm, isCustomer, getToken]);
+  }, [shipmentType, packageWeightKg, packageCbm]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -653,6 +652,13 @@ export function NewShipmentPage(): ReactElement {
     }
 
     setCreateError(null);
+
+    // Staff must select a customer before creating an order on their behalf
+    if (!isCustomer && !selectedSenderId) {
+      setCreateError(t("newShipment.errors.senderRequired"));
+      setActiveStep(0);
+      return;
+    }
 
     if (
       !recipientName.trim() ||
@@ -688,22 +694,22 @@ export function NewShipmentPage(): ReactElement {
       const token = await getApiToken();
       if (!token) throw new Error("Authentication token is missing.");
 
-      const recipientAddress = DESTINATION_OFFICE.address;
-
       const order = await createOrder(
         {
           recipientName: recipientName.trim(),
-          recipientAddress,
           recipientPhone: recipientPhone.trim(),
           recipientEmail: recipientEmail.trim(),
           orderDirection: "outbound",
+          // weight must include unit suffix: "10kg" for air, "0.5cbm" for ocean
           weight:
-            shipmentType === "air" ? packageWeightKg.trim() : packageCbm.trim(),
+            shipmentType === "air"
+              ? `${packageWeightKg.trim()}kg`
+              : `${packageCbm.trim()}cbm`,
           declaredValue: packageDeclaredValue.trim(),
           description: packageDescription.trim(),
           shipmentType: shipmentType as "air" | "ocean",
-          departureDate: pickupDate?.toISOString(),
-          eta: deliveryDate?.toISOString(),
+          // senderId required when staff creates on behalf of a customer
+          ...(selectedSenderId && { senderId: selectedSenderId }),
           ...(usePickupRep &&
             pickupRepName.trim() && {
               pickupRepName: pickupRepName.trim(),
@@ -801,6 +807,28 @@ export function NewShipmentPage(): ReactElement {
             <p className="mt-1 text-sm text-gray-500">
               {t("newShipment.shipmentType.sectionSubtitle")}
             </p>
+
+            {/* Customer selector — staff only */}
+            {!isCustomer && (
+              <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  {t("newShipment.customerSelect.label")}
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
+                <select
+                  value={selectedSenderId}
+                  onChange={(e) => setSelectedSenderId(e.target.value)}
+                  className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-brand-500 focus:outline-none"
+                >
+                  <option value="">{t("newShipment.customerSelect.placeholder")}</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {[c.firstName, c.lastName].filter(Boolean).join(" ") || c.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="mt-6">
               <div>

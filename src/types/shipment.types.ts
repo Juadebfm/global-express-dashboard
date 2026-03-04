@@ -37,8 +37,8 @@ export interface ShipmentRecord {
   customer: string;
   origin: string;
   destination: string;
-  departureDate: string;
-  etaDate: string;
+  departureDate: string | null;
+  etaDate: string | null;
   status: StatusCategory;
   statusV2: string;
   statusLabel: string;
@@ -72,8 +72,8 @@ export interface ApiShipmentRecord {
   senderName: string;
   origin: string;
   destination: string;
-  departureDate: string;
-  eta: string;
+  departureDate: string | null;
+  eta: string | null;
   statusV2: string;
   statusLabel: string;
   shipmentType: 'air' | 'ocean';
