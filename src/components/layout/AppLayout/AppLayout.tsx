@@ -6,7 +6,7 @@ import type { DashboardUi, DashboardUser, SidebarItem } from '@/types';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { cn } from '@/utils';
-import { useAuth, useWebSocket } from '@/hooks';
+import { useAuth, usePushNotifications, useWebSocket } from '@/hooks';
 import { ROUTES } from '@/constants';
 
 interface AppLayoutProps {
@@ -53,6 +53,11 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
   const { isSignedIn: isClerkSignedIn } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
   useWebSocket();
+
+  // Register browser push notifications for operator users
+  const isOperator = !!authUser;
+  usePushNotifications(isOperator);
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
