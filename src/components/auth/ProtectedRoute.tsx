@@ -47,6 +47,11 @@ export function ProtectedRoute({
     return <Navigate to={ROUTES.LOGIN} replace />;
   }
 
+  // Internal staff that still need onboarding must complete it first
+  if (isAuthenticated && user && (user.mustChangePassword || user.mustCompleteProfile)) {
+    return <Navigate to={ROUTES.STAFF_ONBOARDING} replace />;
+  }
+
   if (blockedRoles && blockedRoles.includes(effectiveRole)) {
     return <Navigate to={redirectTo ?? ROUTES.FORBIDDEN} replace />;
   }

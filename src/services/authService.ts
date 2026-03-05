@@ -13,6 +13,8 @@ import type {
   ChangePasswordPayload,
   AdminResetPasswordPayload,
   CreateInternalUserPayload,
+  StaffProfilePayload,
+  ProfileRequirements,
 } from '@/types';
 import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost } from '@/lib/apiClient';
 
@@ -190,5 +192,22 @@ export async function createInternalUser(
   payload: CreateInternalUserPayload
 ): Promise<User> {
   const response = await apiPost<{ success: boolean; data: User }>('/internal/users', payload, token);
+  return response.data;
+}
+
+export async function updateInternalProfile(
+  token: string,
+  payload: StaffProfilePayload
+): Promise<void> {
+  await apiPatch('/internal/me/profile', payload, token);
+}
+
+export async function getInternalProfileRequirements(
+  token: string
+): Promise<ProfileRequirements> {
+  const response = await apiGet<{ success: boolean; data: ProfileRequirements }>(
+    '/internal/me/profile-requirements',
+    token
+  );
   return response.data;
 }
