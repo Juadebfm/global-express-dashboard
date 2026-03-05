@@ -39,9 +39,9 @@ export async function getInternalUnreadCount(token: string): Promise<number> {
 }
 
 export async function markAllInternalRead(token: string): Promise<void> {
-  await apiPatch('/internal/notifications/read-all', undefined, token);
+  await apiPatch('/internal/notifications/read-all', {}, token);
 }
 
 export async function markInternalRead(token: string, id: string): Promise<void> {
-  await apiPatch(`/internal/notifications/${id}/read`, undefined, token);
+  await apiPatch(`/internal/notifications/${id}/read`, {}, token);
 }
