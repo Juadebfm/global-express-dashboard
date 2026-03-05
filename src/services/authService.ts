@@ -211,3 +211,25 @@ export async function getInternalProfileRequirements(
   );
   return response.data;
 }
+
+export async function getOnboardingSettings(
+  token: string
+): Promise<ProfileRequirements> {
+  const response = await apiGet<{ success: boolean; data: ProfileRequirements }>(
+    '/internal/settings/onboarding',
+    token
+  );
+  return response.data;
+}
+
+export async function updateOnboardingSettings(
+  token: string,
+  payload: Partial<ProfileRequirements>
+): Promise<ProfileRequirements> {
+  const response = await apiPatch<{ success: boolean; data: ProfileRequirements }>(
+    '/internal/settings/onboarding',
+    payload,
+    token
+  );
+  return response.data;
+}

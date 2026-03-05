@@ -72,11 +72,6 @@
       "viewOnly": "Can view only",
       "adminApprovalNote": "Staff created by Admin require Super Admin approval."
     },
-    "onboarding": {
-      "sectionTitle": "Onboarding Requirements",
-      "requireNationalId": "Require National ID",
-      "requireNationalIdHint": "This user must provide a national ID during profile completion."
-    },
     "formError": "Name and email are required.",
     "cancelButton": "Cancel",
     "saveButton": "Save",

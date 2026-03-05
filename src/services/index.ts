@@ -17,6 +17,8 @@ export {
   createInternalUser,
   updateInternalProfile,
   getInternalProfileRequirements,
+  getOnboardingSettings,
+  updateOnboardingSettings,
 } from './authService';
 export { sendOtp, verifyOtp, resetPassword } from './forgotPasswordService';
 export { trackShipment } from './trackingService';

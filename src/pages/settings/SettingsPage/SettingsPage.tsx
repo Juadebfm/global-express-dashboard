@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useClerk } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +16,8 @@ import {
   useSearch,
 } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
-import { deleteMyAccount, exportMyAccountData } from '@/services';
+import { deleteMyAccount, exportMyAccountData, getOnboardingSettings, updateOnboardingSettings } from '@/services';
+import type { ProfileRequirements } from '@/types';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
 
@@ -81,6 +82,40 @@ export function SettingsPage(): ReactElement {
       setNewPassword('');
     } catch {
       // error is on mutation state
+    }
+  };
+
+  /* ── Onboarding settings (superadmin only) ────────────────── */
+  const isSuperadmin = user?.role === 'superadmin';
+  const [onboardingReqs, setOnboardingReqs] = useState<ProfileRequirements | null>(null);
+  const [onboardingLoading, setOnboardingLoading] = useState(false);
+  const [onboardingError, setOnboardingError] = useState<string | null>(null);
+  const [onboardingSaving, setOnboardingSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isSuperadmin) return;
+    const token = localStorage.getItem('globalxpress_token');
+    if (!token) return;
+    setOnboardingLoading(true);
+    getOnboardingSettings(token)
+      .then(setOnboardingReqs)
+      .catch(() => setOnboardingError(t('onboarding.failedMessage')))
+      .finally(() => setOnboardingLoading(false));
+  }, [isSuperadmin, t]);
+
+  const handleToggleNationalId = async (): Promise<void> => {
+    const token = localStorage.getItem('globalxpress_token');
+    if (!token || !onboardingReqs) return;
+    setOnboardingSaving(true);
+    try {
+      const updated = await updateOnboardingSettings(token, {
+        requireNationalId: !onboardingReqs.requireNationalId,
+      });
+      setOnboardingReqs(updated);
+    } catch {
+      setOnboardingError(t('onboarding.failedMessage'));
+    } finally {
+      setOnboardingSaving(false);
     }
   };
 
@@ -252,6 +287,70 @@ export function SettingsPage(): ReactElement {
                     {changePasswordMutation.isPending ? t('changePassword.savingButton') : t('changePassword.saveButton')}
                   </button>
                 </div>
+              </section>
+            )}
+
+            {/* Superadmin: Onboarding settings */}
+            {isOperator && isSuperadmin && (
+              <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-900">{t('onboarding.title')}</h3>
+                <p className="mt-1 text-xs text-gray-500">{t('onboarding.subtitle')}</p>
+
+                {onboardingLoading && (
+                  <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">
+                    {t('onboarding.loadingText')}
+                  </div>
+                )}
+
+                {onboardingError && (
+                  <div className="mt-4">
+                    <AlertBanner tone="error" message={onboardingError} />
+                  </div>
+                )}
+
+                {!onboardingLoading && !onboardingError && onboardingReqs && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{t('onboarding.requireNationalId')}</p>
+                        <p className="mt-0.5 text-xs text-gray-500">{t('onboarding.requireNationalIdDescription')}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={cn(
+                            'rounded-full px-3 py-1 text-[11px] font-semibold',
+                            onboardingReqs.requireNationalId
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : 'bg-gray-100 text-gray-500'
+                          )}
+                        >
+                          {onboardingReqs.requireNationalId ? t('onboarding.enabled') : t('onboarding.disabled')}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={onboardingSaving}
+                          onClick={() => void handleToggleNationalId()}
+                          className={cn(
+                            'relative h-6 w-11 rounded-full transition',
+                            onboardingReqs.requireNationalId ? 'bg-brand-500' : 'bg-gray-200',
+                            onboardingSaving && 'cursor-not-allowed opacity-60'
+                          )}
+                          aria-label="Toggle national ID requirement"
+                        >
+                          <span
+                            className={cn(
+                              'absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow transition',
+                              onboardingReqs.requireNationalId ? 'left-6' : 'left-1'
+                            )}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                    {onboardingSaving && (
+                      <p className="mt-2 text-xs text-gray-500">{t('onboarding.savingText')}</p>
+                    )}
+                  </div>
+                )}
               </section>
             )}
 

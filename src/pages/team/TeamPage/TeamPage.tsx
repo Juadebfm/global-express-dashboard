@@ -1,10 +1,10 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, Lock, Mail, Search, User, UserPlus, X } from 'lucide-react';
+import { ChevronDown, Mail, Search, User, UserPlus, X } from 'lucide-react';
 import { useAuth, useDashboardData, useSearch, useTeam } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
-import type { TeamMember, TeamPermissions, TeamRole } from '@/types';
+import type { TeamMember, TeamRole } from '@/types';
 import { cn } from '@/utils';
 import { useFeedbackStore } from '@/store';
 
@@ -15,24 +15,14 @@ interface TeamFormState {
   firstName: string;
   lastName: string;
   email: string;
-  password: string;
   role: TeamRole;
-  permissions: TeamPermissions;
-  requireNationalId: boolean;
 }
 
 const emptyForm: TeamFormState = {
   firstName: '',
   lastName: '',
   email: '',
-  password: '',
   role: 'staff',
-  permissions: {
-    makeAdmin: false,
-    canTransfer: true,
-    viewOnly: false,
-  },
-  requireNationalId: false,
 };
 
 const roleLabels: Record<TeamRole, string> = {
@@ -134,10 +124,7 @@ export function TeamPage(): ReactElement {
       firstName: nameParts[0] ?? '',
       lastName: nameParts.slice(1).join(' '),
       email: member.email,
-      password: '',
       role: member.role,
-      permissions: { ...member.permissions },
-      requireNationalId: member.requireNationalId ?? false,
     });
     setFormError(null);
     setActiveModal('edit');
@@ -160,57 +147,7 @@ export function TeamPage(): ReactElement {
   };
 
   const handleRoleChange = (value: TeamRole): void => {
-    setFormState((prev) => ({
-      ...prev,
-      role: value,
-      permissions: {
-        ...prev.permissions,
-        makeAdmin: value === 'admin' || value === 'superadmin',
-      },
-    }));
-  };
-
-  const handlePermissionToggle = (key: keyof TeamPermissions): void => {
-    setFormState((prev) => {
-      const next = !prev.permissions[key];
-
-      if (key === 'viewOnly' && next) {
-        // viewOnly ON → turn off everything else
-        return {
-          ...prev,
-          permissions: { makeAdmin: false, canTransfer: false, viewOnly: true },
-          role: 'staff',
-        };
-      }
-
-      if (key !== 'viewOnly' && next) {
-        // any other permission ON → turn off viewOnly
-        return {
-          ...prev,
-          permissions: { ...prev.permissions, [key]: true, viewOnly: false },
-        };
-      }
-
-      return {
-        ...prev,
-        permissions: { ...prev.permissions, [key]: next },
-      };
-    });
-  };
-
-  const handleAdminToggle = (): void => {
-    if (!isSuperAdmin) return;
-    setFormState((prev) => {
-      const makeAdmin = !prev.permissions.makeAdmin;
-      return {
-        ...prev,
-        role: makeAdmin ? 'admin' : 'staff',
-        permissions: {
-          ...prev.permissions,
-          makeAdmin,
-        },
-      };
-    });
+    setFormState((prev) => ({ ...prev, role: value }));
   };
 
   const canEditMember = (member: TeamMember): boolean => {
@@ -233,19 +170,12 @@ export function TeamPage(): ReactElement {
     }
 
     if (activeModal === 'invite') {
-      if (!formState.password.trim()) {
-        setFormError(t('modals.formError'));
-        return;
-      }
-
       try {
         await inviteMember({
           firstName: formState.firstName.trim(),
           lastName: formState.lastName.trim(),
           email: formState.email.trim().toLowerCase(),
-          password: formState.password,
           role: formState.role,
-          requireNationalId: formState.requireNationalId,
         });
         pushMessage({ tone: 'success', message: t('modals.invite.inviteSuccess') });
         setActiveTab('all');
@@ -267,7 +197,6 @@ export function TeamPage(): ReactElement {
                 fullName,
                 email: formState.email.trim().toLowerCase(),
                 role: formState.role,
-                permissions: { ...formState.permissions },
               }
             : member
         )
@@ -592,20 +521,6 @@ export function TeamPage(): ReactElement {
                       className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-500"
                     />
                   </div>
-                  {activeModal === 'invite' && (
-                    <div className="relative">
-                      <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="password"
-                        value={formState.password}
-                        onChange={(event) =>
-                          setFormState((prev) => ({ ...prev, password: event.target.value }))
-                        }
-                        placeholder={t('modals.invite.passwordPlaceholder')}
-                        className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-500"
-                      />
-                    </div>
-                  )}
                   <div className="relative">
                     <button
                       type="button"
@@ -640,108 +555,6 @@ export function TeamPage(): ReactElement {
                     )}
                   </div>
                 </div>
-
-                <div className="mt-6">
-                  <h3 className="text-sm font-semibold text-gray-700">{t('modals.permissions.sectionTitle')}</h3>
-                  <div className="mt-3 space-y-3 text-sm text-gray-600">
-                    <div className="flex items-center justify-between">
-                      <span className={cn(formState.permissions.viewOnly && 'text-gray-400')}>{t('modals.permissions.makeAdmin')}</span>
-                      <button
-                        type="button"
-                        onClick={handleAdminToggle}
-                        disabled={!isSuperAdmin || formState.permissions.viewOnly}
-                        className={cn(
-                          'relative h-6 w-11 rounded-full transition',
-                          formState.permissions.makeAdmin ? 'bg-brand-500' : 'bg-gray-200',
-                          (!isSuperAdmin || formState.permissions.viewOnly) && 'cursor-not-allowed opacity-50'
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            'absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow transition',
-                            formState.permissions.makeAdmin ? 'left-6' : 'left-1'
-                          )}
-                        />
-                      </button>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className={cn(formState.permissions.viewOnly && 'text-gray-400')}>{t('modals.permissions.canTransfer')}</span>
-                      <button
-                        type="button"
-                        onClick={() => handlePermissionToggle('canTransfer')}
-                        disabled={formState.permissions.viewOnly}
-                        className={cn(
-                          'relative h-6 w-11 rounded-full transition',
-                          formState.permissions.canTransfer ? 'bg-brand-500' : 'bg-gray-200',
-                          formState.permissions.viewOnly && 'cursor-not-allowed opacity-50'
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            'absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow transition',
-                            formState.permissions.canTransfer ? 'left-6' : 'left-1'
-                          )}
-                        />
-                      </button>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>{t('modals.permissions.viewOnly')}</span>
-                      <button
-                        type="button"
-                        onClick={() => handlePermissionToggle('viewOnly')}
-                        className={cn(
-                          'relative h-6 w-11 rounded-full transition',
-                          formState.permissions.viewOnly ? 'bg-brand-500' : 'bg-gray-200'
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            'absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow transition',
-                            formState.permissions.viewOnly ? 'left-6' : 'left-1'
-                          )}
-                        />
-                      </button>
-                    </div>
-                    {isAdmin && (
-                      <p className="text-xs text-amber-600">
-                        {t('modals.permissions.adminApprovalNote')}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* National ID requirement toggle (superadmin only) */}
-                {isSuperAdmin && (
-                  <div className="mt-6">
-                    <h3 className="text-sm font-semibold text-gray-700">{t('modals.onboarding.sectionTitle')}</h3>
-                    <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
-                      <div>
-                        <span>{t('modals.onboarding.requireNationalId')}</span>
-                        <p className="mt-0.5 text-xs text-gray-400">{t('modals.onboarding.requireNationalIdHint')}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFormState((prev) => ({
-                            ...prev,
-                            requireNationalId: !prev.requireNationalId,
-                          }))
-                        }
-                        className={cn(
-                          'relative h-6 w-11 rounded-full transition',
-                          formState.requireNationalId ? 'bg-brand-500' : 'bg-gray-200'
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            'absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow transition',
-                            formState.requireNationalId ? 'left-6' : 'left-1'
-                          )}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 {formError && <p className="mt-4 text-sm text-red-500">{formError}</p>}
 

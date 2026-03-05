@@ -13,7 +13,6 @@ export interface TeamMember {
   role: TeamRole;
   permissions: TeamPermissions;
   approvalStatus: 'approved' | 'pending';
-  requireNationalId?: boolean;
 }
 
 export interface ApiTeamMember {
@@ -24,7 +23,6 @@ export interface ApiTeamMember {
   email: string;
   role: 'staff' | 'admin' | 'superadmin';
   isActive: boolean;
-  requireNationalId?: boolean;
   createdAt: string;
   updatedAt: string;
 }
