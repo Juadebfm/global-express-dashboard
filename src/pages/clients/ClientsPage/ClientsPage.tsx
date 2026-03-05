@@ -41,6 +41,17 @@ const formatDate = (iso: string | null, locale: string = 'en-US'): string => {
 const getClientName = (client: ApiClient): string =>
   `${client.firstName ?? ''} ${client.lastName ?? ''}`.trim() || client.email;
 
+const buildAddress = (client: ApiClient): string =>
+  [
+    client.addressStreet,
+    client.addressCity,
+    client.addressState,
+    client.addressPostalCode,
+    client.addressCountry,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
 const buildInitials = (name: string): string => {
   const parts = name.trim().split(' ');
   if (parts.length === 0) return '';
@@ -109,7 +120,7 @@ export function ClientsPage(): ReactElement {
     return apiClients.filter((client) => {
       const matchesSearch =
         !needle ||
-        `${getClientName(client)} ${client.email} ${client.phone}`
+        `${getClientName(client)} ${client.email} ${client.phone} ${client.businessName ?? ''} ${buildAddress(client)}`
           .toLowerCase()
           .includes(needle);
       const clientStatus: ClientStatus = client.isActive ? 'active' : 'inactive';
@@ -174,23 +185,48 @@ export function ClientsPage(): ReactElement {
 
             <div className="rounded-3xl border border-gray-200 bg-white p-6">
               <p className="text-sm font-semibold text-gray-700">{t('customerInfo')}</p>
-              <div className="mt-4 flex flex-wrap items-center gap-6">
-                <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-brand-50 text-2xl font-semibold text-brand-600">
+              <div className="mt-4 flex flex-wrap items-start gap-6">
+                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-2xl font-semibold text-brand-600">
                   {buildInitials(getClientName(activeClient))}
                 </div>
-                <div className="grid gap-3 text-sm text-gray-500 sm:grid-cols-2">
+                <div className="grid gap-4 text-sm text-gray-500 sm:grid-cols-2 lg:grid-cols-3">
                   <div>
                     <p className="text-xs font-semibold uppercase text-gray-400">{t('nameLabel')}</p>
                     <p className="text-base font-semibold text-gray-900">{getClientName(activeClient)}</p>
+                  </div>
+                  {activeClient.businessName && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase text-gray-400">{t('businessLabel')}</p>
+                      <p className="text-base font-semibold text-gray-900">{activeClient.businessName}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-gray-400">{t('emailLabel')}</p>
+                    <p className="inline-flex items-center gap-1.5 text-base font-semibold text-gray-900">
+                      {activeClient.email}
+                      <CopyButton value={activeClient.email} />
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase text-gray-400">{t('phoneLabel')}</p>
                     <p className="text-base font-semibold text-gray-900">{activeClient.phone}</p>
                   </div>
+                  {activeClient.whatsappNumber && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase text-gray-400">{t('whatsappLabel')}</p>
+                      <p className="text-base font-semibold text-gray-900">{activeClient.whatsappNumber}</p>
+                    </div>
+                  )}
                   <div>
-                    <p className="text-xs font-semibold uppercase text-gray-400">{t('emailLabel')}</p>
-                    <p className="text-base font-semibold text-gray-900">{activeClient.email}</p>
+                    <p className="text-xs font-semibold uppercase text-gray-400">{t('memberSinceLabel')}</p>
+                    <p className="text-base font-semibold text-gray-900">{formatDate(activeClient.createdAt, dateLocale)}</p>
                   </div>
+                  {buildAddress(activeClient) && (
+                    <div className="sm:col-span-2 lg:col-span-3">
+                      <p className="text-xs font-semibold uppercase text-gray-400">{t('addressLabel')}</p>
+                      <p className="text-base font-semibold text-gray-900">{buildAddress(activeClient)}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -374,11 +410,16 @@ export function ClientsPage(): ReactElement {
                 </div>
               )}
               <div className="mt-4 overflow-hidden rounded-3xl border border-gray-200 bg-white">
-                <table className="w-full text-left text-sm">
+                <div className="overflow-x-auto">
+                <table className="w-full min-w-[1100px] text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <tr>
                       <th className="px-6 py-4">{t('customer')}</th>
+                      <th className="px-6 py-4">{t('emailLabel')}</th>
+                      <th className="px-6 py-4">{t('businessLabel')}</th>
+                      <th className="px-6 py-4">{t('addressLabel')}</th>
                       <th className="px-6 py-4">{t('status')}</th>
+                      <th className="px-6 py-4">{t('memberSinceLabel')}</th>
                       <th className="px-6 py-4">{t('orders')}</th>
                       <th className="px-6 py-4">{t('totalPayments')}</th>
                       <th className="px-6 py-4">{t('lastOrder')}</th>
@@ -388,6 +429,7 @@ export function ClientsPage(): ReactElement {
                   <tbody className="divide-y divide-gray-100 bg-white">
                     {filteredClients.map((client) => {
                       const clientStatus: ClientStatus = client.isActive ? 'active' : 'inactive';
+                      const address = buildAddress(client);
                       return (
                         <tr
                           key={client.id}
@@ -396,14 +438,31 @@ export function ClientsPage(): ReactElement {
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-600">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-600">
                                 {buildInitials(getClientName(client))}
                               </div>
-                              <div>
+                              <div className="min-w-0">
                                 <p className="font-semibold text-gray-900">{getClientName(client)}</p>
                                 <p className="text-xs text-gray-500">{client.phone}</p>
                               </div>
                             </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className="inline-flex items-center gap-1.5 text-gray-700"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <span className="max-w-[160px] truncate">{client.email}</span>
+                              <CopyButton value={client.email} />
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-gray-600">
+                            {client.businessName || <span className="text-gray-300">—</span>}
+                          </td>
+                          <td className="px-6 py-4 text-gray-600">
+                            {address
+                              ? <span className="max-w-[220px] block truncate" title={address}>{address}</span>
+                              : <span className="text-gray-300">—</span>}
                           </td>
                           <td className="px-6 py-4">
                             <span
@@ -415,6 +474,9 @@ export function ClientsPage(): ReactElement {
                               <span className="h-1.5 w-1.5 rounded-full bg-current" />
                               {statusLabels[clientStatus]}
                             </span>
+                          </td>
+                          <td className="px-6 py-4 text-gray-600">
+                            {formatDate(client.createdAt, dateLocale)}
                           </td>
                           <td className="px-6 py-4">
                             <p className="font-semibold text-gray-800">
@@ -476,6 +538,7 @@ export function ClientsPage(): ReactElement {
                     })}
                   </tbody>
                 </table>
+                </div>
 
                 {filteredClients.length === 0 && (
                   <div className="p-6 text-center text-sm text-gray-500">
