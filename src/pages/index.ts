@@ -5,6 +5,7 @@ export {
   CompleteProfilePage,
   ExternalSignInPage,
   ExternalSignUpPage,
+  StaffOnboardingPage,
 } from './auth';
 export { ForbiddenPage, NotFoundPage } from './errors';
 export { TrackPage } from './public';

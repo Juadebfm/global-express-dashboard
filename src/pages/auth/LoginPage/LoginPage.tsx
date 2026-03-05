@@ -17,6 +17,11 @@ export function LoginPage(): ReactElement {
   // ProtectedRoute on the target page would bounce us back here (loop).
   useEffect(() => {
     if (!isLoading && isAuthenticated && user?.role) {
+      // Staff needing onboarding go to the onboarding page first
+      if (user.mustChangePassword || user.mustCompleteProfile) {
+        navigate(ROUTES.STAFF_ONBOARDING, { replace: true });
+        return;
+      }
       const dest =
         user.role === 'staff' || user.role === 'admin' || user.role === 'superadmin'
           ? ROUTES.ADMIN_DASHBOARD
