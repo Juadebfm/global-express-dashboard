@@ -3,11 +3,9 @@ import { apiGet, apiPatch, apiPost } from '@/lib/apiClient';
 
 export interface CreateTeamMemberPayload {
   email: string;
-  password: string;
   role: string;
   firstName: string;
   lastName: string;
-  requireNationalId?: boolean;
 }
 
 export async function createTeamMember(

@@ -100,6 +100,17 @@
     "statusActive": "활성",
     "statusInactive": "비활성"
   },
+  "onboarding": {
+    "title": "직원 온보딩 설정",
+    "subtitle": "온보딩 중 신규 직원의 요구 사항을 구성합니다.",
+    "loadingText": "온보딩 설정 로딩 중...",
+    "failedMessage": "온보딩 설정 로딩에 실패했습니다.",
+    "savingText": "저장 중...",
+    "requireNationalId": "주민등록번호 필수",
+    "requireNationalIdDescription": "활성화하면 직원이 프로필 완성 시 주민등록번호를 제공해야 합니다.",
+    "enabled": "필수",
+    "disabled": "선택"
+  },
   "restrictedGoods": {
     "title": "제한 품목",
     "subtitle": "배송이 제한된 품목.",

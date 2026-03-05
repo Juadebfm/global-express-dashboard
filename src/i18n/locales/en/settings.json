@@ -100,6 +100,17 @@
     "statusActive": "Active",
     "statusInactive": "Inactive"
   },
+  "onboarding": {
+    "title": "Staff Onboarding Settings",
+    "subtitle": "Configure requirements for new staff members during onboarding.",
+    "loadingText": "Loading onboarding settings...",
+    "failedMessage": "Failed to load onboarding settings.",
+    "savingText": "Saving...",
+    "requireNationalId": "Require National ID",
+    "requireNationalIdDescription": "When enabled, staff must provide a national ID number during profile completion.",
+    "enabled": "Required",
+    "disabled": "Optional"
+  },
   "restrictedGoods": {
     "title": "Restricted Goods",
     "subtitle": "Items restricted from shipment.",
