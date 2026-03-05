@@ -10,8 +10,15 @@ export interface ApiClient {
   id: string;
   firstName: string;
   lastName: string;
+  businessName?: string;
   email: string;
   phone: string;
+  whatsappNumber?: string;
+  addressStreet?: string;
+  addressCity?: string;
+  addressState?: string;
+  addressCountry?: string;
+  addressPostalCode?: string;
   isActive: boolean;
   totalOrders: number;
   totalPayments: string;
