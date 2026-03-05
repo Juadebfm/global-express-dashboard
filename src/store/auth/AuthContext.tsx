@@ -117,14 +117,33 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    try {
+      const user = await getMe(token);
+      if (!user?.role) return;
+      syncLanguageFromUser(user);
+      setState({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+    } catch {
+      /* keep current state on failure */
+    }
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       ...state,
       login,
       logout,
       clearError,
+      refreshUser,
     }),
-    [state, login, logout, clearError]
+    [state, login, logout, clearError, refreshUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

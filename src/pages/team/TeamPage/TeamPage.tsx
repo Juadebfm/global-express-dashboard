@@ -18,6 +18,7 @@ interface TeamFormState {
   password: string;
   role: TeamRole;
   permissions: TeamPermissions;
+  requireNationalId: boolean;
 }
 
 const emptyForm: TeamFormState = {
@@ -31,6 +32,7 @@ const emptyForm: TeamFormState = {
     canTransfer: true,
     viewOnly: false,
   },
+  requireNationalId: false,
 };
 
 const roleLabels: Record<TeamRole, string> = {
@@ -135,6 +137,7 @@ export function TeamPage(): ReactElement {
       password: '',
       role: member.role,
       permissions: { ...member.permissions },
+      requireNationalId: member.requireNationalId ?? false,
     });
     setFormError(null);
     setActiveModal('edit');
@@ -242,6 +245,7 @@ export function TeamPage(): ReactElement {
           email: formState.email.trim().toLowerCase(),
           password: formState.password,
           role: formState.role,
+          requireNationalId: formState.requireNationalId,
         });
         pushMessage({ tone: 'success', message: t('modals.invite.inviteSuccess') });
         setActiveTab('all');
@@ -705,6 +709,39 @@ export function TeamPage(): ReactElement {
                     )}
                   </div>
                 </div>
+
+                {/* National ID requirement toggle (superadmin only) */}
+                {isSuperAdmin && (
+                  <div className="mt-6">
+                    <h3 className="text-sm font-semibold text-gray-700">{t('modals.onboarding.sectionTitle')}</h3>
+                    <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
+                      <div>
+                        <span>{t('modals.onboarding.requireNationalId')}</span>
+                        <p className="mt-0.5 text-xs text-gray-400">{t('modals.onboarding.requireNationalIdHint')}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormState((prev) => ({
+                            ...prev,
+                            requireNationalId: !prev.requireNationalId,
+                          }))
+                        }
+                        className={cn(
+                          'relative h-6 w-11 rounded-full transition',
+                          formState.requireNationalId ? 'bg-brand-500' : 'bg-gray-200'
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow transition',
+                            formState.requireNationalId ? 'left-6' : 'left-1'
+                          )}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {formError && <p className="mt-4 text-sm text-red-500">{formError}</p>}
 

@@ -6,6 +6,8 @@ export interface User {
   role: 'superadmin' | 'admin' | 'staff' | 'user';
   isActive?: boolean;
   preferredLanguage?: 'en' | 'ko';
+  mustChangePassword?: boolean;
+  mustCompleteProfile?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -112,4 +114,25 @@ export interface AccountExportFile {
   blob: Blob;
   filename: string;
   contentType: string | null;
+}
+
+// ── Internal staff onboarding ────────────────────────────────────────────────
+
+export interface StaffProfilePayload {
+  gender: 'male' | 'female' | 'other';
+  dateOfBirth: string;
+  phone: string;
+  addressStreet: string;
+  addressCity: string;
+  addressState: string;
+  addressCountry: string;
+  addressPostalCode: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactRelationship: string;
+  nationalId?: string;
+}
+
+export interface ProfileRequirements {
+  requireNationalId: boolean;
 }

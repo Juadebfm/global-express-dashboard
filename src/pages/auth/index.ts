@@ -4,3 +4,4 @@ export { ForgotPasswordPage } from './ForgotPasswordPage';
 export { CompleteProfilePage } from './CompleteProfilePage';
 export { ExternalSignInPage } from './ExternalSignInPage';
 export { ExternalSignUpPage } from './ExternalSignUpPage';
+export { StaffOnboardingPage } from './StaffOnboardingPage';

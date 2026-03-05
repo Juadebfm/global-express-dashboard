@@ -16,6 +16,8 @@ export type {
   ChangePasswordPayload,
   AdminResetPasswordPayload,
   CreateInternalUserPayload,
+  StaffProfilePayload,
+  ProfileRequirements,
 } from './user.types';
 
 export type {

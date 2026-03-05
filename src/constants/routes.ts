@@ -21,6 +21,7 @@ export const ROUTES = {
   SETTINGS: '/settings',
   SUPPORT: '/support',
   SUPPORT_TICKET: '/support/:ticketId',
+  STAFF_ONBOARDING: '/staff-onboarding',
   ADMIN_DASHBOARD: '/admin/dashboard',
   DELIVERY_SCHEDULE: '/delivery-schedule',
   PAYMENTS: '/payments',

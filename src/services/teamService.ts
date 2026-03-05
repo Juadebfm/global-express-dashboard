@@ -7,6 +7,7 @@ export interface CreateTeamMemberPayload {
   role: string;
   firstName: string;
   lastName: string;
+  requireNationalId?: boolean;
 }
 
 export async function createTeamMember(

@@ -10,6 +10,7 @@ import {
   ExternalSignInPage,
   CompleteProfilePage,
   ExternalSignUpPage,
+  StaffOnboardingPage,
   ForgotPasswordPage,
   ForbiddenPage,
   NotFoundPage,
@@ -71,6 +72,9 @@ function AppRoutes(): ReactElement {
 
         {/* Clerk user profile completion (handled inside page, no ProtectedRoute wrapper needed) */}
         <Route path={ROUTES.COMPLETE_PROFILE} element={<CompleteProfilePage />} />
+
+        {/* Staff onboarding (password change + profile completion) */}
+        <Route path={ROUTES.STAFF_ONBOARDING} element={<StaffOnboardingPage />} />
 
         {/* Protected routes */}
         <Route

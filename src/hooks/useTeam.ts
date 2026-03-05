@@ -25,6 +25,7 @@ function mapApiTeamMember(m: ApiTeamMember): TeamMember {
     role: m.role as TeamRole,
     permissions: derivePermissions(m),
     approvalStatus: m.isActive ? 'approved' : 'pending',
+    requireNationalId: m.requireNationalId,
   };
 }
 
