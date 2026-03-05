@@ -2,6 +2,7 @@
   "loadingLabel": "Loading notifications...",
   "pageTitle": "Notification",
   "refresh": "Refresh",
+  "markAllRead": "Mark all read",
   "badges": {
     "new": "New",
     "saved": "Saved"

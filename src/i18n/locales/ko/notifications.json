@@ -2,6 +2,7 @@
   "loadingLabel": "알림 로딩 중...",
   "pageTitle": "알림",
   "refresh": "새로고침",
+  "markAllRead": "모두 읽음 표시",
   "badges": {
     "new": "새 알림",
     "saved": "저장됨"
