@@ -48,6 +48,9 @@ export function useWebSocket(): void {
             ticketId?: string;
             message?: unknown;
             ticket?: unknown;
+            title?: string;
+            body?: string;
+            metadata?: Record<string, unknown>;
           };
 
           switch (data.type) {
@@ -81,6 +84,20 @@ export function useWebSocket(): void {
                 pushMessage({
                   tone: 'info',
                   message: FEEDBACK_MESSAGES.support.newTicketToast,
+                });
+              }
+              break;
+            }
+
+            case 'notification': {
+              // Real-time notification from BE — show toast and refresh bell counter
+              queryClient.invalidateQueries({ queryKey: ['internal-notifications'] });
+              queryClient.invalidateQueries({ queryKey: ['notifications'] });
+              if (data.title || data.body) {
+                pushMessage({
+                  tone: 'info',
+                  title: data.title,
+                  message: data.body ?? '',
                 });
               }
               break;
