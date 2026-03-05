@@ -121,6 +121,7 @@ export function Topbar({
           </button>
           <button
             type="button"
+            onClick={() => navigate(ROUTES.NOTIFICATIONS)}
             className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gx-control-bg)] text-gray-600 transition hover:bg-[var(--gx-control-bg-hover)] hover:text-gray-800"
             aria-label={t('topbar.notificationsAriaLabel')}
           >
