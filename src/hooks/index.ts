@@ -39,3 +39,4 @@ export { useChangeUserRole } from './useChangeUserRole';
 export { useSupportTicketDetail } from './useSupportTicketDetail';
 export { useSendSupportMessage } from './useSendSupportMessage';
 export { useUpdateTicketStatus } from './useUpdateTicketStatus';
+export { usePushNotifications } from './usePushNotifications';
