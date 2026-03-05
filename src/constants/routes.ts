@@ -1,3 +1,5 @@
+export const PUBLIC_WEBSITE_URL = 'https://www.globalexpress.kr';
+
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
