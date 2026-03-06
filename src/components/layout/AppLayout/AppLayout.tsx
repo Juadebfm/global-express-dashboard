@@ -20,12 +20,33 @@ interface AppLayoutProps {
 const CUSTOMER_NAV: SidebarItem[] = [
   { id: 'dashboard', icon: 'dashboard', href: ROUTES.DASHBOARD },
   { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
+  { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
   { id: 'deliverySchedule', icon: 'calendar', href: ROUTES.DELIVERY_SCHEDULE },
   { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
 ];
 
-const OPERATOR_NAV: SidebarItem[] = [
+const STAFF_NAV: SidebarItem[] = [
+  { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
+  { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
+  { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
+  { id: 'bulkOrders', icon: 'package', href: ROUTES.BULK_ORDERS },
+  { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
+  { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
+];
+
+const ADMIN_NAV: SidebarItem[] = [
+  { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
+  { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
+  { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
+  { id: 'bulkOrders', icon: 'package', href: ROUTES.BULK_ORDERS },
+  { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
+  { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
+  { id: 'team', icon: 'team', href: ROUTES.TEAM },
+  { id: 'reports', icon: 'chart', href: ROUTES.REPORTS },
+];
+
+const SUPERADMIN_NAV: SidebarItem[] = [
   { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
   { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
   { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
@@ -33,14 +54,15 @@ const OPERATOR_NAV: SidebarItem[] = [
   { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
   { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
-];
-
-const ADMIN_EXTRA_NAV: SidebarItem[] = [
   { id: 'team', icon: 'team', href: ROUTES.TEAM },
   { id: 'reports', icon: 'chart', href: ROUTES.REPORTS },
 ];
 
-const FOOTER_NAV: SidebarItem[] = [
+const CUSTOMER_FOOTER: SidebarItem[] = [
+  { id: 'support', icon: 'help', href: ROUTES.SUPPORT },
+];
+
+const OPERATOR_FOOTER: SidebarItem[] = [
   { id: 'settings', icon: 'settings', href: ROUTES.SETTINGS },
   { id: 'support', icon: 'help', href: ROUTES.SUPPORT },
 ];
@@ -65,11 +87,16 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
   const isCustomer = effectiveRole === 'user';
   const isSuperAdminOrAdmin = effectiveRole === 'superadmin' || effectiveRole === 'admin';
 
-  const navItems: SidebarItem[] = isCustomer
-    ? CUSTOMER_NAV
-    : isSuperAdminOrAdmin
-      ? [...OPERATOR_NAV, ...ADMIN_EXTRA_NAV]
-      : OPERATOR_NAV;
+  const navItems: SidebarItem[] = (() => {
+    switch (effectiveRole) {
+      case 'superadmin': return SUPERADMIN_NAV;
+      case 'admin': return ADMIN_NAV;
+      case 'staff': return STAFF_NAV;
+      default: return CUSTOMER_NAV;
+    }
+  })();
+
+  const footerItems: SidebarItem[] = isCustomer ? CUSTOMER_FOOTER : OPERATOR_FOOTER;
 
   const roleLabel = effectiveRole && !isCustomer
     ? t(`common:roles.${effectiveRole}`, effectiveRole)
@@ -111,7 +138,7 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
     <div className="min-h-screen bg-gray-50">
       <Sidebar
         items={navItems}
-        footerItems={FOOTER_NAV}
+        footerItems={footerItems}
         user={effectiveUser}
         roleLabel={roleLabel}
         isCollapsed={isSidebarCollapsed}

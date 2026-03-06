@@ -602,8 +602,8 @@ function CustomerNotificationsView(): ReactElement {
 
 export function NotificationsPage(): ReactElement {
   const { user } = useAuth();
-  const isOperator = !!user;
+  const isAdminOrAbove = user?.role === 'admin' || user?.role === 'superadmin';
 
-  if (isOperator) return <InternalNotificationsView />;
+  if (isAdminOrAbove) return <InternalNotificationsView />;
   return <CustomerNotificationsView />;
 }

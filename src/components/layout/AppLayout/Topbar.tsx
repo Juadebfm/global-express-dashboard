@@ -35,10 +35,10 @@ export function Topbar({
   const navigate = useNavigate();
   const { user: authUser, logout } = useAuth();
 
-  const isOperator = !!authUser;
+  const isAdminOrAbove = authUser?.role === 'admin' || authUser?.role === 'superadmin';
   const customerCount = useNotificationCount();
-  const { data: internalCount } = useInternalNotificationCount(isOperator);
-  const notificationsCount = isOperator ? (internalCount ?? 0) : customerCount;
+  const { data: internalCount } = useInternalNotificationCount(isAdminOrAbove);
+  const notificationsCount = isAdminOrAbove ? (internalCount ?? 0) : customerCount;
   const { isSignedIn: isClerkSignedIn, signOut } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
 
