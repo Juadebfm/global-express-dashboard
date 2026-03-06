@@ -85,7 +85,6 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
 
   const effectiveRole = authUser?.role ?? (isClerkSignedIn ? 'user' : null);
   const isCustomer = effectiveRole === 'user';
-  const isSuperAdminOrAdmin = effectiveRole === 'superadmin' || effectiveRole === 'admin';
 
   const navItems: SidebarItem[] = (() => {
     switch (effectiveRole) {
