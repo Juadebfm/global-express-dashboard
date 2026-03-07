@@ -133,7 +133,9 @@
       "preferredDeliveryDate": "희망 배송 날짜",
       "pickupTime": "픽업 시간",
       "deliveryTime": "배송 시간",
-      "apply": "적용"
+      "apply": "적용",
+      "airTransitInfo": "항공 화물은 매주 출발합니다. 예상 운송 시간: 5~7일.",
+      "oceanTransitInfo": "해상 화물은 약 한 달에 한 번 출발합니다. 예상 운송 시간: 약 3개월."
     },
     "originAddress": {
       "title": "출발지 주소",
