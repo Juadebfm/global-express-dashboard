@@ -35,6 +35,7 @@ export interface ApiCreateOrderResponse {
 export interface OrderListItem {
   id: string;
   trackingNumber: string;
+  senderName?: string | null;
   status: string;
   statusV2: string;
   statusLabel: string;
