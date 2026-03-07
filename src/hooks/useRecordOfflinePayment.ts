@@ -16,6 +16,8 @@ export function useRecordOfflinePayment() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['payments'] });
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
+      void queryClient.invalidateQueries({ queryKey: ['order'] });
+      void queryClient.invalidateQueries({ queryKey: ['shipments'] });
     },
   });
 }

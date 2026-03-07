@@ -4,6 +4,7 @@ import type {
   PricingRule,
   NotificationTemplate,
   RestrictedGood,
+  SpecialPackagingType,
 } from '@/types';
 import { apiGet, apiPatch } from '@/lib/apiClient';
 
@@ -122,4 +123,14 @@ export async function updateRestrictedGoods(
   payload: unknown
 ): Promise<void> {
   await apiPatch('/settings/restricted-goods', payload, token);
+}
+
+export async function getSpecialPackagingTypes(
+  token: string
+): Promise<SpecialPackagingType[]> {
+  const response = await apiGet<{ success: boolean; data: SpecialPackagingType[] }>(
+    '/internal/settings/special-packaging',
+    token
+  );
+  return response.data;
 }

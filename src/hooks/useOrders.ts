@@ -13,7 +13,7 @@ interface OrdersState {
   error: string | null;
 }
 
-export function useOrders(page = 1, limit = 100): OrdersState {
+export function useOrders(page = 1, limit = 100, statusV2?: string): OrdersState {
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
 
@@ -21,11 +21,11 @@ export function useOrders(page = 1, limit = 100): OrdersState {
   const enabled = isClerkSignedIn || !!user;
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['orders', 'list', isCustomer ? 'customer' : 'internal', page, limit],
+    queryKey: ['orders', 'list', isCustomer ? 'customer' : 'internal', page, limit, statusV2 ?? 'all'],
     queryFn: async (): Promise<OrdersListResult> => {
       const token = isCustomer ? await getToken() : localStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
-      return getOrders(token, page, limit);
+      return getOrders(token, page, limit, statusV2);
     },
     enabled,
   });

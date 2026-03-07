@@ -66,3 +66,12 @@ export interface RestrictedGood {
   allowWithOverride: boolean;
   isActive: boolean;
 }
+
+export interface SpecialPackagingType {
+  id?: string;
+  type: string;
+  label: string;
+  description?: string;
+  surchargeUsd?: number;
+  isActive?: boolean;
+}

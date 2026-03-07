@@ -28,7 +28,7 @@ export interface ShipmentMetricCard {
 export interface ShipmentFilterTab {
   id: string;
   label: string;
-  value: StatusCategory | 'all';
+  value: string;
 }
 
 export interface ShipmentRecord {

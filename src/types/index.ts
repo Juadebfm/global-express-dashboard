@@ -113,6 +113,7 @@ export type {
 export type {
   WarehousePackage,
   WarehouseVerifyPayload,
+  WarehouseVerifyResult,
 } from './warehouse.types';
 
 export type {
@@ -151,6 +152,7 @@ export type {
   CustomerPricingOverride,
   NotificationTemplate,
   RestrictedGood,
+  SpecialPackagingType,
 } from './settings.types';
 
 export type {
