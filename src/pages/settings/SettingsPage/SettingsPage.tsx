@@ -9,7 +9,6 @@ import {
   useChangePassword,
   useDashboardData,
   useFxRate,
-  useLogisticsSettings,
   useMyNotificationPreferences,
   usePricingRules,
   useRestrictedGoods,
@@ -23,14 +22,13 @@ import { cn } from '@/utils';
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 
-type SettingsTab = 'general' | 'logistics' | 'fx' | 'pricing' | 'restricted-goods';
+type SettingsTab = 'general' | 'fx' | 'pricing' | 'restricted-goods';
 
-const OPERATOR_TAB_IDS: SettingsTab[] = ['general', 'logistics', 'fx', 'pricing', 'restricted-goods'];
+const OPERATOR_TAB_IDS: SettingsTab[] = ['general', 'fx', 'pricing', 'restricted-goods'];
 
 /** Map tab ID → i18n key under `tabs.*` */
 const TAB_I18N_KEY: Record<SettingsTab, string> = {
   general: 'tabs.general',
-  logistics: 'tabs.logistics',
   fx: 'tabs.fx',
   pricing: 'tabs.pricing',
   'restricted-goods': 'tabs.restrictedGoods',
@@ -118,9 +116,6 @@ export function SettingsPage(): ReactElement {
       setOnboardingSaving(false);
     }
   };
-
-  /* ── Logistics settings (operators: read-only for staff, editable for admin) */
-  const logistics = useLogisticsSettings();
 
   /* ── FX rate (operators: read-only for staff, editable for superadmin) */
   const fxRate = useFxRate();
@@ -517,50 +512,6 @@ export function SettingsPage(): ReactElement {
           </>
         )}
 
-        {/* ── Logistics tab (all operators — read-only) ─────── */}
-        {isOperator && activeTab === 'logistics' && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-900">{t('logistics.title')}</h3>
-            <p className="mt-1 text-xs text-gray-500">
-              {t('logistics.subtitle')}
-            </p>
-
-            {logistics.isLoading && (
-              <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">
-                {t('logistics.loadingText')}
-              </div>
-            )}
-
-            {logistics.error && (
-              <div className="mt-4">
-                <AlertBanner
-                  tone="error"
-                  message={
-                    logistics.error instanceof Error
-                      ? logistics.error.message
-                      : t('logistics.failedMessage')
-                  }
-                />
-              </div>
-            )}
-
-            {logistics.data && (
-              <div className="mt-4 space-y-4">
-                <SettingsField
-                  label={t('logistics.fields.shippingLane')}
-                  value={
-                    typeof logistics.data.lane === 'string'
-                      ? logistics.data.lane
-                      : `${logistics.data.lane.originCity}, ${logistics.data.lane.originCountry} → ${logistics.data.lane.destinationCity}, ${logistics.data.lane.destinationCountry}`
-                  }
-                />
-                <SettingsField label={t('logistics.fields.koreaOffice')} value={logistics.data.koreaOffice} />
-                <SettingsField label={t('logistics.fields.lagosOffice')} value={logistics.data.lagosOffice} />
-                <SettingsField label={t('logistics.fields.etaNotes')} value={logistics.data.etaNotes} />
-              </div>
-            )}
-          </section>
-        )}
 
         {/* ── FX Rate tab (all operators — read-only) ─────────── */}
         {isOperator && activeTab === 'fx' && (
