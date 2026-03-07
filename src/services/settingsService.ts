@@ -8,6 +8,44 @@ import type {
 } from '@/types';
 import { apiGet, apiPatch } from '@/lib/apiClient';
 
+type AnyRecord = Record<string, unknown>;
+
+function asRecord(value: unknown): AnyRecord | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value as AnyRecord;
+}
+
+function asRecordArray(value: unknown): AnyRecord[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => !!asRecord(item)) as AnyRecord[];
+}
+
+function asString(value: unknown): string | null {
+  if (typeof value === 'string') return value.trim() || null;
+  if (typeof value === 'number' || typeof value === 'bigint') return String(value);
+  return null;
+}
+
+function asNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value.replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function asBoolean(value: unknown): boolean | undefined {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return undefined;
+}
+
 // ── Logistics ──────────────────────────────────────────────────
 export async function getLogisticsSettings(token: string): Promise<LogisticsSettings> {
   const response = await apiGet<{ success: boolean; data: LogisticsSettings }>(
@@ -128,9 +166,39 @@ export async function updateRestrictedGoods(
 export async function getSpecialPackagingTypes(
   token: string
 ): Promise<SpecialPackagingType[]> {
-  const response = await apiGet<{ success: boolean; data: SpecialPackagingType[] }>(
+  const response = await apiGet<unknown>(
     '/internal/settings/special-packaging',
     token
   );
-  return response.data;
+  const root = asRecord(response);
+  const dataRecord = asRecord(root?.data);
+
+  const rows = asRecordArray(response)
+    .concat(asRecordArray(root?.data))
+    .concat(asRecordArray(root?.items))
+    .concat(asRecordArray(root?.types))
+    .concat(asRecordArray(dataRecord?.items))
+    .concat(asRecordArray(dataRecord?.types))
+    .concat(asRecordArray(dataRecord?.data));
+
+  const mapped = rows
+    .map((row): SpecialPackagingType | null => {
+      const type = asString(row.type ?? row.key ?? row.code);
+      if (!type) return null;
+
+      const label = asString(row.label ?? row.name) ?? type;
+      const surcharge = asNumber(row.surchargeUsd ?? row.surcharge_usd ?? row.surcharge ?? row.price);
+
+      return {
+        id: asString(row.id ?? row._id) ?? undefined,
+        type,
+        label,
+        description: asString(row.description) ?? undefined,
+        surchargeUsd: surcharge ?? undefined,
+        isActive: asBoolean(row.isActive ?? row.active),
+      };
+    })
+    .filter((item): item is SpecialPackagingType => Boolean(item));
+
+  return mapped;
 }
