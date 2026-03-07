@@ -5,8 +5,13 @@
   "createClientOrder": "Create Client Order",
   "queue": {
     "title": "Order Queue",
+    "shown": "{{shown}} shown / {{total}} total",
+    "searchPlaceholder": "Search by tracking, status, or location",
     "descriptionWithCount": "{{count}} orders available from backend.",
     "descriptionEmpty": "Latest orders across all logistics channels."
+  },
+  "filters": {
+    "all": "All"
   },
   "item": {
     "title": "Order {{trackingNumber}}",
@@ -15,5 +20,138 @@
     "created": "Created: {{date}}"
   },
   "empty": "No orders match your search.",
-  "errorEmpty": "Unable to load orders."
+  "errorEmpty": "Unable to load orders.",
+  "tabs": {
+    "overview": "Overview",
+    "warehouse": "Warehouse",
+    "payment": "Payment",
+    "pickup": "Pickup & Images",
+    "timeline": "Timeline"
+  },
+  "phases": {
+    "preorder": "Pre-order",
+    "warehouse": "Warehouse",
+    "transit": "In Transit",
+    "arrival": "Arrival",
+    "delivery": "Delivery"
+  },
+  "detail": {
+    "selectOrder": "Select an order to view details.",
+    "loading": "Loading order details...",
+    "error": "Failed to load order detail.",
+    "recipient": "Recipient",
+    "recipientPhone": "Recipient Phone",
+    "recipientAddress": "Recipient Address",
+    "senderId": "Sender ID",
+    "transportMode": "Transport Mode",
+    "paymentStatus": "Payment Status",
+    "amountDue": "Amount Due",
+    "finalCharge": "Final Charge",
+    "pricingSource": "Pricing Source",
+    "created": "Created"
+  },
+  "status": {
+    "title": "Status Progression",
+    "subtitle": "Use sequential status updates; exceptions are available below.",
+    "verifyFirst": "WAREHOUSE_VERIFIED_PRICED must be set through warehouse verification.",
+    "moveTo": "Move to {{status}}",
+    "noNext": "No sequential next status available.",
+    "exceptions": "Exception Statuses",
+    "success": "Order moved to {{status}}.",
+    "errors": {
+      "failed": "Failed to update status."
+    }
+  },
+  "warehouse": {
+    "title": "Warehouse Verification & Pricing",
+    "subtitle": "Verify packages, set transport mode, and compute pricing.",
+    "notApplicable": "Warehouse verification is not available for this order's current status. The order must be in WAREHOUSE_RECEIVED status.",
+    "transportMode": "Transport Mode",
+    "air": "Air",
+    "sea": "Sea",
+    "departureDate": "Departure Date",
+    "manualCharge": "Manual Final Charge (USD)",
+    "manualReason": "Manual Adjustment Reason",
+    "packageN": "Package {{n}}",
+    "remove": "Remove",
+    "description": "Description",
+    "itemType": "Item Type",
+    "quantity": "Quantity",
+    "lengthCm": "Length (cm)",
+    "widthCm": "Width (cm)",
+    "heightCm": "Height (cm)",
+    "weightKg": "Weight (kg)",
+    "cbm": "CBM (optional)",
+    "specialPackaging": "Special Packaging Type",
+    "none": "None",
+    "restrictedItem": "Restricted item",
+    "restrictedReason": "Restricted Reason",
+    "overrideApproved": "Override approved",
+    "overrideAdminOnly": "Only admin/superadmin can approve overrides.",
+    "overrideReason": "Override Reason",
+    "addPackage": "Add Package",
+    "submit": "Submit Warehouse Verification",
+    "catalogLoaded": "Restricted goods catalog loaded ({{count}} items).",
+    "success": "Warehouse verified. Final charge: {{charge}}",
+    "errors": {
+      "restrictedReason": "Provide restricted reason for restricted packages.",
+      "overridePermission": "Only admin/superadmin can approve restricted overrides.",
+      "manualReasonRequired": "Manual adjustment reason is required with manual final charge.",
+      "failed": "Warehouse verification failed."
+    }
+  },
+  "payment": {
+    "title": "Record Offline Payment",
+    "subtitle": "Record cash or bank transfer payments received offline.",
+    "alreadyPaid": "Payment has already been collected for this order.",
+    "userId": "Customer User ID",
+    "amount": "Amount",
+    "type": "Payment Type",
+    "transfer": "Transfer",
+    "cash": "Cash",
+    "proofReference": "Proof Reference",
+    "note": "Note",
+    "submit": "Record Offline Payment",
+    "success": "Offline payment recorded.",
+    "errors": {
+      "userRequired": "Customer user ID is required.",
+      "amountRequired": "Amount must be a positive number.",
+      "failed": "Failed to record offline payment."
+    }
+  },
+  "pickup": {
+    "title": "Pickup Representative",
+    "subtitle": "Set or update the person who will collect this order.",
+    "name": "Pickup Rep Name",
+    "phone": "Pickup Rep Phone",
+    "submit": "Update Pickup Representative",
+    "success": "Pickup representative updated.",
+    "errors": {
+      "nameRequired": "Pickup rep name is required.",
+      "failed": "Failed to update pickup representative."
+    }
+  },
+  "images": {
+    "title": "Package Images",
+    "selectFiles": "Select files",
+    "filesSelected": "{{count}} selected",
+    "noFiles": "No files selected",
+    "upload": "Upload",
+    "loading": "Loading images...",
+    "empty": "No images uploaded yet.",
+    "delete": "Delete",
+    "uploadSuccess": "Uploaded {{count}} image(s).",
+    "deleteSuccess": "Image deleted.",
+    "errors": {
+      "noFiles": "Select at least one image.",
+      "uploadFailed": "Upload failed.",
+      "deleteFailed": "Failed to delete image."
+    }
+  },
+  "timeline": {
+    "title": "Order Timeline",
+    "loading": "Loading timeline...",
+    "empty": "No timeline events yet.",
+    "error": "Failed to load timeline."
+  }
 }

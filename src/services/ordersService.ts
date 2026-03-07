@@ -127,6 +127,7 @@ function mapOrderRow(row: AnyRecord, index: number): OrderListItem {
   return {
     id,
     trackingNumber,
+    senderName: firstString(row, ['senderName', 'customerName', 'sender', 'customer']),
     status: firstString(row, ['status', 'orderStatus', 'shipmentStatus']) ?? 'pending',
     statusV2,
     statusLabel,

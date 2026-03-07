@@ -35,6 +35,7 @@ export interface ShipmentRecord {
   id: string;
   sku: string;
   customer: string;
+  createdAt?: string | null;
   origin: string;
   destination: string;
   departureDate: string | null;

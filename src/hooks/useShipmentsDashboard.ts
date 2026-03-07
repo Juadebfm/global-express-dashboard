@@ -13,14 +13,19 @@ interface ShipmentsDashboardState {
   error: string | null;
 }
 
+interface UseShipmentsDashboardOptions {
+  enabled?: boolean;
+}
+
 export function useShipmentsDashboard(
-  params: InternalShipmentsQueryParams = {}
+  params: InternalShipmentsQueryParams = {},
+  options: UseShipmentsDashboardOptions = {}
 ): ShipmentsDashboardState {
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
 
   const isCustomer = isClerkSignedIn && !user;
-  const enabled = isClerkSignedIn || !!user;
+  const enabled = (isClerkSignedIn || !!user) && (options.enabled ?? true);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['shipments', 'dashboard', isCustomer ? 'customer' : 'internal', params],

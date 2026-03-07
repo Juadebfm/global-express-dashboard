@@ -5,8 +5,13 @@
   "createClientOrder": "고객 주문 생성",
   "queue": {
     "title": "주문 대기열",
+    "shown": "{{shown}}개 표시 / 총 {{total}}개",
+    "searchPlaceholder": "추적번호, 상태 또는 위치로 검색",
     "descriptionWithCount": "백엔드에서 {{count}}개 주문이 있습니다.",
     "descriptionEmpty": "모든 물류 채널의 최신 주문입니다."
+  },
+  "filters": {
+    "all": "전체"
   },
   "item": {
     "title": "주문 {{trackingNumber}}",
@@ -15,5 +20,138 @@
     "created": "생성일: {{date}}"
   },
   "empty": "검색과 일치하는 주문이 없습니다.",
-  "errorEmpty": "주문을 불러올 수 없습니다."
+  "errorEmpty": "주문을 불러올 수 없습니다.",
+  "tabs": {
+    "overview": "개요",
+    "warehouse": "창고",
+    "payment": "결제",
+    "pickup": "픽업 및 이미지",
+    "timeline": "타임라인"
+  },
+  "phases": {
+    "preorder": "사전주문",
+    "warehouse": "창고",
+    "transit": "운송 중",
+    "arrival": "도착",
+    "delivery": "배송"
+  },
+  "detail": {
+    "selectOrder": "주문을 선택하여 상세 정보를 확인하세요.",
+    "loading": "주문 상세 로딩 중...",
+    "error": "주문 상세를 불러오지 못했습니다.",
+    "recipient": "수령인",
+    "recipientPhone": "수령인 전화번호",
+    "recipientAddress": "수령인 주소",
+    "senderId": "발송인 ID",
+    "transportMode": "운송 방식",
+    "paymentStatus": "결제 상태",
+    "amountDue": "미결제 금액",
+    "finalCharge": "최종 요금",
+    "pricingSource": "요금 산정 기준",
+    "created": "생성일"
+  },
+  "status": {
+    "title": "상태 진행",
+    "subtitle": "순차적인 상태 업데이트를 사용하세요. 예외 상태는 아래에 있습니다.",
+    "verifyFirst": "WAREHOUSE_VERIFIED_PRICED는 창고 검증을 통해 설정해야 합니다.",
+    "moveTo": "{{status}}(으)로 이동",
+    "noNext": "다음 순차 상태가 없습니다.",
+    "exceptions": "예외 상태",
+    "success": "주문이 {{status}}(으)로 이동되었습니다.",
+    "errors": {
+      "failed": "상태 업데이트에 실패했습니다."
+    }
+  },
+  "warehouse": {
+    "title": "창고 검증 및 가격 책정",
+    "subtitle": "패키지를 확인하고 운송 모드를 설정하고 가격을 산정합니다.",
+    "notApplicable": "현재 주문 상태에서는 창고 검증을 사용할 수 없습니다. WAREHOUSE_RECEIVED 상태여야 합니다.",
+    "transportMode": "운송 방식",
+    "air": "항공",
+    "sea": "해운",
+    "departureDate": "출발일",
+    "manualCharge": "수동 최종 요금 (USD)",
+    "manualReason": "수동 조정 사유",
+    "packageN": "패키지 {{n}}",
+    "remove": "삭제",
+    "description": "설명",
+    "itemType": "품목 유형",
+    "quantity": "수량",
+    "lengthCm": "길이 (cm)",
+    "widthCm": "너비 (cm)",
+    "heightCm": "높이 (cm)",
+    "weightKg": "무게 (kg)",
+    "cbm": "CBM (선택사항)",
+    "specialPackaging": "특수 포장 유형",
+    "none": "없음",
+    "restrictedItem": "제한 품목",
+    "restrictedReason": "제한 사유",
+    "overrideApproved": "예외 승인됨",
+    "overrideAdminOnly": "관리자/최고관리자만 예외를 승인할 수 있습니다.",
+    "overrideReason": "예외 사유",
+    "addPackage": "패키지 추가",
+    "submit": "창고 검증 제출",
+    "catalogLoaded": "제한 품목 카탈로그 로드됨 ({{count}}개 항목).",
+    "success": "창고 검증 완료. 최종 요금: {{charge}}",
+    "errors": {
+      "restrictedReason": "제한 품목에 대한 제한 사유를 입력하세요.",
+      "overridePermission": "관리자/최고관리자만 제한 품목 예외를 승인할 수 있습니다.",
+      "manualReasonRequired": "수동 최종 요금 설정 시 수동 조정 사유가 필요합니다.",
+      "failed": "창고 검증에 실패했습니다."
+    }
+  },
+  "payment": {
+    "title": "오프라인 결제 기록",
+    "subtitle": "오프라인으로 수령한 현금 또는 계좌이체 결제를 기록합니다.",
+    "alreadyPaid": "이 주문의 결제가 이미 완료되었습니다.",
+    "userId": "고객 사용자 ID",
+    "amount": "금액",
+    "type": "결제 유형",
+    "transfer": "계좌이체",
+    "cash": "현금",
+    "proofReference": "증빙 참조",
+    "note": "메모",
+    "submit": "오프라인 결제 기록",
+    "success": "오프라인 결제가 기록되었습니다.",
+    "errors": {
+      "userRequired": "고객 사용자 ID가 필요합니다.",
+      "amountRequired": "금액은 양수여야 합니다.",
+      "failed": "오프라인 결제 기록에 실패했습니다."
+    }
+  },
+  "pickup": {
+    "title": "픽업 담당자",
+    "subtitle": "이 주문을 수령할 사람을 설정하거나 업데이트합니다.",
+    "name": "픽업 담당자 이름",
+    "phone": "픽업 담당자 전화번호",
+    "submit": "픽업 담당자 업데이트",
+    "success": "픽업 담당자가 업데이트되었습니다.",
+    "errors": {
+      "nameRequired": "픽업 담당자 이름이 필요합니다.",
+      "failed": "픽업 담당자 업데이트에 실패했습니다."
+    }
+  },
+  "images": {
+    "title": "패키지 이미지",
+    "selectFiles": "파일 선택",
+    "filesSelected": "{{count}}개 선택됨",
+    "noFiles": "선택된 파일 없음",
+    "upload": "업로드",
+    "loading": "이미지 로딩 중...",
+    "empty": "업로드된 이미지가 없습니다.",
+    "delete": "삭제",
+    "uploadSuccess": "{{count}}개 이미지가 업로드되었습니다.",
+    "deleteSuccess": "이미지가 삭제되었습니다.",
+    "errors": {
+      "noFiles": "이미지를 하나 이상 선택하세요.",
+      "uploadFailed": "업로드에 실패했습니다.",
+      "deleteFailed": "이미지 삭제에 실패했습니다."
+    }
+  },
+  "timeline": {
+    "title": "주문 타임라인",
+    "loading": "타임라인 로딩 중...",
+    "empty": "아직 타임라인 이벤트가 없습니다.",
+    "error": "타임라인을 불러오지 못했습니다."
+  }
 }
