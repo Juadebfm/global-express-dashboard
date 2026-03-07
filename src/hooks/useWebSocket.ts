@@ -30,10 +30,9 @@ export function useWebSocket(): void {
     let isMounted = true;
 
     const connect = async (): Promise<void> => {
-      const token =
-        isClerkSignedIn && !user
-          ? await getToken()
-          : localStorage.getItem(TOKEN_KEY);
+      const token = isClerkSignedIn && !user
+        ? await getToken()
+        : localStorage.getItem(TOKEN_KEY);
 
       if (!token || !isMounted) return;
 
@@ -43,23 +42,30 @@ export function useWebSocket(): void {
 
       ws.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data as string) as {
+          const parsed = JSON.parse(event.data as string) as {
             type?: string;
+            data?: Record<string, unknown>;
             ticketId?: string;
             message?: unknown;
-            ticket?: unknown;
             title?: string;
             body?: string;
-            metadata?: Record<string, unknown>;
           };
 
-          switch (data.type) {
+          const payload =
+            parsed.data && typeof parsed.data === 'object' && !Array.isArray(parsed.data)
+              ? parsed.data
+              : parsed;
+
+          const ticketId = String(payload.ticketId ?? parsed.ticketId ?? '');
+          const message = payload.message ?? parsed.message;
+          const title = String(payload.title ?? parsed.title ?? '');
+          const body = String(payload.body ?? parsed.body ?? '');
+
+          switch (parsed.type) {
             case 'support:message': {
-              const ticketId = data.ticketId;
-              if (ticketId && data.message) {
-                // Append message directly to ticket detail cache for instant display
+              if (ticketId && message) {
                 const mapped = mapSupportMessage(
-                  data.message as Parameters<typeof mapSupportMessage>[0],
+                  message as Parameters<typeof mapSupportMessage>[0],
                 );
                 queryClient.setQueryData<{
                   ticket: SupportTicket;
@@ -71,14 +77,12 @@ export function useWebSocket(): void {
                   return { ...old, messages: [...old.messages, mapped] };
                 });
               }
-              // Also refresh the ticket list (updates "last message" preview)
-              queryClient.invalidateQueries({ queryKey: ['support', 'tickets'] });
+              void queryClient.invalidateQueries({ queryKey: ['support', 'tickets'] });
               break;
             }
 
             case 'support:new_ticket': {
-              queryClient.invalidateQueries({ queryKey: ['support', 'tickets'] });
-              // Only show toast for staff/admin
+              void queryClient.invalidateQueries({ queryKey: ['support', 'tickets'] });
               const isOperator = user && user.role !== 'user';
               if (isOperator) {
                 pushMessage({
@@ -89,29 +93,44 @@ export function useWebSocket(): void {
               break;
             }
 
-            case 'notification': {
-              // Real-time notification from BE — show toast and refresh bell counter
-              queryClient.invalidateQueries({ queryKey: ['internal-notifications'] });
-              queryClient.invalidateQueries({ queryKey: ['notifications'] });
-              if (data.title || data.body) {
+            case 'order_status_updated': {
+              void queryClient.invalidateQueries({ queryKey: ['orders'] });
+              void queryClient.invalidateQueries({ queryKey: ['order'] });
+              void queryClient.invalidateQueries({ queryKey: ['shipments'] });
+              void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+              break;
+            }
+
+            case 'notification:new':
+            case 'notification:broadcast': {
+              void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+              if (title || body) {
                 pushMessage({
                   tone: 'info',
-                  title: data.title,
-                  message: data.body ?? '',
+                  title: title || undefined,
+                  message: body,
+                });
+              }
+              break;
+            }
+
+            case 'notification': {
+              if (title || body) {
+                pushMessage({
+                  tone: 'info',
+                  title: title || undefined,
+                  message: body,
                 });
               }
               break;
             }
 
             default: {
-              // Existing behavior — notification refresh
-              queryClient.invalidateQueries({ queryKey: ['notifications'] });
               break;
             }
           }
         } catch {
-          // Non-JSON message or parsing failure — fall back to notification refresh
-          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          // Ignore malformed/non-JSON websocket payloads.
         }
       };
 

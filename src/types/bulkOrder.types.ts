@@ -14,7 +14,7 @@ export interface BulkOrderItem {
 export interface CreateBulkOrderPayload {
   origin: string;
   destination: string;
-  shipmentType: 'air' | 'ocean';
+  shipmentType: 'air' | 'sea' | 'ocean';
   notes?: string;
   items: BulkOrderItem[];
 }

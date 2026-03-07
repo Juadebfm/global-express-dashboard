@@ -18,15 +18,15 @@ export function usePayments(params: { page?: number; limit?: number; userId?: st
   const getToken = useAuthToken();
 
   const enabled = isClerkSignedIn || !!user;
-  // Clerk users are customers; internal users with role 'user' are also customers
-  const isCustomer = isClerkSignedIn || user?.role === 'user';
+  const canViewAllPayments = user?.role === 'superadmin';
+  const isCustomerScope = !canViewAllPayments;
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['payments', params, isCustomer],
+    queryKey: ['payments', params, isCustomerScope],
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
-      return getPayments(token, { ...params, isCustomer: !!isCustomer });
+      return getPayments(token, { ...params, isCustomer: isCustomerScope });
     },
     enabled,
   });

@@ -21,7 +21,7 @@ function mapApiShipment(s: ApiShipmentRecord): ShipmentRecord {
     status: getStatusCategory(s.statusV2),
     statusV2: s.statusV2,
     statusLabel: s.statusLabel,
-    mode: s.shipmentType,
+    mode: parseMode(s.shipmentType),
     packageCount: Number(s.numberOfPackages) || 0,
     weightKg: parseFloat(s.weight) || 0,
     valueUSD: Number(s.declaredValue) || 0,

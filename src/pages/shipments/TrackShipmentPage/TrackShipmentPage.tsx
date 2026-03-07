@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AppShell } from '@/pages/shared';
-import { useDashboardData } from '@/hooks';
+import { useDashboardData, useOrderTimeline } from '@/hooks';
 import { trackShipment } from '@/services';
 import type { TrackingResult, TimelineEvent } from '@/services/trackingService';
 import { ROUTES } from '@/constants';
@@ -36,6 +36,23 @@ export function TrackShipmentPage(): ReactElement {
   const [trackingResult, setTrackingResult] = useState<TrackingResult | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const timelineOrderId = trackingResult?.orderId;
+  const shouldFetchOrderTimeline = Boolean(timelineOrderId)
+    && (!trackingResult?.timeline || trackingResult.timeline.length === 0);
+  const { data: orderTimeline, isLoading: timelineLoading } = useOrderTimeline(
+    timelineOrderId,
+    shouldFetchOrderTimeline,
+  );
+
+  const effectiveTrackingNumber =
+    trackingResult?.trackingNumber || orderTimeline?.trackingNumber || trackingInput.trim();
+  const effectiveStatus = trackingResult?.status ?? orderTimeline?.currentStatus;
+  const effectiveStatusLabel =
+    trackingResult?.statusLabel || orderTimeline?.currentStatusLabel || '';
+  const effectiveTimeline =
+    trackingResult?.timeline && trackingResult.timeline.length > 0
+      ? trackingResult.timeline
+      : (orderTimeline?.timeline ?? []);
 
   const handleTrack = async (): Promise<void> => {
     const normalized = trackingInput.trim();
@@ -138,13 +155,15 @@ export function TrackShipmentPage(): ReactElement {
           <section className="rounded-3xl border border-gray-200 bg-white p-6">
             <div className="flex flex-col gap-3">
               <h2 className="text-2xl font-semibold text-gray-900">
-                {t('internal.shipmentHeading', { trackingNumber: trackingResult.trackingNumber })}
+                {t('internal.shipmentHeading', { trackingNumber: effectiveTrackingNumber })}
               </h2>
-              {trackingResult.statusLabel && (
+              {effectiveStatusLabel && (
                 <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
                   <span className="inline-flex items-center gap-2">
                     <Package className="h-4 w-4 text-gray-400" />
-                    {trackingResult.status ? t(`shipments:statusV2.${trackingResult.status}`, { defaultValue: trackingResult.statusLabel }) : trackingResult.statusLabel}
+                    {effectiveStatus
+                      ? t(`shipments:statusV2.${effectiveStatus}`, { defaultValue: effectiveStatusLabel })
+                      : effectiveStatusLabel}
                   </span>
                 </div>
               )}
@@ -155,7 +174,7 @@ export function TrackShipmentPage(): ReactElement {
               <div>
                 <p className="text-xs font-semibold uppercase text-gray-400">{t('internal.status')}</p>
                 {(() => {
-                  const s = getTrackingStatusStyle(trackingResult.status ?? 'unknown');
+                  const s = getTrackingStatusStyle(effectiveStatus ?? 'unknown');
                   return (
                     <span
                       className={cn(
@@ -163,7 +182,9 @@ export function TrackShipmentPage(): ReactElement {
                         s.bg
                       )}
                     >
-                      {trackingResult.status ? t(`shipments:statusV2.${trackingResult.status}`, { defaultValue: trackingResult.statusLabel || s.label }) : (trackingResult.statusLabel || s.label)}
+                      {effectiveStatus
+                        ? t(`shipments:statusV2.${effectiveStatus}`, { defaultValue: effectiveStatusLabel || s.label })
+                        : (effectiveStatusLabel || s.label)}
                     </span>
                   );
                 })()}
@@ -211,7 +232,9 @@ export function TrackShipmentPage(): ReactElement {
                   </div>
                   <div className="flex items-center gap-2 text-xs font-semibold uppercase text-gray-400">
                     <ShieldCheck className="h-4 w-4" />
-                    {trackingResult.status ? t(`shipments:statusV2.${trackingResult.status}`, { defaultValue: trackingResult.statusLabel || t('internal.inTransit') }) : (trackingResult.statusLabel || t('internal.inTransit'))}
+                    {effectiveStatus
+                      ? t(`shipments:statusV2.${effectiveStatus}`, { defaultValue: effectiveStatusLabel || t('internal.inTransit') })
+                      : (effectiveStatusLabel || t('internal.inTransit'))}
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase text-gray-400">{t('internal.to')}</p>
@@ -228,11 +251,11 @@ export function TrackShipmentPage(): ReactElement {
             {/* Timeline */}
             <div className="mt-6 border-t border-gray-100 pt-5">
               <h3 className="text-sm font-semibold text-gray-900">{t('internal.timeline')}</h3>
-              {trackingResult.timeline && trackingResult.timeline.length > 0 ? (
+              {effectiveTimeline.length > 0 ? (
                 <ol className="mt-4 space-y-0">
-                  {trackingResult.timeline.map((event: TimelineEvent, idx: number) => {
-                    const isLast = idx === trackingResult.timeline!.length - 1;
-                    const isCurrent = event.status === trackingResult.status;
+                  {effectiveTimeline.map((event: TimelineEvent, idx: number) => {
+                    const isLast = idx === effectiveTimeline.length - 1;
+                    const isCurrent = event.status === effectiveStatus;
                     const category = getStatusCategory(event.status);
                     const dotColor: Record<string, string> = {
                       pending: 'bg-amber-500',
@@ -296,6 +319,8 @@ export function TrackShipmentPage(): ReactElement {
                     );
                   })}
                 </ol>
+              ) : timelineLoading ? (
+                <p className="mt-3 text-sm text-gray-400">{t('internal.tracking')}</p>
               ) : (
                 <p className="mt-3 text-sm text-gray-400">{t('internal.timelineEmpty')}</p>
               )}
