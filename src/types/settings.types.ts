@@ -1,5 +1,13 @@
+export interface ShippingLane {
+  originCountry: string;
+  originCity: string;
+  destinationCountry: string;
+  destinationCity: string;
+  isLocked: boolean;
+}
+
 export interface LogisticsSettings {
-  lane: string;
+  lane: string | ShippingLane;
   koreaOffice: string;
   lagosOffice: string;
   etaNotes: string;
