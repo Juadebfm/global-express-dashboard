@@ -9,6 +9,13 @@ import type { StatusCategory } from '@/types/status.types';
 import { getStatusCategory } from '@/lib/statusUtils';
 import { apiGet } from '@/lib/apiClient';
 
+export interface InternalShipmentsQueryParams {
+  statusV2?: string;
+  senderId?: string;
+  page?: number;
+  limit?: number;
+}
+
 function mapApiShipment(s: ApiShipmentRecord): ShipmentRecord {
   return {
     id: s.id,
@@ -242,7 +249,8 @@ function buildShipmentsDashboardData(
 
 export async function getShipmentsDashboard(
   token: string,
-  isCustomer = false
+  isCustomer = false,
+  params: InternalShipmentsQueryParams = {}
 ): Promise<ShipmentsDashboardData> {
   if (isCustomer) {
     const response = await apiGet<unknown>('/orders/my-shipments?page=1&limit=100', token);
@@ -254,7 +262,13 @@ export async function getShipmentsDashboard(
     );
   }
 
-  const response = await apiGet<ApiShipmentsResponse>('/shipments?limit=100', token);
+  const searchParams = new URLSearchParams();
+  searchParams.set('page', String(params.page ?? 1));
+  searchParams.set('limit', String(params.limit ?? 100));
+  if (params.statusV2) searchParams.set('statusV2', params.statusV2);
+  if (params.senderId) searchParams.set('senderId', params.senderId);
+
+  const response = await apiGet<ApiShipmentsResponse>(`/shipments?${searchParams.toString()}`, token);
   const shipments = response.data.data.map(mapApiShipment);
 
   return buildShipmentsDashboardData(

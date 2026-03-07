@@ -126,7 +126,10 @@ function AppRoutes(): ReactElement {
         <Route
           path={ROUTES.CLIENTS}
           element={
-            <ProtectedRoute>
+            <ProtectedRoute
+              allowedRoles={['admin', 'superadmin']}
+              redirectTo={ROUTES.ADMIN_DASHBOARD}
+            >
               <ClientsPage />
             </ProtectedRoute>
           }

@@ -34,7 +34,7 @@ export { verifyOrder } from './warehouseService';
 export { initializePayment, verifyPayment, getPayments, getPaymentById, recordOfflinePayment } from './paymentsService';
 export { createBulkOrder, getBulkOrders, getBulkOrderById, updateBulkOrderStatus, addBulkOrderItem, removeBulkOrderItem, deleteBulkOrder } from './bulkOrdersService';
 export { getReportSummary, getOrdersByStatus, getRevenueReport, getRevenueAnalytics, getShipmentVolume, getTopCustomers, getDeliveryPerformance, getStatusPipeline, getPaymentBreakdown, getShipmentComparison } from './reportsService';
-export { getLogisticsSettings, updateLogisticsSettings, getFxRate, updateFxRate, getPricingRules, updatePricingRules, getTemplates, updateTemplate, getRestrictedGoods, updateRestrictedGoods } from './settingsService';
+export { getLogisticsSettings, updateLogisticsSettings, getFxRate, updateFxRate, getPricingRules, updatePricingRules, getTemplates, updateTemplate, getRestrictedGoods, updateRestrictedGoods, getSpecialPackagingTypes } from './settingsService';
 export { presignUpload, confirmUpload, getOrderImages as getUploadedOrderImages, deleteImage } from './uploadsService';
 export { getVapidPublicKey, subscribePush } from './pushService';
 export { getUsers, getUserById, updateUser, changeUserRole, deleteUser } from './adminUsersService';

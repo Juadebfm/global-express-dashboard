@@ -21,3 +21,11 @@ export interface WarehouseVerifyPayload {
   manualFinalChargeUsd?: number;
   manualAdjustmentReason?: string;
 }
+
+export interface WarehouseVerifyResult {
+  calculatedChargeUsd: number;
+  specialPackagingSurchargeUsd: number;
+  finalChargeUsd: number;
+  pricingSource: 'DEFAULT_RATE' | 'CUSTOMER_OVERRIDE' | 'MANUAL_ADJUSTMENT' | string;
+  amountDue: number | null;
+}

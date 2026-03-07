@@ -31,7 +31,6 @@ const STAFF_NAV: SidebarItem[] = [
   { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
   { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
   { id: 'bulkOrders', icon: 'package', href: ROUTES.BULK_ORDERS },
-  { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
 ];
 
