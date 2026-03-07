@@ -546,7 +546,14 @@ export function SettingsPage(): ReactElement {
 
             {logistics.data && (
               <div className="mt-4 space-y-4">
-                <SettingsField label={t('logistics.fields.shippingLane')} value={logistics.data.lane} />
+                <SettingsField
+                  label={t('logistics.fields.shippingLane')}
+                  value={
+                    typeof logistics.data.lane === 'string'
+                      ? logistics.data.lane
+                      : `${logistics.data.lane.originCity}, ${logistics.data.lane.originCountry} → ${logistics.data.lane.destinationCity}, ${logistics.data.lane.destinationCountry}`
+                  }
+                />
                 <SettingsField label={t('logistics.fields.koreaOffice')} value={logistics.data.koreaOffice} />
                 <SettingsField label={t('logistics.fields.lagosOffice')} value={logistics.data.lagosOffice} />
                 <SettingsField label={t('logistics.fields.etaNotes')} value={logistics.data.etaNotes} />
