@@ -13,12 +13,21 @@ interface OrdersState {
   error: string | null;
 }
 
-export function useOrders(page = 1, limit = 100, statusV2?: string): OrdersState {
+interface UseOrdersOptions {
+  enabled?: boolean;
+}
+
+export function useOrders(
+  page = 1,
+  limit = 100,
+  statusV2?: string,
+  options: UseOrdersOptions = {}
+): OrdersState {
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
 
   const isCustomer = isClerkSignedIn && !user;
-  const enabled = isClerkSignedIn || !!user;
+  const enabled = (isClerkSignedIn || !!user) && (options.enabled ?? true);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['orders', 'list', isCustomer ? 'customer' : 'internal', page, limit, statusV2 ?? 'all'],
