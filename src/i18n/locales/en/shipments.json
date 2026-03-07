@@ -133,7 +133,9 @@
       "preferredDeliveryDate": "Preferred Delivery Date",
       "pickupTime": "Pick-up Time",
       "deliveryTime": "Delivery Time",
-      "apply": "Apply"
+      "apply": "Apply",
+      "airTransitInfo": "Air freight departs weekly. Estimated transit time: 5–7 days.",
+      "oceanTransitInfo": "Ocean freight departs approximately once a month. Estimated transit time: ~3 months."
     },
     "originAddress": {
       "title": "Origin Address",

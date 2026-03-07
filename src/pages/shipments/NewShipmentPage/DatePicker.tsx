@@ -42,9 +42,10 @@ interface DatePickerProps {
   label: string;
   value: Date | null;
   onChange: (date: Date) => void;
+  minDate?: Date;
 }
 
-export function DatePicker({ label, value, onChange }: DatePickerProps): ReactElement {
+export function DatePicker({ label, value, onChange, minDate }: DatePickerProps): ReactElement {
   const [isOpen, setIsOpen] = useState(false);
   const [view, setView] = useState<'calendar' | 'year'>('calendar');
   const [openAbove, setOpenAbove] = useState(false);
@@ -143,15 +144,22 @@ export function DatePicker({ label, value, onChange }: DatePickerProps): ReactEl
                     item.date.getUTCMonth() === value.getUTCMonth() &&
                     item.date.getUTCDate() === value.getUTCDate();
 
+                  const isPast = minDate
+                    ? item.date.getTime() < new Date(Date.UTC(minDate.getUTCFullYear(), minDate.getUTCMonth(), minDate.getUTCDate())).getTime()
+                    : false;
+
                   return (
                     <button
                       key={`${item.date.toISOString()}-${item.day}`}
                       type="button"
-                      onClick={() => { onChange(item.date); setIsOpen(false); setView('calendar'); }}
+                      disabled={isPast}
+                      onClick={() => { if (!isPast) { onChange(item.date); setIsOpen(false); setView('calendar'); } }}
                       className={cn(
                         'flex h-9 w-9 items-center justify-center rounded-full',
-                        item.isCurrentMonth ? 'text-gray-700 hover:bg-brand-50' : 'text-gray-300',
-                        isSelected && 'bg-brand-500 text-white hover:bg-brand-500',
+                        isPast && 'cursor-not-allowed text-gray-200 line-through',
+                        !isPast && item.isCurrentMonth && 'text-gray-700 hover:bg-brand-50',
+                        !isPast && !item.isCurrentMonth && 'text-gray-300',
+                        isSelected && !isPast && 'bg-brand-500 text-white hover:bg-brand-500',
                       )}
                     >
                       {item.day}

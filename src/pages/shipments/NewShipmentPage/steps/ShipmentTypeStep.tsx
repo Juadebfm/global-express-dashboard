@@ -1,5 +1,7 @@
 import type { ReactElement } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Info } from 'lucide-react';
 import { cn } from '@/utils';
 import { SHIPMENT_TYPE_KEYS } from '../types';
 import type { ShipmentFormState, ShipmentFormActions } from '../types';
@@ -27,6 +29,11 @@ export function ShipmentTypeStep({
     value: s.value,
     label: t(s.labelKey),
   }));
+
+  const today = useMemo(() => {
+    const now = new Date();
+    return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  }, []);
 
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-6">
@@ -101,16 +108,28 @@ export function ShipmentTypeStep({
         </div>
 
         <div>
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
+          {/* Transit info banner */}
+          <div className="mt-6 flex items-start gap-2 rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-brand-700">
+            <Info className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              {formState.shipmentType === 'air'
+                ? t('newShipment.schedule.airTransitInfo')
+                : t('newShipment.schedule.oceanTransitInfo')}
+            </span>
+          </div>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
             <DatePicker
               label={t('newShipment.schedule.pickupDate')}
               value={formState.pickupDate}
               onChange={(d) => formActions.setPickupDate(d)}
+              minDate={today}
             />
             <DatePicker
               label={t('newShipment.schedule.preferredDeliveryDate')}
               value={formState.deliveryDate}
               onChange={(d) => formActions.setDeliveryDate(d)}
+              minDate={today}
             />
           </div>
 
