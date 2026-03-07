@@ -131,17 +131,20 @@ export function useNewShipmentForm() {
 
     setEstimateLoading(true);
     try {
+      const token = isCustomer
+        ? await getToken()
+        : localStorage.getItem(INTERNAL_TOKEN_KEY);
       const payload = shipmentType === 'air'
         ? { shipmentType: 'air' as const, weightKg: weightVal }
         : { shipmentType: 'ocean' as const, cbm: cbmVal };
-      const result = await estimateShippingCost(payload);
+      const result = await estimateShippingCost(payload, token ?? undefined);
       setEstimate(result);
     } catch {
       /* Silently ignore — estimate is non-critical */
     } finally {
       setEstimateLoading(false);
     }
-  }, [shipmentType, packageWeightKg, packageCbm]);
+  }, [shipmentType, packageWeightKg, packageCbm, isCustomer, getToken]);
 
   useEffect(() => {
     const timer = setTimeout(() => { void fetchEstimate(); }, 500);
@@ -275,3 +278,4 @@ export function useNewShipmentForm() {
     isCustomer, clients,
   };
 }
+

@@ -8,11 +8,19 @@ import type {
 } from '@/types';
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/apiClient';
 
+function normalizeShipmentType(type: 'air' | 'sea' | 'ocean'): 'air' | 'sea' {
+  return type === 'ocean' ? 'sea' : type;
+}
+
 export async function createOrder(
   payload: CreateOrderPayload,
   token: string
 ): Promise<ApiOrder> {
-  const response = await apiPost<ApiCreateOrderResponse>('/orders', payload, token);
+  const normalizedPayload: CreateOrderPayload = {
+    ...payload,
+    shipmentType: normalizeShipmentType(payload.shipmentType),
+  };
+  const response = await apiPost<ApiCreateOrderResponse>('/orders', normalizedPayload, token);
   return response.data;
 }
 
@@ -194,6 +202,31 @@ export function getOrderById(
   return apiGet<ApiOrder>(`/orders/${id}`, token);
 }
 
+export interface OrderTimelineEvent {
+  status: string;
+  statusLabel: string;
+  timestamp: string;
+}
+
+export interface OrderTimeline {
+  orderId: string;
+  trackingNumber: string;
+  currentStatus: string;
+  currentStatusLabel: string;
+  timeline: OrderTimelineEvent[];
+}
+
+export async function getOrderTimeline(
+  token: string,
+  id: string
+): Promise<OrderTimeline> {
+  const response = await apiGet<{ success: boolean; data: OrderTimeline }>(
+    `/orders/${id}/timeline`,
+    token
+  );
+  return response.data;
+}
+
 export function getOrderImages(
   token: string,
   id: string
@@ -234,7 +267,7 @@ export async function updatePickupRep(
 /* ── Shipping cost estimate ─────────────────────────────── */
 
 export interface EstimatePayload {
-  shipmentType: 'air' | 'ocean';
+  shipmentType: 'air' | 'sea' | 'ocean';
   weightKg?: number;
   lengthCm?: number;
   widthCm?: number;
@@ -252,13 +285,21 @@ export interface ShippingEstimate {
   disclaimer: string;
 }
 
-// Public endpoint — no auth required
+// Uses authenticated estimate when token is provided; falls back to public estimate otherwise.
 export async function estimateShippingCost(
   payload: EstimatePayload,
+  token?: string,
 ): Promise<ShippingEstimate> {
+  const normalizedPayload: EstimatePayload = {
+    ...payload,
+    shipmentType: normalizeShipmentType(payload.shipmentType),
+  };
   const response = await apiPost<{ success: boolean; data: ShippingEstimate }>(
-    '/public/calculator/estimate',
-    payload,
+    token ? '/orders/estimate' : '/public/calculator/estimate',
+    normalizedPayload,
+    token,
   );
   return response.data;
 }
+
+
