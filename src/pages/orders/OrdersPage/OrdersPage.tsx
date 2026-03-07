@@ -352,6 +352,8 @@ export function OrdersPage(): ReactElement {
     const rows = timelineQuery.data?.timeline ?? [];
     return [...rows].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }, [timelineQuery.data]);
+  const packagingTypes = Array.isArray(packagingTypesQuery.data) ? packagingTypesQuery.data : [];
+  const orderImages = Array.isArray(imagesQuery.data) ? imagesQuery.data : [];
 
   const effectiveTransportMode: 'air' | 'sea' = transportMode
     || ((view?.transportMode || view?.shipmentType || 'air') === 'sea' ? 'sea' : 'air');
@@ -744,7 +746,7 @@ export function OrdersPage(): ReactElement {
                             <Field label="Special Packaging Type">
                               <select value={pkg.specialPackagingType} onChange={(event) => handlePackageChange(pkg.id, 'specialPackagingType', event.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500">
                                 <option value="">None</option>
-                                {(packagingTypesQuery.data ?? []).map((item) => (
+                                {packagingTypes.map((item) => (
                                   <option key={item.type} value={item.type}>{item.label}</option>
                                 ))}
                               </select>
@@ -867,11 +869,11 @@ export function OrdersPage(): ReactElement {
                     <div className="mt-4 rounded-xl border border-gray-200">
                       {imagesQuery.isLoading ? (
                         <p className="px-4 py-6 text-sm text-gray-500">Loading images...</p>
-                      ) : (imagesQuery.data?.length ?? 0) === 0 ? (
+                      ) : orderImages.length === 0 ? (
                         <p className="px-4 py-6 text-sm text-gray-500">No images uploaded.</p>
                       ) : (
                         <ul className="divide-y divide-gray-100">
-                          {(imagesQuery.data ?? []).map((image) => (
+                          {orderImages.map((image) => (
                             <li key={image.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
                               <a href={image.url} target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">
                                 {image.r2Key || image.id}
