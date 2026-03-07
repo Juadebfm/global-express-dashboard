@@ -214,7 +214,15 @@
       "recipientRequired": "수취인 이름, 이메일, 전화번호를 입력해 주세요.",
       "pickupRepRequired": "픽업 대리인의 이름을 입력해 주세요.",
       "senderRequired": "이 주문을 위한 고객을 선택해 주세요.",
-      "failedToCreate": "배송 주문 생성에 실패했습니다."
+      "failedToCreate": "배송 주문 생성에 실패했습니다.",
+      "descriptionRequired": "패키지 설명을 입력해 주세요.",
+      "weightRequired": "항공 화물의 무게를 입력해 주세요.",
+      "volumeRequired": "해상 화물의 부피(CBM)를 입력해 주세요.",
+      "declaredValueRequired": "신고 가격을 입력해 주세요.",
+      "nameRequired": "수취인 이름을 입력해 주세요.",
+      "emailRequired": "수취인 이메일을 입력해 주세요.",
+      "emailInvalid": "유효한 이메일 주소를 입력해 주세요.",
+      "phoneRequired": "수취인 전화번호를 입력해 주세요."
     },
     "confirmation": {
       "shipmentCreated": "배송 생성 완료",

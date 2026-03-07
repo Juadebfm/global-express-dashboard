@@ -214,7 +214,15 @@
       "recipientRequired": "Please provide recipient name, email, and phone number.",
       "pickupRepRequired": "Please provide the pickup representative's name.",
       "senderRequired": "Please select a customer to create this order for.",
-      "failedToCreate": "Failed to create shipment order."
+      "failedToCreate": "Failed to create shipment order.",
+      "descriptionRequired": "Package description is required.",
+      "weightRequired": "Weight is required for air freight.",
+      "volumeRequired": "Volume (CBM) is required for ocean freight.",
+      "declaredValueRequired": "Declared value is required.",
+      "nameRequired": "Recipient name is required.",
+      "emailRequired": "Recipient email is required.",
+      "emailInvalid": "Please enter a valid email address.",
+      "phoneRequired": "Recipient phone number is required."
     },
     "confirmation": {
       "shipmentCreated": "Shipment created",
