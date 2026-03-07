@@ -216,7 +216,7 @@ export async function getOnboardingSettings(
   token: string
 ): Promise<ProfileRequirements> {
   const response = await apiGet<{ success: boolean; data: ProfileRequirements }>(
-    '/internal/settings/onboarding',
+    '/internal/settings/require-national-id',
     token
   );
   return response.data;
@@ -227,8 +227,8 @@ export async function updateOnboardingSettings(
   payload: Partial<ProfileRequirements>
 ): Promise<ProfileRequirements> {
   const response = await apiPatch<{ success: boolean; data: ProfileRequirements }>(
-    '/internal/settings/onboarding',
-    payload,
+    '/internal/settings/require-national-id',
+    { enabled: payload.requireNationalId },
     token
   );
   return response.data;
