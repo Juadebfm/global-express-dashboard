@@ -15,6 +15,8 @@ export function useUpdateOrderStatus() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
       void queryClient.invalidateQueries({ queryKey: ['order'] });
+      void queryClient.invalidateQueries({ queryKey: ['order', 'timeline'] });
+      void queryClient.invalidateQueries({ queryKey: ['shipments'] });
     },
   });
 }

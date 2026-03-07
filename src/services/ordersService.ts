@@ -79,6 +79,12 @@ function firstNumber(record: AnyRecord, keys: string[]): number | null {
   return null;
 }
 
+function extractDataRecord(payload: unknown): AnyRecord | null {
+  const root = asRecord(payload);
+  if (!root) return null;
+  return asRecord(root.data) ?? root;
+}
+
 function extractOrderRows(payload: unknown): AnyRecord[] {
   if (Array.isArray(payload)) return asRecordArray(payload);
 
@@ -199,7 +205,13 @@ export function getOrderById(
   token: string,
   id: string
 ): Promise<ApiOrder> {
-  return apiGet<ApiOrder>(`/orders/${id}`, token);
+  return apiGet<unknown>(`/orders/${id}`, token).then((response) => {
+    const order = extractDataRecord(response);
+    if (!order) {
+      throw new Error('Invalid order response');
+    }
+    return order as ApiOrder;
+  });
 }
 
 export interface OrderTimelineEvent {
@@ -220,18 +232,49 @@ export async function getOrderTimeline(
   token: string,
   id: string
 ): Promise<OrderTimeline> {
-  const response = await apiGet<{ success: boolean; data: OrderTimeline }>(
+  const response = await apiGet<unknown>(
     `/orders/${id}/timeline`,
     token
   );
-  return response.data;
+  const record = extractDataRecord(response);
+  if (!record) {
+    throw new Error('Invalid order timeline response');
+  }
+
+  const timelineRows = asRecordArray(record.timeline).map((item) => ({
+    status: firstString(item, ['status', 'statusV2', 'status_v2']) ?? '',
+    statusLabel: firstString(item, ['statusLabel', 'status_label']) ?? '',
+    timestamp: firstString(item, ['timestamp', 'createdAt', 'updatedAt']) ?? '',
+  }));
+
+  return {
+    orderId: firstString(record, ['orderId', 'id']) ?? id,
+    trackingNumber: firstString(record, ['trackingNumber', 'trackingNo']) ?? '',
+    currentStatus: firstString(record, ['currentStatus', 'status', 'statusV2']) ?? '',
+    currentStatusLabel: firstString(record, ['currentStatusLabel', 'statusLabel']) ?? '',
+    timeline: timelineRows,
+  };
 }
 
 export function getOrderImages(
   token: string,
   id: string
 ): Promise<OrderImage[]> {
-  return apiGet<OrderImage[]>(`/orders/${id}/images`, token);
+  return apiGet<unknown>(`/orders/${id}/images`, token).then((response) => {
+    const directRows = asRecordArray(response);
+    const root = asRecord(response);
+    const wrappedRows = root ? asRecordArray(root.data) : [];
+    const rows = directRows.length > 0 ? directRows : wrappedRows;
+
+    return rows.map((item, index) => ({
+      id: firstString(item, ['id', '_id']) ?? `image-${index + 1}`,
+      orderId: firstString(item, ['orderId', 'order_id']) ?? id,
+      r2Key: firstString(item, ['r2Key', 'key']) ?? '',
+      url: firstString(item, ['url', 'imageUrl']) ?? '',
+      uploadedBy: firstString(item, ['uploadedBy', 'uploaded_by']) ?? '',
+      createdAt: firstString(item, ['createdAt', 'created_at']) ?? '',
+    }));
+  });
 }
 
 export async function updateOrderStatus(

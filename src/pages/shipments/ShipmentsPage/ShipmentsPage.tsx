@@ -69,10 +69,13 @@ export function ShipmentsPage(): ReactElement {
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn } = useClerkAuth();
   const isCustomer = isClerkSignedIn && !user;
+  const isOperator = !!user;
+  const [activeFilter, setActiveFilter] = useState<ShipmentFilterTab['value']>('all');
+  const operatorStatusV2 = isOperator && activeFilter !== 'all' ? activeFilter : undefined;
   const { data: dashboardData, isLoading: isDashboardLoading, error: dashboardError } =
     useDashboardData();
   const { data: shipmentsData, isLoading: isShipmentsLoading, error: shipmentsError } =
-    useShipmentsDashboard();
+    useShipmentsDashboard({ statusV2: operatorStatusV2, limit: 100 });
   const { query, setQuery } = useSearch();
   const navigate = useNavigate();
 
@@ -93,7 +96,6 @@ export function ShipmentsPage(): ReactElement {
     t('csv.status'),
     t('csv.type'),
   ], [t]);
-  const [activeFilter, setActiveFilter] = useState<ShipmentFilterTab['value']>('all');
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -112,8 +114,11 @@ export function ShipmentsPage(): ReactElement {
   const statusScopedShipments = useMemo(() => {
     if (!effectiveShipments.length) return [];
     if (activeFilter === 'all') return effectiveShipments;
-    return effectiveShipments.filter((shipment) => shipment.status === activeFilter);
-  }, [effectiveShipments, activeFilter]);
+    if (isCustomer) {
+      return effectiveShipments.filter((shipment) => shipment.status === activeFilter);
+    }
+    return effectiveShipments.filter((shipment) => shipment.statusV2 === activeFilter);
+  }, [effectiveShipments, activeFilter, isCustomer]);
 
   const filteredShipments = useMemo(() => {
     if (!statusScopedShipments.length) return [];
@@ -203,13 +208,41 @@ export function ShipmentsPage(): ReactElement {
     };
   }, [shipmentsData, effectiveShipments, t]);
 
-  const translatedFilters = useMemo(() => [
-    { id: 'all', label: t('filters.all'), value: 'all' as const },
-    { id: 'pending', label: t('filters.pending'), value: 'pending' as const },
-    { id: 'active', label: t('filters.active'), value: 'active' as const },
-    { id: 'completed', label: t('filters.completed'), value: 'completed' as const },
-    { id: 'exception', label: t('filters.exception'), value: 'exception' as const },
-  ], [t]);
+  const translatedFilters = useMemo(() => {
+    if (!isCustomer) {
+      return [
+        { id: 'all', label: t('filters.all'), value: 'all' },
+        {
+          id: 'preordersWaiting',
+          label: t('statusV2.PREORDER_SUBMITTED', { defaultValue: 'Pre-orders Waiting' }),
+          value: 'PREORDER_SUBMITTED',
+        },
+        {
+          id: 'awaitingWarehouse',
+          label: t('statusV2.AWAITING_WAREHOUSE_RECEIPT', { defaultValue: 'Awaiting Warehouse Receipt' }),
+          value: 'AWAITING_WAREHOUSE_RECEIPT',
+        },
+        {
+          id: 'needsVerification',
+          label: t('statusV2.WAREHOUSE_RECEIVED', { defaultValue: 'Received - Needs Verification' }),
+          value: 'WAREHOUSE_RECEIVED',
+        },
+        {
+          id: 'verifiedPriced',
+          label: t('statusV2.WAREHOUSE_VERIFIED_PRICED', { defaultValue: 'Verified & Priced' }),
+          value: 'WAREHOUSE_VERIFIED_PRICED',
+        },
+      ];
+    }
+
+    return [
+      { id: 'all', label: t('filters.all'), value: 'all' },
+      { id: 'pending', label: t('filters.pending'), value: 'pending' },
+      { id: 'active', label: t('filters.active'), value: 'active' },
+      { id: 'completed', label: t('filters.completed'), value: 'completed' },
+      { id: 'exception', label: t('filters.exception'), value: 'exception' },
+    ];
+  }, [t, isCustomer]);
 
   const hasRows = filteredShipments.length > 0;
   const totalVisible = statusScopedShipments.length;
