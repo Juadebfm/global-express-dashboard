@@ -7,6 +7,7 @@ export interface WarehousePackage {
   heightCm?: number;
   weightKg?: number;
   cbm?: number;
+  specialPackagingType?: string;
   isRestricted?: boolean;
   restrictedReason?: string | null;
   restrictedOverrideApproved?: boolean;
@@ -15,6 +16,7 @@ export interface WarehousePackage {
 
 export interface WarehouseVerifyPayload {
   transportMode: 'air' | 'sea';
+  departureDate?: string;
   packages: WarehousePackage[];
   manualFinalChargeUsd?: number;
   manualAdjustmentReason?: string;

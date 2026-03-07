@@ -183,7 +183,7 @@ export interface ApiTrend {
 
 export interface ApiActiveDelivery {
   destination: string; // e.g. "Lagos, Nigeria"
-  shipmentType: 'air' | 'ocean' | null;
+  shipmentType: 'air' | 'sea' | 'ocean' | null;
   activeCount: number;
   nextEta: string | null; // ISO 8601
   status: 'on_time' | 'delayed' | 'unknown';

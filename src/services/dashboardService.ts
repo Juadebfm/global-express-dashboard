@@ -34,7 +34,7 @@ function etaMinutes(isoString: string | null): number {
 }
 
 function shipmentTypeToMode(type: ApiActiveDelivery['shipmentType']): ActiveDelivery['mode'] {
-  if (type === 'ocean') return 'ship';
+  if (type === 'ocean' || type === 'sea') return 'ship';
   return 'air';
 }
 

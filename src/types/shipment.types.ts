@@ -76,7 +76,7 @@ export interface ApiShipmentRecord {
   eta: string | null;
   statusV2: string;
   statusLabel: string;
-  shipmentType: 'air' | 'ocean';
+  shipmentType: 'air' | 'sea' | 'ocean';
   numberOfPackages: number;
   weight: string;
   declaredValue: number;

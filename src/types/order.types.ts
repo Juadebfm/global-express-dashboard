@@ -6,10 +6,10 @@ export interface CreateOrderPayload {
   recipientPhone: string;
   recipientEmail: string;
   orderDirection: OrderDirection;
-  weight: string;        // format: "10kg" (air) or "0.5cbm" (ocean)
+  weight: string;        // format: "10kg" (air) or "0.5cbm" (sea)
   declaredValue: string; // string, not number
   description: string;
-  shipmentType: 'air' | 'ocean';
+  shipmentType: 'air' | 'sea' | 'ocean';
   // departureDate/eta omitted — set by warehouse staff only, not customers
   senderId?: string;     // required when staff creates on behalf of a customer
   pickupRepName?: string;

@@ -7,6 +7,7 @@ export interface TimelineEvent {
 }
 
 export interface TrackingResult {
+  orderId?: string;
   trackingNumber: string;
   status?: string;
   statusLabel: string;
@@ -18,7 +19,28 @@ export interface TrackingResult {
   timeline?: TimelineEvent[];
 }
 
+interface RawTrackingResult extends TrackingResult {
+  id?: string;
+  currentStatus?: string;
+  currentStatusLabel?: string;
+}
+
 export async function trackShipment(trackingNumber: string): Promise<TrackingResult> {
-  const response = await apiGet<{ data: TrackingResult }>(`/orders/track/${encodeURIComponent(trackingNumber)}`);
-  return response.data;
+  const response = await apiGet<{ data: RawTrackingResult }>(
+    `/orders/track/${encodeURIComponent(trackingNumber)}`
+  );
+  const raw = response.data;
+
+  return {
+    ...raw,
+    orderId: raw.orderId ?? raw.id,
+    status: raw.status ?? raw.currentStatus,
+    statusLabel:
+      raw.statusLabel ??
+      raw.currentStatusLabel ??
+      raw.status ??
+      raw.currentStatus ??
+      'Unknown',
+    timeline: Array.isArray(raw.timeline) ? raw.timeline : [],
+  };
 }

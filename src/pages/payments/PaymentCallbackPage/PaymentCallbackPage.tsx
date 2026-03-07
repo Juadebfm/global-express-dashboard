@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { verifyPayment } from '@/services/paymentsService';
 import { ROUTES } from '@/constants';
 
@@ -9,6 +10,7 @@ const TOKEN_KEY = 'globalxpress_token';
 
 export function PaymentCallbackPage(): ReactElement {
   const { t } = useTranslation('payments');
+  const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
   const [searchParams] = useSearchParams();
   const reference = searchParams.get('reference');
   const [status, setStatus] = useState<'verifying' | 'success' | 'failed'>('verifying');
@@ -21,7 +23,8 @@ export function PaymentCallbackPage(): ReactElement {
 
     const verify = async () => {
       try {
-        const token = localStorage.getItem(TOKEN_KEY);
+        const internalToken = localStorage.getItem(TOKEN_KEY);
+        const token = internalToken ?? (isClerkSignedIn ? await getToken() : null);
         if (!token) throw new Error('Not authenticated');
         await verifyPayment(token, reference);
         setStatus('success');
@@ -31,7 +34,7 @@ export function PaymentCallbackPage(): ReactElement {
     };
 
     verify();
-  }, [reference]);
+  }, [reference, isClerkSignedIn, getToken]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">

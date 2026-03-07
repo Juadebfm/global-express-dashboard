@@ -1,15 +1,13 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bookmark, CheckCheck, Info, RotateCcw, Trash2 } from 'lucide-react';
+import { Bookmark, Info, RotateCcw, Trash2 } from 'lucide-react';
 import {
-  useAuth,
   useDashboardData,
-  useInternalNotifications,
   useNotifications,
   useSearch,
 } from '@/hooks';
-import type { ApiInternalNotification, ApiNotification } from '@/types';
+import type { ApiNotification } from '@/types';
 import { AppShell } from '@/pages/shared';
 import { cn } from '@/utils';
 import i18n from '@/i18n/i18n';
@@ -71,182 +69,6 @@ function mapApiNotification(n: ApiNotification): NotificationItem {
     saved: n.isSaved,
   };
 }
-
-function mapInternalNotification(n: ApiInternalNotification): NotificationItem {
-  const truncated = n.body.length > 80 ? n.body.slice(0, 80) + '…' : n.body;
-  return {
-    id: n.id,
-    title: n.title,
-    subtitle: truncated,
-    description: n.body,
-    time: formatTime(n.createdAt),
-    dateTime: formatDateTime(n.createdAt),
-    unread: n.readAt === null,
-    saved: false,
-  };
-}
-
-// ── Operator (internal) notifications view ──────────────────────────────────
-
-function InternalNotificationsView(): ReactElement {
-  const { t } = useTranslation('notifications');
-  const { query } = useSearch();
-  const {
-    notifications: apiNotifications,
-    isLoading: notifLoading,
-    markRead,
-    markAllRead,
-  } = useInternalNotifications({ limit: 50 });
-  const { data, isLoading, error } = useDashboardData();
-
-  const [activeNotification, setActiveNotification] = useState<NotificationItem | null>(null);
-  const [readOverrides, setReadOverrides] = useState<Set<string>>(new Set());
-
-  const items = useMemo(
-    () =>
-      apiNotifications.map(mapInternalNotification).map((item) => ({
-        ...item,
-        unread: readOverrides.has(item.id) ? false : item.unread,
-      })),
-    [apiNotifications, readOverrides],
-  );
-
-  const filteredItems = useMemo(() => {
-    const value = query.trim().toLowerCase();
-    if (!value) return items;
-    return items.filter((item) =>
-      `${item.title} ${item.subtitle} ${item.description}`.toLowerCase().includes(value),
-    );
-  }, [items, query]);
-
-  const newItems = filteredItems.filter((item) => item.unread);
-  const oldItems = filteredItems.filter((item) => !item.unread);
-
-  const handleMarkAllRead = (): void => {
-    markAllRead();
-    setReadOverrides(new Set(items.map((i) => i.id)));
-  };
-
-  const openNotification = (item: NotificationItem): void => {
-    if (item.unread) {
-      markRead(item.id);
-      setReadOverrides((prev) => new Set(prev).add(item.id));
-    }
-    setActiveNotification({ ...item, unread: false });
-  };
-
-  const renderRow = (item: NotificationItem): ReactElement => (
-    <div
-      key={item.id}
-      onClick={() => openNotification(item)}
-      className={cn(
-        'flex cursor-pointer items-start justify-between gap-4 px-6 py-4 transition',
-        item.unread ? 'bg-rose-50' : 'bg-white',
-        item.unread ? 'hover:bg-rose-100/70' : 'hover:bg-gray-50',
-      )}
-    >
-      <div className="flex items-start gap-4">
-        <div
-          className={cn(
-            'mt-1.5 h-2 w-2 shrink-0 rounded-full',
-            item.unread ? 'bg-brand-500' : 'bg-transparent',
-          )}
-        />
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-gray-800">{item.title}</p>
-            {item.unread && (
-              <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-600">
-                {t('badges.new')}
-              </span>
-            )}
-          </div>
-          <p className="text-sm text-gray-500">{item.subtitle}</p>
-        </div>
-      </div>
-      <span className="text-xs font-medium text-gray-500">{item.time}</span>
-    </div>
-  );
-
-  return (
-    <AppShell
-      data={data}
-      isLoading={isLoading || notifLoading}
-      error={error}
-      loadingLabel={t('loadingLabel')}
-    >
-      <div className="rounded-3xl border border-gray-200 bg-white">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 px-6 py-5">
-          <h1 className="text-xl font-semibold text-gray-900">{t('pageTitle')}</h1>
-          <div className="flex flex-wrap items-center gap-2">
-            {newItems.length > 0 && (
-              <button
-                type="button"
-                onClick={handleMarkAllRead}
-                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-800"
-              >
-                <CheckCheck className="h-4 w-4" />
-                {t('markAllRead')}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {filteredItems.length === 0 ? (
-          <div className="px-6 py-12 text-center">
-            <p className="text-sm font-semibold text-gray-700">{t('empty.title')}</p>
-            <p className="mt-2 text-sm text-gray-500">{t('empty.subtitle')}</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {newItems.length > 0 && (
-              <div className="bg-gray-50/70 px-6 py-2 text-xs font-semibold uppercase text-gray-500">
-                {t('sections.new')}
-              </div>
-            )}
-            {newItems.map((item) => renderRow(item))}
-            {oldItems.length > 0 && (
-              <div className="bg-gray-50/70 px-6 py-2 text-xs font-semibold uppercase text-gray-500">
-                {t('sections.earlier')}
-              </div>
-            )}
-            {oldItems.map((item) => renderRow(item))}
-          </div>
-        )}
-      </div>
-
-      {activeNotification && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-          <div className="relative w-full max-w-2xl rounded-3xl bg-white p-7 shadow-xl">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-semibold text-gray-900">
-                {activeNotification.title}
-              </h2>
-              <p className="text-sm text-gray-600">{activeNotification.subtitle}</p>
-              <p className="text-xs font-medium text-gray-500">{activeNotification.dateTime}</p>
-            </div>
-
-            <div className="mt-6 rounded-2xl bg-gray-50 px-4 py-4 text-sm text-gray-600">
-              {activeNotification.description}
-            </div>
-
-            <div className="mt-8 flex items-center justify-end">
-              <button
-                type="button"
-                onClick={() => setActiveNotification(null)}
-                className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200"
-              >
-                {t('close')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </AppShell>
-  );
-}
-
-// ── Customer notifications view ─────────────────────────────────────────────
 
 function CustomerNotificationsView(): ReactElement {
   const { t } = useTranslation('notifications');
@@ -601,9 +423,6 @@ function CustomerNotificationsView(): ReactElement {
 // ── Main export — picks the right view based on user role ───────────────────
 
 export function NotificationsPage(): ReactElement {
-  const { user } = useAuth();
-  const isAdminOrAbove = user?.role === 'admin' || user?.role === 'superadmin';
-
-  if (isAdminOrAbove) return <InternalNotificationsView />;
   return <CustomerNotificationsView />;
 }
+

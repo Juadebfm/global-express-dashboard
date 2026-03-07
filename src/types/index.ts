@@ -161,10 +161,6 @@ export type {
 } from './upload.types';
 
 export type {
-  ApiInternalNotification,
-} from './internalNotification.types';
-
-export type {
   AdminUserListParams,
   UpdateUserPayload,
   ChangeUserRolePayload,

@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { DashboardUser } from '@/types';
 import type { Language } from '@/store/language/language.types';
-import { useAuth, useLanguage, useNotificationCount, useInternalNotificationCount, useSearch, useTheme } from '@/hooks';
+import { useAuth, useLanguage, useNotificationCount, useSearch, useTheme } from '@/hooks';
 import { ROUTES } from '@/constants';
 import { FlagIcon } from '@/components/ui';
 
@@ -35,10 +35,7 @@ export function Topbar({
   const navigate = useNavigate();
   const { user: authUser, logout } = useAuth();
 
-  const isAdminOrAbove = authUser?.role === 'admin' || authUser?.role === 'superadmin';
-  const customerCount = useNotificationCount();
-  const { data: internalCount } = useInternalNotificationCount(isAdminOrAbove);
-  const notificationsCount = isAdminOrAbove ? (internalCount ?? 0) : customerCount;
+  const notificationsCount = useNotificationCount();
   const { isSignedIn: isClerkSignedIn, signOut } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
 

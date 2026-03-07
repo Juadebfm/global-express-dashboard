@@ -6,13 +6,21 @@ import type {
 } from '@/types';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/apiClient';
 
+function normalizeShipmentType(type: 'air' | 'sea' | 'ocean'): 'air' | 'sea' {
+  return type === 'ocean' ? 'sea' : type;
+}
+
 export async function createBulkOrder(
   token: string,
   payload: CreateBulkOrderPayload
 ): Promise<ApiBulkOrder> {
+  const normalizedPayload: CreateBulkOrderPayload = {
+    ...payload,
+    shipmentType: normalizeShipmentType(payload.shipmentType),
+  };
   const response = await apiPost<{ success: boolean; data: ApiBulkOrder }>(
     '/bulk-orders',
-    payload,
+    normalizedPayload,
     token
   );
   return response.data;
