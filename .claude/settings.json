@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm uninstall react-joyride --legacy-peer-deps)",
+      "Bash(npx eslint src/components/onboarding/ src/components/layout/AppLayout/AppLayout.tsx)",
+      "Bash(npx eslint src/)",
+      "Bash(npx vite build)"
+    ]
+  }
+}
