@@ -168,23 +168,27 @@ export function Sidebar({
             <img
               src={user.avatarUrl}
               alt={user.displayName}
-              className="h-10 w-10 rounded-full object-cover"
+              className="h-10 w-10 shrink-0 rounded-full object-cover"
               onError={(event) => {
                 (event.currentTarget as HTMLImageElement).style.display = 'none';
               }}
             />
             {showLabels && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white">{user.displayName}</p>
-                <p className="text-xs text-white/60 truncate">{user.email}</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-white" title={user.displayName}>
+                  {user.displayName}
+                </p>
+                <p className="truncate text-xs text-white/60" title={user.email}>
+                  {user.email}
+                </p>
               </div>
             )}
             <button
               type="button"
               onClick={() => setShowLogoutConfirm(true)}
               className={cn(
-                'rounded-lg p-2 text-red-400 transition hover:text-red-300 hover:bg-white/10',
-                showLabels ? 'ml-auto' : 'self-center'
+                'shrink-0 rounded-lg p-2 text-red-400 transition hover:text-red-300 hover:bg-white/10',
+                showLabels ? '' : 'self-center'
               )}
               aria-label={t('sidebar.signOutAriaLabel')}
             >
