@@ -339,7 +339,7 @@ export async function estimateShippingCost(
     shipmentType: normalizeShipmentType(payload.shipmentType),
   };
   const response = await apiPost<{ success: boolean; data: ShippingEstimate }>(
-    token ? '/orders/estimate' : '/public/calculator/estimate',
+    '/public/calculator/estimate',
     normalizedPayload,
     token,
   );
