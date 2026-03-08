@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 
 const TOUR_COMPLETE_KEY = 'gx_onboarding_complete';
 const TOUR_STARTED_KEY = 'gx_onboarding_started';
+const WELCOME_DISMISSED_KEY = 'gx_welcome_dismissed';
 
 interface OnboardingState {
   /** Whether the welcome popup should be visible */
@@ -31,8 +32,11 @@ export function useOnboarding(
   const tourComplete = localStorage.getItem(TOUR_COMPLETE_KEY) === 'true';
   const tourPreviouslyStarted = localStorage.getItem(TOUR_STARTED_KEY) === 'true';
 
-  // Dismissed tracks whether user explicitly closed the popup this session
-  const [dismissed, setDismissed] = useState(false);
+  // sessionStorage persists within the tab — survives route changes and re-renders,
+  // but resets on next login (new tab / window close).
+  const [dismissed, setDismissed] = useState(
+    () => sessionStorage.getItem(WELCOME_DISMISSED_KEY) === 'true',
+  );
   const [runTour, setRunTour] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -40,8 +44,8 @@ export function useOnboarding(
   // Skip the popup and resume the tour directly — only on the dashboard page.
   const tourInterrupted = tourPreviouslyStarted && !tourComplete;
 
-  // Derived: show popup when customer is on dashboard with no data,
-  // hasn't dismissed this session, AND tour wasn't previously interrupted
+  // Show popup when: customer, on dashboard, no data, not dismissed this session,
+  // and tour wasn't previously interrupted
   const showWelcome =
     isCustomer && isDashboard && !hasData && !dismissed && !tourInterrupted;
 
@@ -63,6 +67,7 @@ export function useOnboarding(
 
   const dismissWelcome = useCallback((): void => {
     setDismissed(true);
+    sessionStorage.setItem(WELCOME_DISMISSED_KEY, 'true');
     // Start tour if it hasn't been completed yet
     if (!tourComplete) {
       localStorage.setItem(TOUR_STARTED_KEY, 'true');

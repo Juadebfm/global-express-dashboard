@@ -36,5 +36,5 @@ export async function approveTeamMember(
   token: string,
   id: string
 ): Promise<void> {
-  await apiPatch(`/team/${id}/approve`, {}, token);
+  await apiPatch(`/team/${id}/approve`, undefined, token);
 }
