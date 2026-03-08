@@ -34,6 +34,7 @@ export function DashboardHeader({
         variant={isPrimary ? 'primary' : 'ghost'}
         leftIcon={icon}
         onClick={() => onAction?.(action)}
+        {...(isPrimary ? { 'data-tour': 'preorder-btn' } : {})}
         className={
           isPrimary
             ? 'bg-brand-500 text-white hover:bg-brand-600'

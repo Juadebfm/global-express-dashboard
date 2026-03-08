@@ -1,12 +1,14 @@
 import type { ReactElement, ReactNode } from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { DashboardUi, DashboardUser, SidebarItem } from '@/types';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { WelcomePopup, OnboardingTour, useOnboarding } from '@/components/onboarding';
 import { cn } from '@/utils';
-import { useAuth, usePushNotifications, useWebSocket } from '@/hooks';
+import { useAuth, useDashboardData, usePushNotifications, useWebSocket } from '@/hooks';
 import { ROUTES } from '@/constants';
 
 interface AppLayoutProps {
@@ -79,11 +81,27 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
   const isOperator = !!authUser;
   usePushNotifications(isOperator);
 
+  const location = useLocation();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const effectiveRole = authUser?.role ?? (isClerkSignedIn ? 'user' : null);
   const isCustomer = effectiveRole === 'user';
+
+  // ── Onboarding (customers only) ──────────────────────────────────────────────
+  const { data: dashboardData, isLoading: dashboardLoading } = useDashboardData();
+  // Treat loading as "has data" to avoid a welcome popup flash for returning users
+  const hasData =
+    !isCustomer ||
+    dashboardLoading ||
+    (dashboardData?.kpis ?? []).some((kpi) => kpi.value > 0);
+  const isDashboard = location.pathname === ROUTES.DASHBOARD;
+  const { showWelcome, runTour, dismissWelcome, completeTour, isTourActive } =
+    useOnboarding(isCustomer, hasData, isDashboard);
+
+  // Derived: force sidebar expanded while tour is active so nav labels are visible.
+  // When tour ends, the user's original collapsed preference is restored automatically.
+  const effectiveCollapsed = isSidebarCollapsed && !isTourActive;
 
   const navItems: SidebarItem[] = (() => {
     switch (effectiveRole) {
@@ -139,7 +157,7 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
         footerItems={footerItems}
         user={effectiveUser}
         roleLabel={roleLabel}
-        isCollapsed={isSidebarCollapsed}
+        isCollapsed={effectiveCollapsed}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
@@ -148,7 +166,7 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
       <div
         className={cn(
           'min-h-screen flex flex-col transition-all',
-          isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'
+          effectiveCollapsed ? 'lg:pl-20' : 'lg:pl-72'
         )}
       >
         <Topbar
@@ -158,6 +176,15 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
         />
         <main className="flex-1 px-6 py-6 lg:px-10 lg:py-8">{children}</main>
       </div>
+
+      {/* Customer onboarding */}
+      {showWelcome && (
+        <WelcomePopup
+          displayName={effectiveUser.displayName}
+          onDismiss={dismissWelcome}
+        />
+      )}
+      <OnboardingTour run={runTour} onComplete={completeTour} />
     </div>
   );
 }

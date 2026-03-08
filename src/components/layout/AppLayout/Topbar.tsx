@@ -131,7 +131,7 @@ export function Topbar({
           </button>
 
           {/* Language dropdown */}
-          <div ref={langRef} className="relative">
+          <div ref={langRef} className="relative" data-tour="lang-switcher">
             <button
               type="button"
               onClick={() => setIsLangOpen((prev) => !prev)}
@@ -166,7 +166,7 @@ export function Topbar({
           </div>
 
           {/* Avatar dropdown */}
-          <div ref={dropdownRef} className="relative">
+          <div ref={dropdownRef} className="relative" data-tour="user-profile">
             <button
               type="button"
               onClick={() => setIsDropdownOpen((prev) => !prev)}

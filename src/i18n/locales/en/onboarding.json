@@ -1,0 +1,24 @@
+{
+  "welcome": {
+    "title": "Welcome, {{name}}!",
+    "description": "You're all set up. Start by creating your first shipment — we'll guide you through every step from pre-order to delivery.",
+    "cta": "Create Your First Shipment",
+    "dismiss": "I'll explore on my own",
+    "closeAriaLabel": "Close welcome popup"
+  },
+  "tour": {
+    "steps": {
+      "preorder": "Start here! Click Pre-Order to create a new shipment request. We'll handle the logistics from Korea to your door.",
+      "shipments": "Track all your shipments in one place. See real-time status, tracking numbers, and delivery estimates.",
+      "orders": "View and manage your pre-orders. Check payment status, warehouse verification, and order details.",
+      "deliverySchedule": "Check upcoming deliveries and estimated arrival dates. Plan ahead with the delivery calendar.",
+      "language": "Switch between English and Korean anytime. The entire dashboard will update instantly.",
+      "profile": "Access your account settings, view your role, and sign out from here."
+    },
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip tour",
+    "close": "Close",
+    "finish": "Got it!"
+  }
+}

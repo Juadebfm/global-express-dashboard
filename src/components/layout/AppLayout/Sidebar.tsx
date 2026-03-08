@@ -87,6 +87,7 @@ export function Sidebar({
         key={item.id}
         to={item.href}
         onClick={onCloseMobile}
+        data-tour={`nav-${item.id}`}
         className={cn(
           'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors',
           showLabels ? '' : 'justify-center px-3',
