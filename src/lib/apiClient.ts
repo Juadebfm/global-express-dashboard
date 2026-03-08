@@ -11,13 +11,16 @@ function showRateLimitToast(): void {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const { headers: optionHeaders, ...restOptions } = options;
+  const { headers: optionHeaders, body, ...restOptions } = options;
+  const headers = new Headers(optionHeaders);
+  if (typeof body === 'string' && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
   const response = await fetch(`${BASE_URL}${path}`, {
     ...restOptions,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(optionHeaders as Record<string, string>),
-    },
+    body,
+    headers,
   });
 
   const payload = await response.json().catch(() => null);

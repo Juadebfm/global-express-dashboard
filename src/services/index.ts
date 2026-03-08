@@ -27,7 +27,7 @@ export { getNotifications, getUnreadCount, markNotificationRead, toggleNotificat
 export { getTeam, approveTeamMember, createTeamMember } from './teamService';
 export type { CreateTeamMemberPayload } from './teamService';
 export { getClients, getClientById, getClientOrders, createClient, sendClientInvite } from './clientsService';
-export { getSupportTickets, getSupportTicketById, createSupportTicket, sendSupportMessage, updateTicketStatus, assignTicket, mapSupportMessage } from './supportService';
+export { getSupportTickets, getSupportTicketById, createSupportTicket, sendSupportMessage, updateTicketStatus, mapSupportMessage } from './supportService';
 export { createOrder, getOrders, getOrderById, getOrderTimeline, getOrderImages, updateOrderStatus, deleteOrder, updatePickupRep, estimateShippingCost } from './ordersService';
 export type { ShippingEstimate, OrderTimeline, OrderTimelineEvent } from './ordersService';
 export { verifyOrder } from './warehouseService';
