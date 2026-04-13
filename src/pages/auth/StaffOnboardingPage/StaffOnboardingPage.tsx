@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
-import { Button, Card, Input } from '@/components/ui';
+import { Button, Card, Input, StepIndicator } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import { useAuth } from '@/hooks';
 import {
@@ -17,6 +17,7 @@ import type { StaffProfilePayload, ProfileRequirements } from '@/types';
 type Step = 'change-password' | 'complete-profile';
 
 const TOKEN_KEY = 'globalxpress_token';
+const ONBOARDING_STEP_ORDER: Step[] = ['change-password', 'complete-profile'];
 
 export function StaffOnboardingPage(): ReactElement {
   const { t } = useTranslation('auth');
@@ -160,6 +161,18 @@ export function StaffOnboardingPage(): ReactElement {
     setProfile((prev) => ({ ...prev, [key]: value }));
   };
 
+  const currentStepIndex = ONBOARDING_STEP_ORDER.indexOf(step);
+
+  const handleStepSelect = (targetIndex: number) => {
+    if (targetIndex < 0 || targetIndex >= ONBOARDING_STEP_ORDER.length) return;
+    if (targetIndex > currentStepIndex) return;
+    const targetStep = ONBOARDING_STEP_ORDER[targetIndex];
+    if (targetStep === 'complete-profile' && user?.mustChangePassword) return;
+    setPwError(null);
+    setProfileError(null);
+    setStep(targetStep);
+  };
+
   if (authLoading) return <AuthLayout><div /></AuthLayout>;
 
   // ── Change Password View ───────────────────────────────────────────────────
@@ -171,11 +184,22 @@ export function StaffOnboardingPage(): ReactElement {
           <div className="flex justify-center mb-6">
             <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900">{t(`${cp}.title`)}</h2>
-          <p className="mt-1 text-sm text-gray-500">{t(`${cp}.subtitle`)}</p>
+        <h2 className="text-xl font-semibold text-gray-900">{t(`${cp}.title`)}</h2>
+        <p className="mt-1 text-sm text-gray-500">{t(`${cp}.subtitle`)}</p>
 
-          {pwError && (
-            <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{pwError}</div>
+        <StepIndicator
+          className="mt-5 mb-2"
+          steps={[
+            { id: 'change-password', label: t('staffOnboarding.changePassword.title') },
+            { id: 'complete-profile', label: t('staffOnboarding.completeProfile.title') },
+          ]}
+          currentIndex={currentStepIndex}
+          onStepSelect={handleStepSelect}
+          isStepEnabled={(index, indexCurrent) => index <= indexCurrent}
+        />
+
+        {pwError && (
+          <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{pwError}</div>
           )}
 
           <div className="mt-6 space-y-4">
@@ -257,6 +281,17 @@ export function StaffOnboardingPage(): ReactElement {
         </div>
         <h2 className="text-xl font-semibold text-gray-900">{t(`${pp}.title`)}</h2>
         <p className="mt-1 text-sm text-gray-500">{t(`${pp}.subtitle`)}</p>
+
+        <StepIndicator
+          className="mt-5 mb-2"
+          steps={[
+            { id: 'change-password', label: t('staffOnboarding.changePassword.title') },
+            { id: 'complete-profile', label: t('staffOnboarding.completeProfile.title') },
+          ]}
+          currentIndex={currentStepIndex}
+          onStepSelect={handleStepSelect}
+          isStepEnabled={(index, indexCurrent) => index <= indexCurrent}
+        />
 
         {profileError && (
           <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{profileError}</div>

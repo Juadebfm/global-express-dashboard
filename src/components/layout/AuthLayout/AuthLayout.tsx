@@ -9,6 +9,9 @@ const LANGUAGE_OPTIONS: { code: Language; flagCode: 'us' | 'kr'; label: string }
   { code: 'ko', flagCode: 'kr', label: '한국어' },
 ];
 
+const AUTH_HERO_IMAGES = ['/images/signin-air-transport.jpg', '/images/signin-sea-transport.jpg'];
+const HERO_SLIDE_INTERVAL_MS = 10000;
+
 interface AuthLayoutProps {
   children: ReactNode;
   rightClassName?: string;
@@ -19,6 +22,7 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
   const { t } = useTranslation('auth');
   const { language, setLanguage } = useLanguage();
   const [langOpen, setLangOpen] = useState(false);
+  const [activeHeroIndex, setActiveHeroIndex] = useState(0);
   const langRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,29 +34,43 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
     return () => document.removeEventListener('mousedown', handleClick);
   }, [langOpen]);
 
+  useEffect(() => {
+    const slideTimer = window.setInterval(() => {
+      setActiveHeroIndex((previous) => (previous + 1) % AUTH_HERO_IMAGES.length);
+    }, HERO_SLIDE_INTERVAL_MS);
+
+    return () => window.clearInterval(slideTimer);
+  }, []);
+
   return (
     <div className="min-h-screen flex">
-      {/* Left side - Warehouse Image with overlay */}
-      <div className="hidden lg:flex lg:w-1/2 relative">
-        <div
-          className="absolute inset-0 bg-gray-800"
-          style={{
-            backgroundImage: `url('/images/signin-img.svg')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        >
-          {/* Dark overlay for better text readability */}
-          <div className="absolute inset-0 bg-black/30" />
-        </div>
+      {/* Left side - Transport hero with overlay */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        {AUTH_HERO_IMAGES.map((imageUrl, index) => (
+          <div
+            key={imageUrl}
+            className={`absolute inset-0 bg-gray-800 transition-opacity duration-700 ease-in-out ${
+              index === activeHeroIndex ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{
+              backgroundImage: `url('${imageUrl}')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+        ))}
+
+        {/* Layered overlays for readable copy on varied photos */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-black/35" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
 
         {/* Quote overlay */}
         <div className="relative z-10 flex flex-col justify-end p-12 text-white">
-          <div className="max-w-md">
-            <blockquote className="text-xl font-medium italic">
+          <div className="max-w-md rounded-xl bg-black/45 p-6 shadow-xl backdrop-blur-[2px] border border-white/15">
+            <blockquote className="text-xl font-semibold italic text-white drop-shadow-md">
               "{t('authLayout.quote')}"
             </blockquote>
-            <p className="mt-4 text-white/70">
+            <p className="mt-4 text-white/90 drop-shadow-sm">
               {t('authLayout.quoteSubtitle')}
             </p>
           </div>

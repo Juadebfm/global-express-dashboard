@@ -12,7 +12,7 @@ import en from 'react-phone-number-input/locale/en';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthLayout } from '@/components/layout';
-import { Button, Card, Checkbox, Input } from '@/components/ui';
+import { Button, Card, Checkbox, Input, StepIndicator } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import { apiPatch } from '@/lib/apiClient';
 import { syncClerkAccount, updateMyNotificationPreferences } from '@/services';
@@ -65,6 +65,8 @@ const initialFormState: SignUpFormState = {
   addressCountry: 'Nigeria',
   addressPostalCode: '',
 };
+
+const SIGN_UP_STEP_ORDER: SignUpStep[] = ['account', 'verify', 'details'];
 
 function getErrorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'errors' in error) {
@@ -493,6 +495,15 @@ export function ExternalSignUpPage(): ReactElement {
     !!form.addressCountry.trim() &&
     !!form.addressPostalCode.trim();
 
+  const currentStepIndex = SIGN_UP_STEP_ORDER.indexOf(step);
+
+  const handleStepSelect = (targetIndex: number) => {
+    if (targetIndex < 0 || targetIndex >= SIGN_UP_STEP_ORDER.length) return;
+    if (targetIndex > currentStepIndex) return;
+    setFormError(null);
+    setStep(SIGN_UP_STEP_ORDER[targetIndex]);
+  };
+
   const renderPhoneField = (
     label: string,
     value: string,
@@ -539,6 +550,18 @@ export function ExternalSignUpPage(): ReactElement {
         <div className="flex justify-center mb-6">
           <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
         </div>
+
+        <StepIndicator
+          className="mb-6"
+          steps={[
+            { id: 'account', label: t('externalSignUp.title') },
+            { id: 'verify', label: t('externalSignUp.verifyTitle') },
+            { id: 'details', label: t('externalSignUp.profileTitle') },
+          ]}
+          currentIndex={currentStepIndex}
+          onStepSelect={handleStepSelect}
+          isStepEnabled={(index, indexCurrent) => index <= indexCurrent}
+        />
 
         {step === 'account' && (
           <div>

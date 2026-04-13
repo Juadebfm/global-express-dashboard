@@ -1,0 +1,55 @@
+<svg width="1280" height="1600" viewBox="0 0 1280 1600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="seaSky" x1="640" y1="0" x2="640" y2="880" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0E466C"/>
+      <stop offset="0.55" stop-color="#2E7FB1"/>
+      <stop offset="1" stop-color="#6DBAD6"/>
+    </linearGradient>
+    <linearGradient id="seaWater" x1="640" y1="760" x2="640" y2="1600" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0A3A60"/>
+      <stop offset="0.5" stop-color="#0B2E4C"/>
+      <stop offset="1" stop-color="#081E34"/>
+    </linearGradient>
+    <linearGradient id="shipHull" x1="640" y1="980" x2="640" y2="1180" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F0853E"/>
+      <stop offset="1" stop-color="#C95E1D"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="1600" fill="url(#seaSky)"/>
+  <circle cx="980" cy="190" r="105" fill="#FFE0A6" fill-opacity="0.9"/>
+  <ellipse cx="220" cy="290" rx="122" ry="40" fill="#FFFFFF" fill-opacity="0.3"/>
+  <ellipse cx="334" cy="302" rx="92" ry="31" fill="#FFFFFF" fill-opacity="0.26"/>
+
+  <rect y="760" width="1280" height="840" fill="url(#seaWater)"/>
+  <path d="M0 860C120 836 220 902 320 882C420 862 540 804 660 840C780 876 880 928 1020 898C1120 876 1208 820 1280 832V1600H0V860Z" fill="#0F4E79"/>
+  <path d="M0 940C110 916 226 966 336 950C446 934 548 886 660 912C772 938 888 986 1010 966C1116 948 1212 900 1280 914V1600H0V940Z" fill="#155C8B" fill-opacity="0.62"/>
+
+  <path d="M260 1080H1090L1012 1172H346L260 1080Z" fill="url(#shipHull)"/>
+  <rect x="374" y="936" width="530" height="146" fill="#2A3D52"/>
+  <rect x="924" y="976" width="118" height="106" fill="#40556D"/>
+  <rect x="956" y="918" width="58" height="58" fill="#50657D"/>
+
+  <rect x="398" y="958" width="82" height="44" fill="#D55E38"/>
+  <rect x="486" y="958" width="82" height="44" fill="#3E96CC"/>
+  <rect x="574" y="958" width="82" height="44" fill="#E2AB43"/>
+  <rect x="662" y="958" width="82" height="44" fill="#5CB178"/>
+  <rect x="750" y="958" width="82" height="44" fill="#D56A4A"/>
+
+  <rect x="398" y="1008" width="82" height="44" fill="#4F84C6"/>
+  <rect x="486" y="1008" width="82" height="44" fill="#DA8E4A"/>
+  <rect x="574" y="1008" width="82" height="44" fill="#66A16F"/>
+  <rect x="662" y="1008" width="82" height="44" fill="#D36849"/>
+  <rect x="750" y="1008" width="82" height="44" fill="#638FC2"/>
+
+  <rect x="130" y="760" width="20" height="330" fill="#2B3F55"/>
+  <rect x="180" y="760" width="20" height="330" fill="#2B3F55"/>
+  <path d="M150 790L310 900H270L150 822V790Z" fill="#6C7C8C"/>
+  <path d="M200 830L350 930H316L200 862V830Z" fill="#8091A4"/>
+
+  <ellipse cx="580" cy="1212" rx="320" ry="28" fill="#9BC6DF" fill-opacity="0.28"/>
+  <ellipse cx="610" cy="1258" rx="360" ry="24" fill="#B5D7EA" fill-opacity="0.26"/>
+  <ellipse cx="620" cy="1300" rx="400" ry="22" fill="#CAE5F3" fill-opacity="0.2"/>
+
+  <text x="118" y="1520" fill="#EAF5FF" fill-opacity="0.82" font-family="Arial, sans-serif" font-size="34" letter-spacing="2">SEA FREIGHT</text>
+</svg>
