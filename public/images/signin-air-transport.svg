@@ -1,0 +1,58 @@
+<svg width="1280" height="1600" viewBox="0 0 1280 1600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="airSky" x1="640" y1="0" x2="640" y2="1200" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B3B76"/>
+      <stop offset="0.5" stop-color="#1E5FAF"/>
+      <stop offset="1" stop-color="#6CA9E4"/>
+    </linearGradient>
+    <linearGradient id="runway" x1="640" y1="1000" x2="640" y2="1600" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1C2532"/>
+      <stop offset="1" stop-color="#0D141F"/>
+    </linearGradient>
+    <linearGradient id="planeBody" x1="640" y1="520" x2="640" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F5F8FF"/>
+      <stop offset="1" stop-color="#BFD5F5"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="1600" fill="url(#airSky)"/>
+
+  <circle cx="1030" cy="210" r="110" fill="#FFD58A" fill-opacity="0.85"/>
+  <ellipse cx="270" cy="260" rx="130" ry="42" fill="#FFFFFF" fill-opacity="0.35"/>
+  <ellipse cx="390" cy="278" rx="96" ry="34" fill="#FFFFFF" fill-opacity="0.3"/>
+  <ellipse cx="880" cy="340" rx="170" ry="52" fill="#FFFFFF" fill-opacity="0.28"/>
+  <ellipse cx="1015" cy="355" rx="112" ry="40" fill="#FFFFFF" fill-opacity="0.26"/>
+
+  <rect y="1000" width="1280" height="600" fill="url(#runway)"/>
+  <rect x="604" y="1020" width="72" height="560" fill="#F2F2F2" fill-opacity="0.76"/>
+  <rect x="620" y="1060" width="40" height="74" fill="#0D141F"/>
+  <rect x="620" y="1180" width="40" height="74" fill="#0D141F"/>
+  <rect x="620" y="1300" width="40" height="74" fill="#0D141F"/>
+  <rect x="620" y="1420" width="40" height="74" fill="#0D141F"/>
+
+  <rect x="85" y="930" width="270" height="250" rx="12" fill="#3B4B60"/>
+  <rect x="120" y="970" width="80" height="70" fill="#D8E2F3" fill-opacity="0.65"/>
+  <rect x="228" y="970" width="80" height="70" fill="#D8E2F3" fill-opacity="0.65"/>
+  <rect x="120" y="1060" width="188" height="96" fill="#243346"/>
+  <rect x="220" y="840" width="36" height="90" fill="#2B3B52"/>
+  <rect x="206" y="816" width="64" height="28" rx="8" fill="#1F2C3F"/>
+
+  <g transform="rotate(-12 700 640)">
+    <ellipse cx="700" cy="640" rx="280" ry="48" fill="url(#planeBody)"/>
+    <ellipse cx="950" cy="640" rx="32" ry="21" fill="#A9C4E8"/>
+    <path d="M600 604L640 492L724 492L668 610H600Z" fill="#E3EDFC"/>
+    <path d="M690 664L796 744H708L642 690L690 664Z" fill="#A9C4E8"/>
+    <path d="M456 640L384 598L438 592L506 624L456 640Z" fill="#9DB5D8"/>
+    <circle cx="816" cy="640" r="9" fill="#5F88BE"/>
+    <circle cx="842" cy="640" r="9" fill="#5F88BE"/>
+    <circle cx="868" cy="640" r="9" fill="#5F88BE"/>
+  </g>
+
+  <rect x="860" y="930" width="335" height="250" rx="14" fill="#394A61"/>
+  <rect x="900" y="970" width="250" height="28" fill="#AFC4E0" fill-opacity="0.65"/>
+  <rect x="900" y="1012" width="250" height="28" fill="#AFC4E0" fill-opacity="0.65"/>
+  <rect x="900" y="1054" width="250" height="28" fill="#AFC4E0" fill-opacity="0.65"/>
+  <rect x="900" y="1096" width="250" height="52" fill="#223247"/>
+
+  <text x="118" y="1520" fill="#F2F6FF" fill-opacity="0.78" font-family="Arial, sans-serif" font-size="34" letter-spacing="2">AIR CARGO</text>
+</svg>

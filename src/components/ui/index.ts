@@ -16,3 +16,5 @@ export { FeedbackCenter } from './FeedbackCenter';
 export { ConfirmModal } from './ConfirmModal/ConfirmModal';
 export { FlagIcon } from './FlagIcon';
 export { CopyButton } from './CopyButton';
+export { StepIndicator } from './StepIndicator';
+export type { StepIndicatorItem } from './StepIndicator';
