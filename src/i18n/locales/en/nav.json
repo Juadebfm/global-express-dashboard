@@ -27,8 +27,6 @@
   },
   "topbar": {
     "openMenuAriaLabel": "Open menu",
-    "switchToLightTheme": "Switch to light theme",
-    "switchToDarkTheme": "Switch to dark theme",
     "notificationsAriaLabel": "Notifications",
     "languageAriaLabel": "Language",
     "accountMenuAriaLabel": "Account menu",

@@ -3,7 +3,6 @@ export { useLanguage } from './useLanguage';
 export { useSearch } from './useSearch';
 export { useDashboardData } from './useDashboardData';
 export { useShipmentsDashboard } from './useShipmentsDashboard';
-export { useTheme } from './useTheme';
 export { useAuthToken } from './useAuthToken';
 export { useNotifications } from './useNotifications';
 export { useNotificationCount } from './useNotificationCount';
