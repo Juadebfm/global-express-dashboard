@@ -376,7 +376,7 @@ export function CompleteProfilePage(): ReactElement {
 
   return (
     <AuthLayout>
-      <Card className="p-8">
+      <Card className="auth-panel-card p-8 sm:p-10">
         <div className="flex justify-center mb-6">
           <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
         </div>
@@ -473,7 +473,7 @@ export function CompleteProfilePage(): ReactElement {
 
           <Button
             type="submit"
-            className="w-full text-sm"
+            className="auth-cta-btn w-full text-sm"
             size="lg"
             isLoading={isSubmitting || isLoadingProfile}
           >

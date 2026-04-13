@@ -29,7 +29,7 @@ export function LoginForm({
   });
 
   return (
-    <Card className="p-8">
+    <Card className="auth-panel-card p-8 sm:p-10">
       <Link
         to={ROUTES.HOME}
         className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-5"
@@ -95,7 +95,7 @@ export function LoginForm({
 
         <Button
           type="submit"
-          className="w-full text-sm"
+          className="auth-cta-btn w-full text-sm"
           size="lg"
           isLoading={isLoading}
         >

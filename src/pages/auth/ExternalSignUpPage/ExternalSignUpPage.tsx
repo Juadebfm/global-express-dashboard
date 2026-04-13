@@ -545,14 +545,9 @@ export function ExternalSignUpPage(): ReactElement {
 
   return (
     <AuthLayout>
-      <Card className="p-8">
-        {/* Logo */}
-        <div className="flex justify-center mb-6">
-          <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
-        </div>
-
+      <div className="space-y-5">
         <StepIndicator
-          className="mb-6"
+          className="mx-1 mb-1"
           steps={[
             { id: 'account', label: t('externalSignUp.title') },
             { id: 'verify', label: t('externalSignUp.verifyTitle') },
@@ -562,6 +557,12 @@ export function ExternalSignUpPage(): ReactElement {
           onStepSelect={handleStepSelect}
           isStepEnabled={(index, indexCurrent) => index <= indexCurrent}
         />
+
+        <Card className="auth-panel-card p-8 sm:p-10">
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
+          </div>
 
         {step === 'account' && (
           <div>
@@ -574,16 +575,16 @@ export function ExternalSignUpPage(): ReactElement {
               </p>
             </div>
 
-            <div className="mb-4">
+            <div className="mb-5">
               <p className="text-sm font-medium text-gray-700 mb-2">{t('externalSignUp.accountType')}</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-gray-100 p-1.5">
                 <button
                   type="button"
                   onClick={() => setAccountType('individual')}
                   className={
                     accountType === 'individual'
-                      ? 'rounded-lg border border-brand-500 bg-brand-50 px-3 py-2 text-sm font-medium text-brand-700'
-                      : 'rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:border-gray-300'
+                      ? 'rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 shadow-sm'
+                      : 'rounded-xl border border-transparent bg-transparent px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-700'
                   }
                 >
                   {t('externalSignUp.individual')}
@@ -593,8 +594,8 @@ export function ExternalSignUpPage(): ReactElement {
                   onClick={() => setAccountType('business')}
                   className={
                     accountType === 'business'
-                      ? 'rounded-lg border border-brand-500 bg-brand-50 px-3 py-2 text-sm font-medium text-brand-700'
-                      : 'rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:border-gray-300'
+                      ? 'rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 shadow-sm'
+                      : 'rounded-xl border border-transparent bg-transparent px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-700'
                   }
                 >
                   {t('externalSignUp.business')}
@@ -664,7 +665,7 @@ export function ExternalSignUpPage(): ReactElement {
 
               <Button
                 type="submit"
-                className={`w-full ${buttonTextClassName}`}
+                className={`auth-cta-btn w-full ${buttonTextClassName}`}
                 size="lg"
                 isLoading={isSubmitting}
                 disabled={!isLoaded || !isAccountStepValid}
@@ -713,7 +714,7 @@ export function ExternalSignUpPage(): ReactElement {
 
               <Button
                 type="submit"
-                className={`w-full ${buttonTextClassName}`}
+                className={`auth-cta-btn w-full ${buttonTextClassName}`}
                 size="lg"
                 isLoading={isSubmitting}
                 disabled={!isLoaded}
@@ -848,7 +849,7 @@ export function ExternalSignUpPage(): ReactElement {
 
               <Button
                 type="submit"
-                className={`w-full ${buttonTextClassName}`}
+                className={`auth-cta-btn w-full ${buttonTextClassName}`}
                 size="lg"
                 isLoading={isSubmitting}
                 disabled={!isDetailsStepValid}
@@ -858,7 +859,8 @@ export function ExternalSignUpPage(): ReactElement {
             </form>
           </div>
         )}
-      </Card>
+        </Card>
+      </div>
     </AuthLayout>
   );
 }

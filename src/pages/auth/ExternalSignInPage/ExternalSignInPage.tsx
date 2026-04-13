@@ -264,7 +264,7 @@ export function ExternalSignInPage(): ReactElement {
 
   return (
     <AuthLayout>
-      <Card className="p-8">
+      <Card className="auth-panel-card p-8 sm:p-10">
         <a
           href={PUBLIC_WEBSITE_URL}
           className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-5"
@@ -325,7 +325,7 @@ export function ExternalSignInPage(): ReactElement {
 
               <Button
                 type="submit"
-                className="w-full text-sm"
+                className="auth-cta-btn w-full text-sm"
                 size="lg"
                 isLoading={isSubmitting}
                 disabled={!isLoaded}
@@ -370,7 +370,7 @@ export function ExternalSignInPage(): ReactElement {
               />
               <Button
                 type="submit"
-                className="w-full text-sm"
+                className="auth-cta-btn w-full text-sm"
                 size="lg"
                 isLoading={isSubmitting}
               >
@@ -416,7 +416,7 @@ export function ExternalSignInPage(): ReactElement {
               />
               <Button
                 type="submit"
-                className="w-full text-sm"
+                className="auth-cta-btn w-full text-sm"
                 size="lg"
                 isLoading={isSubmitting}
               >
@@ -461,7 +461,7 @@ export function ExternalSignInPage(): ReactElement {
               />
               <Button
                 type="submit"
-                className="w-full text-sm"
+                className="auth-cta-btn w-full text-sm"
                 size="lg"
                 isLoading={isSubmitting}
               >
@@ -518,7 +518,7 @@ export function ExternalSignInPage(): ReactElement {
               />
               <Button
                 type="submit"
-                className="w-full text-sm"
+                className="auth-cta-btn w-full text-sm"
                 size="lg"
                 isLoading={isSubmitting}
               >
@@ -540,7 +540,7 @@ export function ExternalSignInPage(): ReactElement {
             </p>
             <Button
               type="button"
-              className="w-full text-sm"
+              className="auth-cta-btn w-full text-sm"
               size="lg"
               onClick={() => navigate(postAuthRedirect, { replace: true })}
             >
