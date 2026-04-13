@@ -180,29 +180,30 @@ export function StaffOnboardingPage(): ReactElement {
     const cp = 'staffOnboarding.changePassword';
     return (
       <AuthLayout>
-        <Card className="p-8">
-          <div className="flex justify-center mb-6">
-            <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
-          </div>
-        <h2 className="text-xl font-semibold text-gray-900">{t(`${cp}.title`)}</h2>
-        <p className="mt-1 text-sm text-gray-500">{t(`${cp}.subtitle`)}</p>
+        <div className="space-y-4">
+          <StepIndicator
+            className="mx-1"
+            steps={[
+              { id: 'change-password', label: t('staffOnboarding.changePassword.title') },
+              { id: 'complete-profile', label: t('staffOnboarding.completeProfile.title') },
+            ]}
+            currentIndex={currentStepIndex}
+            onStepSelect={handleStepSelect}
+            isStepEnabled={(index, indexCurrent) => index <= indexCurrent}
+          />
 
-        <StepIndicator
-          className="mt-5 mb-2"
-          steps={[
-            { id: 'change-password', label: t('staffOnboarding.changePassword.title') },
-            { id: 'complete-profile', label: t('staffOnboarding.completeProfile.title') },
-          ]}
-          currentIndex={currentStepIndex}
-          onStepSelect={handleStepSelect}
-          isStepEnabled={(index, indexCurrent) => index <= indexCurrent}
-        />
+          <Card className="auth-panel-card p-8 sm:p-10">
+            <div className="flex justify-center mb-6">
+              <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">{t(`${cp}.title`)}</h2>
+            <p className="mt-1 text-sm text-gray-500">{t(`${cp}.subtitle`)}</p>
 
-        {pwError && (
-          <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{pwError}</div>
-          )}
+            {pwError && (
+              <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{pwError}</div>
+            )}
 
-          <div className="mt-6 space-y-4">
+            <div className="mt-6 space-y-4">
             <div className="relative">
               <Input
                 type={showCurrent ? 'text' : 'password'}
@@ -259,14 +260,15 @@ export function StaffOnboardingPage(): ReactElement {
           </div>
 
           <Button
-            className="mt-6 w-full"
+            className="auth-cta-btn mt-6 w-full"
             onClick={handleChangePassword}
             disabled={pwLoading}
           >
             {pwLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t(`${cp}.submitButton`)}
           </Button>
-        </Card>
+          </Card>
+        </div>
       </AuthLayout>
     );
   }
@@ -275,15 +277,9 @@ export function StaffOnboardingPage(): ReactElement {
   const pp = 'staffOnboarding.completeProfile';
   return (
     <AuthLayout>
-      <Card className="max-h-[85vh] overflow-y-auto p-8">
-        <div className="flex justify-center mb-6">
-          <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
-        </div>
-        <h2 className="text-xl font-semibold text-gray-900">{t(`${pp}.title`)}</h2>
-        <p className="mt-1 text-sm text-gray-500">{t(`${pp}.subtitle`)}</p>
-
+      <div className="space-y-4">
         <StepIndicator
-          className="mt-5 mb-2"
+          className="mx-1"
           steps={[
             { id: 'change-password', label: t('staffOnboarding.changePassword.title') },
             { id: 'complete-profile', label: t('staffOnboarding.completeProfile.title') },
@@ -293,11 +289,18 @@ export function StaffOnboardingPage(): ReactElement {
           isStepEnabled={(index, indexCurrent) => index <= indexCurrent}
         />
 
-        {profileError && (
-          <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{profileError}</div>
-        )}
+        <Card className="auth-panel-card max-h-[85vh] overflow-y-auto p-8 sm:p-10">
+          <div className="flex justify-center mb-6">
+            <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900">{t(`${pp}.title`)}</h2>
+          <p className="mt-1 text-sm text-gray-500">{t(`${pp}.subtitle`)}</p>
 
-        <div className="mt-6 space-y-4">
+          {profileError && (
+            <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{profileError}</div>
+          )}
+
+          <div className="mt-6 space-y-4">
           {/* Gender */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">{t(`${pp}.genderLabel`)}</label>
@@ -408,15 +411,16 @@ export function StaffOnboardingPage(): ReactElement {
           )}
         </div>
 
-        <Button
-          className="mt-6 w-full"
-          onClick={handleProfileSubmit}
-          disabled={profileLoading}
-        >
-          {profileLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {t(`${pp}.submitButton`)}
-        </Button>
-      </Card>
+          <Button
+            className="auth-cta-btn mt-6 w-full"
+            onClick={handleProfileSubmit}
+            disabled={profileLoading}
+          >
+            {profileLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {t(`${pp}.submitButton`)}
+          </Button>
+        </Card>
+      </div>
     </AuthLayout>
   );
 }

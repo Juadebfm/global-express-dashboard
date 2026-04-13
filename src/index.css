@@ -14,8 +14,8 @@
   --color-brand-900: #7c2d12;
 
   /* Fonts */
-  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-display: 'Outfit', system-ui, sans-serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Inter', system-ui, sans-serif;
 
   /* Shadows */
   --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -70,6 +70,16 @@
     background-color: var(--gx-bg);
     color: var(--gx-text);
     @apply antialiased;
+  }
+}
+
+@layer components {
+  .auth-panel-card {
+    @apply rounded-3xl border border-[#E8EAF0] bg-white shadow-[0_16px_45px_rgba(15,23,42,0.08)];
+  }
+
+  .auth-cta-btn {
+    @apply rounded-2xl border-0 bg-gradient-to-r from-brand-700 via-brand-600 to-brand-500 text-white shadow-[0_10px_24px_rgba(194,65,12,0.25)] hover:from-brand-800 hover:via-brand-700 hover:to-brand-600 disabled:from-brand-300 disabled:via-brand-300 disabled:to-brand-300 disabled:shadow-none;
   }
 }
 

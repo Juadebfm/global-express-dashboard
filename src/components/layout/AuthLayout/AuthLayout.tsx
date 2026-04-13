@@ -12,6 +12,10 @@ const LANGUAGE_OPTIONS: { code: Language; flagCode: 'us' | 'kr'; label: string }
 const AUTH_HERO_IMAGES = ['/images/signin-air-transport.jpg', '/images/signin-sea-transport.jpg'];
 const HERO_SLIDE_INTERVAL_MS = 10000;
 
+function getSyncedHeroIndex(): number {
+  return Math.floor(Date.now() / HERO_SLIDE_INTERVAL_MS) % AUTH_HERO_IMAGES.length;
+}
+
 interface AuthLayoutProps {
   children: ReactNode;
   rightClassName?: string;
@@ -22,7 +26,7 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
   const { t } = useTranslation('auth');
   const { language, setLanguage } = useLanguage();
   const [langOpen, setLangOpen] = useState(false);
-  const [activeHeroIndex, setActiveHeroIndex] = useState(0);
+  const [activeHeroIndex, setActiveHeroIndex] = useState(getSyncedHeroIndex);
   const langRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,11 +39,19 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
   }, [langOpen]);
 
   useEffect(() => {
-    const slideTimer = window.setInterval(() => {
-      setActiveHeroIndex((previous) => (previous + 1) % AUTH_HERO_IMAGES.length);
-    }, HERO_SLIDE_INTERVAL_MS);
+    let intervalId: number | null = null;
+    const syncIndex = () => setActiveHeroIndex(getSyncedHeroIndex());
 
-    return () => window.clearInterval(slideTimer);
+    const remainingToBoundary = HERO_SLIDE_INTERVAL_MS - (Date.now() % HERO_SLIDE_INTERVAL_MS);
+    const timeoutId = window.setTimeout(() => {
+      syncIndex();
+      intervalId = window.setInterval(syncIndex, HERO_SLIDE_INTERVAL_MS);
+    }, remainingToBoundary);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      if (intervalId) window.clearInterval(intervalId);
+    };
   }, []);
 
   return (
@@ -64,6 +76,14 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
         <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-black/35" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
 
+        <div className="absolute left-12 top-10 z-10">
+          <img
+            src="/images/mainlogo.svg"
+            alt="GlobalXpress"
+            className="h-10 w-auto drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
+          />
+        </div>
+
         {/* Quote overlay */}
         <div className="relative z-10 flex flex-col justify-end p-12 text-white">
           <div className="max-w-md rounded-xl bg-black/45 p-6 shadow-xl backdrop-blur-[2px] border border-white/15">
@@ -78,7 +98,7 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
       </div>
 
       {/* Right side - Form content */}
-      <div className={`w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative ${rightClassName ?? 'bg-brand-500'}`}>
+      <div className={`w-full lg:w-1/2 flex items-start justify-center p-4 sm:p-6 lg:p-10 relative ${rightClassName ?? 'bg-[#F3F4F6]'}`}>
         {/* Language toggle */}
         <div ref={langRef} className="absolute top-4 right-4 z-20">
           <button
@@ -110,8 +130,15 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
           )}
         </div>
 
-        <div className={`w-full ${contentClassName ?? 'max-w-md'}`}>
+        <div className={`w-full ${contentClassName ?? 'max-w-2xl'}`}>
           {children}
+          <div className="mt-7 flex flex-wrap items-center justify-center gap-4 text-[11px] uppercase tracking-[0.18em] text-gray-400">
+            <span>Privacy Policy</span>
+            <span className="h-1 w-1 rounded-full bg-gray-300" aria-hidden="true" />
+            <span>Terms of Service</span>
+            <span className="h-1 w-1 rounded-full bg-gray-300" aria-hidden="true" />
+            <span>Support</span>
+          </div>
         </div>
       </div>
     </div>

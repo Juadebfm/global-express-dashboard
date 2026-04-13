@@ -79,7 +79,7 @@ export function ForgotPasswordForm({
   // Email Step
   if (step === 'email') {
     return (
-      <Card className="p-8">
+      <Card className="auth-panel-card p-8 sm:p-10">
         <div className="flex justify-center mb-6">
           <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
         </div>
@@ -108,7 +108,7 @@ export function ForgotPasswordForm({
 
           <Button
             type="submit"
-            className="w-full text-sm"
+            className="auth-cta-btn w-full text-sm"
             size="lg"
             isLoading={isLoading}
           >
@@ -130,7 +130,7 @@ export function ForgotPasswordForm({
   // OTP Step
   if (step === 'otp') {
     return (
-      <Card className="p-8">
+      <Card className="auth-panel-card p-8 sm:p-10">
         <div className="flex justify-center mb-6">
           <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
         </div>
@@ -164,7 +164,7 @@ export function ForgotPasswordForm({
 
           <Button
             type="submit"
-            className="w-full text-sm"
+            className="auth-cta-btn w-full text-sm"
             size="lg"
             isLoading={isLoading}
           >
@@ -187,7 +187,7 @@ export function ForgotPasswordForm({
   // Password Step
   if (step === 'password') {
     return (
-      <Card className="p-8">
+      <Card className="auth-panel-card p-8 sm:p-10">
         <div className="flex justify-center mb-6">
           <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
         </div>
@@ -226,7 +226,7 @@ export function ForgotPasswordForm({
 
           <Button
             type="submit"
-            className="w-full text-sm"
+            className="auth-cta-btn w-full text-sm"
             size="lg"
             isLoading={isLoading}
           >
@@ -248,7 +248,7 @@ export function ForgotPasswordForm({
 
   // Success Step
   return (
-    <Card className="p-8">
+    <Card className="auth-panel-card p-8 sm:p-10">
       <div className="flex justify-center mb-6">
         <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
       </div>
@@ -265,7 +265,7 @@ export function ForgotPasswordForm({
 
       <Button
         type="button"
-        className="w-full mt-6 text-sm"
+        className="auth-cta-btn mt-6 w-full text-sm"
         size="lg"
         onClick={handleSuccessContinue}
       >
