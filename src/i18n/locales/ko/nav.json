@@ -27,8 +27,6 @@
   },
   "topbar": {
     "openMenuAriaLabel": "메뉴 열기",
-    "switchToLightTheme": "라이트 모드로 전환",
-    "switchToDarkTheme": "다크 모드로 전환",
     "notificationsAriaLabel": "알림",
     "languageAriaLabel": "언어",
     "accountMenuAriaLabel": "계정 메뉴",

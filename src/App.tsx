@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { AuthProvider, ThemeProvider } from '@/store';
+import { AuthProvider } from '@/store';
 import { ProtectedRoute } from '@/components/auth';
 import { FeedbackCenter, PageLoader } from '@/components/ui';
 import {
@@ -32,7 +32,7 @@ import {
   BulkOrdersPage,
   ReportsPage,
 } from '@/pages';
-import { ROUTES } from '@/constants';
+import { ROUTES, isLaunchGateActive } from '@/constants';
 
 function RouteChangeOverlay(): ReactElement | null {
   const [isVisible, setIsVisible] = useState(true);
@@ -55,6 +55,31 @@ function RouteChangeOverlay(): ReactElement | null {
 
 function AppRoutes(): ReactElement {
   const location = useLocation();
+  const [launchGateActive, setLaunchGateActive] = useState<boolean>(() => isLaunchGateActive());
+
+  useEffect(() => {
+    if (!launchGateActive) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setLaunchGateActive(isLaunchGateActive());
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [launchGateActive]);
+
+  if (launchGateActive) {
+    return (
+      <>
+        <RouteChangeOverlay key={location.key} />
+        <Routes>
+          <Route path="*" element={<LandingPage />} />
+        </Routes>
+      </>
+    );
+  }
+
   return (
     <>
       <RouteChangeOverlay key={location.key} />
@@ -233,12 +258,10 @@ function AppRoutes(): ReactElement {
 function App(): ReactElement {
   return (
     <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <FeedbackCenter />
-          <AppRoutes />
-        </AuthProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <FeedbackCenter />
+        <AppRoutes />
+      </AuthProvider>
     </BrowserRouter>
   );
 }

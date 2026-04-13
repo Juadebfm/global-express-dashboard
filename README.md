@@ -43,6 +43,18 @@ export default defineConfig([
 ])
 ```
 
+## Launch Gate (Countdown)
+
+Use env vars to control whether users see the pre-launch countdown:
+
+- `VITE_LAUNCH_GATE_ENABLED=true|false`
+- `VITE_LAUNCH_GATE_TARGET_UTC=<ISO datetime or epoch milliseconds>`
+
+Recommended setup:
+
+- Local `.env`: `VITE_LAUNCH_GATE_ENABLED=false` (normal app while developing)
+- Production env: `VITE_LAUNCH_GATE_ENABLED=true` (countdown on the deployed link)
+
 You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
 ```js

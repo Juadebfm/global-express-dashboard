@@ -1,12 +1,12 @@
 import type { ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronDown, LogOut, Menu, Moon, Search, Sun } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Menu, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { DashboardUser } from '@/types';
 import type { Language } from '@/store/language/language.types';
-import { useAuth, useLanguage, useNotificationCount, useSearch, useTheme } from '@/hooks';
+import { useAuth, useLanguage, useNotificationCount, useSearch } from '@/hooks';
 import { ROUTES } from '@/constants';
 import { FlagIcon } from '@/components/ui';
 
@@ -28,9 +28,7 @@ export function Topbar({
 }: TopbarProps): ReactElement {
   const { t } = useTranslation('nav');
   const { query, setQuery } = useSearch();
-  const { mode, toggle } = useTheme();
   const { language, setLanguage } = useLanguage();
-  const isDark = mode === 'dark';
 
   const navigate = useNavigate();
   const { user: authUser, logout } = useAuth();
@@ -108,14 +106,6 @@ export function Topbar({
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={toggle}
-            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gx-control-bg)] text-gray-600 transition hover:bg-[var(--gx-control-bg-hover)] hover:text-gray-800"
-            aria-label={isDark ? t('topbar.switchToLightTheme') : t('topbar.switchToDarkTheme')}
-          >
-            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
           <button
             type="button"
             onClick={() => navigate(ROUTES.NOTIFICATIONS)}

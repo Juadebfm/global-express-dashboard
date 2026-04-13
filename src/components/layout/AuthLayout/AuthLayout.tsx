@@ -12,27 +12,14 @@ const LANGUAGE_OPTIONS: { code: Language; flagCode: 'us' | 'kr'; label: string }
 interface AuthLayoutProps {
   children: ReactNode;
   rightClassName?: string;
+  contentClassName?: string;
 }
 
-export function AuthLayout({ children, rightClassName }: AuthLayoutProps): ReactElement {
+export function AuthLayout({ children, rightClassName, contentClassName }: AuthLayoutProps): ReactElement {
   const { t } = useTranslation('auth');
   const { language, setLanguage } = useLanguage();
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const prev = root.dataset.theme;
-    const prevColorScheme = root.style.colorScheme;
-    root.dataset.theme = 'light';
-    root.style.colorScheme = 'light';
-    return () => {
-      if (prev) {
-        root.dataset.theme = prev;
-        root.style.colorScheme = prevColorScheme;
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (!langOpen) return;
@@ -73,7 +60,7 @@ export function AuthLayout({ children, rightClassName }: AuthLayoutProps): React
       </div>
 
       {/* Right side - Form content */}
-      <div className={`w-full lg:w-1/2 flex items-center justify-center p-8 relative ${rightClassName ?? 'bg-brand-500'}`}>
+      <div className={`w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative ${rightClassName ?? 'bg-brand-500'}`}>
         {/* Language toggle */}
         <div ref={langRef} className="absolute top-4 right-4 z-20">
           <button
@@ -105,7 +92,7 @@ export function AuthLayout({ children, rightClassName }: AuthLayoutProps): React
           )}
         </div>
 
-        <div className="w-full max-w-md">
+        <div className={`w-full ${contentClassName ?? 'max-w-md'}`}>
           {children}
         </div>
       </div>
