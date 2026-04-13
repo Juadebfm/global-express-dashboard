@@ -84,11 +84,11 @@ flowchart TD
 ```mermaid
 flowchart TD
   Start[App Boot] --> Gate{isLaunchGateActive()}
-  Gate -- true --> Countdown[Render Landing Countdown for ALL paths]
-  Gate -- false --> Normal[Render normal route table]
+  Gate -->|true| Countdown[Render Landing Countdown for ALL paths]
+  Gate -->|false| Normal[Render normal route table]
   Normal --> Protected{ProtectedRoute checks}
-  Protected -- pass --> Module[Page Module]
-  Protected -- fail --> Redirect[Login / Forbidden / Dashboard redirect]
+  Protected -->|pass| Module[Page Module]
+  Protected -->|fail| Redirect[Login / Forbidden / Dashboard redirect]
 ```
 
 ## Core User Flows
