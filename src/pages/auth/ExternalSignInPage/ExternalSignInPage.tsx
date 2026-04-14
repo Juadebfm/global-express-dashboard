@@ -272,10 +272,6 @@ export function ExternalSignInPage(): ReactElement {
           <ArrowLeft className="h-3.5 w-3.5" />
           {t('loginForm.backToHome')}
         </a>
-        <div className="flex justify-center mb-6">
-          <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
-        </div>
-
         {/* STEP: Sign in */}
         {step === 'sign-in' && (
           <div>

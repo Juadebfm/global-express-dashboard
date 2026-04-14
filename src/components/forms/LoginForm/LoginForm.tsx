@@ -38,15 +38,6 @@ export function LoginForm({
         {t('loginForm.backToHome')}
       </Link>
 
-      {/* Logo */}
-      <div className="flex justify-center mb-6">
-        <img
-          src="/images/mainlogo.svg"
-          alt="GlobalXpress"
-          className="h-12"
-        />
-      </div>
-
       {/* Heading */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-gray-900">
