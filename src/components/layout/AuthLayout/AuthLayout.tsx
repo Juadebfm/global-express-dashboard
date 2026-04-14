@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/hooks';
 import type { Language } from '@/store/language';
 import { FlagIcon } from '@/components/ui';
@@ -23,7 +22,6 @@ interface AuthLayoutProps {
 }
 
 export function AuthLayout({ children, rightClassName, contentClassName }: AuthLayoutProps): ReactElement {
-  const { t } = useTranslation('auth');
   const { language, setLanguage } = useLanguage();
   const [langOpen, setLangOpen] = useState(false);
   const [activeHeroIndex, setActiveHeroIndex] = useState(getSyncedHeroIndex);
@@ -73,8 +71,8 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
         ))}
 
         {/* Layered overlays for readable copy on varied photos */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-black/35" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#031324]/82 via-[#031324]/62 to-[#031324]/38" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/72 via-black/32 to-transparent" />
 
         <div className="absolute left-12 top-10 z-10">
           <img
@@ -84,15 +82,34 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
           />
         </div>
 
-        {/* Quote overlay */}
-        <div className="relative z-10 flex flex-col justify-end p-12 text-white">
-          <div className="max-w-md rounded-xl bg-black/45 p-6 shadow-xl backdrop-blur-[2px] border border-white/15">
-            <blockquote className="text-xl font-semibold italic text-white drop-shadow-md">
-              "{t('authLayout.quote')}"
-            </blockquote>
-            <p className="mt-4 text-white/90 drop-shadow-sm">
-              {t('authLayout.quoteSubtitle')}
+        {/* Hero content */}
+        <div className="relative z-10 flex h-full flex-col justify-between px-12 py-10 text-white">
+          <div />
+          <div className="max-w-[560px]">
+            <h1 className="text-6xl font-semibold leading-[1.06] tracking-tight text-white">
+              Moving the world,
+              <br />
+              <span className="text-[#f8b49b]">one parcel</span> at a
+              <br />
+              time.
+            </h1>
+            <p className="mt-6 max-w-[520px] text-[19px] leading-relaxed text-white/88">
+              Join the logistics network built for precision, speed, and global
+              connectivity. Manage your entire supply chain from a single
+              interface.
             </p>
+          </div>
+          <div className="border-t border-white/20 pt-6">
+            <div className="flex items-start gap-14 text-white/92">
+              <div>
+                <p className="text-[44px] font-semibold leading-none">220+</p>
+                <p className="mt-2 text-[18px] text-white/72">Countries Reached</p>
+              </div>
+              <div>
+                <p className="text-[44px] font-semibold leading-none">1.2M</p>
+                <p className="mt-2 text-[18px] text-white/72">Active Shipments</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -105,7 +122,7 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
             type="button"
             onClick={() => setLangOpen((prev) => !prev)}
             className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white/90 px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-white transition"
-            aria-label={t('authLayout.changeLanguage')}
+            aria-label="Change language"
           >
             <FlagIcon code={LANGUAGE_OPTIONS.find((opt) => opt.code === language)?.flagCode ?? 'us'} size="sm" />
             <span>{language === 'ko' ? 'KR' : 'EN'}</span>
@@ -130,7 +147,7 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
           )}
         </div>
 
-        <div className={`w-full ${contentClassName ?? 'max-w-2xl'}`}>
+        <div className={`w-full ${contentClassName ?? 'max-w-[760px] pt-12 sm:pt-14 lg:pt-16'}`}>
           {children}
           <div className="mt-7 flex flex-wrap items-center justify-center gap-4 text-[11px] uppercase tracking-[0.18em] text-gray-400">
             <span>Privacy Policy</span>

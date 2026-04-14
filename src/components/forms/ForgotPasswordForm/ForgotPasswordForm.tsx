@@ -80,10 +80,6 @@ export function ForgotPasswordForm({
   if (step === 'email') {
     return (
       <Card className="auth-panel-card p-8 sm:p-10">
-        <div className="flex justify-center mb-6">
-          <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
-        </div>
-
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-gray-900">{t('forgotPasswordForm.title')}</h2>
           <p className="text-sm text-gray-500 mt-1">
@@ -131,10 +127,6 @@ export function ForgotPasswordForm({
   if (step === 'otp') {
     return (
       <Card className="auth-panel-card p-8 sm:p-10">
-        <div className="flex justify-center mb-6">
-          <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
-        </div>
-
         <div className="mb-6 text-center">
           <h2 className="text-xl font-semibold text-gray-900">{t('forgotPasswordForm.otpTitle')}</h2>
           <p className="text-sm text-gray-500 mt-1">
@@ -188,10 +180,6 @@ export function ForgotPasswordForm({
   if (step === 'password') {
     return (
       <Card className="auth-panel-card p-8 sm:p-10">
-        <div className="flex justify-center mb-6">
-          <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
-        </div>
-
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-gray-900">{t('forgotPasswordForm.newPasswordTitle')}</h2>
           <p className="text-sm text-gray-500 mt-1">
@@ -249,10 +237,6 @@ export function ForgotPasswordForm({
   // Success Step
   return (
     <Card className="auth-panel-card p-8 sm:p-10">
-      <div className="flex justify-center mb-6">
-        <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
-      </div>
-
       <div className="flex flex-col items-center text-center">
         <div className="w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center mb-4">
           <CheckCircle className="w-8 h-8 text-brand-500" />
