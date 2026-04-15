@@ -72,6 +72,20 @@ export function ExternalSignInPage(): ReactElement {
     setFormError(null);
   };
 
+  const renderSectionHeader = (title: string, subtitle?: string): ReactElement => (
+    <div className="mb-6">
+      <div className="mb-4 flex justify-center">
+        <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
+      </div>
+      <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+      {subtitle && (
+        <p className="mt-1 text-sm text-gray-600">
+          {subtitle}
+        </p>
+      )}
+    </div>
+  );
+
   // ── Sign in ────────────────────────────────────────────────────────────────
 
   const handleSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -98,15 +112,16 @@ export function ExternalSignInPage(): ReactElement {
         identifier: email.trim(),
         password,
       });
+      const resultStatus = (result as { status?: string | null }).status;
 
-      if (result.status === 'complete') {
+      if (resultStatus === 'complete') {
         await setActive({ session: result.createdSessionId });
         const redirectPath = await resolvePostAuthRedirect();
 
         localStorage.removeItem('globalxpress_token');
         localStorage.removeItem('globalxpress_refresh');
         navigate(redirectPath, { replace: true });
-      } else if (result.status === 'needs_second_factor') {
+      } else if (resultStatus === 'needs_second_factor' || resultStatus === 'needs_client_trust') {
         await signIn.prepareSecondFactor({ strategy: 'email_code' });
         clearErrors();
         setTwoFaCode('');
@@ -275,12 +290,10 @@ export function ExternalSignInPage(): ReactElement {
         {/* STEP: Sign in */}
         {step === 'sign-in' && (
           <div>
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">{t('externalSignIn.title')}</h2>
-              <p className="mt-1 text-sm text-gray-600">
-                {t('externalSignIn.subtitle')}
-              </p>
-            </div>
+            {renderSectionHeader(
+              t('externalSignIn.title'),
+              t('externalSignIn.subtitle')
+            )}
 
             {formError && (
               <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
@@ -342,12 +355,10 @@ export function ExternalSignInPage(): ReactElement {
         {/* STEP: 2FA verification */}
         {step === 'verify-2fa' && (
           <div>
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">{t('externalSignIn.verifyTitle')}</h2>
-              <p className="mt-1 text-sm text-gray-600">
-                {t('externalSignIn.verifySubtitle', { email })}
-              </p>
-            </div>
+            {renderSectionHeader(
+              t('externalSignIn.verifyTitle'),
+              t('externalSignIn.verifySubtitle', { email })
+            )}
 
             {formError && (
               <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
@@ -387,12 +398,10 @@ export function ExternalSignInPage(): ReactElement {
         {/* STEP: Forgot password — email */}
         {step === 'forgot-email' && (
           <div>
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">{t('externalSignIn.forgotTitle')}</h2>
-              <p className="mt-1 text-sm text-gray-600">
-                {t('externalSignIn.forgotSubtitle')}
-              </p>
-            </div>
+            {renderSectionHeader(
+              t('externalSignIn.forgotTitle'),
+              t('externalSignIn.forgotSubtitle')
+            )}
 
             {formError && (
               <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
@@ -433,12 +442,10 @@ export function ExternalSignInPage(): ReactElement {
         {/* STEP: Forgot password — verify code */}
         {step === 'forgot-code' && (
           <div>
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">{t('externalSignIn.enterResetCode')}</h2>
-              <p className="mt-1 text-sm text-gray-600">
-                {t('externalSignIn.codeSentTo', { email: resetEmail })}
-              </p>
-            </div>
+            {renderSectionHeader(
+              t('externalSignIn.enterResetCode'),
+              t('externalSignIn.codeSentTo', { email: resetEmail })
+            )}
 
             {formError && (
               <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
@@ -478,12 +485,10 @@ export function ExternalSignInPage(): ReactElement {
         {/* STEP: Forgot password — new password */}
         {step === 'forgot-reset' && (
           <div>
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">{t('externalSignIn.createNewPassword')}</h2>
-              <p className="mt-1 text-sm text-gray-600">
-                {t('externalSignIn.passwordRequirement')}
-              </p>
-            </div>
+            {renderSectionHeader(
+              t('externalSignIn.createNewPassword'),
+              t('externalSignIn.passwordRequirement')
+            )}
 
             {formError && (
               <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
@@ -527,6 +532,9 @@ export function ExternalSignInPage(): ReactElement {
         {/* STEP: Forgot password — success */}
         {step === 'forgot-success' && (
           <div className="flex flex-col items-center text-center">
+            <div className="mb-4 flex justify-center">
+              <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
+            </div>
             <div className="w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center mb-4">
               <CheckCircle className="w-8 h-8 text-brand-500" />
             </div>

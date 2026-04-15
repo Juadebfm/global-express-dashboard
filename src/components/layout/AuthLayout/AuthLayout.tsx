@@ -74,17 +74,8 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
         <div className="absolute inset-0 bg-gradient-to-br from-[#031324]/82 via-[#031324]/62 to-[#031324]/38" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/72 via-black/32 to-transparent" />
 
-        <div className="absolute left-12 top-10 z-10">
-          <img
-            src="/images/mainlogo.svg"
-            alt="GlobalXpress"
-            className="h-10 w-auto drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
-          />
-        </div>
-
         {/* Hero content */}
-        <div className="relative z-10 flex h-full flex-col justify-between px-12 py-10 text-white">
-          <div />
+        <div className="relative z-10 flex h-full items-center px-12 py-10 text-white">
           <div className="max-w-[560px]">
             <h1 className="text-6xl font-semibold leading-[1.06] tracking-tight text-white">
               Moving the world,
@@ -99,23 +90,11 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
               interface.
             </p>
           </div>
-          <div className="border-t border-white/20 pt-6">
-            <div className="flex items-start gap-14 text-white/92">
-              <div>
-                <p className="text-[44px] font-semibold leading-none">220+</p>
-                <p className="mt-2 text-[18px] text-white/72">Countries Reached</p>
-              </div>
-              <div>
-                <p className="text-[44px] font-semibold leading-none">1.2M</p>
-                <p className="mt-2 text-[18px] text-white/72">Active Shipments</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
       {/* Right side - Form content */}
-      <div className={`w-full lg:w-1/2 flex items-start justify-center p-4 sm:p-6 lg:p-10 relative ${rightClassName ?? 'bg-[#F3F4F6]'}`}>
+      <div className={`w-full lg:w-1/2 relative flex min-h-screen flex-col ${rightClassName ?? 'bg-[#F3F4F6]'}`}>
         {/* Language toggle */}
         <div ref={langRef} className="absolute top-4 right-4 z-20">
           <button
@@ -147,12 +126,31 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
           )}
         </div>
 
-        <div className={`w-full ${contentClassName ?? 'max-w-[760px] pt-12 sm:pt-14 lg:pt-16'}`}>
-          {children}
-          <div className="mt-7 flex flex-wrap items-center justify-center gap-4 text-[11px] uppercase tracking-[0.18em] text-gray-400">
-            <span>Privacy Policy</span>
+        <div className="flex flex-1 items-center justify-center px-4 pb-8 pt-16 sm:px-6 sm:pb-10 sm:pt-20 lg:px-10 lg:pb-12 lg:pt-24">
+          <div className={`w-full ${contentClassName ?? 'max-w-[760px]'}`}>
+            {children}
+          </div>
+        </div>
+
+        <div className="mt-auto px-4 pb-6 sm:px-6 sm:pb-8 lg:px-10">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] uppercase tracking-[0.18em] text-gray-400">
+            <a
+              href="https://www.globalexpress.kr/privacy-policy"
+              target="_blank"
+              rel="noreferrer"
+              className="transition hover:text-gray-600"
+            >
+              Privacy Policy
+            </a>
             <span className="h-1 w-1 rounded-full bg-gray-300" aria-hidden="true" />
-            <span>Terms of Service</span>
+            <a
+              href="https://www.globalexpress.kr/terms-and-conditions"
+              target="_blank"
+              rel="noreferrer"
+              className="transition hover:text-gray-600"
+            >
+              Terms of Service
+            </a>
             <span className="h-1 w-1 rounded-full bg-gray-300" aria-hidden="true" />
             <span>Support</span>
           </div>

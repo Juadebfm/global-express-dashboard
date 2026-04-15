@@ -76,16 +76,28 @@ export function ForgotPasswordForm({
     navigate(ROUTES.LOGIN);
   };
 
+  const renderSectionHeader = (title: string, subtitle?: string, centered: boolean = false): ReactElement => (
+    <div className={`mb-6 ${centered ? 'text-center' : ''}`}>
+      <div className="mb-4 flex justify-center">
+        <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
+      </div>
+      <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+      {subtitle && (
+        <p className="mt-1 text-sm text-gray-500">
+          {subtitle}
+        </p>
+      )}
+    </div>
+  );
+
   // Email Step
   if (step === 'email') {
     return (
       <Card className="auth-panel-card p-8 sm:p-10">
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">{t('forgotPasswordForm.title')}</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            {t('forgotPasswordForm.subtitle')}
-          </p>
-        </div>
+        {renderSectionHeader(
+          t('forgotPasswordForm.title'),
+          t('forgotPasswordForm.subtitle')
+        )}
 
         {error && (
           <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200">
@@ -127,12 +139,11 @@ export function ForgotPasswordForm({
   if (step === 'otp') {
     return (
       <Card className="auth-panel-card p-8 sm:p-10">
-        <div className="mb-6 text-center">
-          <h2 className="text-xl font-semibold text-gray-900">{t('forgotPasswordForm.otpTitle')}</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            {t('forgotPasswordForm.otpSubtitle', { email })}
-          </p>
-        </div>
+        {renderSectionHeader(
+          t('forgotPasswordForm.otpTitle'),
+          t('forgotPasswordForm.otpSubtitle', { email }),
+          true
+        )}
 
         {error && (
           <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200">
@@ -180,12 +191,10 @@ export function ForgotPasswordForm({
   if (step === 'password') {
     return (
       <Card className="auth-panel-card p-8 sm:p-10">
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">{t('forgotPasswordForm.newPasswordTitle')}</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            {t('forgotPasswordForm.newPasswordSubtitle')}
-          </p>
-        </div>
+        {renderSectionHeader(
+          t('forgotPasswordForm.newPasswordTitle'),
+          t('forgotPasswordForm.newPasswordSubtitle')
+        )}
 
         {error && (
           <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200">
@@ -238,6 +247,9 @@ export function ForgotPasswordForm({
   return (
     <Card className="auth-panel-card p-8 sm:p-10">
       <div className="flex flex-col items-center text-center">
+        <div className="mb-4 flex justify-center">
+          <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
+        </div>
         <div className="w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center mb-4">
           <CheckCircle className="w-8 h-8 text-brand-500" />
         </div>
