@@ -38,11 +38,18 @@ export function LoginForm({
         {t('loginForm.backToHome')}
       </Link>
 
+      <div className="mb-4 flex justify-center">
+        <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
+      </div>
+
       {/* Heading */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-gray-900">
           {t('loginForm.title')}
         </h2>
+        <p className="mt-1 text-sm text-gray-600">
+          {t('loginForm.subtitle')}
+        </p>
       </div>
 
       {/* Error message */}

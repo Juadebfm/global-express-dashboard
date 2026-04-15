@@ -124,8 +124,8 @@ function CountrySelect({ selected, onSelect, isError = false }: CountrySelectPro
         onClick={handleToggle}
         className={
           isError
-            ? 'flex w-full items-center justify-between rounded-lg border border-red-500 bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500'
-            : 'flex w-full items-center justify-between rounded-lg border border-[#DDE5E9] bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400'
+            ? 'auth-form-control flex w-full items-center justify-between rounded-lg border border-red-500 bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500'
+            : 'auth-form-control flex w-full items-center justify-between rounded-lg border border-[#DDE5E9] bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400'
         }
         aria-haspopup="listbox"
         aria-expanded={isOpen}
@@ -364,8 +364,8 @@ export function CompleteProfilePage(): ReactElement {
           disabled={disabled}
           className={
             error
-              ? 'w-full rounded-lg border border-red-500 px-4 py-2.5 text-sm text-gray-900 placeholder:text-sm placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-red-500'
-              : 'w-full rounded-lg border border-[#DDE5E9] px-4 py-2.5 text-sm text-gray-900 placeholder:text-sm placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400'
+              ? 'auth-form-control w-full rounded-lg border border-red-500 px-4 py-2.5 text-sm text-gray-900 placeholder:text-sm placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-red-500'
+              : 'auth-form-control w-full rounded-lg border border-[#DDE5E9] px-4 py-2.5 text-sm text-gray-900 placeholder:text-sm placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400'
           }
           aria-invalid={error ? 'true' : 'false'}
         />
@@ -430,7 +430,7 @@ export function CompleteProfilePage(): ReactElement {
             value={form.addressStreet}
             onChange={(event) => updateField('addressStreet', event.target.value)}
             error={errors.addressStreet}
-            className="text-sm placeholder:text-sm"
+            className="auth-form-control text-sm placeholder:text-sm"
           />
 
           <div className="grid grid-cols-2 gap-4">
@@ -440,7 +440,7 @@ export function CompleteProfilePage(): ReactElement {
               value={form.addressCity}
               onChange={(event) => updateField('addressCity', event.target.value)}
               error={errors.addressCity}
-              className="text-sm placeholder:text-sm"
+              className="auth-form-control text-sm placeholder:text-sm"
             />
             <Input
               label={t('completeProfile.state')}
@@ -448,7 +448,7 @@ export function CompleteProfilePage(): ReactElement {
               value={form.addressState}
               onChange={(event) => updateField('addressState', event.target.value)}
               error={errors.addressState}
-              className="text-sm placeholder:text-sm"
+              className="auth-form-control text-sm placeholder:text-sm"
             />
           </div>
 
@@ -459,7 +459,7 @@ export function CompleteProfilePage(): ReactElement {
               value={form.addressCountry}
               onChange={(event) => updateField('addressCountry', event.target.value)}
               error={errors.addressCountry}
-              className="text-sm placeholder:text-sm"
+              className="auth-form-control text-sm placeholder:text-sm"
             />
             <Input
               label={t('completeProfile.postalCode')}
@@ -467,7 +467,7 @@ export function CompleteProfilePage(): ReactElement {
               value={form.addressPostalCode}
               onChange={(event) => updateField('addressPostalCode', event.target.value)}
               error={errors.addressPostalCode}
-              className="text-sm placeholder:text-sm"
+              className="auth-form-control text-sm placeholder:text-sm"
             />
           </div>
 

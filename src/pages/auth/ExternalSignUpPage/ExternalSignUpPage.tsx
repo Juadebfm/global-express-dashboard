@@ -1,5 +1,5 @@
 import type { ComponentType, ReactElement } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth, useSignUp, useUser } from '@clerk/clerk-react';
 import type { Country } from 'react-phone-number-input';
 import {
@@ -15,7 +15,11 @@ import { AuthLayout } from '@/components/layout';
 import { Button, Card, Checkbox, Input, StepIndicator } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import { apiPatch } from '@/lib/apiClient';
-import { syncClerkAccount, updateMyNotificationPreferences } from '@/services';
+import {
+  getMyProfileCompleteness,
+  syncClerkAccount,
+  updateMyNotificationPreferences,
+} from '@/services';
 
 type SignUpStep = 'account' | 'verify' | 'details';
 type AccountType = 'individual' | 'business';
@@ -130,8 +134,8 @@ function CountrySelect({
         onClick={handleToggle}
         className={
           isError
-            ? 'flex w-full items-center justify-between rounded-lg border border-red-500 bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500'
-            : 'flex w-full items-center justify-between rounded-lg border border-[#DDE5E9] bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400'
+            ? 'auth-form-control flex w-full items-center justify-between rounded-lg border border-red-500 bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500'
+            : 'auth-form-control flex w-full items-center justify-between rounded-lg border border-[#DDE5E9] bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400'
         }
         aria-haspopup="listbox"
         aria-expanded={isOpen}
@@ -210,7 +214,7 @@ export function ExternalSignUpPage(): ReactElement {
   const { isLoaded, signUp, setActive } = useSignUp();
   const { getToken, isSignedIn } = useAuth();
   const { user: clerkUser } = useUser();
-  const inputClassName = 'text-sm placeholder:text-sm';
+  const inputClassName = 'auth-form-control text-sm placeholder:text-sm';
   const buttonTextClassName = 'text-sm';
   const emailPattern = /\S+@\S+\.\S+/;
 
@@ -224,14 +228,8 @@ export function ExternalSignUpPage(): ReactElement {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
-
-  // Only redirect already-completed users away from the signup page.
-  // Do NOT redirect mid-signup (after setActive but before details step).
-  useEffect(() => {
-    if (isSignedIn && clerkUser?.unsafeMetadata?.profileCompleted === true) {
-      navigate(ROUTES.DASHBOARD, { replace: true });
-    }
-  }, [isSignedIn, navigate, clerkUser]);
+  const [needsFinishSetupRetry, setNeedsFinishSetupRetry] = useState(false);
+  const [isFinishingSetup, setIsFinishingSetup] = useState(false);
 
   const selectedCountryOption =
     COUNTRY_OPTIONS.find((item) => item.code === selectedCountry) ||
@@ -263,6 +261,49 @@ export function ExternalSignUpPage(): ReactElement {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: '' }));
   };
+
+  const syncCurrentSession = useCallback(async (): Promise<void> => {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('Authentication token is missing.');
+    }
+
+    await syncClerkAccount(token);
+    const completeness = await getMyProfileCompleteness(token);
+
+    if (completeness.isComplete) {
+      await clerkUser?.update({ unsafeMetadata: { profileCompleted: true } });
+      navigate(ROUTES.DASHBOARD, { replace: true });
+      return;
+    }
+
+    setStep('details');
+  }, [clerkUser, getToken, navigate]);
+
+  const handleFinishSetupRetry = useCallback(async (): Promise<void> => {
+    setFormError(null);
+    setIsFinishingSetup(true);
+
+    try {
+      await syncCurrentSession();
+      setNeedsFinishSetupRetry(false);
+    } catch (error) {
+      setNeedsFinishSetupRetry(true);
+      setStep('verify');
+      setFormError(getErrorMessage(error));
+    } finally {
+      setIsFinishingSetup(false);
+    }
+  }, [syncCurrentSession]);
+
+  // If user already has an active Clerk session, skip signup and sync directly.
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) {
+      return;
+    }
+
+    void handleFinishSetupRetry();
+  }, [handleFinishSetupRetry, isLoaded, isSignedIn]);
 
   const handleAccountSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -302,6 +343,11 @@ export function ExternalSignUpPage(): ReactElement {
 
     if (!isLoaded || !signUp) {
       setFormError('Sign up is not ready yet. Please try again.');
+      return;
+    }
+
+    if (isSignedIn) {
+      await handleFinishSetupRetry();
       return;
     }
 
@@ -347,12 +393,7 @@ export function ExternalSignUpPage(): ReactElement {
           throw new Error('Unable to start a session.');
         }
         await setActive({ session: result.createdSessionId });
-        const token = await getToken();
-        if (!token) {
-          throw new Error('Authentication token is missing.');
-        }
-        await syncClerkAccount(token);
-        setStep('details');
+        await handleFinishSetupRetry();
       } else {
         const missingFields = (result as { missingFields?: string[] }).missingFields;
         if (missingFields && missingFields.length > 0) {
@@ -529,8 +570,8 @@ export function ExternalSignUpPage(): ReactElement {
           disabled={disabled}
           className={
             error
-              ? 'w-full rounded-lg border border-red-500 px-4 py-2.5 text-sm text-gray-900 placeholder:text-sm placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-red-500'
-              : 'w-full rounded-lg border border-[#DDE5E9] px-4 py-2.5 text-sm text-gray-900 placeholder:text-sm placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400'
+              ? 'auth-form-control w-full rounded-lg border border-red-500 px-4 py-2.5 text-sm text-gray-900 placeholder:text-sm placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-red-500'
+              : 'auth-form-control w-full rounded-lg border border-[#DDE5E9] px-4 py-2.5 text-sm text-gray-900 placeholder:text-sm placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400'
           }
           aria-invalid={error ? 'true' : 'false'}
         />
@@ -545,9 +586,9 @@ export function ExternalSignUpPage(): ReactElement {
 
   return (
     <AuthLayout>
-      <div className="space-y-5">
+      <div className="space-y-8">
         <StepIndicator
-          className="mx-1 mb-1"
+          className="mx-1"
           steps={[
             { id: 'account', label: t('externalSignUp.title') },
             { id: 'verify', label: t('externalSignUp.verifyTitle') },
@@ -583,8 +624,8 @@ export function ExternalSignUpPage(): ReactElement {
                   onClick={() => setAccountType('individual')}
                   className={
                     accountType === 'individual'
-                      ? 'rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 shadow-sm'
-                      : 'rounded-xl border border-transparent bg-transparent px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-700'
+                      ? 'auth-choice-btn rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 shadow-sm'
+                      : 'auth-choice-btn rounded-xl border border-transparent bg-transparent px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-700'
                   }
                 >
                   {t('externalSignUp.individual')}
@@ -594,8 +635,8 @@ export function ExternalSignUpPage(): ReactElement {
                   onClick={() => setAccountType('business')}
                   className={
                     accountType === 'business'
-                      ? 'rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 shadow-sm'
-                      : 'rounded-xl border border-transparent bg-transparent px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-700'
+                      ? 'auth-choice-btn rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 shadow-sm'
+                      : 'auth-choice-btn rounded-xl border border-transparent bg-transparent px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-700'
                   }
                 >
                   {t('externalSignUp.business')}
@@ -703,43 +744,63 @@ export function ExternalSignUpPage(): ReactElement {
               </div>
             )}
 
-            <form onSubmit={handleVerify} className="space-y-4">
-              <Input
-                label={t('externalSignUp.verificationCode')}
-                placeholder={t('externalSignUp.codePlaceholder')}
-                value={verificationCode}
-                onChange={(event) => setVerificationCode(event.target.value)}
-                className={inputClassName}
-              />
+            {needsFinishSetupRetry ? (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  {t('externalSignUp.finishSetupHint')}
+                </p>
+                <Button
+                  type="button"
+                  className={`auth-cta-btn w-full ${buttonTextClassName}`}
+                  size="lg"
+                  isLoading={isFinishingSetup}
+                  onClick={() => void handleFinishSetupRetry()}
+                  disabled={!isLoaded}
+                >
+                  {t('externalSignUp.finishSetupAction')}
+                </Button>
+              </div>
+            ) : (
+              <>
+                <form onSubmit={handleVerify} className="space-y-4">
+                  <Input
+                    label={t('externalSignUp.verificationCode')}
+                    placeholder={t('externalSignUp.codePlaceholder')}
+                    value={verificationCode}
+                    onChange={(event) => setVerificationCode(event.target.value)}
+                    className={inputClassName}
+                  />
 
-              <Button
-                type="submit"
-                className={`auth-cta-btn w-full ${buttonTextClassName}`}
-                size="lg"
-                isLoading={isSubmitting}
-                disabled={!isLoaded}
-              >
-                {t('externalSignUp.verifyEmail')}
-              </Button>
-            </form>
+                  <Button
+                    type="submit"
+                    className={`auth-cta-btn w-full ${buttonTextClassName}`}
+                    size="lg"
+                    isLoading={isSubmitting}
+                    disabled={!isLoaded}
+                  >
+                    {t('externalSignUp.verifyEmail')}
+                  </Button>
+                </form>
 
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
-              <button
-                type="button"
-                onClick={handleResendCode}
-                className="font-medium text-brand-500 hover:text-brand-600"
-                disabled={isResending}
-              >
-                {isResending ? t('externalSignUp.resending') : t('externalSignUp.resendCode')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setStep('account')}
-                className="font-medium text-gray-500 hover:text-gray-700"
-              >
-                {t('externalSignUp.backToDetails')}
-              </button>
-            </div>
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+                  <button
+                    type="button"
+                    onClick={handleResendCode}
+                    className="font-medium text-brand-500 hover:text-brand-600"
+                    disabled={isResending}
+                  >
+                    {isResending ? t('externalSignUp.resending') : t('externalSignUp.resendCode')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStep('account')}
+                    className="font-medium text-gray-500 hover:text-gray-700"
+                  >
+                    {t('externalSignUp.backToDetails')}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
 
