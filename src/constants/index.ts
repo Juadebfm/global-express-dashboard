@@ -6,3 +6,11 @@ export {
   FORCE_LAUNCH_GATE,
   isLaunchGateActive,
 } from './launchGate';
+export {
+  FORCE_PROVISIONING_GATE,
+  PROVISIONING_GATE_BLOCK_MESSAGE,
+  PROVISIONING_GATE_TARGET_UTC,
+  getProvisioningRemainingMs,
+  formatProvisioningCountdown,
+  isProvisioningGateActive,
+} from './provisioningGate';

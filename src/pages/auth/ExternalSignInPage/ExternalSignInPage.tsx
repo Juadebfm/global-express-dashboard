@@ -5,8 +5,15 @@ import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useSignIn, useUser } from '@clerk/clerk-react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
-import { Button, Card, Input } from '@/components/ui';
-import { ROUTES, PUBLIC_WEBSITE_URL } from '@/constants';
+import { Button, Card, Input, ProvisioningGateModal } from '@/components/ui';
+import {
+  PROVISIONING_GATE_BLOCK_MESSAGE,
+  PROVISIONING_GATE_TARGET_UTC,
+  PUBLIC_WEBSITE_URL,
+  ROUTES,
+  isProvisioningGateActive,
+} from '@/constants';
+import { useProvisioningGate } from '@/hooks';
 import { getMyProfileCompleteness, syncClerkAccount } from '@/services';
 
 type Step = 'sign-in' | 'verify-2fa' | 'forgot-email' | 'forgot-code' | 'forgot-reset' | 'forgot-success';
@@ -27,6 +34,7 @@ export function ExternalSignInPage(): ReactElement {
   const { isLoaded, signIn, setActive } = useSignIn();
   const { isSignedIn } = useUser();
   const { getToken, signOut } = useClerkAuth();
+  const { isProvisioningActive, countdownLabel, remainingMs } = useProvisioningGate();
 
   const [step, setStep] = useState<Step>('sign-in');
 
@@ -47,8 +55,13 @@ export function ExternalSignInPage(): ReactElement {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [postAuthRedirect, setPostAuthRedirect] = useState<string>(ROUTES.COMPLETE_PROFILE);
+  const [dismissedProvisioningTarget, setDismissedProvisioningTarget] = useState<number | null>(null);
 
   const didUserSignInRef = useRef(false);
+  const isProvisioningModalOpen =
+    isProvisioningActive && dismissedProvisioningTarget !== PROVISIONING_GATE_TARGET_UTC;
+  const provisioningModalMessage =
+    `${PROVISIONING_GATE_BLOCK_MESSAGE}. Estimated unlock in ${countdownLabel}.`;
 
   const resolvePostAuthRedirect = useCallback(async (): Promise<string> => {
     const token = await getToken();
@@ -70,6 +83,22 @@ export function ExternalSignInPage(): ReactElement {
   const clearErrors = () => {
     setErrors({});
     setFormError(null);
+  };
+
+  const closeProvisioningModal = (): void => {
+    setDismissedProvisioningTarget(PROVISIONING_GATE_TARGET_UTC);
+  };
+
+  const reopenProvisioningModal = (): void => {
+    setDismissedProvisioningTarget(null);
+  };
+
+  const isBlockedByProvisioningGate = (): boolean => {
+    if (!isProvisioningGateActive()) {
+      return false;
+    }
+    reopenProvisioningModal();
+    return true;
   };
 
   const renderSectionHeader = (title: string, subtitle?: string): ReactElement => (
@@ -105,6 +134,10 @@ export function ExternalSignInPage(): ReactElement {
       return;
     }
 
+    if (isBlockedByProvisioningGate()) {
+      return;
+    }
+
     setIsSubmitting(true);
     didUserSignInRef.current = true;
     try {
@@ -115,6 +148,9 @@ export function ExternalSignInPage(): ReactElement {
       const resultStatus = (result as { status?: string | null }).status;
 
       if (resultStatus === 'complete') {
+        if (isBlockedByProvisioningGate()) {
+          return;
+        }
         await setActive({ session: result.createdSessionId });
         const redirectPath = await resolvePostAuthRedirect();
 
@@ -149,6 +185,10 @@ export function ExternalSignInPage(): ReactElement {
 
     if (!isLoaded || !signIn) return;
 
+    if (isBlockedByProvisioningGate()) {
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const result = await signIn.attemptSecondFactor({
@@ -157,6 +197,9 @@ export function ExternalSignInPage(): ReactElement {
       });
 
       if (result.status === 'complete') {
+        if (isBlockedByProvisioningGate()) {
+          return;
+        }
         await setActive({ session: result.createdSessionId });
         const redirectPath = await resolvePostAuthRedirect();
 
@@ -255,12 +298,19 @@ export function ExternalSignInPage(): ReactElement {
 
     if (!isLoaded || !signIn) return;
 
+    if (isBlockedByProvisioningGate()) {
+      return;
+    }
+
     setIsSubmitting(true);
     didUserSignInRef.current = true;
     try {
       const result = await signIn.resetPassword({ password: newPassword });
 
       if (result.status === 'complete') {
+        if (isBlockedByProvisioningGate()) {
+          return;
+        }
         await setActive({ session: result.createdSessionId });
         const redirectPath = await resolvePostAuthRedirect();
         setPostAuthRedirect(redirectPath);
@@ -552,6 +602,16 @@ export function ExternalSignInPage(): ReactElement {
             </Button>
           </div>
         )}
+        <ProvisioningGateModal
+          isOpen={isProvisioningModalOpen}
+          title="Application update in progress"
+          message={provisioningModalMessage}
+          remainingMs={isProvisioningActive ? remainingMs : 0}
+          primaryLabel="I understand"
+          secondaryLabel="Close"
+          onPrimary={closeProvisioningModal}
+          onSecondary={closeProvisioningModal}
+        />
       </Card>
     </AuthLayout>
   );

@@ -128,6 +128,12 @@ flowchart TD
 - When enabled, `AppRoutes` short-circuits all routes to `LandingPage`.
 - Countdown target timestamp is configurable (`VITE_LAUNCH_GATE_TARGET_UTC`).
 
+### 5) Provisioning Gate (Login UI Hold)
+
+- Controlled by env in `src/constants/provisioningGate.ts`.
+- Keeps login forms visible but blocks submit for internal (`/login`) and external (`/sign-in`) flows.
+- Shows a frontend-only popup message and countdown so users know provisioning is still in progress.
+
 ## Routing and Access Control
 
 ### Public Routes
@@ -266,6 +272,8 @@ This repo ignores all `.env*` files except `.env.example`.
 |---|---|---|
 | `VITE_LAUNCH_GATE_ENABLED` | Forces countdown route lock on/off | `true` or `false` |
 | `VITE_LAUNCH_GATE_TARGET_UTC` | Countdown target timestamp (ISO or epoch ms) | `2026-04-18T00:00:00Z` |
+| `VITE_PROVISIONING_GATE_ENABLED` | Blocks login submit (forms remain visible) | `true` or `false` |
+| `VITE_PROVISIONING_GATE_TARGET_UTC` | Provisioning unlock timestamp (ISO or epoch ms) | `2026-04-20T00:00:00Z` |
 
 Default behavior if `VITE_LAUNCH_GATE_ENABLED` is omitted:
 
@@ -340,6 +348,8 @@ npm run build
 - Ensure production env variables are set in your host platform.
 - To hold public access behind countdown during rollout:
   - Set `VITE_LAUNCH_GATE_ENABLED=true`.
+- To keep login forms visible but block authentication during propagation:
+  - Set `VITE_PROVISIONING_GATE_ENABLED=true`.
 
 ## Operational Notes
 
@@ -379,4 +389,9 @@ npm run build
 ### Countdown appears locally when not expected
 
 - Set `VITE_LAUNCH_GATE_ENABLED=false` in local `.env`.
+- Restart dev server after env changes.
+
+### Login is blocked with provisioning message
+
+- Set `VITE_PROVISIONING_GATE_ENABLED=false` in local `.env`.
 - Restart dev server after env changes.
