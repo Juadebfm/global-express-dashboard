@@ -2,6 +2,7 @@ import { getHttpFallbackMessage, sanitizeMessage } from './feedback';
 import { useFeedbackStore } from '@/store/feedback/feedback.store';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS ?? 15000);
 
 function showRateLimitToast(): void {
   useFeedbackStore.getState().pushMessage({
@@ -17,11 +18,34 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${BASE_URL}${path}`, {
-    ...restOptions,
-    body,
-    headers,
-  });
+  const controller = new AbortController();
+  const timeoutId = globalThis.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  if (options.signal) {
+    options.signal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}${path}`, {
+      ...restOptions,
+      body,
+      headers,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('Request timed out. Please try again.');
+    }
+    const rawMessage = error instanceof Error ? error.message : undefined;
+    throw new Error(
+      sanitizeMessage(
+        rawMessage,
+        'Unable to reach the server. Please check your internet and try again.'
+      )
+    );
+  } finally {
+    globalThis.clearTimeout(timeoutId);
+  }
 
   const payload = await response.json().catch(() => null);
 
@@ -43,12 +67,35 @@ async function requestBlob(
   path: string,
   options: RequestInit = {}
 ): Promise<{ blob: Blob; headers: Headers }> {
-  const response = await fetch(`${BASE_URL}${path}`, {
-    headers: {
-      ...(options.headers as Record<string, string>),
-    },
-    ...options,
-  });
+  const controller = new AbortController();
+  const timeoutId = globalThis.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  if (options.signal) {
+    options.signal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}${path}`, {
+      headers: {
+        ...(options.headers as Record<string, string>),
+      },
+      ...options,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('Request timed out. Please try again.');
+    }
+    const rawMessage = error instanceof Error ? error.message : undefined;
+    throw new Error(
+      sanitizeMessage(
+        rawMessage,
+        'Unable to reach the server. Please check your internet and try again.'
+      )
+    );
+  } finally {
+    globalThis.clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     if (response.status === 429) showRateLimitToast();

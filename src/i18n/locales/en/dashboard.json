@@ -8,6 +8,8 @@
   },
   "kpis": {
     "customer": {
+      "totalShipping": "Total Shipping",
+      "totalShippingHelper": "Successful + pending shipments",
       "allShipments": "All Shipments",
       "allShipmentsHelper": "Shipment available",
       "pendingShipment": "Pending Shipment",
@@ -33,7 +35,8 @@
     "trackClientShipment": "Track Client Shipment",
     "trackShipment": "Track Shipment",
     "createClientOrder": "Create Client Order",
-    "preOrder": "Pre-Order"
+    "preOrder": "Pre-Order",
+    "requestNewShipment": "Request for New Shippment"
   },
   "charts": {
     "shipmentTrends": "Shipment Trends",

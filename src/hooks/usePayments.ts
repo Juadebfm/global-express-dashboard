@@ -20,13 +20,19 @@ export function usePayments(params: { page?: number; limit?: number; userId?: st
   const enabled = isClerkSignedIn || !!user;
   const canViewAllPayments = user?.role === 'superadmin';
   const isCustomerScope = !canViewAllPayments;
+  const normalizedParams = {
+    page: params.page ?? 1,
+    limit: params.limit ?? 25,
+    userId: params.userId,
+    status: params.status,
+  };
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['payments', params, isCustomerScope],
+    queryKey: ['payments', normalizedParams, isCustomerScope],
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
-      return getPayments(token, { ...params, isCustomer: isCustomerScope });
+      return getPayments(token, { ...normalizedParams, isCustomer: isCustomerScope });
     },
     enabled,
   });

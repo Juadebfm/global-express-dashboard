@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
-import type { DashboardUi, DashboardUser, SidebarItem } from '@/types';
+import type { DashboardUser, SidebarItem } from '@/types';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { WelcomePopup, OnboardingTour, useOnboarding } from '@/components/onboarding';
@@ -13,7 +13,6 @@ import { ROUTES } from '@/constants';
 
 interface AppLayoutProps {
   children: ReactNode;
-  ui: DashboardUi;
   user: DashboardUser;
 }
 
@@ -70,7 +69,7 @@ const OPERATOR_FOOTER: SidebarItem[] = [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement {
+export function AppLayout({ children, user }: AppLayoutProps): ReactElement {
   const { t } = useTranslation('nav');
   const { user: authUser } = useAuth();
   const { isSignedIn: isClerkSignedIn } = useClerkAuth();
@@ -82,7 +81,6 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
   usePushNotifications(isOperator);
 
   const location = useLocation();
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const effectiveRole = authUser?.role ?? (isClerkSignedIn ? 'user' : null);
@@ -96,12 +94,8 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
     dashboardLoading ||
     (dashboardData?.kpis ?? []).some((kpi) => kpi.value > 0);
   const isDashboard = location.pathname === ROUTES.DASHBOARD;
-  const { showWelcome, runTour, dismissWelcome, completeTour, isTourActive } =
+  const { showWelcome, runTour, dismissWelcome, completeTour } =
     useOnboarding(isCustomer, hasData, isDashboard);
-
-  // Derived: force sidebar expanded while tour is active so nav labels are visible.
-  // When tour ends, the user's original collapsed preference is restored automatically.
-  const effectiveCollapsed = isSidebarCollapsed && !isTourActive;
 
   const navItems: SidebarItem[] = (() => {
     switch (effectiveRole) {
@@ -113,10 +107,6 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
   })();
 
   const footerItems: SidebarItem[] = isCustomer ? CUSTOMER_FOOTER : OPERATOR_FOOTER;
-
-  const roleLabel = effectiveRole && !isCustomer
-    ? t(`common:roles.${effectiveRole}`, effectiveRole)
-    : null;
 
   const effectiveUser: DashboardUser = (() => {
     if (authUser) {
@@ -155,22 +145,17 @@ export function AppLayout({ children, ui, user }: AppLayoutProps): ReactElement 
       <Sidebar
         items={navItems}
         footerItems={footerItems}
-        user={effectiveUser}
-        roleLabel={roleLabel}
-        isCollapsed={effectiveCollapsed}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
-        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
       />
 
       <div
         className={cn(
           'min-h-screen flex flex-col transition-all',
-          effectiveCollapsed ? 'lg:pl-20' : 'lg:pl-72'
+          'lg:pl-28'
         )}
       >
         <Topbar
-          searchPlaceholder={ui.topbar.searchPlaceholder}
           user={effectiveUser}
           onOpenMobile={() => setIsMobileSidebarOpen(true)}
         />

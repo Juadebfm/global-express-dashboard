@@ -83,36 +83,19 @@ function mapActiveDeliveries(items: ApiActiveDelivery[]): ActiveDelivery[] {
 
 function mapKpis(stats: ApiDashboardStats, role: User['role']): KpiCard[] {
   if (role === 'user') {
+    const totalShipping = stats.pendingOrders + stats.deliveredTotal;
     const totalSpentNum = stats.totalSpent ? parseFloat(stats.totalSpent) : 0;
     const locale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
     const totalSpentDisplay = `₦${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(totalSpentNum)}`;
 
     return [
       {
-        id: 'totalOrders',
-        title: t('kpis.customer.allShipments'),
-        value: stats.totalOrders,
+        id: 'totalShipping',
+        title: t('kpis.customer.totalShipping'),
+        value: totalShipping,
         unit: null,
-        helperText: t('kpis.customer.allShipmentsHelper'),
-        change: stats.totalOrdersChange,
-        status: 'good',
-      },
-      {
-        id: 'pendingOrders',
-        title: t('kpis.customer.pendingShipment'),
-        value: stats.pendingOrders,
-        unit: null,
-        helperText: t('kpis.customer.pendingShipmentHelper'),
-        change: stats.pendingOrdersChange,
-        status: stats.pendingOrders > 0 ? 'warning' : 'good',
-      },
-      {
-        id: 'deliveredTotal',
-        title: t('kpis.customer.deliveredShipment'),
-        value: stats.deliveredTotal,
-        unit: null,
-        helperText: t('kpis.customer.deliveredShipmentHelper'),
-        change: stats.deliveredTotalChange,
+        helperText: t('kpis.customer.totalShippingHelper'),
+        change: null,
         status: 'good',
       },
       {
@@ -208,14 +191,12 @@ export function mapToDashboardData(
       topbar: { searchPlaceholder: t('searchPlaceholder'), notifications: { unreadCount: 0 } },
       actions: isOperator
         ? [
-            { id: 'export', label: t('actions.export'), icon: 'export' },
             { id: 'trackShipment', label: t('actions.trackClientShipment'), icon: 'tracking' },
             { id: 'newOrder', label: t('actions.createClientOrder'), icon: 'plus' },
           ]
         : [
-            { id: 'export', label: t('actions.export'), icon: 'export' },
             { id: 'trackShipment', label: t('actions.trackShipment'), icon: 'tracking' },
-            { id: 'newOrder', label: t('actions.preOrder'), icon: 'plus' },
+            { id: 'newOrder', label: t('actions.requestNewShipment'), icon: 'plus' },
           ],
       sidebar: { items: [], footer: { items: [] } },
     },

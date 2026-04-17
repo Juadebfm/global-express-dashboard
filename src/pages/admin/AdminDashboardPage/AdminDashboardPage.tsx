@@ -8,7 +8,6 @@ import {
   ActiveDeliveries,
   DashboardHeader,
   KpiGrid,
-  ShipmentTrendsChart,
 } from '@/pages/dashboard/components';
 import { AppShell } from '@/pages/shared';
 import { ROUTES } from '@/constants';
@@ -64,8 +63,7 @@ export function AdminDashboardPage(): ReactElement {
               <KpiGrid items={filteredKpis} emptyLabel={t('kpiGrid.emptyLabel')} />
             </section>
 
-            <section className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
-              <ShipmentTrendsChart chart={data.charts.shipmentTrends} />
+            <section>
               <ActiveDeliveries
                 title={data.activeDeliveries.title}
                 subtitle={data.activeDeliveries.subtitle}

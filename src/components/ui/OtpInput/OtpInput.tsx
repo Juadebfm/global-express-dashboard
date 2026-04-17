@@ -8,6 +8,7 @@ interface OtpInputProps {
   onChange: (value: string) => void;
   error?: string;
   disabled?: boolean;
+  autoFocus?: boolean;
 }
 
 export function OtpInput({
@@ -16,6 +17,7 @@ export function OtpInput({
   onChange,
   error,
   disabled = false,
+  autoFocus = false,
 }: OtpInputProps): ReactElement {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const digits = useMemo(() => {
@@ -25,23 +27,56 @@ export function OtpInput({
       .map((_, i) => chars[i] || '');
   }, [value, length]);
 
-  const handleChange = useCallback(
-    (index: number, inputValue: string) => {
-      // Only accept digits
-      const digit = inputValue.replace(/\D/g, '').slice(-1);
+  const applyChunkAtIndex = useCallback(
+    (startIndex: number, chunk: string) => {
+      const sanitizedChunk = chunk.replace(/\D/g, '').slice(0, length - startIndex);
+      if (!sanitizedChunk) {
+        return;
+      }
 
       const newValues = [...digits];
-      newValues[index] = digit;
+      sanitizedChunk.split('').forEach((digit, offset) => {
+        const targetIndex = startIndex + offset;
+        if (targetIndex < length) {
+          newValues[targetIndex] = digit;
+        }
+      });
 
-      // Update parent value
       onChange(newValues.join(''));
 
-      // Auto-focus next input
-      if (digit && index < length - 1) {
+      const nextFocusIndex = Math.min(startIndex + sanitizedChunk.length, length - 1);
+      inputRefs.current[nextFocusIndex]?.focus();
+    },
+    [digits, length, onChange]
+  );
+
+  const handleChange = useCallback(
+    (index: number, inputValue: string) => {
+      const sanitizedValue = inputValue.replace(/\D/g, '');
+
+      if (!sanitizedValue) {
+        const newValues = [...digits];
+        newValues[index] = '';
+        onChange(newValues.join(''));
+        return;
+      }
+
+      // Handle full-code autofill or multi-digit typing in one field.
+      if (sanitizedValue.length > 1) {
+        applyChunkAtIndex(index, sanitizedValue);
+        return;
+      }
+
+      const digit = sanitizedValue.slice(-1);
+      const newValues = [...digits];
+      newValues[index] = digit;
+      onChange(newValues.join(''));
+
+      if (index < length - 1) {
         inputRefs.current[index + 1]?.focus();
       }
     },
-    [digits, length, onChange]
+    [applyChunkAtIndex, digits, length, onChange]
   );
 
   const handleKeyDown = useCallback(
@@ -62,21 +97,12 @@ export function OtpInput({
   );
 
   const handlePaste = useCallback(
-    (e: React.ClipboardEvent<HTMLInputElement>) => {
+    (index: number, e: React.ClipboardEvent<HTMLInputElement>) => {
       e.preventDefault();
-      const pastedData = e.clipboardData.getData('text').replace(/\D/g, '');
-      const chars = pastedData.slice(0, length).split('');
-
-      const newValues = Array(length)
-        .fill('')
-        .map((_, i) => chars[i] || digits[i] || '');
-      onChange(newValues.join(''));
-
-      // Focus the appropriate input
-      const focusIndex = Math.min(chars.length, length - 1);
-      inputRefs.current[focusIndex]?.focus();
+      const pastedData = e.clipboardData.getData('text');
+      applyChunkAtIndex(index, pastedData);
     },
-    [length, digits, onChange]
+    [applyChunkAtIndex]
   );
 
   return (
@@ -92,12 +118,16 @@ export function OtpInput({
               }}
               type="text"
               inputMode="numeric"
+              pattern="[0-9]*"
               maxLength={1}
               value={digits[index]}
               onChange={(e) => handleChange(index, e.target.value)}
               onKeyDown={(e) => handleKeyDown(index, e)}
-              onPaste={handlePaste}
+              onPaste={(e) => handlePaste(index, e)}
               disabled={disabled}
+              autoFocus={autoFocus && index === 0}
+              autoComplete={index === 0 ? 'one-time-code' : 'off'}
+              onFocus={(e) => e.currentTarget.select()}
               className={cn(
                 'w-14 h-14 text-center text-sm font-semibold rounded-lg border bg-white',
                 'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500',

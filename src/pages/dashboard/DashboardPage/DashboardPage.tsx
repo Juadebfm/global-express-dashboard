@@ -2,14 +2,12 @@ import type { ReactElement } from 'react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useSearch, useDashboardData, useShipmentsDashboard } from '@/hooks';
+import { useSearch, useDashboardData } from '@/hooks';
 import type { ActiveDelivery, KpiCard, UiAction } from '@/types';
 import {
   ActiveDeliveries,
   DashboardHeader,
-  DashboardShipmentList,
   KpiGrid,
-  ShipmentTrendsChart,
 } from '../components';
 import { AppShell } from '@/pages/shared';
 import { ROUTES } from '@/constants';
@@ -18,7 +16,6 @@ export function DashboardPage(): ReactElement {
   const { t } = useTranslation('dashboard');
   const { query } = useSearch();
   const { data, isLoading, error } = useDashboardData();
-  const { data: shipmentsData } = useShipmentsDashboard();
   const navigate = useNavigate();
 
   const normalizedQuery = query.trim().toLowerCase();
@@ -45,18 +42,6 @@ export function DashboardPage(): ReactElement {
     });
   }, [data, normalizedQuery]);
 
-  const filteredShipments = useMemo(() => {
-    const all = shipmentsData?.shipments ?? [];
-    if (normalizedQuery.length === 0) return all;
-    return all.filter(
-      (s) =>
-        s.sku.toLowerCase().includes(normalizedQuery) ||
-        s.customer.toLowerCase().includes(normalizedQuery) ||
-        s.origin.toLowerCase().includes(normalizedQuery) ||
-        s.destination.toLowerCase().includes(normalizedQuery)
-    );
-  }, [shipmentsData, normalizedQuery]);
-
   const handleAction = (action: UiAction): void => {
     if (action.id === 'trackShipment') navigate(ROUTES.SHIPMENT_TRACK);
     if (action.id === 'newOrder') navigate(ROUTES.NEW_SHIPMENT);
@@ -78,18 +63,13 @@ export function DashboardPage(): ReactElement {
               <KpiGrid items={filteredKpis} emptyLabel={t('kpiGrid.emptyLabel')} />
             </section>
 
-            <section className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
-              <ShipmentTrendsChart chart={data.charts.shipmentTrends} />
+            <section>
               <ActiveDeliveries
                 title={data.activeDeliveries.title}
                 subtitle={data.activeDeliveries.subtitle}
                 items={filteredDeliveries}
                 emptyLabel={t('activeDeliveries.emptyLabel')}
               />
-            </section>
-
-            <section>
-              <DashboardShipmentList shipments={filteredShipments} />
             </section>
           </>
         )}

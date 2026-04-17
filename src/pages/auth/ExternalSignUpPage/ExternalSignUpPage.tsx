@@ -12,17 +12,15 @@ import en from 'react-phone-number-input/locale/en';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthLayout } from '@/components/layout';
-import { Button, Card, Checkbox, Input, StepIndicator } from '@/components/ui';
+import { Button, Card, Checkbox, Input, OtpInput, StepIndicator } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import { useLanguage } from '@/hooks';
 import { apiPatch } from '@/lib/apiClient';
 import {
-  syncClerkAccount,
   updateMyNotificationPreferences,
 } from '@/services';
 
-type SignUpStep = 'account' | 'verify' | 'details';
-type AccountType = 'individual' | 'business';
+type SignUpStep = 'details' | 'verify';
 
 type CountryOption = {
   code: Country;
@@ -70,7 +68,37 @@ const initialFormState: SignUpFormState = {
   addressPostalCode: '',
 };
 
-const SIGN_UP_STEP_ORDER: SignUpStep[] = ['account', 'details', 'verify'];
+const SIGN_UP_STEP_ORDER: SignUpStep[] = ['details', 'verify'];
+
+class SyncValidationError extends Error {
+  missingFields: string[];
+
+  constructor(message: string, missingFields: string[]) {
+    super(message);
+    this.name = 'SyncValidationError';
+    this.missingFields = missingFields;
+  }
+}
+
+function extractMissingFields(payload: unknown): string[] {
+  if (!payload || typeof payload !== 'object') {
+    return [];
+  }
+
+  const container = payload as Record<string, unknown>;
+  const fromRoot = container.missingFields;
+  const fromData =
+    container.data && typeof container.data === 'object'
+      ? (container.data as Record<string, unknown>).missingFields
+      : undefined;
+
+  const value = Array.isArray(fromRoot) ? fromRoot : fromData;
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+}
 
 function getErrorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'errors' in error) {
@@ -219,8 +247,7 @@ export function ExternalSignUpPage(): ReactElement {
   const buttonTextClassName = 'text-sm';
   const emailPattern = /\S+@\S+\.\S+/;
 
-  const [step, setStep] = useState<SignUpStep>('account');
-  const [accountType, setAccountType] = useState<AccountType>('individual');
+  const [step, setStep] = useState<SignUpStep>('details');
   const [form, setForm] = useState<SignUpFormState>(initialFormState);
   const [verificationCode, setVerificationCode] = useState('');
   const [usePhoneForWhatsapp, setUsePhoneForWhatsapp] = useState(false);
@@ -268,8 +295,47 @@ export function ExternalSignUpPage(): ReactElement {
       throw new Error('Authentication token is missing.');
     }
 
-    await syncClerkAccount(token);
-    return token;
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/sync`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    });
+
+    const payload = await response.json().catch(() => null);
+    if (response.ok) {
+      return token;
+    }
+
+    if (response.status === 422) {
+      const missingFields = extractMissingFields(payload);
+      const message = missingFields.length > 0
+        ? `Missing required fields: ${missingFields.join(', ')}.`
+        : (
+          payload &&
+          typeof payload === 'object' &&
+          'message' in payload &&
+          typeof payload.message === 'string' &&
+          payload.message.trim()
+            ? payload.message
+            : 'Some required profile fields are missing. Please complete the form and try again.'
+        );
+
+      throw new SyncValidationError(message, missingFields);
+    }
+
+    const message =
+      payload &&
+      typeof payload === 'object' &&
+      'message' in payload &&
+      typeof payload.message === 'string' &&
+      payload.message.trim()
+        ? payload.message
+        : 'Unable to sync your account right now. Please try again.';
+
+    throw new Error(message);
   }, [getToken]);
 
   const finalizeProfileSetup = useCallback(async (token: string): Promise<void> => {
@@ -309,6 +375,12 @@ export function ExternalSignUpPage(): ReactElement {
       setNeedsFinishSetupRetry(false);
       setStep('details');
     } catch (error) {
+      if (error instanceof SyncValidationError) {
+        setNeedsFinishSetupRetry(false);
+        setStep('details');
+        setFormError(error.message);
+        return;
+      }
       setNeedsFinishSetupRetry(true);
       setStep('verify');
       setFormError(getErrorMessage(error));
@@ -317,70 +389,22 @@ export function ExternalSignUpPage(): ReactElement {
     }
   }, [syncCurrentSession]);
 
-  // If user already has an active Clerk session, skip signup and sync directly.
+  // If user already has an active Clerk session, sync and continue with the unified details step.
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || step !== 'account') {
+    if (!isLoaded || !isSignedIn || step !== 'details') {
       return;
     }
 
     void handleFinishSetupRetry();
   }, [handleFinishSetupRetry, isLoaded, isSignedIn, step]);
 
-  const handleAccountSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setFormError(null);
-
-    const nextErrors: Record<string, string> = {};
-
-    if (accountType === 'business') {
-      if (!form.businessName.trim()) {
-        nextErrors.businessName = t('externalSignUp.validation.businessNameRequired');
-      }
-    } else {
-      if (!form.firstName.trim()) {
-        nextErrors.firstName = t('externalSignUp.validation.firstNameRequired');
-      }
-      if (!form.lastName.trim()) {
-        nextErrors.lastName = t('externalSignUp.validation.lastNameRequired');
-      }
-    }
-
-    if (!form.email.trim()) {
-      nextErrors.email = t('externalSignUp.validation.emailRequired');
-    } else if (!emailPattern.test(form.email.trim())) {
-      nextErrors.email = t('externalSignUp.validation.emailInvalid');
-    }
-
-    if (!form.password.trim()) {
-      nextErrors.password = t('externalSignUp.validation.passwordRequired');
-    } else if (form.password.trim().length < 8) {
-      nextErrors.password = t('externalSignUp.validation.passwordMinLength');
-    }
-
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-
-    if (!isLoaded || !signUp) {
-      setFormError('Sign up is not ready yet. Please try again.');
-      return;
-    }
-
-    if (isSignedIn) {
-      await handleFinishSetupRetry();
-      return;
-    }
-
-    setStep('details');
-  };
-
   const handleVerify = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError(null);
+    const normalizedVerificationCode = verificationCode.replace(/\D/g, '').slice(0, 6);
 
-    if (!verificationCode.trim()) {
-      setFormError('Enter the verification code sent to your email.');
+    if (normalizedVerificationCode.length !== 6) {
+      setFormError('Enter the 6-digit verification code sent to your email.');
       return;
     }
 
@@ -392,7 +416,7 @@ export function ExternalSignUpPage(): ReactElement {
     setIsSubmitting(true);
     try {
       const result = await signUp.attemptEmailAddressVerification({
-        code: verificationCode.trim(),
+        code: normalizedVerificationCode,
       });
 
       if (result.status === 'complete') {
@@ -405,6 +429,12 @@ export function ExternalSignUpPage(): ReactElement {
         try {
           token = await syncCurrentSession();
         } catch (error) {
+          if (error instanceof SyncValidationError) {
+            setNeedsFinishSetupRetry(false);
+            setStep('details');
+            setFormError(error.message);
+            return;
+          }
           setNeedsFinishSetupRetry(true);
           setFormError(getErrorMessage(error));
           return;
@@ -451,6 +481,20 @@ export function ExternalSignUpPage(): ReactElement {
     setFormError(null);
 
     const nextErrors: Record<string, string> = {};
+
+    if (!isSignedIn) {
+      if (!form.email.trim()) {
+        nextErrors.email = t('externalSignUp.validation.emailRequired');
+      } else if (!emailPattern.test(form.email.trim())) {
+        nextErrors.email = t('externalSignUp.validation.emailInvalid');
+      }
+
+      if (!form.password.trim()) {
+        nextErrors.password = t('externalSignUp.validation.passwordRequired');
+      } else if (form.password.trim().length < 8) {
+        nextErrors.password = t('externalSignUp.validation.passwordMinLength');
+      }
+    }
 
     if (!form.phone.trim()) {
       nextErrors.phone = t('externalSignUp.validation.phoneRequired');
@@ -507,17 +551,19 @@ export function ExternalSignUpPage(): ReactElement {
       }
 
       await signUp.create({
-        firstName: accountType === 'individual' ? form.firstName.trim() || undefined : undefined,
-        lastName: accountType === 'individual' ? form.lastName.trim() || undefined : undefined,
+        firstName: form.firstName.trim() || undefined,
+        lastName: form.lastName.trim() || undefined,
         emailAddress: form.email.trim(),
         password: form.password,
         unsafeMetadata: {
-          accountType,
-          businessName: accountType === 'business' ? form.businessName.trim() || undefined : undefined,
           phone: buildE164(form.phone),
+          addressStreet: form.addressStreet.trim(),
+          addressCity: form.addressCity.trim(),
+          addressState: form.addressState.trim(),
+          addressCountry: form.addressCountry.trim(),
+          addressPostalCode: form.addressPostalCode.trim(),
+          businessName: form.businessName.trim() || undefined,
           whatsappNumber: form.whatsappNumber.trim() ? buildE164(form.whatsappNumber) : undefined,
-          country: form.addressCountry.trim(),
-          city: form.addressCity.trim(),
           preferredLanguage: language,
         },
       });
@@ -532,16 +578,14 @@ export function ExternalSignUpPage(): ReactElement {
     }
   };
 
-  const isAccountStepValid =
-    (accountType === 'business'
-      ? !!form.businessName.trim()
-      : !!form.firstName.trim() && !!form.lastName.trim()) &&
-    !!form.email.trim() &&
-    emailPattern.test(form.email.trim()) &&
-    !!form.password.trim() &&
-    form.password.trim().length >= 8;
-
   const isDetailsStepValid =
+    (isSignedIn ||
+      (
+        !!form.email.trim() &&
+        emailPattern.test(form.email.trim()) &&
+        !!form.password.trim() &&
+        form.password.trim().length >= 8
+      )) &&
     !!form.phone.trim() &&
     isValidPhone(form.phone) &&
     (!form.whatsappNumber.trim() || isValidPhone(form.whatsappNumber)) &&
@@ -605,8 +649,7 @@ export function ExternalSignUpPage(): ReactElement {
         <StepIndicator
           className="mx-1"
           steps={[
-            { id: 'account', label: t('externalSignUp.title') },
-            { id: 'details', label: t('externalSignUp.profileTitle') },
+            { id: 'details', label: t('externalSignUp.title') },
             { id: 'verify', label: t('externalSignUp.verifyTitle') },
           ]}
           currentIndex={currentStepIndex}
@@ -619,128 +662,6 @@ export function ExternalSignUpPage(): ReactElement {
           <div className="flex justify-center mb-6">
             <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
           </div>
-
-        {step === 'account' && (
-          <div>
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {t('externalSignUp.title')}
-              </h2>
-              <p className="mt-1 text-sm text-gray-600">
-                {t('externalSignUp.subtitle')}
-              </p>
-            </div>
-
-            <div className="mb-5">
-              <p className="text-sm font-medium text-gray-700 mb-2">{t('externalSignUp.accountType')}</p>
-              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-gray-100 p-1.5">
-                <button
-                  type="button"
-                  onClick={() => setAccountType('individual')}
-                  className={
-                    accountType === 'individual'
-                      ? 'auth-choice-btn rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 shadow-sm'
-                      : 'auth-choice-btn rounded-xl border border-transparent bg-transparent px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-700'
-                  }
-                >
-                  {t('externalSignUp.individual')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAccountType('business')}
-                  className={
-                    accountType === 'business'
-                      ? 'auth-choice-btn rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 shadow-sm'
-                      : 'auth-choice-btn rounded-xl border border-transparent bg-transparent px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-700'
-                  }
-                >
-                  {t('externalSignUp.business')}
-                </button>
-              </div>
-            </div>
-
-            {formError && (
-              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
-                <p className="text-sm text-red-600">{formError}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleAccountSubmit} className="space-y-4">
-              {accountType === 'business' ? (
-                <Input
-                  label={t('externalSignUp.businessName')}
-                  placeholder={t('externalSignUp.businessNamePlaceholder')}
-                  value={form.businessName}
-                  onChange={(event) => updateField('businessName', event.target.value)}
-                  error={errors.businessName}
-                  className={inputClassName}
-                />
-              ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label={t('externalSignUp.firstName')}
-                    placeholder={t('externalSignUp.firstNamePlaceholder')}
-                    value={form.firstName}
-                    onChange={(event) => updateField('firstName', event.target.value)}
-                    error={errors.firstName}
-                    className={inputClassName}
-                  />
-                  <Input
-                    label={t('externalSignUp.lastName')}
-                    placeholder={t('externalSignUp.lastNamePlaceholder')}
-                    value={form.lastName}
-                    onChange={(event) => updateField('lastName', event.target.value)}
-                    error={errors.lastName}
-                    className={inputClassName}
-                  />
-                </div>
-              )}
-
-              <Input
-                label={t('externalSignUp.emailLabel')}
-                type="email"
-                placeholder={t('externalSignUp.emailPlaceholder')}
-                value={form.email}
-                onChange={(event) => updateField('email', event.target.value)}
-                error={errors.email}
-                className={inputClassName}
-              />
-
-              <Input
-                label={t('externalSignUp.passwordLabel')}
-                type="password"
-                placeholder={t('externalSignUp.passwordPlaceholder')}
-                showPasswordToggle
-                value={form.password}
-                onChange={(event) => updateField('password', event.target.value)}
-                error={errors.password}
-                className={inputClassName}
-              />
-
-              <div id="clerk-captcha" data-cl-theme="light" data-cl-size="flexible" />
-
-              <Button
-                type="submit"
-                className={`auth-cta-btn w-full ${buttonTextClassName}`}
-                size="lg"
-                isLoading={isSubmitting}
-                disabled={!isLoaded || !isAccountStepValid}
-              >
-                {t('externalSignUp.continueButton')}
-              </Button>
-            </form>
-
-            <p className="mt-6 text-center text-sm text-gray-500">
-              {t('externalSignUp.hasAccount')}{' '}
-              <Link
-                to={ROUTES.SIGN_IN}
-                className="font-medium text-brand-500 hover:text-brand-600"
-              >
-                {t('externalSignUp.signIn')}
-              </Link>
-            </p>
-          </div>
-        )}
 
         {step === 'verify' && (
           <div>
@@ -778,20 +699,28 @@ export function ExternalSignUpPage(): ReactElement {
             ) : (
               <>
                 <form onSubmit={handleVerify} className="space-y-4">
-                  <Input
-                    label={t('externalSignUp.verificationCode')}
-                    placeholder={t('externalSignUp.codePlaceholder')}
-                    value={verificationCode}
-                    onChange={(event) => setVerificationCode(event.target.value)}
-                    className={inputClassName}
-                  />
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      {t('externalSignUp.verificationCode')}
+                    </label>
+                    <OtpInput
+                      length={6}
+                      autoFocus
+                      value={verificationCode}
+                      onChange={(value) => {
+                        setVerificationCode(value);
+                        setFormError(null);
+                      }}
+                      disabled={isSubmitting || !isLoaded}
+                    />
+                  </div>
 
                   <Button
                     type="submit"
                     className={`auth-cta-btn w-full ${buttonTextClassName}`}
                     size="lg"
                     isLoading={isSubmitting}
-                    disabled={!isLoaded}
+                    disabled={!isLoaded || verificationCode.length !== 6}
                   >
                     {t('externalSignUp.verifyEmail')}
                   </Button>
@@ -823,10 +752,10 @@ export function ExternalSignUpPage(): ReactElement {
           <div>
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                {t('externalSignUp.profileTitle')}
+                {t('externalSignUp.title')}
               </h2>
               <p className="mt-1 text-sm text-gray-600">
-                {t('externalSignUp.profileSubtitle')}
+                {t('externalSignUp.subtitle')}
               </p>
             </div>
 
@@ -837,6 +766,57 @@ export function ExternalSignUpPage(): ReactElement {
             )}
 
             <form onSubmit={handleDetailsSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label={t('externalSignUp.firstName')}
+                  placeholder={t('externalSignUp.firstNamePlaceholder')}
+                  value={form.firstName}
+                  onChange={(event) => updateField('firstName', event.target.value)}
+                  error={errors.firstName}
+                  className={inputClassName}
+                />
+                <Input
+                  label={t('externalSignUp.lastName')}
+                  placeholder={t('externalSignUp.lastNamePlaceholder')}
+                  value={form.lastName}
+                  onChange={(event) => updateField('lastName', event.target.value)}
+                  error={errors.lastName}
+                  className={inputClassName}
+                />
+              </div>
+
+              <Input
+                label={t('externalSignUp.businessName')}
+                placeholder={t('externalSignUp.businessNamePlaceholder')}
+                value={form.businessName}
+                onChange={(event) => updateField('businessName', event.target.value)}
+                error={errors.businessName}
+                className={inputClassName}
+              />
+
+              <Input
+                label={t('externalSignUp.emailLabel')}
+                type="email"
+                placeholder={t('externalSignUp.emailPlaceholder')}
+                value={form.email}
+                onChange={(event) => updateField('email', event.target.value)}
+                error={errors.email}
+                className={inputClassName}
+                disabled={isSignedIn}
+              />
+
+              <Input
+                label={t('externalSignUp.passwordLabel')}
+                type="password"
+                placeholder={t('externalSignUp.passwordPlaceholder')}
+                showPasswordToggle
+                value={form.password}
+                onChange={(event) => updateField('password', event.target.value)}
+                error={errors.password}
+                className={inputClassName}
+                disabled={isSignedIn}
+              />
+
               {renderPhoneField(
                 t('externalSignUp.phoneLabel'),
                 form.phone,
@@ -923,6 +903,8 @@ export function ExternalSignUpPage(): ReactElement {
                 onChange={(event) => updateField('consentMarketing', event.target.checked)}
               />
 
+              {!isSignedIn && <div id="clerk-captcha" data-cl-theme="light" data-cl-size="flexible" />}
+
               <Button
                 type="submit"
                 className={`auth-cta-btn w-full ${buttonTextClassName}`}
@@ -933,6 +915,16 @@ export function ExternalSignUpPage(): ReactElement {
                 {isSignedIn ? t('externalSignUp.completeRegistration') : t('externalSignUp.continueButton')}
               </Button>
             </form>
+
+            <p className="mt-6 text-center text-sm text-gray-500">
+              {t('externalSignUp.hasAccount')}{' '}
+              <Link
+                to={ROUTES.SIGN_IN}
+                className="font-medium text-brand-500 hover:text-brand-600"
+              >
+                {t('externalSignUp.signIn')}
+              </Link>
+            </p>
           </div>
         )}
         </Card>
