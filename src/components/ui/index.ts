@@ -14,6 +14,7 @@ export { PageLoader } from './PageLoader';
 export { AlertBanner } from './AlertBanner';
 export { FeedbackCenter } from './FeedbackCenter';
 export { ConfirmModal } from './ConfirmModal/ConfirmModal';
+export { ProvisioningGateModal } from './ProvisioningGateModal/ProvisioningGateModal';
 export { FlagIcon } from './FlagIcon';
 export { CopyButton } from './CopyButton';
 export { StepIndicator } from './StepIndicator';

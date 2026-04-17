@@ -1,16 +1,29 @@
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useClerk } from '@clerk/clerk-react';
 import { AuthLayout } from '@/components/layout';
 import { LoginForm, type LoginFormData } from '@/components/forms';
-import { useAuth } from '@/hooks';
-import { ROUTES } from '@/constants';
+import { ProvisioningGateModal } from '@/components/ui';
+import { useAuth, useProvisioningGate } from '@/hooks';
+import {
+  PROVISIONING_GATE_BLOCK_MESSAGE,
+  PROVISIONING_GATE_TARGET_UTC,
+  ROUTES,
+  isProvisioningGateActive,
+} from '@/constants';
 
 export function LoginPage(): ReactElement {
   const navigate = useNavigate();
   const { signOut } = useClerk();
   const { login, isLoading, isAuthenticated, user, error, clearError } = useAuth();
+  const { isProvisioningActive, countdownLabel, remainingMs } = useProvisioningGate();
+  const [dismissedProvisioningTarget, setDismissedProvisioningTarget] = useState<number | null>(null);
+
+  const isProvisioningModalOpen =
+    isProvisioningActive && dismissedProvisioningTarget !== PROVISIONING_GATE_TARGET_UTC;
+  const provisioningModalMessage =
+    `${PROVISIONING_GATE_BLOCK_MESSAGE}. Estimated unlock in ${countdownLabel}.`;
 
   // Redirect already-authenticated users to the correct dashboard.
   // Only redirect when we have a resolved role — otherwise the
@@ -36,7 +49,21 @@ export function LoginPage(): ReactElement {
     };
   }, [clearError]);
 
+  const closeProvisioningModal = (): void => {
+    setDismissedProvisioningTarget(PROVISIONING_GATE_TARGET_UTC);
+  };
+
+  const reopenProvisioningModal = (): void => {
+    setDismissedProvisioningTarget(null);
+  };
+
   const handleSubmit = async (data: LoginFormData): Promise<void> => {
+    if (isProvisioningGateActive()) {
+      clearError();
+      reopenProvisioningModal();
+      return;
+    }
+
     try {
       await login({
         email: data.email,
@@ -56,7 +83,17 @@ export function LoginPage(): ReactElement {
       <LoginForm
         onSubmit={handleSubmit}
         isLoading={isLoading}
-        error={error}
+        error={isProvisioningActive ? null : error}
+      />
+      <ProvisioningGateModal
+        isOpen={isProvisioningModalOpen}
+        title="Application update in progress"
+        message={provisioningModalMessage}
+        remainingMs={isProvisioningActive ? remainingMs : 0}
+        primaryLabel="I understand"
+        secondaryLabel="Close"
+        onPrimary={closeProvisioningModal}
+        onSecondary={closeProvisioningModal}
       />
     </AuthLayout>
   );

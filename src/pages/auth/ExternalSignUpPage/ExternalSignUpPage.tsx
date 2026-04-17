@@ -14,9 +14,9 @@ import { useTranslation } from 'react-i18next';
 import { AuthLayout } from '@/components/layout';
 import { Button, Card, Checkbox, Input, StepIndicator } from '@/components/ui';
 import { ROUTES } from '@/constants';
+import { useLanguage } from '@/hooks';
 import { apiPatch } from '@/lib/apiClient';
 import {
-  getMyProfileCompleteness,
   syncClerkAccount,
   updateMyNotificationPreferences,
 } from '@/services';
@@ -70,7 +70,7 @@ const initialFormState: SignUpFormState = {
   addressPostalCode: '',
 };
 
-const SIGN_UP_STEP_ORDER: SignUpStep[] = ['account', 'verify', 'details'];
+const SIGN_UP_STEP_ORDER: SignUpStep[] = ['account', 'details', 'verify'];
 
 function getErrorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'errors' in error) {
@@ -210,6 +210,7 @@ function CountrySelect({
 
 export function ExternalSignUpPage(): ReactElement {
   const { t } = useTranslation('auth');
+  const { language } = useLanguage();
   const navigate = useNavigate();
   const { isLoaded, signUp, setActive } = useSignUp();
   const { getToken, isSignedIn } = useAuth();
@@ -236,15 +237,14 @@ export function ExternalSignUpPage(): ReactElement {
     COUNTRY_OPTIONS[0];
 
   const normalizeDigits = (value: string) => value.replace(/\D/g, '');
-  const stripLeadingZeros = (value: string) => value.replace(/^0+/, '');
 
-  const buildE164 = (value: string) => {
-    const digits = stripLeadingZeros(normalizeDigits(value));
+  const buildE164 = useCallback((value: string) => {
+    const digits = value.replace(/\D/g, '').replace(/^0+/, '');
     if (!digits) {
       return '';
     }
     return `${selectedCountryOption.dialCode}${digits}`;
-  };
+  }, [selectedCountryOption.dialCode]);
 
   const isValidPhone = (value: string) => {
     const formatted = buildE164(value);
@@ -262,23 +262,43 @@ export function ExternalSignUpPage(): ReactElement {
     setErrors((prev) => ({ ...prev, [key]: '' }));
   };
 
-  const syncCurrentSession = useCallback(async (): Promise<void> => {
+  const syncCurrentSession = useCallback(async (): Promise<string> => {
     const token = await getToken();
     if (!token) {
       throw new Error('Authentication token is missing.');
     }
 
     await syncClerkAccount(token);
-    const completeness = await getMyProfileCompleteness(token);
+    return token;
+  }, [getToken]);
 
-    if (completeness.isComplete) {
-      await clerkUser?.update({ unsafeMetadata: { profileCompleted: true } });
-      navigate(ROUTES.DASHBOARD, { replace: true });
-      return;
+  const finalizeProfileSetup = useCallback(async (token: string): Promise<void> => {
+    await apiPatch(
+      '/users/me',
+      {
+        firstName: form.firstName.trim() || undefined,
+        lastName: form.lastName.trim() || undefined,
+        businessName: form.businessName.trim() || undefined,
+        phone: buildE164(form.phone),
+        whatsappNumber: form.whatsappNumber.trim()
+          ? buildE164(form.whatsappNumber)
+          : undefined,
+        addressStreet: form.addressStreet.trim(),
+        addressCity: form.addressCity.trim(),
+        addressState: form.addressState.trim(),
+        addressCountry: form.addressCountry.trim(),
+        addressPostalCode: form.addressPostalCode.trim(),
+      },
+      token
+    );
+
+    if (form.consentMarketing) {
+      await updateMyNotificationPreferences(token, { consentMarketing: true });
     }
 
-    setStep('details');
-  }, [clerkUser, getToken, navigate]);
+    await clerkUser?.update({ unsafeMetadata: { profileCompleted: true } });
+    navigate(ROUTES.DASHBOARD, { replace: true });
+  }, [buildE164, clerkUser, form, navigate]);
 
   const handleFinishSetupRetry = useCallback(async (): Promise<void> => {
     setFormError(null);
@@ -287,6 +307,7 @@ export function ExternalSignUpPage(): ReactElement {
     try {
       await syncCurrentSession();
       setNeedsFinishSetupRetry(false);
+      setStep('details');
     } catch (error) {
       setNeedsFinishSetupRetry(true);
       setStep('verify');
@@ -298,12 +319,12 @@ export function ExternalSignUpPage(): ReactElement {
 
   // If user already has an active Clerk session, skip signup and sync directly.
   useEffect(() => {
-    if (!isLoaded || !isSignedIn) {
+    if (!isLoaded || !isSignedIn || step !== 'account') {
       return;
     }
 
     void handleFinishSetupRetry();
-  }, [handleFinishSetupRetry, isLoaded, isSignedIn]);
+  }, [handleFinishSetupRetry, isLoaded, isSignedIn, step]);
 
   const handleAccountSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -351,21 +372,7 @@ export function ExternalSignUpPage(): ReactElement {
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      await signUp.create({
-        firstName: form.firstName.trim() || undefined,
-        lastName: form.lastName.trim() || undefined,
-        emailAddress: form.email.trim(),
-        password: form.password,
-      });
-      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
-      setStep('verify');
-    } catch (error) {
-      setFormError(getErrorMessage(error));
-    } finally {
-      setIsSubmitting(false);
-    }
+    setStep('details');
   };
 
   const handleVerify = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -393,7 +400,17 @@ export function ExternalSignUpPage(): ReactElement {
           throw new Error('Unable to start a session.');
         }
         await setActive({ session: result.createdSessionId });
-        await handleFinishSetupRetry();
+
+        let token: string;
+        try {
+          token = await syncCurrentSession();
+        } catch (error) {
+          setNeedsFinishSetupRetry(true);
+          setFormError(getErrorMessage(error));
+          return;
+        }
+
+        await finalizeProfileSetup(token);
       } else {
         const missingFields = (result as { missingFields?: string[] }).missingFields;
         if (missingFields && missingFields.length > 0) {
@@ -471,45 +488,43 @@ export function ExternalSignUpPage(): ReactElement {
       return;
     }
 
+    if (!isLoaded) {
+      setFormError('Sign up is not ready yet. Please try again.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication token is missing.');
+      if (isSignedIn) {
+        const token = await syncCurrentSession();
+        await finalizeProfileSetup(token);
+        return;
       }
 
-      // Auto-provision backend user before saving profile
-      await syncClerkAccount(token);
+      if (!signUp) {
+        setFormError('Sign up is not ready yet. Please try again.');
+        return;
+      }
 
-      // PATCH /users/me with all profile fields
-      await apiPatch(
-        '/users/me',
-        {
-          firstName: form.firstName.trim() || undefined,
-          lastName: form.lastName.trim() || undefined,
-          businessName: form.businessName.trim() || undefined,
+      await signUp.create({
+        firstName: accountType === 'individual' ? form.firstName.trim() || undefined : undefined,
+        lastName: accountType === 'individual' ? form.lastName.trim() || undefined : undefined,
+        emailAddress: form.email.trim(),
+        password: form.password,
+        unsafeMetadata: {
+          accountType,
+          businessName: accountType === 'business' ? form.businessName.trim() || undefined : undefined,
           phone: buildE164(form.phone),
-          whatsappNumber: form.whatsappNumber.trim()
-            ? buildE164(form.whatsappNumber)
-            : undefined,
-          addressStreet: form.addressStreet.trim(),
-          addressCity: form.addressCity.trim(),
-          addressState: form.addressState.trim(),
-          addressCountry: form.addressCountry.trim(),
-          addressPostalCode: form.addressPostalCode.trim(),
+          whatsappNumber: form.whatsappNumber.trim() ? buildE164(form.whatsappNumber) : undefined,
+          country: form.addressCountry.trim(),
+          city: form.addressCity.trim(),
+          preferredLanguage: language,
         },
-        token
-      );
-
-      // Save marketing consent if opted in
-      if (form.consentMarketing) {
-        await updateMyNotificationPreferences(token, { consentMarketing: true });
-      }
-
-      // Mark profile complete so returning users skip this step
-      await clerkUser?.update({ unsafeMetadata: { profileCompleted: true } });
-
-      navigate(ROUTES.DASHBOARD, { replace: true });
+      });
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      setVerificationCode('');
+      setNeedsFinishSetupRetry(false);
+      setStep('verify');
     } catch (error) {
       setFormError(getErrorMessage(error));
     } finally {
@@ -591,8 +606,8 @@ export function ExternalSignUpPage(): ReactElement {
           className="mx-1"
           steps={[
             { id: 'account', label: t('externalSignUp.title') },
-            { id: 'verify', label: t('externalSignUp.verifyTitle') },
             { id: 'details', label: t('externalSignUp.profileTitle') },
+            { id: 'verify', label: t('externalSignUp.verifyTitle') },
           ]}
           currentIndex={currentStepIndex}
           onStepSelect={handleStepSelect}
@@ -793,7 +808,7 @@ export function ExternalSignUpPage(): ReactElement {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setStep('account')}
+                    onClick={() => setStep('details')}
                     className="font-medium text-gray-500 hover:text-gray-700"
                   >
                     {t('externalSignUp.backToDetails')}
@@ -915,7 +930,7 @@ export function ExternalSignUpPage(): ReactElement {
                 isLoading={isSubmitting}
                 disabled={!isDetailsStepValid}
               >
-                {t('externalSignUp.completeRegistration')}
+                {isSignedIn ? t('externalSignUp.completeRegistration') : t('externalSignUp.continueButton')}
               </Button>
             </form>
           </div>
