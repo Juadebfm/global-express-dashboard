@@ -16,8 +16,11 @@ export function KpiGrid({ items, emptyLabel }: KpiGridProps): ReactElement {
     );
   }
 
+  const desktopColumnsClass =
+    items.length <= 2 ? 'xl:grid-cols-2' : items.length === 3 ? 'xl:grid-cols-3' : 'xl:grid-cols-4';
+
   return (
-    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+    <div className={`grid grid-cols-1 gap-5 md:grid-cols-2 ${desktopColumnsClass}`}>
       {items.map((item) => (
         <KpiCard key={item.id} data={item} />
       ))}

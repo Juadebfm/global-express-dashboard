@@ -22,6 +22,11 @@ export function DashboardHeader({
   actions,
   onAction,
 }: DashboardHeaderProps): ReactElement {
+  const orderedActions = [
+    ...actions.filter((action) => action.id === 'newOrder'),
+    ...actions.filter((action) => action.id !== 'newOrder'),
+  ];
+
   const renderAction = (action: UiAction): ReactElement => {
     const icon = actionIconMap[action.icon] ?? <Plus className="h-4 w-4" />;
     const isPrimary = action.id === 'newOrder';
@@ -31,14 +36,14 @@ export function DashboardHeader({
         key={action.id}
         type="button"
         size="sm"
-        variant={isPrimary ? 'primary' : 'ghost'}
+        variant={isPrimary ? 'primary' : 'secondary'}
         leftIcon={icon}
         onClick={() => onAction?.(action)}
         {...(isPrimary ? { 'data-tour': 'preorder-btn' } : {})}
         className={
           isPrimary
             ? 'bg-brand-500 text-white hover:bg-brand-600'
-            : 'border border-brand-500 text-brand-500 hover:bg-brand-50'
+            : 'text-gray-700'
         }
       >
         {action.label}
@@ -53,7 +58,7 @@ export function DashboardHeader({
         <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        {actions.map(renderAction)}
+        {orderedActions.map(renderAction)}
       </div>
     </div>
   );

@@ -69,7 +69,7 @@ export function AppShell({
   }
 
   return (
-    <AppLayout ui={data.ui} user={data.user}>
+    <AppLayout user={data.user}>
       {children}
     </AppLayout>
   );

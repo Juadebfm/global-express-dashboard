@@ -62,12 +62,10 @@ export function PaymentsPage(): ReactElement {
     [paymentsQuery.payments, query]
   );
 
-  const loadingAll = isLoading || paymentsQuery.isLoading;
-
   return (
     <AppShell
       data={data}
-      isLoading={loadingAll}
+      isLoading={isLoading}
       error={error}
       loadingLabel={t('loadingLabel')}
     >
@@ -131,7 +129,9 @@ export function PaymentsPage(): ReactElement {
 
         <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
           <div className="border-b border-gray-100 px-4 py-3 text-sm text-gray-500">
-            Showing {filteredPayments.length} of {paymentsQuery.total} payment records
+            {paymentsQuery.isLoading
+              ? 'Loading payment records...'
+              : `Showing ${filteredPayments.length} of ${paymentsQuery.total} payment records`}
           </div>
 
           <div className="overflow-x-auto">
@@ -148,7 +148,13 @@ export function PaymentsPage(): ReactElement {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredPayments.length === 0 ? (
+                {paymentsQuery.isLoading ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-gray-500">
+                      Loading payments...
+                    </td>
+                  </tr>
+                ) : filteredPayments.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-10 text-center text-sm text-gray-500">
                       No payments found.

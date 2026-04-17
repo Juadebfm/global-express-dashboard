@@ -53,9 +53,9 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
   }, []);
 
   return (
-    <div className="min-h-screen flex">
+    <div className="flex min-h-screen lg:h-screen lg:overflow-hidden">
       {/* Left side - Transport hero with overlay */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+      <div className="relative hidden overflow-hidden lg:flex lg:h-screen lg:w-1/2 lg:shrink-0">
         {AUTH_HERO_IMAGES.map((imageUrl, index) => (
           <div
             key={imageUrl}
@@ -94,7 +94,9 @@ export function AuthLayout({ children, rightClassName, contentClassName }: AuthL
       </div>
 
       {/* Right side - Form content */}
-      <div className={`w-full lg:w-1/2 relative flex min-h-screen flex-col ${rightClassName ?? 'bg-[#F3F4F6]'}`}>
+      <div
+        className={`relative flex min-h-screen w-full flex-col overflow-y-auto lg:h-screen lg:w-1/2 ${rightClassName ?? 'bg-[#F3F4F6]'}`}
+      >
         {/* Language toggle */}
         <div ref={langRef} className="absolute top-4 right-4 z-20">
           <button

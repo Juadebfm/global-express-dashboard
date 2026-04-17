@@ -8,6 +8,8 @@
   },
   "kpis": {
     "customer": {
+      "totalShipping": "총 배송",
+      "totalShippingHelper": "성공 + 대기 배송",
       "allShipments": "전체 배송",
       "allShipmentsHelper": "이용 가능한 배송",
       "pendingShipment": "대기 중인 배송",
@@ -33,7 +35,8 @@
     "trackClientShipment": "고객 배송 추적",
     "trackShipment": "배송 추적",
     "createClientOrder": "고객 주문 생성",
-    "preOrder": "사전 주문"
+    "preOrder": "사전 주문",
+    "requestNewShipment": "신규 배송 요청"
   },
   "charts": {
     "shipmentTrends": "배송 추이",

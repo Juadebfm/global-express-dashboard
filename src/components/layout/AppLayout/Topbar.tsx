@@ -1,35 +1,24 @@
 import type { ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronDown, LogOut, Menu, Search } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Bell, ChevronDown, LogOut, Menu, ArrowLeft } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { DashboardUser } from '@/types';
-import type { Language } from '@/store/language/language.types';
-import { useAuth, useLanguage, useNotificationCount, useSearch } from '@/hooks';
+import { useAuth, useNotificationCount } from '@/hooks';
 import { ROUTES } from '@/constants';
-import { FlagIcon } from '@/components/ui';
 
 interface TopbarProps {
-  searchPlaceholder: string;
   user: DashboardUser;
   onOpenMobile: () => void;
 }
 
-const LANGUAGE_OPTIONS: { code: Language; flagCode: 'us' | 'kr'; label: string }[] = [
-  { code: 'en', flagCode: 'us', label: 'English' },
-  { code: 'ko', flagCode: 'kr', label: '한국어' },
-];
-
 export function Topbar({
-  searchPlaceholder,
   user,
   onOpenMobile,
 }: TopbarProps): ReactElement {
   const { t } = useTranslation('nav');
-  const { query, setQuery } = useSearch();
-  const { language, setLanguage } = useLanguage();
-
+  const location = useLocation();
   const navigate = useNavigate();
   const { user: authUser, logout } = useAuth();
 
@@ -40,22 +29,16 @@ export function Topbar({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [isLangOpen, setIsLangOpen] = useState(false);
-  const langRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    if (!isDropdownOpen && !isLangOpen) return;
+    if (!isDropdownOpen) return;
     const handleClick = (event: MouseEvent) => {
       if (isDropdownOpen && !dropdownRef.current?.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
-      if (isLangOpen && !langRef.current?.contains(event.target as Node)) {
-        setIsLangOpen(false);
-      }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [isDropdownOpen, isLangOpen]);
+  }, [isDropdownOpen]);
 
   const effectiveRole = authUser?.role ?? (isClerkSignedIn ? 'user' : null);
   const roleLabel = effectiveRole ? t(`common:roles.${effectiveRole}`, effectiveRole) : null;
@@ -65,7 +48,7 @@ export function Topbar({
     : (clerkUser?.createdAt ?? null);
 
   const memberSince = memberSinceDate
-    ? new Intl.DateTimeFormat(language === 'ko' ? 'ko-KR' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(memberSinceDate)
+    ? new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(memberSinceDate)
     : null;
 
   const handleLogout = async (): Promise<void> => {
@@ -79,96 +62,69 @@ export function Topbar({
     }
   };
 
+  const isDashboardLikeRoute = location.pathname === ROUTES.DASHBOARD || location.pathname === ROUTES.ADMIN_DASHBOARD;
+
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--gx-glass-border)] bg-[var(--gx-glass-bg)] backdrop-blur">
-      <div className="flex items-center justify-between gap-4 px-4 py-3 lg:px-8">
-        <div className="flex items-center gap-3 flex-1">
+    <header className="sticky top-0 z-30 border-b border-gray-200 bg-white">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-3 py-4 lg:px-8">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onOpenMobile}
-            className="flex items-center justify-center rounded-lg border border-gray-200 p-2 text-gray-600 hover:bg-gray-50 lg:hidden"
+            className="flex items-center justify-center rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 lg:hidden"
             aria-label={t('topbar.openMenuAriaLabel')}
           >
             <Menu className="h-5 w-5" />
           </button>
-
-          <div className="relative w-full max-w-sm">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={searchPlaceholder}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-3 text-sm text-gray-800 outline-none transition focus:border-brand-500 focus:bg-white"
-              aria-label="Search"
-            />
-          </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center">
+          <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-10 w-auto" />
+        </div>
+
+        <div className="flex items-center justify-end gap-3">
+          {!isDashboardLikeRoute && (
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-1.5 text-sm font-medium text-brand-500 transition hover:text-brand-600"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>{t('common:actions.back', 'Back')}</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => navigate(ROUTES.NOTIFICATIONS)}
-            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gx-control-bg)] text-gray-600 transition hover:bg-[var(--gx-control-bg-hover)] hover:text-gray-800"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
             aria-label={t('topbar.notificationsAriaLabel')}
           >
             <Bell className="h-4 w-4" />
             {notificationsCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
                 {notificationsCount}
               </span>
             )}
           </button>
-
-          {/* Language dropdown */}
-          <div ref={langRef} className="relative" data-tour="lang-switcher">
-            <button
-              type="button"
-              onClick={() => setIsLangOpen((prev) => !prev)}
-              className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gx-control-bg)] text-gray-600 transition hover:bg-[var(--gx-control-bg-hover)] hover:text-gray-800"
-              aria-label={t('topbar.languageAriaLabel')}
-              aria-expanded={isLangOpen}
-              aria-haspopup="true"
-            >
-              <FlagIcon code={LANGUAGE_OPTIONS.find((opt) => opt.code === language)?.flagCode ?? 'us'} size="md" />
-            </button>
-
-            {isLangOpen && (
-              <div className="absolute right-0 top-full mt-2 w-40 rounded-xl border border-gray-200 bg-white shadow-xl z-50 py-1">
-                {LANGUAGE_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.code}
-                    type="button"
-                    onClick={() => {
-                      setLanguage(opt.code);
-                      setIsLangOpen(false);
-                    }}
-                    className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-sm transition hover:bg-gray-50 ${
-                      language === opt.code ? 'font-semibold text-brand-600 bg-brand-50' : 'text-gray-700'
-                    }`}
-                  >
-                    <FlagIcon code={opt.flagCode} size="sm" />
-                    <span>{opt.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* Avatar dropdown */}
           <div ref={dropdownRef} className="relative" data-tour="user-profile">
             <button
               type="button"
               onClick={() => setIsDropdownOpen((prev) => !prev)}
-              className="flex items-center gap-1.5 rounded-xl p-1 transition hover:bg-gray-100"
+              className="flex items-center gap-2 rounded-xl p-1 transition hover:bg-gray-100"
               aria-label={t('topbar.accountMenuAriaLabel')}
               aria-expanded={isDropdownOpen}
               aria-haspopup="true"
             >
+              <span className="hidden text-sm font-medium text-gray-600 lg:inline">
+                {user.displayName}
+              </span>
               <img
                 src={user.avatarUrl}
                 alt={user.displayName}
-                className="h-9 w-9 rounded-full object-cover"
+                className="h-10 w-10 rounded-full border-2 border-brand-500 object-cover"
                 onError={(event) => {
                   (event.currentTarget as HTMLImageElement).style.display = 'none';
                 }}
@@ -179,7 +135,7 @@ export function Topbar({
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-gray-200 bg-white shadow-xl z-50">
+              <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-2xl border border-gray-200 bg-white shadow-xl">
                 {/* User identity */}
                 <div className="flex items-center gap-3 border-b border-gray-100 p-4">
                   <img
