@@ -59,10 +59,12 @@ const SUPERADMIN_NAV: SidebarItem[] = [
 ];
 
 const CUSTOMER_FOOTER: SidebarItem[] = [
+  { id: 'profile', icon: 'users', href: ROUTES.PROFILE },
   { id: 'support', icon: 'help', href: ROUTES.SUPPORT },
 ];
 
 const OPERATOR_FOOTER: SidebarItem[] = [
+  { id: 'profile', icon: 'users', href: ROUTES.PROFILE },
   { id: 'settings', icon: 'settings', href: ROUTES.SETTINGS },
   { id: 'support', icon: 'help', href: ROUTES.SUPPORT },
 ];

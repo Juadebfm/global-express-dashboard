@@ -27,3 +27,4 @@ export { DeliverySchedulePage } from './deliverySchedule';
 export { PaymentsPage, PaymentCallbackPage } from './payments';
 export { BulkOrdersPage } from './bulkOrders';
 export { ReportsPage } from './reports';
+export { ProfilePage } from './profile';
