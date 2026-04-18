@@ -18,6 +18,7 @@ import enTracking from './locales/en/tracking.json';
 import enClients from './locales/en/clients.json';
 import enDeliverySchedule from './locales/en/deliverySchedule.json';
 import enOnboarding from './locales/en/onboarding.json';
+import enProfile from './locales/en/profile.json';
 
 import koCommon from './locales/ko/common.json';
 import koNav from './locales/ko/nav.json';
@@ -36,6 +37,7 @@ import koTracking from './locales/ko/tracking.json';
 import koClients from './locales/ko/clients.json';
 import koDeliverySchedule from './locales/ko/deliverySchedule.json';
 import koOnboarding from './locales/ko/onboarding.json';
+import koProfile from './locales/ko/profile.json';
 
 export const LANGUAGE_STORAGE_KEY = 'globalxpress_language';
 
@@ -61,6 +63,7 @@ void i18n
         clients: enClients,
         deliverySchedule: enDeliverySchedule,
         onboarding: enOnboarding,
+        profile: enProfile,
       },
       ko: {
         common: koCommon,
@@ -80,6 +83,7 @@ void i18n
         clients: koClients,
         deliverySchedule: koDeliverySchedule,
         onboarding: koOnboarding,
+        profile: koProfile,
       },
     },
     lng: localStorage.getItem(LANGUAGE_STORAGE_KEY) || undefined,

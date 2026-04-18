@@ -1,0 +1,61 @@
+{
+  "loading": "Loading profile...",
+  "title": "My Profile",
+  "subtitleExternal": "Manage your customer account details.",
+  "subtitleInternal": "Manage your staff profile and emergency details.",
+  "identity": {
+    "externalRole": "Customer",
+    "internalRole": "Internal User",
+    "roles": {
+      "staff": "Staff",
+      "admin": "Admin",
+      "superadmin": "Super Admin"
+    },
+    "fallbackName": "GlobalXpress User",
+    "nameChangeNotice": "First name and last name are managed by support.",
+    "supportAction": "Contact support"
+  },
+  "external": {
+    "completenessTitle": "Your profile is not complete yet.",
+    "missingFieldsLabel": "Missing fields"
+  },
+  "internal": {
+    "emergencyTitle": "Emergency Contact",
+    "genders": {
+      "male": "Male",
+      "female": "Female",
+      "other": "Other"
+    }
+  },
+  "fields": {
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email Address",
+    "businessName": "Business Name",
+    "phone": "Phone Number",
+    "whatsappNumber": "WhatsApp Number",
+    "streetAddress": "Street Address",
+    "city": "City",
+    "state": "State",
+    "country": "Country",
+    "postalCode": "Postal Code",
+    "gender": "Gender",
+    "dateOfBirth": "Date of Birth",
+    "emergencyName": "Emergency Contact Name",
+    "emergencyPhone": "Emergency Contact Phone",
+    "emergencyRelationship": "Emergency Contact Relationship",
+    "nationalId": "National ID"
+  },
+  "actions": {
+    "updateProfile": "Update Profile",
+    "saveChanges": "Save Changes",
+    "cancel": "Cancel"
+  },
+  "messages": {
+    "notProvided": "Not provided yet",
+    "completeRequiredFields": "Please complete all required fields before saving.",
+    "nationalIdRequired": "National ID is required for your organization settings.",
+    "externalSaved": "Profile updated successfully.",
+    "internalSaved": "Internal profile updated successfully."
+  }
+}

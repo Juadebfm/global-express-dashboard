@@ -31,6 +31,7 @@ import {
   PaymentCallbackPage,
   BulkOrdersPage,
   ReportsPage,
+  ProfilePage,
 } from '@/pages';
 import { ROUTES, isLaunchGateActive } from '@/constants';
 
@@ -163,6 +164,14 @@ function AppRoutes(): ReactElement {
         element={
           <ProtectedRoute>
             <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.PROFILE}
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
           </ProtectedRoute>
         }
       />

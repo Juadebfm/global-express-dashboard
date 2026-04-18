@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
@@ -50,7 +50,6 @@ export function Sidebar({
 }: SidebarProps): ReactElement {
   const { t } = useTranslation('nav');
   const location = useLocation();
-  const navigate = useNavigate();
 
   const isActive = (href: string): boolean =>
     location.pathname === href || location.pathname.startsWith(`${href}/`);
@@ -113,14 +112,6 @@ export function Sidebar({
         {/* Footer */}
         <div className="border-t border-gray-200">
           {footerItems.map(renderItem)}
-          <button
-            type="button"
-            onClick={() => navigate('/profile')}
-            className="group relative flex min-h-24 w-full flex-col items-center justify-center gap-1.5 px-2 py-3 text-center text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-          >
-            <Users className="h-5 w-5 text-gray-500 group-hover:text-gray-700" />
-            <span>{t('items.profile', 'Profile')}</span>
-          </button>
         </div>
       </aside>
     </>
