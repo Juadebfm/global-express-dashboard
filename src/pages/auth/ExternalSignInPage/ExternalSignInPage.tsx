@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useSignIn, useUser } from '@clerk/clerk-react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
-import { Button, Card, Input, PageLoader, ProvisioningGateModal } from '@/components/ui';
+import { Button, Card, Input, OtpInput, PageLoader, ProvisioningGateModal } from '@/components/ui';
 import {
   PROVISIONING_GATE_BLOCK_MESSAGE,
   PROVISIONING_GATE_TARGET_UTC,
@@ -473,19 +473,28 @@ export function ExternalSignInPage(): ReactElement {
             )}
 
             <form onSubmit={handleVerify2fa} className="space-y-4">
-              <Input
-                label={t('externalSignIn.verifyCodeLabel')}
-                placeholder={t('externalSignIn.verifyCodePlaceholder')}
-                value={twoFaCode}
-                onChange={(e) => { setTwoFaCode(e.target.value); clearErrors(); }}
-                error={errors.twoFaCode}
-                className="text-sm placeholder:text-sm"
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  {t('externalSignIn.verifyCodeLabel')}
+                </label>
+                <OtpInput
+                  length={6}
+                  autoFocus
+                  value={twoFaCode}
+                  onChange={(value) => {
+                    setTwoFaCode(value);
+                    clearErrors();
+                  }}
+                  error={errors.twoFaCode}
+                  disabled={isSubmitting || !isLoaded}
+                />
+              </div>
               <Button
                 type="submit"
                 className="auth-cta-btn w-full text-sm"
                 size="lg"
                 isLoading={isSubmitting}
+                disabled={!isLoaded || twoFaCode.length !== 6}
               >
                 {t('externalSignIn.verifyButton')}
               </Button>
