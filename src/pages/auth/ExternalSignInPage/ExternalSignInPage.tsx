@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useSignIn, useUser } from '@clerk/clerk-react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
-import { Button, Card, Input, ProvisioningGateModal } from '@/components/ui';
+import { Button, Card, Input, PageLoader, ProvisioningGateModal } from '@/components/ui';
 import {
   PROVISIONING_GATE_BLOCK_MESSAGE,
   PROVISIONING_GATE_TARGET_UTC,
@@ -28,11 +28,20 @@ function getErrorMessage(error: unknown): string {
   return 'Something went wrong. Please try again.';
 }
 
+function getErrorCode(error: unknown): string | null {
+  if (error && typeof error === 'object' && 'errors' in error) {
+    const clerkError = error as { errors?: Array<{ code?: string }> };
+    return clerkError.errors?.[0]?.code ?? null;
+  }
+
+  return null;
+}
+
 export function ExternalSignInPage(): ReactElement {
   const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { isLoaded, signIn, setActive } = useSignIn();
-  const { isSignedIn } = useUser();
+  const { isLoaded: isUserLoaded, isSignedIn } = useUser();
   const { getToken, signOut } = useClerkAuth();
   const { isProvisioningActive, countdownLabel, remainingMs } = useProvisioningGate();
 
@@ -56,8 +65,9 @@ export function ExternalSignInPage(): ReactElement {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [postAuthRedirect, setPostAuthRedirect] = useState<string>(ROUTES.COMPLETE_PROFILE);
   const [dismissedProvisioningTarget, setDismissedProvisioningTarget] = useState<number | null>(null);
+  const [isSessionReady, setIsSessionReady] = useState(false);
 
-  const didUserSignInRef = useRef(false);
+  const hasPreparedSessionRef = useRef(false);
   const isProvisioningModalOpen =
     isProvisioningActive && dismissedProvisioningTarget !== PROVISIONING_GATE_TARGET_UTC;
   const provisioningModalMessage =
@@ -75,15 +85,55 @@ export function ExternalSignInPage(): ReactElement {
   }, [getToken]);
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn) return;
-    if (didUserSignInRef.current) return;
-    void signOut({ redirectUrl: ROUTES.SIGN_IN });
-  }, [isLoaded, isSignedIn, signOut]);
+    if (!isLoaded || !isUserLoaded || hasPreparedSessionRef.current) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const prepareSession = async (): Promise<void> => {
+      if (isSignedIn) {
+        try {
+          await signOut();
+        } catch (error) {
+          if (!isCancelled) {
+            setFormError(getErrorMessage(error));
+          }
+        }
+      }
+
+      if (!isCancelled) {
+        hasPreparedSessionRef.current = true;
+        setIsSessionReady(true);
+      }
+    };
+
+    void prepareSession();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isLoaded, isSignedIn, isUserLoaded, signOut]);
 
   const clearErrors = () => {
     setErrors({});
     setFormError(null);
   };
+
+  const resetExistingSession = useCallback(async (): Promise<void> => {
+    setIsSessionReady(false);
+
+    try {
+      await signOut();
+      setErrors({});
+      setFormError('We found an existing saved session and cleared it. Please sign in again.');
+    } catch (error) {
+      setFormError(getErrorMessage(error));
+    } finally {
+      hasPreparedSessionRef.current = true;
+      setIsSessionReady(true);
+    }
+  }, [signOut]);
 
   const closeProvisioningModal = (): void => {
     setDismissedProvisioningTarget(PROVISIONING_GATE_TARGET_UTC);
@@ -129,7 +179,7 @@ export function ExternalSignInPage(): ReactElement {
       return;
     }
 
-    if (!isLoaded || !signIn) {
+    if (!isLoaded || !isUserLoaded || !isSessionReady || !signIn) {
       setFormError(t('externalSignIn.validation.emailRequired'));
       return;
     }
@@ -139,7 +189,6 @@ export function ExternalSignInPage(): ReactElement {
     }
 
     setIsSubmitting(true);
-    didUserSignInRef.current = true;
     try {
       const result = await signIn.create({
         identifier: email.trim(),
@@ -166,6 +215,10 @@ export function ExternalSignInPage(): ReactElement {
         setFormError(getErrorMessage(null));
       }
     } catch (error) {
+      if (getErrorCode(error) === 'session_exists') {
+        await resetExistingSession();
+        return;
+      }
       setFormError(getErrorMessage(error));
     } finally {
       setIsSubmitting(false);
@@ -303,7 +356,6 @@ export function ExternalSignInPage(): ReactElement {
     }
 
     setIsSubmitting(true);
-    didUserSignInRef.current = true;
     try {
       const result = await signIn.resetPassword({ password: newPassword });
 
@@ -326,6 +378,10 @@ export function ExternalSignInPage(): ReactElement {
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
+
+  if (!isLoaded || !isUserLoaded || !isSessionReady) {
+    return <PageLoader label="Preparing sign in..." />;
+  }
 
   return (
     <AuthLayout>
@@ -387,7 +443,7 @@ export function ExternalSignInPage(): ReactElement {
                 className="auth-cta-btn w-full text-sm"
                 size="lg"
                 isLoading={isSubmitting}
-                disabled={!isLoaded}
+                disabled={!isLoaded || !isSessionReady}
               >
                 {t('externalSignIn.signInButton')}
               </Button>
