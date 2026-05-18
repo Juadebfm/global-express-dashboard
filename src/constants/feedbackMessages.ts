@@ -21,4 +21,14 @@ export const FEEDBACK_MESSAGES = {
   tracking: {
     fetchError: 'We could not retrieve tracking details right now. Please try again.',
   },
+  suppliers: {
+    addSuccess: 'Supplier added to your address book.',
+    addError: 'Unable to add this supplier. Please try again.',
+    updateRequestSuccess: 'Update request sent to the supplier for review.',
+    updateRequestError: 'Unable to send the update request. Please try again.',
+    validationDecisionSuccess: 'Your decision has been recorded.',
+    validationDecisionError: 'Unable to save your decision. Please try again.',
+    goodsIntakeSuccess: 'Goods intake recorded and order created.',
+    goodsIntakeError: 'Unable to record goods intake. Please try again.',
+  },
 } as const;

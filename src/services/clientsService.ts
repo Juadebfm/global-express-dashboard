@@ -1,5 +1,22 @@
-import type { ApiClientsResponse, ApiClient, CreateClientPayload } from '@/types';
+import type {
+  ApiClient,
+  ApiClientsResponse,
+  ApiOrder,
+  ApiSupplier,
+  ClientWorkbenchData,
+  CreateClientPayload,
+  CreateGoodsIntakePayload,
+  AddSupplierPayload,
+  AddSupplierResult,
+  PaginatedSuppliers,
+  SupplierListParams,
+} from '@/types';
 import { apiGet, apiPost } from '@/lib/apiClient';
+
+interface Envelope<T> {
+  success: boolean;
+  data: T;
+}
 
 export async function getClients(
   token: string,
@@ -57,4 +74,60 @@ export async function sendClientInvite(
   id: string
 ): Promise<void> {
   await apiPost(`/admin/clients/${id}/send-invite`, undefined, token);
+}
+
+// ── Admin client workbench ──────────────────────────────────────────────────
+
+export async function getClientWorkbench(
+  token: string,
+  id: string,
+): Promise<ClientWorkbenchData<ApiSupplier, ApiOrder>> {
+  const response = await apiGet<Envelope<ClientWorkbenchData<ApiSupplier, ApiOrder>>>(
+    `/admin/clients/${id}/workbench`,
+    token,
+  );
+  return response.data;
+}
+
+export async function getClientSuppliers(
+  token: string,
+  id: string,
+  params: SupplierListParams = {},
+): Promise<PaginatedSuppliers> {
+  const search = new URLSearchParams();
+  if (params.page !== undefined) search.set('page', String(params.page));
+  if (params.limit !== undefined) search.set('limit', String(params.limit));
+  if (params.isActive !== undefined) search.set('isActive', String(params.isActive));
+  const qs = search.toString();
+  const response = await apiGet<Envelope<PaginatedSuppliers>>(
+    `/admin/clients/${id}/suppliers${qs ? `?${qs}` : ''}`,
+    token,
+  );
+  return response.data;
+}
+
+export async function addClientSupplier(
+  token: string,
+  id: string,
+  payload: AddSupplierPayload,
+): Promise<AddSupplierResult> {
+  const response = await apiPost<Envelope<AddSupplierResult>>(
+    `/admin/clients/${id}/suppliers`,
+    payload,
+    token,
+  );
+  return response.data;
+}
+
+export async function createClientGoodsIntake(
+  token: string,
+  id: string,
+  payload: CreateGoodsIntakePayload,
+): Promise<ApiOrder> {
+  const response = await apiPost<Envelope<ApiOrder>>(
+    `/admin/clients/${id}/goods-intake`,
+    payload,
+    token,
+  );
+  return response.data;
 }
