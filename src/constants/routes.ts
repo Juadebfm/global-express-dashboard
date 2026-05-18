@@ -16,6 +16,8 @@ export const ROUTES = {
   SHIPMENT_TRACK: '/shipments/track',
   NEW_SHIPMENT: '/shipments/new',
   CLIENTS: '/clients',
+  CLIENT_WORKBENCH: '/clients/:id',
+  SUPPLIERS: '/suppliers',
 
   ORDERS: '/orders',
   NOTIFICATIONS: '/notifications',
