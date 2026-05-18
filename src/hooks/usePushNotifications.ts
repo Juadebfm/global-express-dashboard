@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { getVapidPublicKey, subscribePush } from '@/services/pushService';
+import { useCallback, useEffect, useRef } from 'react';
+import { getVapidPublicKey, subscribePush, unsubscribePush } from '@/services/pushService';
 
 const TOKEN_KEY = 'globalxpress_token';
 
@@ -58,4 +58,28 @@ export function usePushNotifications(enabled: boolean): void {
       }
     })();
   }, [enabled]);
+}
+
+/**
+ * Tear down the push subscription. Call from the logout flow so the server
+ * stops sending pushes to this browser after sign-out.
+ */
+export function useUnsubscribeFromPush(): () => Promise<void> {
+  return useCallback(async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (!subscription) return;
+
+      await unsubscribePush(token, subscription.endpoint);
+      await subscription.unsubscribe();
+    } catch {
+      // Best-effort cleanup. Server can still GC stale endpoints later.
+    }
+  }, []);
 }

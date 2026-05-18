@@ -28,6 +28,10 @@ export async function markNotificationRead(id: string, token: string): Promise<v
   await apiPatch(`/notifications/${id}/read`, undefined, token);
 }
 
+export async function markAllNotificationsRead(token: string): Promise<void> {
+  await apiPatch('/notifications/read-all', undefined, token);
+}
+
 export async function toggleNotificationSave(id: string, token: string): Promise<void> {
   await apiPatch(`/notifications/${id}/save`, undefined, token);
 }

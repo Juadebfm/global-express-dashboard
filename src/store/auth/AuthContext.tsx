@@ -9,7 +9,7 @@ import {
 import type { LoginCredentials, User } from '@/types';
 import { login as apiLogin, getMe, logout as apiLogout } from '@/services/authService';
 import { useLanguageStore } from '@/store/language';
-import type { AuthContextValue, AuthState } from './auth.types';
+import type { AuthContextValue, AuthState, LoginResult } from './auth.types';
 import { AuthContext } from './auth.context';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -72,20 +72,28 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     checkAuth();
   }, [checkAuth]);
 
-  const login = useCallback(async (credentials: LoginCredentials) => {
+  const login = useCallback(async (credentials: LoginCredentials): Promise<LoginResult> => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const response = await apiLogin(credentials);
-      localStorage.setItem(TOKEN_KEY, response.token);
+      const outcome = await apiLogin(credentials);
 
-      syncLanguageFromUser(response.user);
+      if (outcome.kind === 'mfa_required') {
+        // Don't persist anything yet — the MFA challenge screen holds the
+        // mfaToken in memory and calls completeMfaChallenge on success.
+        setState((prev) => ({ ...prev, isLoading: false, error: null }));
+        return { kind: 'mfa_required', mfaToken: outcome.mfaToken, userId: outcome.userId };
+      }
+
+      localStorage.setItem(TOKEN_KEY, outcome.token);
+      syncLanguageFromUser(outcome.user);
       setState({
-        user: response.user,
+        user: outcome.user,
         isAuthenticated: true,
         isLoading: false,
         error: null,
       });
+      return { kind: 'success' };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed';
       setState((prev) => ({
@@ -96,6 +104,20 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       throw err;
     }
   }, []);
+
+  const completeMfaChallenge = useCallback(
+    ({ user, token }: { user: User; token: string }) => {
+      localStorage.setItem(TOKEN_KEY, token);
+      syncLanguageFromUser(user);
+      setState({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+    },
+    [],
+  );
 
   const logout = useCallback(async () => {
     const token = localStorage.getItem(TOKEN_KEY);
@@ -139,11 +161,12 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     () => ({
       ...state,
       login,
+      completeMfaChallenge,
       logout,
       clearError,
       refreshUser,
     }),
-    [state, login, logout, clearError, refreshUser]
+    [state, login, completeMfaChallenge, logout, clearError, refreshUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

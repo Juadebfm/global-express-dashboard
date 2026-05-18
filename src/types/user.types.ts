@@ -8,6 +8,9 @@ export interface User {
   preferredLanguage?: 'en' | 'ko';
   mustChangePassword?: boolean;
   mustCompleteProfile?: boolean;
+  mustEnrollMfa?: boolean;
+  canProvisionClientLogin?: boolean;
+  canManageShipmentBatches?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -16,13 +19,6 @@ export interface LoginCredentials {
   email: string;
   password: string;
   rememberMe?: boolean;
-}
-
-export interface RegisterData {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
 }
 
 export interface AuthResponse {

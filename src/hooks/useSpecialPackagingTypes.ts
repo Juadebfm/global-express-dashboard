@@ -1,6 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { SpecialPackagingType } from '@/types';
-import { getSpecialPackagingTypes } from '@/services';
+import {
+  getSpecialPackagingTypes,
+  updateSpecialPackagingTypes,
+  type SpecialPackagingUpsertItem,
+} from '@/services';
 import { useAuthToken } from './useAuthToken';
 
 interface UseSpecialPackagingTypesOptions {
@@ -19,4 +23,34 @@ export function useSpecialPackagingTypes(options: UseSpecialPackagingTypesOption
     },
     enabled: options.enabled ?? true,
   });
+}
+
+/**
+ * Superadmin-only full-replace of the special-packaging catalog.
+ * Backend spec: PUT /api/v1/internal/settings/special-packaging, 0-50 entries.
+ */
+export function useUpdateSpecialPackagingTypes(): {
+  mutate: (items: SpecialPackagingUpsertItem[]) => Promise<void>;
+  isPending: boolean;
+  error: Error | null;
+} {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  const m = useMutation<void, Error, SpecialPackagingUpsertItem[]>({
+    mutationFn: async (items) => {
+      const token = await getToken();
+      if (!token) throw new Error('Not authenticated');
+      await updateSpecialPackagingTypes(token, items);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings', 'special-packaging'] });
+    },
+  });
+
+  return {
+    mutate: (items) => m.mutateAsync(items),
+    isPending: m.isPending,
+    error: m.error,
+  };
 }

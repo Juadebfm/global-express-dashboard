@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { ApiNotification } from '@/types';
-import { getNotifications, markNotificationRead, toggleNotificationSave, deleteNotification, deleteNotificationsBulk } from '@/services';
+import { getNotifications, markNotificationRead, markAllNotificationsRead, toggleNotificationSave, deleteNotification, deleteNotificationsBulk } from '@/services';
 import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -12,6 +12,7 @@ interface NotificationsState {
   isLoading: boolean;
   error: string | null;
   markRead: (id: string) => void;
+  markAllRead: () => void;
   toggleSave: (id: string) => void;
   deleteOne: (id: string) => void;
   deleteBulk: (ids: string[]) => void;
@@ -46,6 +47,17 @@ export function useNotifications(): NotificationsState {
       const token = await getToken_();
       if (!token) throw new Error('Not authenticated');
       return markNotificationRead(id, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: async () => {
+      const token = await getToken_();
+      if (!token) throw new Error('Not authenticated');
+      return markAllNotificationsRead(token);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -94,6 +106,7 @@ export function useNotifications(): NotificationsState {
     isLoading,
     error: message,
     markRead: (id: string) => markReadMutation.mutate(id),
+    markAllRead: () => markAllReadMutation.mutate(),
     toggleSave: (id: string) => toggleSaveMutation.mutate(id),
     deleteOne: (id: string) => deleteOneMutation.mutate(id),
     deleteBulk: (ids: string[]) => deleteBulkMutation.mutate(ids),
