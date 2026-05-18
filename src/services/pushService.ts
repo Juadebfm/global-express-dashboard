@@ -16,3 +16,7 @@ export async function subscribePush(
 ): Promise<void> {
   await apiPost('/internal/push/subscribe', subscription, token);
 }
+
+export async function unsubscribePush(token: string, endpoint: string): Promise<void> {
+  await apiPost('/internal/push/unsubscribe', { endpoint }, token);
+}

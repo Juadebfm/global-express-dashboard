@@ -6,6 +6,8 @@ export {
   ExternalSignInPage,
   ExternalSignUpPage,
   StaffOnboardingPage,
+  MfaChallengePage,
+  MfaEnrollmentPage,
 } from './auth';
 export { ForbiddenPage, NotFoundPage } from './errors';
 export { TrackPage } from './public';

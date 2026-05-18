@@ -5,3 +5,5 @@ export { CompleteProfilePage } from './CompleteProfilePage';
 export { ExternalSignInPage } from './ExternalSignInPage';
 export { ExternalSignUpPage } from './ExternalSignUpPage';
 export { StaffOnboardingPage } from './StaffOnboardingPage';
+export { MfaChallengePage } from './MfaChallengePage';
+export { MfaEnrollmentPage } from './MfaEnrollmentPage';

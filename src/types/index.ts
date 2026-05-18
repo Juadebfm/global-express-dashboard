@@ -1,7 +1,6 @@
 export type {
   User,
   LoginCredentials,
-  RegisterData,
   AuthResponse,
   CustomerProfile,
   ApiCustomerProfileResponse,
@@ -167,3 +166,25 @@ export type {
   UpdateUserPayload,
   ChangeUserRolePayload,
 } from './adminUser.types';
+
+export type {
+  MfaChallenge,
+  MfaStatus,
+  MfaEnrollmentSecret,
+  MfaEnrollmentResult,
+  MfaDisableResult,
+  MfaRecoveryCodesResult,
+  MfaVerifyPayload,
+  MfaRecoveryPayload,
+  MfaDisablePayload,
+  MfaRecoveryResult,
+  LoginOutcome,
+} from './mfa.types';
+
+export type {
+  ReceiptContentType,
+  ReceiptPresignPayload,
+  ReceiptPresignResponse,
+  ReceiptSubmitPayload,
+  ReceiptVerifyPayload,
+} from './receipt.types';
