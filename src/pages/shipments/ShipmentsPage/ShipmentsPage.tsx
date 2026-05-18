@@ -3,11 +3,25 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { Layers, PackagePlus } from 'lucide-react';
 import { AppShell } from '@/pages/shared';
-import { useAuth, useDashboardData, useSearch, useShipmentsDashboard } from '@/hooks';
+import {
+  useAuth,
+  useDashboardData,
+  useRecordShipmentIntake,
+  useSearch,
+  useShipmentsDashboard,
+} from '@/hooks';
 import type { ShipmentFilterTab, ShipmentRecord, StatusCategory } from '@/types';
-import { ShipmentsFilters, ShipmentsHeader, ShipmentsSummary, ShipmentsTable } from '../components';
-import { PageLoader } from '@/components/ui';
+import {
+  BatchOpsModal,
+  ShipmentIntakeModal,
+  ShipmentsFilters,
+  ShipmentsHeader,
+  ShipmentsSummary,
+  ShipmentsTable,
+} from '../components';
+import { Button, PageLoader } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import i18n from '@/i18n/i18n';
 
@@ -78,6 +92,9 @@ export function ShipmentsPage(): ReactElement {
     useShipmentsDashboard({ statusV2: operatorStatusV2, limit: 100 });
   const { query, setQuery } = useSearch();
   const navigate = useNavigate();
+  const recordIntake = useRecordShipmentIntake();
+  const [showIntake, setShowIntake] = useState(false);
+  const [showBatchOps, setShowBatchOps] = useState(false);
 
   const statusLabels: Record<StatusCategory, string> = useMemo(() => ({
     pending: t('statusLabels.pending'),
@@ -294,6 +311,11 @@ export function ShipmentsPage(): ReactElement {
     navigate(ROUTES.SHIPMENT_TRACK);
   };
 
+  const handleOpenShipment = (shipment: ShipmentRecord): void => {
+    if (!isOperator) return;
+    navigate(`/shipments/${shipment.id}`);
+  };
+
   const handleSearchChange = (value: string): void => {
     setQuery(value);
   };
@@ -317,6 +339,29 @@ export function ShipmentsPage(): ReactElement {
               subtitle={isCustomer ? t('header.subtitleCustomer') : t('header.subtitleOperator')}
               onTrackShipment={handleTrackShipment}
             />
+
+            {isOperator && (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() => setShowIntake(true)}
+                  className="inline-flex items-center gap-2"
+                >
+                  <PackagePlus className="h-4 w-4" />
+                  Record intake
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowBatchOps(true)}
+                  className="inline-flex items-center gap-2"
+                >
+                  <Layers className="h-4 w-4" />
+                  Batch operations
+                </Button>
+              </div>
+            )}
 
             {summaryData && (
               <ShipmentsSummary
@@ -343,6 +388,7 @@ export function ShipmentsPage(): ReactElement {
               onSearchClear={handleSearchClear}
               searchPlaceholder={t('searchPlaceholder')}
               searchMeta={visibleLabel}
+              onRowClick={isOperator ? handleOpenShipment : undefined}
             />
           </>
         ) : isShipmentsLoading ? (
@@ -353,6 +399,19 @@ export function ShipmentsPage(): ReactElement {
           </div>
         )}
       </div>
+
+      {showIntake && (
+        <ShipmentIntakeModal
+          isPending={recordIntake.isPending}
+          onClose={() => setShowIntake(false)}
+          onSubmit={async (payload) => {
+            await recordIntake.mutate(payload);
+            setShowIntake(false);
+          }}
+        />
+      )}
+
+      {showBatchOps && <BatchOpsModal onClose={() => setShowBatchOps(false)} />}
     </AppShell>
   );
 }
