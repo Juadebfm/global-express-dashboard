@@ -22,6 +22,7 @@ import {
   ShipmentsPage,
   TrackShipmentPage,
   NewShipmentPage,
+  ShipmentDetailPage,
   ClientsPage,
   ClientWorkbenchPage,
   SuppliersPage,
@@ -134,6 +135,17 @@ function AppRoutes(): ReactElement {
         element={
           <ProtectedRoute>
             <NewShipmentPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.SHIPMENT_DETAIL}
+        element={
+          <ProtectedRoute
+            allowedRoles={['staff', 'admin', 'superadmin']}
+            redirectTo={ROUTES.SHIPMENTS}
+          >
+            <ShipmentDetailPage />
           </ProtectedRoute>
         }
       />

@@ -212,3 +212,24 @@ export type {
   ReceiptSubmitPayload,
   ReceiptVerifyPayload,
 } from './receipt.types';
+
+export type {
+  MeasurementCheckpoint,
+  ShipmentTransportMode,
+  IntakeShipmentType,
+  ShipmentPayer,
+  InvoiceAttachmentContentType,
+  ShipmentIntakeGoodsLine,
+  ShipmentIntakePayload,
+  ShipmentIntakeResult,
+  ShipmentMeasurementPayload,
+  ShipmentMeasurement,
+  InvoiceAttachmentPresignPayload,
+  InvoiceAttachmentPresignResult,
+  InvoiceAttachmentConfirmPayload,
+  InvoiceAttachment,
+  DispatchBatch,
+  DispatchBatchCarrierInfoPayload,
+  DispatchBatchStatusPayload,
+  DispatchBatchMoveToNextPayload,
+} from './shipmentOps.types';
