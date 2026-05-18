@@ -35,6 +35,11 @@ export function LoginPage(): ReactElement {
         navigate(ROUTES.STAFF_ONBOARDING, { replace: true });
         return;
       }
+      // MFA-required role hasn't enrolled yet — funnel into enrollment
+      if (user.mustEnrollMfa) {
+        navigate(ROUTES.MFA_ENROLL, { replace: true });
+        return;
+      }
       const dest =
         user.role === 'staff' || user.role === 'admin' || user.role === 'superadmin'
           ? ROUTES.ADMIN_DASHBOARD
@@ -65,14 +70,24 @@ export function LoginPage(): ReactElement {
     }
 
     try {
-      await login({
+      const result = await login({
         email: data.email,
         password: data.password,
         rememberMe: data.rememberMe,
       });
       // Evict any customer Clerk session on this device
       await signOut();
-      // The useEffect above handles redirect once isAuthenticated + user are set
+
+      if (result.kind === 'mfa_required') {
+        // mfaToken is short-lived (5 min) and held in router state only —
+        // intentionally NOT persisted to storage.
+        navigate(ROUTES.MFA_CHALLENGE, {
+          state: { mfaToken: result.mfaToken, userId: result.userId },
+          replace: true,
+        });
+        return;
+      }
+      // result.kind === 'success' → useEffect handles redirect once user lands
     } catch {
       // Error is handled by context
     }

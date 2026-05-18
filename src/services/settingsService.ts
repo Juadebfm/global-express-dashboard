@@ -6,7 +6,7 @@ import type {
   RestrictedGood,
   SpecialPackagingType,
 } from '@/types';
-import { apiGet, apiPatch } from '@/lib/apiClient';
+import { apiGet, apiPatch, apiPut } from '@/lib/apiClient';
 
 type AnyRecord = Record<string, unknown>;
 
@@ -201,4 +201,22 @@ export async function getSpecialPackagingTypes(
     .filter((item): item is SpecialPackagingType => Boolean(item));
 
   return mapped;
+}
+
+export interface SpecialPackagingUpsertItem {
+  key: string;
+  name: string;
+  surchargeUsd: number;
+}
+
+export async function updateSpecialPackagingTypes(
+  token: string,
+  items: SpecialPackagingUpsertItem[],
+): Promise<{ types: SpecialPackagingUpsertItem[]; message?: string }> {
+  // Spec: PUT /api/v1/internal/settings/special-packaging — full replace, 0-50 entries
+  const response = await apiPut<{
+    success: boolean;
+    data: { types: SpecialPackagingUpsertItem[]; message?: string };
+  }>('/internal/settings/special-packaging', { types: items }, token);
+  return response.data;
 }

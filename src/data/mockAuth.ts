@@ -1,4 +1,11 @@
-import type { AuthResponse, LoginCredentials, RegisterData, User } from '@/types';
+import type { AuthResponse, LoginCredentials, User } from '@/types';
+
+interface RegisterData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
 import { mockUsers, mockPasswords } from './mockUsers';
 
 const delay = (ms: number): Promise<void> =>

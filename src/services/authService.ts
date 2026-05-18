@@ -1,6 +1,6 @@
 import type {
-  AuthResponse,
   LoginCredentials,
+  LoginOutcome,
   User,
   CustomerProfile,
   ApiCustomerProfileResponse,
@@ -18,15 +18,46 @@ import type {
 } from '@/types';
 import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost } from '@/lib/apiClient';
 
-export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
-  const response = await apiPost<{ success: boolean; data: AuthResponse }>(
+interface InternalLoginSuccessPayload {
+  token: string;
+  user: User;
+}
+
+interface InternalLoginMfaPayload {
+  mfaRequired: true;
+  mfaToken: string;
+  userId: string;
+}
+
+type InternalLoginPayload = InternalLoginSuccessPayload | InternalLoginMfaPayload;
+
+function isMfaChallenge(p: InternalLoginPayload): p is InternalLoginMfaPayload {
+  return 'mfaRequired' in p && p.mfaRequired === true;
+}
+
+export async function login(credentials: LoginCredentials): Promise<LoginOutcome> {
+  const response = await apiPost<{ success: boolean; data: InternalLoginPayload }>(
     '/internal/auth/login',
     {
       email: credentials.email,
       password: credentials.password,
     },
   );
-  return response.data;
+  const payload = response.data;
+  if (isMfaChallenge(payload)) {
+    return { kind: 'mfa_required', mfaToken: payload.mfaToken, userId: payload.userId };
+  }
+  return { kind: 'success', user: payload.user, token: payload.token };
+}
+
+export async function register(): Promise<{ message: string; clerkSignUpUrl: string }> {
+  // Legacy informational endpoint: backend just returns the Clerk sign-up URL.
+  // Customers register via Clerk directly; this is a fallback link only.
+  const response = await apiPost<{ message: string; clerkSignUpUrl: string }>(
+    '/auth/register',
+    {},
+  );
+  return response;
 }
 
 export async function getMe(token: string): Promise<User> {
