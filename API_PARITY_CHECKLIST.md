@@ -2,8 +2,8 @@
 
 **Source of truth:** [`global-express-backend/API_ENDPOINTS.md`](../global-express-backend/API_ENDPOINTS.md) (dated 2026-05-17, 163 HTTP + 1 WS endpoints)
 
-**Audit date:** 2026-05-17 (last update 2026-05-18 — Phase 1 complete)
-**Current coverage:** 94 / 164 endpoints (≈57%) + 1 WS connected
+**Audit date:** 2026-05-17 (last update 2026-05-18 — Phase 2 complete)
+**Current coverage:** 104 / 164 endpoints (≈63%) + 1 WS connected
 
 This file is the working tracker. Tick items as they ship. Quality-standards section is non-negotiable — every new endpoint must satisfy it before being ticked.
 
@@ -104,16 +104,16 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 - [x] `PATCH /users/me` — [src/services/authService.ts:163](src/services/authService.ts#L163)
 - [x] `GET /users/me/notification-preferences` — [src/services/authService.ts:84](src/services/authService.ts#L84)
 - [x] `PATCH /users/me/notification-preferences` — [src/services/authService.ts:103](src/services/authService.ts#L103)
-- [ ] `GET /users/me/suppliers`
-- [ ] `POST /users/me/suppliers`
-- [ ] `POST /users/me/suppliers/:supplierId/update-request`
-- [ ] `GET /users/me/suppliers/update-requests`
-- [ ] `GET /users/me/suppliers/validation-requests`
-- [ ] `PATCH /users/me/suppliers/validation-requests/:id`
+- [x] `GET /users/me/suppliers` — [getMySuppliers](src/services/suppliersService.ts#L42) + [useMySuppliers](src/hooks/useSuppliers.ts#L33)
+- [x] `POST /users/me/suppliers` — [addMySupplier](src/services/suppliersService.ts#L53) + [useAddMySupplier](src/hooks/useSuppliers.ts#L147)
+- [x] `POST /users/me/suppliers/:supplierId/update-request` — [requestSupplierUpdate](src/services/suppliersService.ts#L65) + [useRequestSupplierUpdate](src/hooks/useSuppliers.ts#L181)
+- [x] `GET /users/me/suppliers/update-requests` — [getMySupplierUpdateRequests](src/services/suppliersService.ts#L78) + [useMySupplierUpdateRequests](src/hooks/useSuppliers.ts#L60)
+- [x] `GET /users/me/suppliers/validation-requests` — [getMySupplierValidationRequests](src/services/suppliersService.ts#L89) + [useMySupplierValidationRequests](src/hooks/useSuppliers.ts#L89)
+- [x] `PATCH /users/me/suppliers/validation-requests/:id` — [decideSupplierValidationRequest](src/services/suppliersService.ts#L100) + [useDecideSupplierValidationRequest](src/hooks/useSuppliers.ts#L225)
 - [x] `DELETE /users/me` — [src/services/authService.ts:171](src/services/authService.ts#L171)
 - [x] `GET /users/me/export` — [src/services/authService.ts:148](src/services/authService.ts#L148)
 - [x] `GET /users/` — [src/services/adminUsersService.ts:18](src/services/adminUsersService.ts#L18)
-- [ ] `GET /users/suppliers` (admin-scoped supplier list)
+- [x] `GET /users/suppliers` — [getAllSuppliers](src/services/suppliersService.ts#L115) + [useAllSuppliers](src/hooks/useSuppliers.ts#L118)
 - [x] `GET /users/:id` — [src/services/adminUsersService.ts:35](src/services/adminUsersService.ts#L35)
 - [x] `PATCH /users/:id` — [src/services/adminUsersService.ts:46](src/services/adminUsersService.ts#L46)
 - [x] `PATCH /users/:id/role` — [src/services/adminUsersService.ts:59](src/services/adminUsersService.ts#L59)
@@ -237,10 +237,10 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 - [x] `GET /admin/clients` — [src/services/clientsService.ts:4](src/services/clientsService.ts#L4)
 - [x] `GET /admin/clients/:id` — [src/services/clientsService.ts:20](src/services/clientsService.ts#L20)
 - [x] `GET /admin/clients/:id/orders` — [src/services/clientsService.ts:31](src/services/clientsService.ts#L31)
-- [ ] `GET /admin/clients/:id/workbench`
-- [ ] `GET /admin/clients/:id/suppliers`
-- [ ] `POST /admin/clients/:id/suppliers`
-- [ ] `POST /admin/clients/:id/goods-intake`
+- [x] `GET /admin/clients/:id/workbench` — [getClientWorkbench](src/services/clientsService.ts#L81) + [useClientWorkbench](src/hooks/useClientWorkbench.ts#L30)
+- [x] `GET /admin/clients/:id/suppliers` — [getClientSuppliers](src/services/clientsService.ts#L92) + [useClientSuppliers](src/hooks/useClientWorkbench.ts#L62)
+- [x] `POST /admin/clients/:id/suppliers` — [addClientSupplier](src/services/clientsService.ts#L109) + [useAddClientSupplier](src/hooks/useClientWorkbench.ts#L99)
+- [x] `POST /admin/clients/:id/goods-intake` — [createClientGoodsIntake](src/services/clientsService.ts#L122) + [useCreateClientGoodsIntake](src/hooks/useClientWorkbench.ts#L136)
 
 ### Settings — `/api/v1/settings` (12)
 

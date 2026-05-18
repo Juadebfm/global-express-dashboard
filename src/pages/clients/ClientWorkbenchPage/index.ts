@@ -1,2 +1,1 @@
-export { ClientsPage } from './ClientsPage';
 export { ClientWorkbenchPage } from './ClientWorkbenchPage';

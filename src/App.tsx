@@ -23,6 +23,8 @@ import {
   TrackShipmentPage,
   NewShipmentPage,
   ClientsPage,
+  ClientWorkbenchPage,
+  SuppliersPage,
   OrdersPage,
   NotificationsPage,
   TeamPage,
@@ -143,6 +145,25 @@ function AppRoutes(): ReactElement {
             redirectTo={ROUTES.ADMIN_DASHBOARD}
           >
             <ClientsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.CLIENT_WORKBENCH}
+        element={
+          <ProtectedRoute
+            allowedRoles={['staff', 'admin', 'superadmin']}
+            redirectTo={ROUTES.ADMIN_DASHBOARD}
+          >
+            <ClientWorkbenchPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.SUPPLIERS}
+        element={
+          <ProtectedRoute>
+            <SuppliersPage />
           </ProtectedRoute>
         }
       />

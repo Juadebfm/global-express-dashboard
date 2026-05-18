@@ -6,3 +6,14 @@ export type { ForgotPasswordFormData } from './ForgotPasswordForm';
 
 export { SupportTicketForm, supportTicketSchema } from './SupportTicketForm';
 export type { SupportTicketFormData, SupportTicketFormProps } from './SupportTicketForm';
+
+export {
+  addSupplierSchema,
+  supplierUpdateRequestSchema,
+  supplierValidationDecisionSchema,
+} from './SupplierForms';
+export type {
+  AddSupplierFormData,
+  SupplierUpdateRequestFormData,
+  SupplierValidationDecisionFormData,
+} from './SupplierForms';
