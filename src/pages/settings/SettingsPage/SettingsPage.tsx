@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useClerk } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import { AlertBanner, ConfirmModal } from '@/components/ui';
+import { MfaSettingsCard } from '@/components/auth';
 import {
   useAuth,
   useChangePassword,
@@ -284,6 +285,9 @@ export function SettingsPage(): ReactElement {
                 </div>
               </section>
             )}
+
+            {/* Operator: Two-factor authentication */}
+            {isOperator && <MfaSettingsCard />}
 
             {/* Superadmin: Onboarding settings */}
             {isOperator && isSuperadmin && (

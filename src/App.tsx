@@ -12,6 +12,8 @@ import {
   ExternalSignUpPage,
   StaffOnboardingPage,
   ForgotPasswordPage,
+  MfaChallengePage,
+  MfaEnrollmentPage,
   ForbiddenPage,
   NotFoundPage,
   TrackPage,
@@ -67,6 +69,15 @@ function AppRoutes(): ReactElement {
       <Route path={ROUTES.SIGN_UP} element={<ExternalSignUpPage />} />
       <Route path="/signup" element={<ExternalSignUpPage />} />
       <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+      <Route path={ROUTES.MFA_CHALLENGE} element={<MfaChallengePage />} />
+      <Route
+        path={ROUTES.MFA_ENROLL}
+        element={
+          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
+            <MfaEnrollmentPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path={ROUTES.FORBIDDEN} element={<ForbiddenPage />} />
       <Route path={ROUTES.TRACK_PUBLIC} element={<TrackPage />} />
       <Route path={`${ROUTES.TRACK_PUBLIC}/:trackingNumber`} element={<TrackPage />} />

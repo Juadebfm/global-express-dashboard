@@ -6,6 +6,8 @@ export const ROUTES = {
   SIGN_IN: '/sign-in',
   SIGN_UP: '/sign-up',
   FORGOT_PASSWORD: '/forgot-password',
+  MFA_CHALLENGE: '/login/mfa',
+  MFA_ENROLL: '/mfa/enroll',
   COMPLETE_PROFILE: '/complete-profile',
   FORBIDDEN: '/forbidden',
   TRACK_PUBLIC: '/track',

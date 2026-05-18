@@ -4,8 +4,12 @@ import type {
   ApiPayment,
   ApiPaymentsResponse,
   RecordOfflinePayload,
+  ReceiptPresignPayload,
+  ReceiptPresignResponse,
+  ReceiptSubmitPayload,
+  ReceiptVerifyPayload,
 } from '@/types';
-import { apiGet, apiPost } from '@/lib/apiClient';
+import { apiGet, apiPatch, apiPost } from '@/lib/apiClient';
 
 export async function initializePayment(
   token: string,
@@ -69,6 +73,45 @@ export async function recordOfflinePayment(
     `/payments/${orderId}/record-offline`,
     payload,
     token
+  );
+  return response.data;
+}
+
+// ── Offline receipt flow (presign → submit → superadmin verify) ──────────────
+
+export async function presignPaymentReceipt(
+  token: string,
+  payload: ReceiptPresignPayload,
+): Promise<ReceiptPresignResponse> {
+  const response = await apiPost<{ success: boolean; data: ReceiptPresignResponse }>(
+    '/payments/receipts/presign',
+    payload,
+    token,
+  );
+  return response.data;
+}
+
+export async function submitPaymentReceipt(
+  token: string,
+  payload: ReceiptSubmitPayload,
+): Promise<ApiPayment> {
+  const response = await apiPost<{ success: boolean; data: ApiPayment }>(
+    '/payments/receipts',
+    payload,
+    token,
+  );
+  return response.data;
+}
+
+export async function verifyPaymentReceipt(
+  token: string,
+  receiptId: string,
+  payload: ReceiptVerifyPayload,
+): Promise<ApiPayment> {
+  const response = await apiPatch<{ success: boolean; data: ApiPayment }>(
+    `/payments/receipts/${receiptId}/verify`,
+    payload,
+    token,
   );
   return response.data;
 }

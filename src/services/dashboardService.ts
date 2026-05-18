@@ -172,6 +172,33 @@ export async function fetchDashboardRaw(
   return response.data;
 }
 
+export async function fetchDashboardStats(token: string): Promise<ApiDashboardStats> {
+  const response = await apiGet<{ success: boolean; data: ApiDashboardStats }>(
+    '/dashboard/stats',
+    token,
+  );
+  return response.data;
+}
+
+export async function fetchDashboardTrends(
+  token: string,
+  months = 3,
+): Promise<ApiTrend[]> {
+  const response = await apiGet<{ success: boolean; data: ApiTrend[] }>(
+    `/dashboard/trends?months=${months}`,
+    token,
+  );
+  return response.data;
+}
+
+export async function fetchActiveDeliveries(token: string): Promise<ApiActiveDelivery[]> {
+  const response = await apiGet<{ success: boolean; data: ApiActiveDelivery[] }>(
+    '/dashboard/active-deliveries',
+    token,
+  );
+  return response.data;
+}
+
 export function mapToDashboardData(
   raw: ApiDashboardResponse['data'],
   role: User['role']
