@@ -73,7 +73,31 @@ export type {
   ApiClient,
   CreateClientPayload,
   ApiClientsResponse,
+  ClientWorkbenchData,
+  WorkbenchPagination,
+  CreateGoodsIntakePayload,
+  GoodsIntakePackage,
+  GoodsIntakeShipmentType,
+  GoodsIntakeOrderDirection,
+  GoodsIntakeTransportMode,
+  GoodsIntakeShipmentPayer,
 } from './client.types';
+
+export type {
+  SupplierSource,
+  ApiSupplier,
+  SupplierUpdateRequestStatus,
+  ApiSupplierUpdateRequest,
+  SupplierListParams,
+  SupplierUpdateRequestListParams,
+  AddSupplierPayload,
+  AddSupplierResult,
+  SupplierUpdateRequestPayload,
+  SupplierValidationDecisionPayload,
+  Pagination,
+  PaginatedSuppliers,
+  PaginatedSupplierUpdateRequests,
+} from './supplier.types';
 
 export type {
   SupportTicketCategory,

@@ -18,7 +18,8 @@ export {
   TrackShipmentPage,
   NewShipmentPage,
 } from './shipments';
-export { ClientsPage } from './clients';
+export { ClientsPage, ClientWorkbenchPage } from './clients';
+export { SuppliersPage } from './suppliers';
 
 export { OrdersPage } from './orders';
 export { NotificationsPage } from './notifications';
