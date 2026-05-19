@@ -308,42 +308,4 @@ export async function updatePickupRep(
   return res.data;
 }
 
-/* ── Shipping cost estimate ─────────────────────────────── */
-
-export interface EstimatePayload {
-  shipmentType: 'air' | 'sea' | 'ocean';
-  weightKg?: number;
-  lengthCm?: number;
-  widthCm?: number;
-  heightCm?: number;
-  cbm?: number;
-}
-
-export interface ShippingEstimate {
-  mode: string;
-  weightKg: number | null;
-  cbm: number | null;
-  estimatedCostUsd: number;
-  departureFrequency: string;
-  estimatedTransitDays: number;
-  disclaimer: string;
-}
-
-// Uses authenticated estimate when token is provided; falls back to public estimate otherwise.
-export async function estimateShippingCost(
-  payload: EstimatePayload,
-  token?: string,
-): Promise<ShippingEstimate> {
-  const normalizedPayload: EstimatePayload = {
-    ...payload,
-    shipmentType: normalizeShipmentType(payload.shipmentType),
-  };
-  const response = await apiPost<{ success: boolean; data: ShippingEstimate }>(
-    '/public/calculator/estimate',
-    normalizedPayload,
-    token,
-  );
-  return response.data;
-}
-
 

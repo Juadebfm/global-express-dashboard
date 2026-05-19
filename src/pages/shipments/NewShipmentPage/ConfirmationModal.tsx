@@ -6,14 +6,14 @@ import { Check, Copy, Mail, X } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
-import type { ShippingEstimate } from '@/services';
+import type { PublicShippingEstimate } from '@/types';
 import i18n from '@/i18n/i18n';
 
 interface ConfirmationModalProps {
   isCustomer: boolean;
   trackingNumber: string | null;
   shipmentType: string;
-  estimate: ShippingEstimate | null;
+  estimate: PublicShippingEstimate | null;
   onClose: () => void;
 }
 

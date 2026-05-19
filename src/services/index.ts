@@ -63,8 +63,34 @@ export {
   getAllSuppliers,
 } from './suppliersService';
 export { getSupportTickets, getSupportTicketById, createSupportTicket, sendSupportMessage, updateTicketStatus, mapSupportMessage } from './supportService';
-export { createOrder, getOrders, getOrderById, getOrderTimeline, getOrderImages, updateOrderStatus, deleteOrder, updatePickupRep, estimateShippingCost } from './ordersService';
-export type { ShippingEstimate, OrderTimeline, OrderTimelineEvent } from './ordersService';
+export { createOrder, getOrders, getOrderById, getOrderTimeline, getOrderImages, updateOrderStatus, deleteOrder, updatePickupRep } from './ordersService';
+export type { OrderTimeline, OrderTimelineEvent } from './ordersService';
+export {
+  estimateShipping,
+  getPublicShipmentTypes,
+  getPublicCalculatorRates,
+  subscribeToNewsletter,
+  submitPublicD2dIntake,
+} from './publicService';
+export {
+  getPublicGallery,
+  getPublicGalleryAdverts,
+  getPublicGallerySales,
+  presignPublicGalleryClaim,
+  submitPublicAnonymousClaim,
+  submitPublicCarPurchaseAttempt,
+  getAuthedGallery,
+  presignGalleryClaim,
+  presignGalleryItemMedia,
+  submitAuthedAnonymousClaim,
+  submitAuthedCarPurchaseAttempt,
+  createGalleryItem,
+  createGalleryAdvert,
+  updateGalleryItem,
+  updateGalleryAdvert,
+  getGalleryClaims,
+  reviewGalleryClaim,
+} from './galleryService';
 export { verifyOrder } from './warehouseService';
 export {
   initializePayment,

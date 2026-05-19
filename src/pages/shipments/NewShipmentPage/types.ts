@@ -1,4 +1,4 @@
-import type { ShippingEstimate } from '@/services';
+import type { PublicShippingEstimate } from '@/types';
 
 export type StepKey = 'shipment' | 'addresses' | 'packages' | 'review';
 
@@ -47,7 +47,7 @@ export interface ShipmentFormActions {
 }
 
 export interface EstimateState {
-  estimate: ShippingEstimate | null;
+  estimate: PublicShippingEstimate | null;
   estimateLoading: boolean;
   fetchEstimate: () => Promise<void>;
 }
