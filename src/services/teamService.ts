@@ -1,5 +1,5 @@
 import type { ApiTeamResponse } from '@/types';
-import { apiGet, apiPatch, apiPost } from '@/lib/apiClient';
+import { apiGetData, apiPatch, apiPost } from '@/lib/apiClient';
 
 export interface CreateTeamMemberPayload {
   email: string;
@@ -15,7 +15,7 @@ export async function createTeamMember(
   await apiPost('/internal/users', payload, token);
 }
 
-export async function getTeam(
+export function getTeam(
   token: string,
   params: { role?: string; isActive?: boolean; page?: number; limit?: number } = {}
 ): Promise<ApiTeamResponse['data']> {
@@ -25,11 +25,7 @@ export async function getTeam(
   if (params.page !== undefined) searchParams.set('page', String(params.page));
   searchParams.set('limit', String(params.limit ?? 100));
   const qs = searchParams.toString();
-  const response = await apiGet<ApiTeamResponse>(
-    `/team${qs ? `?${qs}` : ''}`,
-    token
-  );
-  return response.data;
+  return apiGetData<ApiTeamResponse['data']>(`/team${qs ? `?${qs}` : ''}`, token);
 }
 
 export async function approveTeamMember(

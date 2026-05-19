@@ -1,27 +1,20 @@
-import type {
-  ApiNotificationsResponse,
-  ApiUnreadCountResponse,
-} from '@/types';
-import { apiGet, apiPatch, apiPost, apiDelete } from '@/lib/apiClient';
+import type { ApiNotificationsResponse } from '@/types';
+import { apiDelete, apiGetData, apiPatch, apiPost } from '@/lib/apiClient';
 
-export async function getNotifications(
+export function getNotifications(
   token: string,
   page = 1,
   limit = 50
 ): Promise<ApiNotificationsResponse['data']> {
-  const response = await apiGet<ApiNotificationsResponse>(
+  return apiGetData<ApiNotificationsResponse['data']>(
     `/notifications?page=${page}&limit=${limit}`,
     token
   );
-  return response.data;
 }
 
 export async function getUnreadCount(token: string): Promise<number> {
-  const response = await apiGet<ApiUnreadCountResponse>(
-    '/notifications/unread-count',
-    token
-  );
-  return response.data.count;
+  const data = await apiGetData<{ count: number }>('/notifications/unread-count', token);
+  return data.count;
 }
 
 export async function markNotificationRead(id: string, token: string): Promise<void> {

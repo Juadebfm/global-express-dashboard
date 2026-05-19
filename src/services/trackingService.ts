@@ -1,4 +1,4 @@
-import { apiGet } from '@/lib/apiClient';
+import { apiGetData } from '@/lib/apiClient';
 
 export interface TimelineEvent {
   status: string;
@@ -26,10 +26,9 @@ interface RawTrackingResult extends TrackingResult {
 }
 
 export async function trackShipment(trackingNumber: string): Promise<TrackingResult> {
-  const response = await apiGet<{ data: RawTrackingResult }>(
+  const raw = await apiGetData<RawTrackingResult>(
     `/orders/track/${encodeURIComponent(trackingNumber)}`
   );
-  const raw = response.data;
 
   return {
     ...raw,

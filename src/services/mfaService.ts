@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from '@/lib/apiClient';
+import { apiGetData, apiPost, apiPostData } from '@/lib/apiClient';
 import type {
   MfaStatus,
   MfaEnrollmentSecret,
@@ -13,6 +13,8 @@ import type {
 } from '@/types';
 
 // ── Challenge endpoints (unauth, mfaToken-bearing) ───────────────────────────
+// These use the legacy auth/* flat shape — no { success, data } envelope —
+// so they stay on the raw apiPost helper.
 
 export async function verifyMfaChallenge(payload: MfaVerifyPayload): Promise<AuthResponse> {
   // Spec: POST /api/v1/auth/mfa/verify returns legacy flat shape
@@ -24,66 +26,47 @@ export async function verifyMfaChallenge(payload: MfaVerifyPayload): Promise<Aut
   return { user: response.user, token: response.tokens.accessToken };
 }
 
-export async function recoverWithMfaRecoveryCode(
+export function recoverWithMfaRecoveryCode(
   payload: MfaRecoveryPayload,
 ): Promise<MfaRecoveryResult> {
-  const response = await apiPost<MfaRecoveryResult>('/auth/mfa/recovery', payload);
-  return response;
+  return apiPost<MfaRecoveryResult>('/auth/mfa/recovery', payload);
 }
 
-// ── Internal enrollment endpoints (Bearer-authed) ────────────────────────────
+// ── Internal enrollment endpoints (Bearer-authed, enveloped) ─────────────────
 
-interface Envelope<T> {
-  success: boolean;
-  data: T;
+export function getMfaStatus(token: string): Promise<MfaStatus> {
+  return apiGetData<MfaStatus>('/internal/me/mfa/status', token);
 }
 
-export async function getMfaStatus(token: string): Promise<MfaStatus> {
-  const response = await apiGet<Envelope<MfaStatus>>('/internal/me/mfa/status', token);
-  return response.data;
+export function enrollMfa(token: string): Promise<MfaEnrollmentSecret> {
+  return apiPostData<MfaEnrollmentSecret>('/internal/me/mfa/enroll', {}, token);
 }
 
-export async function enrollMfa(token: string): Promise<MfaEnrollmentSecret> {
-  const response = await apiPost<Envelope<MfaEnrollmentSecret>>(
-    '/internal/me/mfa/enroll',
-    {},
-    token,
-  );
-  return response.data;
-}
-
-export async function verifyMfaEnrollment(
+export function verifyMfaEnrollment(
   token: string,
   code: string,
 ): Promise<MfaEnrollmentResult> {
-  const response = await apiPost<Envelope<MfaEnrollmentResult>>(
+  return apiPostData<MfaEnrollmentResult>(
     '/internal/me/mfa/verify-enrollment',
     { code },
     token,
   );
-  return response.data;
 }
 
-export async function disableMfa(
+export function disableMfa(
   token: string,
   payload: MfaDisablePayload,
 ): Promise<MfaDisableResult> {
-  const response = await apiPost<Envelope<MfaDisableResult>>(
-    '/internal/me/mfa/disable',
-    payload,
-    token,
-  );
-  return response.data;
+  return apiPostData<MfaDisableResult>('/internal/me/mfa/disable', payload, token);
 }
 
-export async function regenerateRecoveryCodes(
+export function regenerateRecoveryCodes(
   token: string,
   code: string,
 ): Promise<MfaRecoveryCodesResult> {
-  const response = await apiPost<Envelope<MfaRecoveryCodesResult>>(
+  return apiPostData<MfaRecoveryCodesResult>(
     '/internal/me/mfa/recovery-codes/regenerate',
     { code },
     token,
   );
-  return response.data;
 }

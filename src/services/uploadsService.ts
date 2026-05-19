@@ -1,16 +1,11 @@
 import type { PresignPayload, PresignResponse, ConfirmPayload, OrderImage } from '@/types';
-import { apiPost, apiGet, apiDelete } from '@/lib/apiClient';
+import { apiDelete, apiGetData, apiPost, apiPostData } from '@/lib/apiClient';
 
-export async function presignUpload(
+export function presignUpload(
   token: string,
   payload: PresignPayload
 ): Promise<PresignResponse> {
-  const response = await apiPost<{ success: boolean; data: PresignResponse }>(
-    '/uploads/presign',
-    payload,
-    token
-  );
-  return response.data;
+  return apiPostData<PresignResponse>('/uploads/presign', payload, token);
 }
 
 export async function confirmUpload(
@@ -20,15 +15,11 @@ export async function confirmUpload(
   await apiPost('/uploads/confirm', payload, token);
 }
 
-export async function getOrderImages(
+export function getOrderImages(
   token: string,
   orderId: string
 ): Promise<OrderImage[]> {
-  const response = await apiGet<{ success: boolean; data: OrderImage[] }>(
-    `/uploads/orders/${orderId}/images`,
-    token
-  );
-  return response.data;
+  return apiGetData<OrderImage[]>(`/uploads/orders/${orderId}/images`, token);
 }
 
 export async function deleteImage(
