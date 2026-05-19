@@ -311,10 +311,10 @@ These are not endpoints but contract/UX gaps the audit surfaced. They must be do
 - [ ] **WS auth via subprotocol** — rewrite [useWebSocket.ts](src/hooks/useWebSocket.ts) to pass `['bearer', token]` as the `WebSocket` constructor's second arg instead of `?token=`
 - [ ] **Single 401 handler** — when `apiClient` sees 401, dispatch a global logout event and route to `/login`. Today this is per-caller.
 - [ ] **Rate-limit retry-after** — current 429 toast doesn't honor `retry-after`; disable the originating button for N seconds
-- [ ] **MFA login branching** — `/internal/auth/login` and `/auth/login` responses with `mfaRequired: true` must route to a new `/login/mfa` screen that holds the `mfaToken` in memory only (never localStorage)
-- [ ] **`mustEnrollMfa` flag** — when present on a login response, gate dashboard access behind the MFA enrollment flow
-- [ ] **Recovery-codes UX** — when `/mfa/verify-enrollment` returns codes, force user to confirm download/copy before the modal can close. Codes are shown ONCE.
-- [ ] **Lockout (423) countdown** — show `lockedUntil` as a live countdown on the login screen; disable submit until elapsed
+- [x] **MFA login branching** — [LoginPage.tsx:81-89](src/pages/auth/LoginPage/LoginPage.tsx#L81-L89) routes `mfaRequired` responses to `/login/mfa` via router state; [MfaChallengePage.tsx](src/pages/auth/MfaChallengePage/MfaChallengePage.tsx) reads `mfaToken` from `location.state` only — never persisted to localStorage
+- [x] **`mustEnrollMfa` flag** — [ProtectedRoute.tsx](src/components/auth/ProtectedRoute.tsx) bounces any protected page to `/mfa/enroll` when the in-house user has `mustEnrollMfa=true`, enforced on refresh / deep-link, not just initial login
+- [x] **Recovery-codes UX** — [RecoveryCodesPanel.tsx:86-106](src/components/auth/RecoveryCodesPanel/RecoveryCodesPanel.tsx#L86-L106) gates the Continue button on an explicit "I have saved these codes" checkbox; codes can be copied or downloaded as `.txt`
+- [x] **Lockout (423) countdown** — [apiClient.ts](src/lib/apiClient.ts) dispatches `auth:locked` with `lockedUntil` on 423; [LoginPage.tsx](src/pages/auth/LoginPage/LoginPage.tsx) runs a 1-Hz countdown and [LoginForm.tsx](src/components/forms/LoginForm/LoginForm.tsx) shows the banner + disables submit until elapsed
 - [ ] **PII never logged** — audit all `console.log/error` for token, email, address values
 - [ ] **Public tracking page** — confirm `/orders/track/:trackingNumber` page does not require auth and does not render PII (recipient address, phone)
 - [x] **Presigned upload pattern** — `useR2Upload` abstracts the `presign → PUT to R2 → confirm` flow ([src/hooks/useR2Upload.ts](src/hooks/useR2Upload.ts)); shipment task-invoice + reg-doc uploaders consume it. Payment-receipt uploader still has its own copy (planned migration).
