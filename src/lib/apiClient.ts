@@ -183,3 +183,48 @@ export function apiPostMultipart<T>(
     body: formData,
   });
 }
+
+// ── Envelope-unwrapping helpers ──────────────────────────────────────────────
+//
+// The backend wraps successful responses as `{ success: true, data: <T> }` on
+// every route except the legacy `/auth/*` family, which returns a flat shape.
+// These `*Data` helpers fetch and return the inner `T` directly so services
+// don't each re-implement `response.data`.
+//
+// Legacy auth/* and any caller that needs the raw payload (e.g. when there's
+// no envelope, or when the caller wants `pagination` alongside `data`) should
+// keep using the raw `apiGet/apiPost/...` helpers above.
+
+type Envelope<T> = { success?: boolean; data: T };
+
+function unwrap<T>(payload: Envelope<T>): T {
+  return payload.data;
+}
+
+export function apiGetData<T>(path: string, token?: string): Promise<T> {
+  return apiGet<Envelope<T>>(path, token).then(unwrap);
+}
+
+export function apiPostData<T>(path: string, body?: unknown, token?: string): Promise<T> {
+  return apiPost<Envelope<T>>(path, body, token).then(unwrap);
+}
+
+export function apiPutData<T>(path: string, body?: unknown, token?: string): Promise<T> {
+  return apiPut<Envelope<T>>(path, body, token).then(unwrap);
+}
+
+export function apiPatchData<T>(path: string, body?: unknown, token?: string): Promise<T> {
+  return apiPatch<Envelope<T>>(path, body, token).then(unwrap);
+}
+
+export function apiDeleteData<T>(path: string, token?: string, body?: unknown): Promise<T> {
+  return apiDelete<Envelope<T>>(path, token, body).then(unwrap);
+}
+
+export function apiPostMultipartData<T>(
+  path: string,
+  formData: FormData,
+  token?: string
+): Promise<T> {
+  return apiPostMultipart<Envelope<T>>(path, formData, token).then(unwrap);
+}
