@@ -1,27 +1,22 @@
 import type {
-  ApiCreateOrderResponse,
   ApiOrder,
   CreateOrderPayload,
   OrderImage,
   OrderListItem,
   OrdersListResult,
 } from '@/types';
-import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/apiClient';
+import { apiDelete, apiGet, apiPatch, apiPatchData, apiPostData } from '@/lib/apiClient';
 
 function normalizeShipmentType(type: 'air' | 'sea' | 'ocean'): 'air' | 'sea' {
   return type === 'ocean' ? 'sea' : type;
 }
 
-export async function createOrder(
-  payload: CreateOrderPayload,
-  token: string
-): Promise<ApiOrder> {
+export function createOrder(payload: CreateOrderPayload, token: string): Promise<ApiOrder> {
   const normalizedPayload: CreateOrderPayload = {
     ...payload,
     shipmentType: normalizeShipmentType(payload.shipmentType),
   };
-  const response = await apiPost<ApiCreateOrderResponse>('/orders', normalizedPayload, token);
-  return response.data;
+  return apiPostData<ApiOrder>('/orders', normalizedPayload, token);
 }
 
 type AnyRecord = Record<string, unknown>;
@@ -295,17 +290,12 @@ export async function deleteOrder(
 
 /* ── Pickup representative ─────────────────────────────── */
 
-export async function updatePickupRep(
+export function updatePickupRep(
   token: string,
   orderId: string,
   payload: { pickupRepName: string; pickupRepPhone: string },
 ): Promise<ApiOrder> {
-  const res = await apiPatch<{ success: boolean; data: ApiOrder }>(
-    `/orders/${orderId}/pickup-rep`,
-    payload,
-    token,
-  );
-  return res.data;
+  return apiPatchData<ApiOrder>(`/orders/${orderId}/pickup-rep`, payload, token);
 }
 
 

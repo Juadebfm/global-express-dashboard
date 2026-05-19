@@ -8,7 +8,7 @@ import type {
   KpiCard,
 } from '@/types';
 import type { User } from '@/types';
-import { apiGet } from '@/lib/apiClient';
+import { apiGetData } from '@/lib/apiClient';
 import i18n from '@/i18n/i18n';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -164,39 +164,23 @@ function mapKpis(stats: ApiDashboardStats, role: User['role']): KpiCard[] {
 
 // ── Exports ───────────────────────────────────────────────────────────────────
 
-export async function fetchDashboardRaw(
+export function fetchDashboardRaw(
   token: string,
   year: number
 ): Promise<ApiDashboardResponse['data']> {
-  const response = await apiGet<ApiDashboardResponse>(`/dashboard?year=${year}`, token);
-  return response.data;
+  return apiGetData<ApiDashboardResponse['data']>(`/dashboard?year=${year}`, token);
 }
 
-export async function fetchDashboardStats(token: string): Promise<ApiDashboardStats> {
-  const response = await apiGet<{ success: boolean; data: ApiDashboardStats }>(
-    '/dashboard/stats',
-    token,
-  );
-  return response.data;
+export function fetchDashboardStats(token: string): Promise<ApiDashboardStats> {
+  return apiGetData<ApiDashboardStats>('/dashboard/stats', token);
 }
 
-export async function fetchDashboardTrends(
-  token: string,
-  months = 3,
-): Promise<ApiTrend[]> {
-  const response = await apiGet<{ success: boolean; data: ApiTrend[] }>(
-    `/dashboard/trends?months=${months}`,
-    token,
-  );
-  return response.data;
+export function fetchDashboardTrends(token: string, months = 3): Promise<ApiTrend[]> {
+  return apiGetData<ApiTrend[]>(`/dashboard/trends?months=${months}`, token);
 }
 
-export async function fetchActiveDeliveries(token: string): Promise<ApiActiveDelivery[]> {
-  const response = await apiGet<{ success: boolean; data: ApiActiveDelivery[] }>(
-    '/dashboard/active-deliveries',
-    token,
-  );
-  return response.data;
+export function fetchActiveDeliveries(token: string): Promise<ApiActiveDelivery[]> {
+  return apiGetData<ApiActiveDelivery[]>('/dashboard/active-deliveries', token);
 }
 
 export function mapToDashboardData(
