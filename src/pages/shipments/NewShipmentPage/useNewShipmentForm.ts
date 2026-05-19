@@ -6,11 +6,11 @@ import { useAuth, useClients } from '@/hooks';
 import { ROUTES } from '@/constants';
 import {
   createOrder,
-  estimateShippingCost,
+  estimateShipping,
   getMyProfileCompleteness,
   syncClerkAccount,
 } from '@/services';
-import type { ShippingEstimate } from '@/services';
+import type { PublicShippingEstimate } from '@/types';
 import type { ShipmentFormState, ShipmentFormActions, StepDefinition } from './types';
 import { STEP_KEYS } from './types';
 
@@ -70,7 +70,7 @@ export function useNewShipmentForm() {
   const [completenessError, setCompletenessError] = useState<string | null>(null);
 
   // Estimate state
-  const [estimate, setEstimate] = useState<ShippingEstimate | null>(null);
+  const [estimate, setEstimate] = useState<PublicShippingEstimate | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
 
   const progress = Math.round(((activeStep + 1) / steps.length) * 100);
@@ -131,20 +131,17 @@ export function useNewShipmentForm() {
 
     setEstimateLoading(true);
     try {
-      const token = isCustomer
-        ? await getToken()
-        : localStorage.getItem(INTERNAL_TOKEN_KEY);
       const payload = shipmentType === 'air'
         ? { shipmentType: 'air' as const, weightKg: weightVal }
         : { shipmentType: 'ocean' as const, cbm: cbmVal };
-      const result = await estimateShippingCost(payload, token ?? undefined);
+      const result = await estimateShipping(payload);
       setEstimate(result);
     } catch {
       /* Silently ignore — estimate is non-critical */
     } finally {
       setEstimateLoading(false);
     }
-  }, [shipmentType, packageWeightKg, packageCbm, isCustomer, getToken]);
+  }, [shipmentType, packageWeightKg, packageCbm]);
 
   useEffect(() => {
     const timer = setTimeout(() => { void fetchEstimate(); }, 500);

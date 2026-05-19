@@ -1,9 +1,9 @@
 import type { ReactElement } from 'react';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/store';
 import { ProtectedRoute } from '@/components/auth';
-import { FeedbackCenter } from '@/components/ui';
+import { FeedbackCenter, PageLoader } from '@/components/ui';
 import {
   LandingPage,
   LoginPage,
@@ -39,6 +39,18 @@ import {
   ProfilePage,
 } from '@/pages';
 import { ROUTES, isLaunchGateActive } from '@/constants';
+
+// Code-split Phase 4 marketing surfaces — they are visitor-first and rarely
+// hit by signed-in users.
+const GalleryPage = lazy(() =>
+  import('@/pages/public/GalleryPage').then((m) => ({ default: m.GalleryPage })),
+);
+const D2dIntakePage = lazy(() =>
+  import('@/pages/public/D2dIntakePage').then((m) => ({ default: m.D2dIntakePage })),
+);
+const AdminGalleryPage = lazy(() =>
+  import('@/pages/admin/AdminGalleryPage').then((m) => ({ default: m.AdminGalleryPage })),
+);
 
 function AppRoutes(): ReactElement {
   const [launchGateActive, setLaunchGateActive] = useState<boolean>(() => isLaunchGateActive());
@@ -84,6 +96,22 @@ function AppRoutes(): ReactElement {
       <Route path={ROUTES.FORBIDDEN} element={<ForbiddenPage />} />
       <Route path={ROUTES.TRACK_PUBLIC} element={<TrackPage />} />
       <Route path={`${ROUTES.TRACK_PUBLIC}/:trackingNumber`} element={<TrackPage />} />
+      <Route
+        path={ROUTES.GALLERY_PUBLIC}
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <GalleryPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={ROUTES.D2D_INTAKE_PUBLIC}
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <D2dIntakePage />
+          </Suspense>
+        }
+      />
 
       {/* Clerk user profile completion (handled inside page, no ProtectedRoute wrapper needed) */}
       <Route path={ROUTES.COMPLETE_PROFILE} element={<CompleteProfilePage />} />
@@ -272,6 +300,16 @@ function AppRoutes(): ReactElement {
         element={
           <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
             <ReportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.ADMIN_GALLERY}
+        element={
+          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
+            <Suspense fallback={<PageLoader />}>
+              <AdminGalleryPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
