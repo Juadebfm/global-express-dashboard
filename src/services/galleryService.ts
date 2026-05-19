@@ -18,175 +18,148 @@ import type {
   GalleryUploadPresignResult,
   PublicGalleryListings,
 } from '@/types';
-import { apiGet, apiPatch, apiPost } from '@/lib/apiClient';
+import { apiGetData, apiPatchData, apiPostData } from '@/lib/apiClient';
 
 // Phase 4 — both /public/gallery/* (anonymous) and /gallery/* (staff/authed).
 // Grouped in one module because the only difference between the two route
 // prefixes is permissions: same domain, same response shapes.
 
-interface Envelope<T> {
-  success: boolean;
-  data: T;
-}
-
 // ── Public (anonymous) gallery listings ──────────────────────────────────────
 
-export async function getPublicGallery(
+export function getPublicGallery(
   limitPerSection?: number,
 ): Promise<PublicGalleryListings> {
   const q = limitPerSection ? `?limitPerSection=${encodeURIComponent(limitPerSection)}` : '';
-  const response = await apiGet<Envelope<PublicGalleryListings>>(`/public/gallery${q}`);
-  return response.data;
+  return apiGetData<PublicGalleryListings>(`/public/gallery${q}`);
 }
 
-export async function getPublicGalleryAdverts(limit?: number): Promise<GalleryItem[]> {
+export function getPublicGalleryAdverts(limit?: number): Promise<GalleryItem[]> {
   const q = limit ? `?limit=${encodeURIComponent(limit)}` : '';
-  const response = await apiGet<Envelope<GalleryItem[]>>(`/public/gallery/adverts${q}`);
-  return response.data;
+  return apiGetData<GalleryItem[]>(`/public/gallery/adverts${q}`);
 }
 
-export async function getPublicGallerySales(limit?: number): Promise<GalleryItem[]> {
+export function getPublicGallerySales(limit?: number): Promise<GalleryItem[]> {
   const q = limit ? `?limit=${encodeURIComponent(limit)}` : '';
-  const response = await apiGet<Envelope<GalleryItem[]>>(`/public/gallery/sales${q}`);
-  return response.data;
+  return apiGetData<GalleryItem[]>(`/public/gallery/sales${q}`);
 }
 
-export async function presignPublicGalleryClaim(
+export function presignPublicGalleryClaim(
   payload: GalleryUploadPresignPayload,
 ): Promise<GalleryUploadPresignResult> {
-  const response = await apiPost<Envelope<GalleryUploadPresignResult>>(
-    '/public/gallery/claims/presign',
-    payload,
-  );
-  return response.data;
+  return apiPostData<GalleryUploadPresignResult>('/public/gallery/claims/presign', payload);
 }
 
-export async function submitPublicAnonymousClaim(
+export function submitPublicAnonymousClaim(
   trackingNumber: string,
   payload: AnonymousClaimPayload,
 ): Promise<GalleryClaimSubmissionResult> {
-  const response = await apiPost<Envelope<GalleryClaimSubmissionResult>>(
+  return apiPostData<GalleryClaimSubmissionResult>(
     `/public/gallery/anonymous/${encodeURIComponent(trackingNumber)}/claim`,
     payload,
   );
-  return response.data;
 }
 
-export async function submitPublicCarPurchaseAttempt(
+export function submitPublicCarPurchaseAttempt(
   trackingNumber: string,
   payload: AnonymousCarPurchasePayload,
 ): Promise<GalleryClaimSubmissionResult> {
-  const response = await apiPost<Envelope<GalleryClaimSubmissionResult>>(
+  return apiPostData<GalleryClaimSubmissionResult>(
     `/public/gallery/cars/${encodeURIComponent(trackingNumber)}/purchase-attempt`,
     payload,
   );
-  return response.data;
 }
 
 // ── Authenticated gallery (staff + signed-in users) ──────────────────────────
 
-export async function getAuthedGallery(
+export function getAuthedGallery(
   token: string,
   limitPerSection?: number,
 ): Promise<AuthedGalleryListings> {
   const q = limitPerSection ? `?limitPerSection=${encodeURIComponent(limitPerSection)}` : '';
-  const response = await apiGet<Envelope<AuthedGalleryListings>>(`/gallery${q}`, token);
-  return response.data;
+  return apiGetData<AuthedGalleryListings>(`/gallery${q}`, token);
 }
 
-export async function presignGalleryClaim(
+export function presignGalleryClaim(
   token: string,
   payload: GalleryUploadPresignPayload,
 ): Promise<GalleryUploadPresignResult> {
-  const response = await apiPost<Envelope<GalleryUploadPresignResult>>(
-    '/gallery/claims/presign',
-    payload,
-    token,
-  );
-  return response.data;
+  return apiPostData<GalleryUploadPresignResult>('/gallery/claims/presign', payload, token);
 }
 
-export async function presignGalleryItemMedia(
+export function presignGalleryItemMedia(
   token: string,
   payload: GalleryUploadPresignPayload,
 ): Promise<GalleryUploadPresignResult> {
-  const response = await apiPost<Envelope<GalleryUploadPresignResult>>(
+  return apiPostData<GalleryUploadPresignResult>(
     '/gallery/items/media/presign',
     payload,
     token,
   );
-  return response.data;
 }
 
-export async function submitAuthedAnonymousClaim(
+export function submitAuthedAnonymousClaim(
   token: string,
   trackingNumber: string,
   payload: AuthedClaimPayload,
 ): Promise<GalleryClaimSubmissionResult> {
-  const response = await apiPost<Envelope<GalleryClaimSubmissionResult>>(
+  return apiPostData<GalleryClaimSubmissionResult>(
     `/gallery/anonymous/${encodeURIComponent(trackingNumber)}/claim`,
     payload,
     token,
   );
-  return response.data;
 }
 
-export async function submitAuthedCarPurchaseAttempt(
+export function submitAuthedCarPurchaseAttempt(
   token: string,
   trackingNumber: string,
   payload: AuthedCarPurchasePayload,
 ): Promise<GalleryClaimSubmissionResult> {
-  const response = await apiPost<Envelope<GalleryClaimSubmissionResult>>(
+  return apiPostData<GalleryClaimSubmissionResult>(
     `/gallery/cars/${encodeURIComponent(trackingNumber)}/purchase-attempt`,
     payload,
     token,
   );
-  return response.data;
 }
 
-export async function createGalleryItem(
+export function createGalleryItem(
   token: string,
   payload: GalleryItemCreatePayload,
 ): Promise<GalleryItem> {
-  const response = await apiPost<Envelope<GalleryItem>>('/gallery/items', payload, token);
-  return response.data;
+  return apiPostData<GalleryItem>('/gallery/items', payload, token);
 }
 
-export async function createGalleryAdvert(
+export function createGalleryAdvert(
   token: string,
   payload: GalleryAdvertCreatePayload,
 ): Promise<GalleryItem> {
-  const response = await apiPost<Envelope<GalleryItem>>('/gallery/adverts', payload, token);
-  return response.data;
+  return apiPostData<GalleryItem>('/gallery/adverts', payload, token);
 }
 
-export async function updateGalleryItem(
+export function updateGalleryItem(
   token: string,
   itemId: string,
   payload: GalleryItemUpdatePayload,
 ): Promise<GalleryItem> {
-  const response = await apiPatch<Envelope<GalleryItem>>(
+  return apiPatchData<GalleryItem>(
     `/gallery/items/${encodeURIComponent(itemId)}`,
     payload,
     token,
   );
-  return response.data;
 }
 
-export async function updateGalleryAdvert(
+export function updateGalleryAdvert(
   token: string,
   itemId: string,
   payload: GalleryAdvertUpdatePayload,
 ): Promise<GalleryItem> {
-  const response = await apiPatch<Envelope<GalleryItem>>(
+  return apiPatchData<GalleryItem>(
     `/gallery/adverts/${encodeURIComponent(itemId)}`,
     payload,
     token,
   );
-  return response.data;
 }
 
-export async function getGalleryClaims(
+export function getGalleryClaims(
   token: string,
   query: GalleryClaimsQuery = {},
 ): Promise<GalleryClaim[]> {
@@ -197,19 +170,17 @@ export async function getGalleryClaims(
   if (typeof query.limit === 'number') params.set('limit', String(query.limit));
   const qs = params.toString();
   const path = qs ? `/gallery/claims?${qs}` : '/gallery/claims';
-  const response = await apiGet<Envelope<GalleryClaim[]>>(path, token);
-  return response.data;
+  return apiGetData<GalleryClaim[]>(path, token);
 }
 
-export async function reviewGalleryClaim(
+export function reviewGalleryClaim(
   token: string,
   claimId: string,
   payload: GalleryClaimReviewPayload,
 ): Promise<GalleryClaimReviewResult> {
-  const response = await apiPatch<Envelope<GalleryClaimReviewResult>>(
+  return apiPatchData<GalleryClaimReviewResult>(
     `/gallery/claims/${encodeURIComponent(claimId)}/review`,
     payload,
     token,
   );
-  return response.data;
 }

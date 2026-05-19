@@ -9,7 +9,13 @@ import type {
   ShipmentTypesUpdateResult,
   SpecialPackagingType,
 } from '@/types';
-import { apiGet, apiPatch, apiPut } from '@/lib/apiClient';
+import {
+  apiGet,
+  apiGetData,
+  apiPatch,
+  apiPatchData,
+  apiPutData,
+} from '@/lib/apiClient';
 
 type AnyRecord = Record<string, unknown>;
 
@@ -50,49 +56,31 @@ function asBoolean(value: unknown): boolean | undefined {
 }
 
 // ── Logistics ──────────────────────────────────────────────────
-export async function getLogisticsSettings(token: string): Promise<LogisticsSettings> {
-  const response = await apiGet<{ success: boolean; data: LogisticsSettings }>(
-    '/settings/logistics',
-    token
-  );
-  return response.data;
+export function getLogisticsSettings(token: string): Promise<LogisticsSettings> {
+  return apiGetData<LogisticsSettings>('/settings/logistics', token);
 }
 
-export async function updateLogisticsSettings(
+export function updateLogisticsSettings(
   token: string,
   payload: Partial<LogisticsSettings>
 ): Promise<LogisticsSettings> {
-  const response = await apiPatch<{ success: boolean; data: LogisticsSettings }>(
-    '/settings/logistics',
-    payload,
-    token
-  );
-  return response.data;
+  return apiPatchData<LogisticsSettings>('/settings/logistics', payload, token);
 }
 
 // ── FX Rate ────────────────────────────────────────────────────
-export async function getFxRate(token: string): Promise<FxRateSettings> {
-  const response = await apiGet<{ success: boolean; data: FxRateSettings }>(
-    '/settings/fx-rate',
-    token
-  );
-  return response.data;
+export function getFxRate(token: string): Promise<FxRateSettings> {
+  return apiGetData<FxRateSettings>('/settings/fx-rate', token);
 }
 
-export async function updateFxRate(
+export function updateFxRate(
   token: string,
   payload: Partial<FxRateSettings>
 ): Promise<FxRateSettings> {
-  const response = await apiPatch<{ success: boolean; data: FxRateSettings }>(
-    '/settings/fx-rate',
-    payload,
-    token
-  );
-  return response.data;
+  return apiPatchData<FxRateSettings>('/settings/fx-rate', payload, token);
 }
 
 // ── Pricing Rules ──────────────────────────────────────────────
-export async function getPricingRules(
+export function getPricingRules(
   token: string,
   params: { mode?: string; customerId?: string; includeInactive?: boolean } = {}
 ): Promise<PricingRule[]> {
@@ -101,11 +89,7 @@ export async function getPricingRules(
   if (params.customerId) searchParams.set('customerId', params.customerId);
   if (params.includeInactive) searchParams.set('includeInactive', 'true');
   const qs = searchParams.toString();
-  const response = await apiGet<{ success: boolean; data: PricingRule[] }>(
-    `/settings/pricing${qs ? `?${qs}` : ''}`,
-    token
-  );
-  return response.data;
+  return apiGetData<PricingRule[]>(`/settings/pricing${qs ? `?${qs}` : ''}`, token);
 }
 
 export async function updatePricingRules(
@@ -116,30 +100,25 @@ export async function updatePricingRules(
 }
 
 // ── Shipment Types catalog ─────────────────────────────────────
-export async function getShipmentTypesCatalog(
+export function getShipmentTypesCatalog(
   token: string
 ): Promise<ShipmentTypesCatalogResult> {
-  const response = await apiGet<{ success: boolean; data: ShipmentTypesCatalogResult }>(
-    '/settings/shipment-types',
-    token
-  );
-  return response.data;
+  return apiGetData<ShipmentTypesCatalogResult>('/settings/shipment-types', token);
 }
 
-export async function updateShipmentTypesCatalog(
+export function updateShipmentTypesCatalog(
   token: string,
   payload: ShipmentTypesUpdatePayload
 ): Promise<ShipmentTypesUpdateResult> {
-  const response = await apiPatch<{ success: boolean; data: ShipmentTypesUpdateResult }>(
+  return apiPatchData<ShipmentTypesUpdateResult>(
     '/settings/shipment-types',
     payload,
     token
   );
-  return response.data;
 }
 
 // ── Notification Templates ─────────────────────────────────────
-export async function getTemplates(
+export function getTemplates(
   token: string,
   params: { channel?: string; locale?: string } = {}
 ): Promise<NotificationTemplate[]> {
@@ -147,39 +126,32 @@ export async function getTemplates(
   if (params.channel) searchParams.set('channel', params.channel);
   if (params.locale) searchParams.set('locale', params.locale);
   const qs = searchParams.toString();
-  const response = await apiGet<{ success: boolean; data: NotificationTemplate[] }>(
+  return apiGetData<NotificationTemplate[]>(
     `/settings/templates${qs ? `?${qs}` : ''}`,
     token
   );
-  return response.data;
 }
 
-export async function updateTemplate(
+export function updateTemplate(
   token: string,
   id: string,
   payload: Partial<NotificationTemplate>
 ): Promise<NotificationTemplate> {
-  const response = await apiPatch<{ success: boolean; data: NotificationTemplate }>(
-    `/settings/templates/${id}`,
-    payload,
-    token
-  );
-  return response.data;
+  return apiPatchData<NotificationTemplate>(`/settings/templates/${id}`, payload, token);
 }
 
 // ── Restricted Goods ───────────────────────────────────────────
-export async function getRestrictedGoods(
+export function getRestrictedGoods(
   token: string,
   params: { includeInactive?: boolean } = {}
 ): Promise<RestrictedGood[]> {
   const searchParams = new URLSearchParams();
   if (params.includeInactive) searchParams.set('includeInactive', 'true');
   const qs = searchParams.toString();
-  const response = await apiGet<{ success: boolean; data: RestrictedGood[] }>(
+  return apiGetData<RestrictedGood[]>(
     `/settings/restricted-goods${qs ? `?${qs}` : ''}`,
     token
   );
-  return response.data;
 }
 
 export async function updateRestrictedGoods(
@@ -235,14 +207,14 @@ export interface SpecialPackagingUpsertItem {
   surchargeUsd: number;
 }
 
-export async function updateSpecialPackagingTypes(
+export function updateSpecialPackagingTypes(
   token: string,
   items: SpecialPackagingUpsertItem[],
 ): Promise<{ types: SpecialPackagingUpsertItem[]; message?: string }> {
   // Spec: PUT /api/v1/internal/settings/special-packaging — full replace, 0-50 entries
-  const response = await apiPut<{
-    success: boolean;
-    data: { types: SpecialPackagingUpsertItem[]; message?: string };
-  }>('/internal/settings/special-packaging', { types: items }, token);
-  return response.data;
+  return apiPutData<{ types: SpecialPackagingUpsertItem[]; message?: string }>(
+    '/internal/settings/special-packaging',
+    { types: items },
+    token,
+  );
 }
