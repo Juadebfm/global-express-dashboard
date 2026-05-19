@@ -11,6 +11,24 @@ function showRateLimitToast(): void {
   });
 }
 
+// Single 401 handler — apiClient dispatches a global `auth:unauthorized`
+// event, AuthContext subscribes and clears in-house session state. Per-caller
+// code no longer needs to special-case 401.
+//
+// Skip the dispatch for the `/auth/me` boot-time probe used by AuthContext
+// itself, because that caller already treats 401 as "no session" and handles
+// its own cleanup. Without this skip, the very first checkAuth() on app load
+// would loop through the global handler.
+function isAuthBootProbe(path: string): boolean {
+  return path === '/auth/me' || path === '/users/me';
+}
+
+function dispatchUnauthorized(path: string): void {
+  if (isAuthBootProbe(path)) return;
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const { headers: optionHeaders, body, ...restOptions } = options;
   const headers = new Headers(optionHeaders);
@@ -50,6 +68,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
+    if (response.status === 401) dispatchUnauthorized(path);
     if (response.status === 429) showRateLimitToast();
 
     const rawMessage =
@@ -98,6 +117,7 @@ async function requestBlob(
   }
 
   if (!response.ok) {
+    if (response.status === 401) dispatchUnauthorized(path);
     if (response.status === 429) showRateLimitToast();
 
     let rawMessage: string | undefined;
