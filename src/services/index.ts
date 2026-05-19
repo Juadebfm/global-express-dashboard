@@ -104,8 +104,33 @@ export {
 } from './paymentsService';
 export { createBulkOrder, getBulkOrders, getBulkOrderById, updateBulkOrderStatus, addBulkOrderItem, removeBulkOrderItem, deleteBulkOrder } from './bulkOrdersService';
 export { getReportSummary, getOrdersByStatus, getRevenueReport, getRevenueAnalytics, getShipmentVolume, getTopCustomers, getDeliveryPerformance, getStatusPipeline, getPaymentBreakdown, getShipmentComparison } from './reportsService';
-export { getLogisticsSettings, updateLogisticsSettings, getFxRate, updateFxRate, getPricingRules, updatePricingRules, getTemplates, updateTemplate, getRestrictedGoods, updateRestrictedGoods, getSpecialPackagingTypes, updateSpecialPackagingTypes } from './settingsService';
+export {
+  getLogisticsSettings,
+  updateLogisticsSettings,
+  getFxRate,
+  updateFxRate,
+  getPricingRules,
+  updatePricingRules,
+  getTemplates,
+  updateTemplate,
+  getRestrictedGoods,
+  updateRestrictedGoods,
+  getSpecialPackagingTypes,
+  updateSpecialPackagingTypes,
+  getShipmentTypesCatalog,
+  updateShipmentTypesCatalog,
+} from './settingsService';
 export type { SpecialPackagingUpsertItem } from './settingsService';
 export { presignUpload, confirmUpload, getOrderImages as getUploadedOrderImages, deleteImage } from './uploadsService';
 export { getVapidPublicKey, subscribePush, unsubscribePush } from './pushService';
-export { getUsers, getUserById, updateUser, changeUserRole, deleteUser } from './adminUsersService';
+export {
+  getUsers,
+  getUserById,
+  updateUser,
+  changeUserRole,
+  deleteUser,
+  updateClientLoginPermission,
+  updateShipmentBatchPermission,
+} from './adminUsersService';
+export { importUsersSuppliers } from './adminImportsService';
+export type { ImportUsersSuppliersInput } from './adminImportsService';

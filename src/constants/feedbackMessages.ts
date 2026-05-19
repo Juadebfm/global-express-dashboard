@@ -55,6 +55,24 @@ export const FEEDBACK_MESSAGES = {
     d2dIntakeSuccess: 'Request received — our team will reach out to you shortly.',
     d2dIntakeError: 'Unable to submit your request. Please try again.',
   },
+  adminUsers: {
+    clientLoginPermissionSuccess: 'Client-login permission updated.',
+    clientLoginPermissionError: 'Unable to update the client-login permission. Please try again.',
+    shipmentBatchPermissionSuccess: 'Shipment-batch permission updated.',
+    shipmentBatchPermissionError: 'Unable to update the shipment-batch permission. Please try again.',
+  },
+  adminImports: {
+    dryRunSuccess: 'Dry run complete — review the results before importing.',
+    dryRunError: 'Unable to run the import preview. Please try again.',
+    importSuccess: 'Import complete.',
+    importError: 'Unable to complete the import. Please try again.',
+    fileTypeError: 'Only CSV files are supported.',
+    fileSizeError: 'File is too large — keep it under 5 MB.',
+  },
+  settings: {
+    shipmentTypesUpdateSuccess: 'Shipment types updated.',
+    shipmentTypesUpdateError: 'Unable to update shipment types. Please try again.',
+  },
   gallery: {
     claimSubmitSuccess: 'Claim submitted — our team will be in touch with next steps.',
     claimSubmitError: 'Unable to submit your claim. Please try again.',

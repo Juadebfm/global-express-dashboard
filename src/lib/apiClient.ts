@@ -168,3 +168,18 @@ export function apiGetBlob(
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 }
+
+// Multipart form-data POST. The browser must set the multipart boundary, so we
+// do NOT set Content-Type ourselves — the request helper only forces JSON when
+// the body is a string.
+export function apiPostMultipart<T>(
+  path: string,
+  formData: FormData,
+  token?: string
+): Promise<T> {
+  return request<T>(path, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+}

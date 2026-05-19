@@ -2,7 +2,15 @@ import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Mail, Search, User, UserPlus, X } from 'lucide-react';
-import { useAuth, useDashboardData, useSearch, useTeam } from '@/hooks';
+import {
+  useAdminUserDetail,
+  useAuth,
+  useDashboardData,
+  useSearch,
+  useTeam,
+  useUpdateClientLoginPermission,
+  useUpdateShipmentBatchPermission,
+} from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
 import type { TeamMember, TeamRole } from '@/types';
 import { cn } from '@/utils';
@@ -436,6 +444,10 @@ export function TeamPage(): ReactElement {
                   </div>
                 </div>
 
+                {isSuperAdmin && selectedMember.role !== 'superadmin' && (
+                  <UserPermissionsPanel userId={selectedMember.id} />
+                )}
+
                 <div className="mt-8 flex items-center justify-center gap-4">
                   <button
                     type="button"
@@ -625,5 +637,97 @@ export function TeamPage(): ReactElement {
         </div>
       )}
     </AppShell>
+  );
+}
+
+interface UserPermissionsPanelProps {
+  userId: string;
+}
+
+function UserPermissionsPanel({ userId }: UserPermissionsPanelProps): ReactElement {
+  const { data: detail, isLoading, error } = useAdminUserDetail(userId);
+  const clientLoginMutation = useUpdateClientLoginPermission();
+  const batchMutation = useUpdateShipmentBatchPermission();
+
+  if (isLoading) {
+    return (
+      <div className="mt-6 rounded-2xl border border-dashed border-gray-200 px-4 py-3 text-left text-xs text-gray-500">
+        Loading staff permissions...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-left text-xs text-rose-700">
+        {error.message}
+      </div>
+    );
+  }
+
+  if (!detail) return <></>;
+
+  return (
+    <div className="mt-6 space-y-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 text-left">
+      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+        Staff permissions
+      </p>
+      <PermissionToggle
+        label="Can provision client login links"
+        description="Send first-time invitations and sign-in links to customers."
+        checked={!!detail.canProvisionClientLogin}
+        disabled={clientLoginMutation.isPending}
+        onChange={(next) => {
+          void clientLoginMutation.mutate({
+            id: userId,
+            canProvisionClientLogin: next,
+          });
+        }}
+      />
+      <PermissionToggle
+        label="Can manage shipment batches"
+        description="Approve cutoffs, edit carrier info, and advance dispatch batches."
+        checked={!!detail.canManageShipmentBatches}
+        disabled={batchMutation.isPending}
+        onChange={(next) => {
+          void batchMutation.mutate({
+            id: userId,
+            canManageShipmentBatches: next,
+          });
+        }}
+      />
+    </div>
+  );
+}
+
+interface PermissionToggleProps {
+  label: string;
+  description: string;
+  checked: boolean;
+  disabled: boolean;
+  onChange: (next: boolean) => void;
+}
+
+function PermissionToggle({
+  label,
+  description,
+  checked,
+  disabled,
+  onChange,
+}: PermissionToggleProps): ReactElement {
+  return (
+    <label className="flex items-start justify-between gap-3">
+      <span className="flex flex-col">
+        <span className="text-sm font-medium text-gray-800">{label}</span>
+        <span className="text-xs text-gray-500">{description}</span>
+      </span>
+      <input
+        type="checkbox"
+        className="mt-1 h-4 w-4 cursor-pointer rounded border-gray-300 text-brand-500 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
+        checked={checked}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.checked)}
+      />
+    </label>
   );
 }

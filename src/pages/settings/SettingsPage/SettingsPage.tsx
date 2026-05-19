@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useClerk } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
@@ -14,18 +14,26 @@ import {
   usePricingRules,
   useRestrictedGoods,
   useSearch,
+  useShipmentTypesCatalog,
+  useUpdateShipmentTypesCatalog,
 } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { deleteMyAccount, exportMyAccountData, getOnboardingSettings, updateOnboardingSettings } from '@/services';
-import type { ProfileRequirements } from '@/types';
+import type { ProfileRequirements, ShipmentTypeCatalogItem } from '@/types';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 
-type SettingsTab = 'general' | 'fx' | 'pricing' | 'restricted-goods';
+type SettingsTab = 'general' | 'fx' | 'pricing' | 'restricted-goods' | 'shipment-types';
 
-const OPERATOR_TAB_IDS: SettingsTab[] = ['general', 'fx', 'pricing', 'restricted-goods'];
+const OPERATOR_TAB_IDS: SettingsTab[] = [
+  'general',
+  'fx',
+  'pricing',
+  'restricted-goods',
+  'shipment-types',
+];
 
 /** Map tab ID → i18n key under `tabs.*` */
 const TAB_I18N_KEY: Record<SettingsTab, string> = {
@@ -33,6 +41,15 @@ const TAB_I18N_KEY: Record<SettingsTab, string> = {
   fx: 'tabs.fx',
   pricing: 'tabs.pricing',
   'restricted-goods': 'tabs.restrictedGoods',
+  'shipment-types': 'tabs.shipmentTypes',
+};
+
+const TAB_FALLBACK_LABEL: Record<SettingsTab, string> = {
+  general: 'General',
+  fx: 'FX rate',
+  pricing: 'Pricing',
+  'restricted-goods': 'Restricted goods',
+  'shipment-types': 'Shipment types',
 };
 
 /* ── Component ───────────────────────────────────────────────── */
@@ -213,7 +230,7 @@ export function SettingsPage(): ReactElement {
                     : 'text-gray-500 hover:text-gray-700'
                 )}
               >
-                {t(TAB_I18N_KEY[tabId])}
+                {t(TAB_I18N_KEY[tabId], TAB_FALLBACK_LABEL[tabId])}
               </button>
             ))}
           </div>
@@ -640,6 +657,11 @@ export function SettingsPage(): ReactElement {
           </section>
         )}
 
+        {/* ── Shipment Types catalog tab (staff read-only; superadmin edits) */}
+        {isOperator && activeTab === 'shipment-types' && (
+          <ShipmentTypesSection canEdit={isSuperadmin} />
+        )}
+
         {/* ── Restricted Goods tab (all operators — read-only) ── */}
         {isOperator && activeTab === 'restricted-goods' && (
           <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -716,6 +738,285 @@ export function SettingsPage(): ReactElement {
         )}
       </div>
     </AppShell>
+  );
+}
+
+/* ── Shipment Types catalog ───────────────────────────────────── */
+
+interface ShipmentTypesSectionProps {
+  canEdit: boolean;
+}
+
+interface EditableRow extends ShipmentTypeCatalogItem {
+  _markedForDelete?: boolean;
+  _isNew?: boolean;
+}
+
+function ShipmentTypesSection({ canEdit }: ShipmentTypesSectionProps): ReactElement {
+  const catalog = useShipmentTypesCatalog();
+
+  if (catalog.isLoading) {
+    return (
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-900">Shipment types catalog</h3>
+        <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">
+          Loading shipment types...
+        </div>
+      </section>
+    );
+  }
+
+  if (catalog.error) {
+    return (
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-900">Shipment types catalog</h3>
+        <div className="mt-4">
+          <AlertBanner tone="error" message={catalog.error.message} />
+        </div>
+      </section>
+    );
+  }
+
+  if (!catalog.data) return <></>;
+
+  // Remount the editor when the server payload changes so local edits reset
+  // to the fresh upstream state without using setState in an effect.
+  return (
+    <ShipmentTypesEditor
+      key={catalog.data.updatedAt}
+      canEdit={canEdit}
+      initialItems={catalog.data.items}
+      updatedAt={catalog.data.updatedAt}
+    />
+  );
+}
+
+interface ShipmentTypesEditorProps {
+  canEdit: boolean;
+  initialItems: ShipmentTypeCatalogItem[];
+  updatedAt: string;
+}
+
+function ShipmentTypesEditor({
+  canEdit,
+  initialItems,
+  updatedAt,
+}: ShipmentTypesEditorProps): ReactElement {
+  const updateMutation = useUpdateShipmentTypesCatalog();
+  const [rows, setRows] = useState<EditableRow[]>(() =>
+    initialItems.map((item) => ({ ...item })),
+  );
+  const originalKeys = useMemo(
+    () => initialItems.map((item: ShipmentTypeCatalogItem) => item.key),
+    [initialItems],
+  );
+
+  const updateRow = (index: number, patch: Partial<EditableRow>): void => {
+    setRows((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+    );
+  };
+
+  const handleAddRow = (): void => {
+    setRows((prev) => [
+      ...prev,
+      {
+        key: '',
+        label: '',
+        isActive: true,
+        coreShipmentType: 'air',
+        estimatorMode: 'CALCULATED',
+        requiredFields: [],
+        _isNew: true,
+      },
+    ]);
+  };
+
+  const handleSave = async (): Promise<void> => {
+    const itemsToUpsert: ShipmentTypeCatalogItem[] = rows
+      .filter((row) => !row._markedForDelete)
+      .map((row) => ({
+        key: row.key.trim(),
+        label: row.label.trim(),
+        isActive: row.isActive,
+        coreShipmentType: row.coreShipmentType,
+        estimatorMode: row.estimatorMode,
+        infoTitle: row.infoTitle ?? undefined,
+        infoDescription: row.infoDescription ?? undefined,
+        submitEndpoint: row.submitEndpoint ?? undefined,
+        requiredFields: row.requiredFields,
+        nextStep: row.nextStep ?? undefined,
+      }));
+
+    const livingKeys = new Set(itemsToUpsert.map((i) => i.key));
+    const deleteKeys = originalKeys.filter((key) => !livingKeys.has(key));
+
+    if (itemsToUpsert.some((i) => !i.key || !i.label)) {
+      return;
+    }
+
+    try {
+      await updateMutation.mutate({ items: itemsToUpsert, deleteKeys });
+    } catch {
+      /* feedback in hook */
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900">Shipment types catalog</h3>
+          <p className="mt-1 text-xs text-gray-500">
+            Controls the shipment types shown on the public calculator and intake flows.
+          </p>
+        </div>
+        <span className="text-[11px] text-gray-400">
+          Updated {new Date(updatedAt).toLocaleString()}
+        </span>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-4 text-center text-sm text-gray-500">
+          No shipment types configured.
+        </div>
+      ) : (
+        <div className="mt-4 space-y-3">
+          {rows.map((row, idx) => (
+            <ShipmentTypeRow
+              key={`${row.key || 'new'}-${idx}`}
+              row={row}
+              canEdit={canEdit}
+              onChange={(patch) => updateRow(idx, patch)}
+              onToggleDelete={() => updateRow(idx, { _markedForDelete: !row._markedForDelete })}
+            />
+          ))}
+        </div>
+      )}
+
+      {canEdit && (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleAddRow}
+            className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+          >
+            Add shipment type
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={updateMutation.isPending}
+            className={cn(
+              'rounded-xl px-4 py-2 text-sm font-semibold text-white transition',
+              updateMutation.isPending
+                ? 'cursor-not-allowed bg-gray-400'
+                : 'bg-brand-500 hover:bg-brand-600',
+            )}
+          >
+            {updateMutation.isPending ? 'Saving...' : 'Save changes'}
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+interface ShipmentTypeRowProps {
+  row: EditableRow;
+  canEdit: boolean;
+  onChange: (patch: Partial<EditableRow>) => void;
+  onToggleDelete: () => void;
+}
+
+function ShipmentTypeRow({ row, canEdit, onChange, onToggleDelete }: ShipmentTypeRowProps): ReactElement {
+  const disabled = !canEdit || row._markedForDelete;
+  return (
+    <div
+      className={cn(
+        'rounded-xl border border-gray-200 bg-gray-50 p-4',
+        row._markedForDelete && 'opacity-50',
+      )}
+    >
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="flex flex-col text-xs">
+          <span className="font-medium text-gray-700">Key</span>
+          <input
+            type="text"
+            disabled={disabled || (!row._isNew && canEdit)}
+            value={row.key}
+            onChange={(e) => onChange({ key: e.target.value })}
+            className="mt-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 outline-none focus:border-brand-500 disabled:bg-gray-100"
+          />
+        </label>
+        <label className="flex flex-col text-xs">
+          <span className="font-medium text-gray-700">Label</span>
+          <input
+            type="text"
+            disabled={disabled}
+            value={row.label}
+            onChange={(e) => onChange({ label: e.target.value })}
+            className="mt-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 outline-none focus:border-brand-500 disabled:bg-gray-100"
+          />
+        </label>
+        <label className="flex flex-col text-xs">
+          <span className="font-medium text-gray-700">Core shipment type</span>
+          <select
+            disabled={disabled}
+            value={row.coreShipmentType}
+            onChange={(e) =>
+              onChange({ coreShipmentType: e.target.value as EditableRow['coreShipmentType'] })
+            }
+            className="mt-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 outline-none focus:border-brand-500 disabled:bg-gray-100"
+          >
+            <option value="air">air</option>
+            <option value="ocean">ocean</option>
+            <option value="d2d">d2d</option>
+          </select>
+        </label>
+        <label className="flex flex-col text-xs">
+          <span className="font-medium text-gray-700">Estimator mode</span>
+          <select
+            disabled={disabled}
+            value={row.estimatorMode}
+            onChange={(e) =>
+              onChange({ estimatorMode: e.target.value as EditableRow['estimatorMode'] })
+            }
+            className="mt-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 outline-none focus:border-brand-500 disabled:bg-gray-100"
+          >
+            <option value="CALCULATED">CALCULATED</option>
+            <option value="INTAKE">INTAKE</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <label className="inline-flex items-center gap-2 text-xs text-gray-700">
+          <input
+            type="checkbox"
+            disabled={disabled}
+            checked={row.isActive}
+            onChange={(e) => onChange({ isActive: e.target.checked })}
+            className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+          />
+          Active
+        </label>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={onToggleDelete}
+            className={cn(
+              'rounded-lg px-3 py-1.5 text-xs font-semibold transition',
+              row._markedForDelete
+                ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                : 'bg-rose-50 text-rose-700 hover:bg-rose-100',
+            )}
+          >
+            {row._markedForDelete ? 'Undo delete' : 'Delete'}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
