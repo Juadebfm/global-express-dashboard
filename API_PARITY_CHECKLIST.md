@@ -2,8 +2,8 @@
 
 **Source of truth:** [`global-express-backend/API_ENDPOINTS.md`](../global-express-backend/API_ENDPOINTS.md) (dated 2026-05-17, 163 HTTP + 1 WS endpoints)
 
-**Audit date:** 2026-05-17 (last update 2026-05-18 — Phase 2 complete)
-**Current coverage:** 104 / 164 endpoints (≈63%) + 1 WS connected
+**Audit date:** 2026-05-17 (last update 2026-05-18 — Phase 3 complete)
+**Current coverage:** 118 / 164 endpoints (≈72%) + 1 WS connected
 
 This file is the working tracker. Tick items as they ship. Quality-standards section is non-negotiable — every new endpoint must satisfy it before being ticked.
 
@@ -209,20 +209,20 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 ### Shipments — `/api/v1/shipments` (15)
 
 - [x] `GET /shipments/` — [src/services/shipmentsService.ts:273](src/services/shipmentsService.ts#L273)
-- [ ] `POST /shipments/intake`
-- [ ] `PUT /shipments/:id/measurements`
-- [ ] `GET /shipments/:id/measurements`
-- [ ] `POST /shipments/invoices/:invoiceId/task-invoice/presign`
-- [ ] `POST /shipments/invoices/:invoiceId/task-invoice/confirm`
-- [ ] `GET /shipments/invoices/:invoiceId/task-invoice`
-- [ ] `POST /shipments/invoices/:invoiceId/reg-docs/presign`
-- [ ] `POST /shipments/invoices/:invoiceId/reg-docs/confirm`
-- [ ] `GET /shipments/invoices/:invoiceId/reg-docs`
-- [ ] `GET /shipments/internal-track/:masterTrackingNumber`
-- [ ] `POST /shipments/batches/:batchId/approve-cutoff`
-- [ ] `PATCH /shipments/batches/:batchId/carrier-info`
-- [ ] `PATCH /shipments/batches/:batchId/status`
-- [ ] `POST /shipments/batches/:batchId/move-to-next`
+- [x] `POST /shipments/intake` — [recordShipmentIntake](src/services/shipmentsService.ts#L302) + [useRecordShipmentIntake](src/hooks/useShipmentIntake.ts#L8)
+- [x] `PUT /shipments/:id/measurements` — [recordShipmentMeasurement](src/services/shipmentsService.ts#L314) + [useRecordShipmentMeasurement](src/hooks/useShipmentMeasurements.ts#L44)
+- [x] `GET /shipments/:id/measurements` — [getShipmentMeasurements](src/services/shipmentsService.ts#L327) + [useShipmentMeasurements](src/hooks/useShipmentMeasurements.ts#L14)
+- [x] `POST /shipments/invoices/:invoiceId/task-invoice/presign` — [presignTaskInvoice](src/services/shipmentsService.ts#L340) + [useUploadTaskInvoice](src/hooks/useShipmentInvoices.ts#L92)
+- [x] `POST /shipments/invoices/:invoiceId/task-invoice/confirm` — [confirmTaskInvoice](src/services/shipmentsService.ts#L353) + [useUploadTaskInvoice](src/hooks/useShipmentInvoices.ts#L92)
+- [x] `GET /shipments/invoices/:invoiceId/task-invoice` — [getTaskInvoices](src/services/shipmentsService.ts#L366) + [useTaskInvoices](src/hooks/useShipmentInvoices.ts#L26)
+- [x] `POST /shipments/invoices/:invoiceId/reg-docs/presign` — [presignRegDoc](src/services/shipmentsService.ts#L379) + [useUploadRegDoc](src/hooks/useShipmentInvoices.ts#L139)
+- [x] `POST /shipments/invoices/:invoiceId/reg-docs/confirm` — [confirmRegDoc](src/services/shipmentsService.ts#L392) + [useUploadRegDoc](src/hooks/useShipmentInvoices.ts#L139)
+- [x] `GET /shipments/invoices/:invoiceId/reg-docs` — [getRegDocs](src/services/shipmentsService.ts#L405) + [useRegDocs](src/hooks/useShipmentInvoices.ts#L56)
+- [x] `GET /shipments/internal-track/:masterTrackingNumber` — [getDispatchBatchByMasterTracking](src/services/shipmentsService.ts#L418) + [useInternalTrackByMasterTracking](src/hooks/useShipmentBatches.ts#L33)
+- [x] `POST /shipments/batches/:batchId/approve-cutoff` — [approveDispatchBatchCutoff](src/services/shipmentsService.ts#L431) + [useApproveBatchCutoff](src/hooks/useShipmentBatches.ts#L68)
+- [x] `PATCH /shipments/batches/:batchId/carrier-info` — [updateDispatchBatchCarrierInfo](src/services/shipmentsService.ts#L443) + [useUpdateBatchCarrierInfo](src/hooks/useShipmentBatches.ts#L105)
+- [x] `PATCH /shipments/batches/:batchId/status` — [updateDispatchBatchStatus](src/services/shipmentsService.ts#L456) + [useUpdateBatchStatus](src/hooks/useShipmentBatches.ts#L149)
+- [x] `POST /shipments/batches/:batchId/move-to-next` — [moveDispatchBatchToNext](src/services/shipmentsService.ts#L469) + [useMoveBatchToNext](src/hooks/useShipmentBatches.ts#L193)
 
 ### Team — `/api/v1/team` (2)
 
@@ -317,7 +317,7 @@ These are not endpoints but contract/UX gaps the audit surfaced. They must be do
 - [ ] **Lockout (423) countdown** — show `lockedUntil` as a live countdown on the login screen; disable submit until elapsed
 - [ ] **PII never logged** — audit all `console.log/error` for token, email, address values
 - [ ] **Public tracking page** — confirm `/orders/track/:trackingNumber` page does not require auth and does not render PII (recipient address, phone)
-- [ ] **Presigned upload pattern** — abstract `presign → PUT to R2 → confirm` into a single `useR2Upload` hook so every uploader uses identical retry/timeout/progress logic
+- [x] **Presigned upload pattern** — `useR2Upload` abstracts the `presign → PUT to R2 → confirm` flow ([src/hooks/useR2Upload.ts](src/hooks/useR2Upload.ts)); shipment task-invoice + reg-doc uploaders consume it. Payment-receipt uploader still has its own copy (planned migration).
 - [ ] **Response envelope unifier** — move `{ success, data }` unwrap into `apiClient` instead of each service re-implementing it (legacy `auth/*` exceptions still possible via a flag)
 - [ ] **Empty-body PATCH/DELETE** — verify `apiClient` always sends `Content-Type: application/json` even when body is `undefined`, so backend's empty-body override applies
 - [ ] **`Cache-Control: no-store`** — never cache authenticated responses in service workers; verify [public/sw.js](public/sw.js) (if any) excludes `/api/v1/*`

@@ -14,6 +14,7 @@ interface ShipmentsTableProps {
   searchMeta?: string;
   onSearchChange?: (value: string) => void;
   onSearchClear?: () => void;
+  onRowClick?: (shipment: ShipmentRecord) => void;
 }
 
 const modeIcons: Record<ShipmentMode, ReactElement> = {
@@ -39,6 +40,7 @@ export function ShipmentsTable({
   searchMeta,
   onSearchChange,
   onSearchClear,
+  onRowClick,
 }: ShipmentsTableProps): ReactElement {
   const { t } = useTranslation('shipments');
 
@@ -165,10 +167,12 @@ export function ShipmentsTable({
               items.map((shipment, index) => (
                 <tr
                   key={shipment.id}
+                  onClick={onRowClick ? () => onRowClick(shipment) : undefined}
                   className={cn(
                     'transition-colors',
                     index % 2 === 0 ? 'bg-white' : 'bg-gray-50/60',
-                    'hover:bg-brand-50/40'
+                    'hover:bg-brand-50/40',
+                    onRowClick ? 'cursor-pointer' : ''
                   )}
                 >
                   <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4 font-medium text-gray-800">

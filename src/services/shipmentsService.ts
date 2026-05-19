@@ -4,10 +4,27 @@ import type {
   ShipmentMode,
   ApiShipmentRecord,
   ApiShipmentsResponse,
+  ShipmentIntakePayload,
+  ShipmentIntakeResult,
+  ShipmentMeasurement,
+  ShipmentMeasurementPayload,
+  InvoiceAttachment,
+  InvoiceAttachmentPresignPayload,
+  InvoiceAttachmentPresignResult,
+  InvoiceAttachmentConfirmPayload,
+  DispatchBatch,
+  DispatchBatchCarrierInfoPayload,
+  DispatchBatchStatusPayload,
+  DispatchBatchMoveToNextPayload,
 } from '@/types';
 import type { StatusCategory } from '@/types/status.types';
 import { getStatusCategory } from '@/lib/statusUtils';
-import { apiGet } from '@/lib/apiClient';
+import { apiGet, apiPatch, apiPost, apiPut } from '@/lib/apiClient';
+
+interface Envelope<T> {
+  success: boolean;
+  data: T;
+}
 
 export interface InternalShipmentsQueryParams {
   statusV2?: string;
@@ -278,4 +295,186 @@ export async function getShipmentsDashboard(
     'Shipments',
     'Track and manage your shipments'
   );
+}
+
+// ── Phase 3: warehouse intake + measurements ─────────────────────────────────
+
+export async function recordShipmentIntake(
+  token: string,
+  payload: ShipmentIntakePayload,
+): Promise<ShipmentIntakeResult> {
+  const response = await apiPost<Envelope<ShipmentIntakeResult>>(
+    '/shipments/intake',
+    payload,
+    token,
+  );
+  return response.data;
+}
+
+export async function recordShipmentMeasurement(
+  token: string,
+  shipmentId: string,
+  payload: ShipmentMeasurementPayload,
+): Promise<ShipmentMeasurement> {
+  const response = await apiPut<Envelope<ShipmentMeasurement>>(
+    `/shipments/${shipmentId}/measurements`,
+    payload,
+    token,
+  );
+  return response.data;
+}
+
+export async function getShipmentMeasurements(
+  token: string,
+  shipmentId: string,
+): Promise<ShipmentMeasurement[]> {
+  const response = await apiGet<Envelope<ShipmentMeasurement[]>>(
+    `/shipments/${shipmentId}/measurements`,
+    token,
+  );
+  return response.data;
+}
+
+// ── Phase 3: task invoices (per-supplier billing attachments) ────────────────
+
+export async function presignTaskInvoice(
+  token: string,
+  invoiceId: string,
+  payload: InvoiceAttachmentPresignPayload,
+): Promise<InvoiceAttachmentPresignResult> {
+  const response = await apiPost<Envelope<InvoiceAttachmentPresignResult>>(
+    `/shipments/invoices/${invoiceId}/task-invoice/presign`,
+    payload,
+    token,
+  );
+  return response.data;
+}
+
+export async function confirmTaskInvoice(
+  token: string,
+  invoiceId: string,
+  payload: InvoiceAttachmentConfirmPayload,
+): Promise<InvoiceAttachment> {
+  const response = await apiPost<Envelope<InvoiceAttachment>>(
+    `/shipments/invoices/${invoiceId}/task-invoice/confirm`,
+    payload,
+    token,
+  );
+  return response.data;
+}
+
+export async function getTaskInvoices(
+  token: string,
+  invoiceId: string,
+): Promise<InvoiceAttachment[]> {
+  const response = await apiGet<Envelope<InvoiceAttachment[]>>(
+    `/shipments/invoices/${invoiceId}/task-invoice`,
+    token,
+  );
+  return response.data;
+}
+
+// ── Phase 3: regulatory docs (export permits, manifests) ─────────────────────
+
+export async function presignRegDoc(
+  token: string,
+  invoiceId: string,
+  payload: InvoiceAttachmentPresignPayload,
+): Promise<InvoiceAttachmentPresignResult> {
+  const response = await apiPost<Envelope<InvoiceAttachmentPresignResult>>(
+    `/shipments/invoices/${invoiceId}/reg-docs/presign`,
+    payload,
+    token,
+  );
+  return response.data;
+}
+
+export async function confirmRegDoc(
+  token: string,
+  invoiceId: string,
+  payload: InvoiceAttachmentConfirmPayload,
+): Promise<InvoiceAttachment> {
+  const response = await apiPost<Envelope<InvoiceAttachment>>(
+    `/shipments/invoices/${invoiceId}/reg-docs/confirm`,
+    payload,
+    token,
+  );
+  return response.data;
+}
+
+export async function getRegDocs(
+  token: string,
+  invoiceId: string,
+): Promise<InvoiceAttachment[]> {
+  const response = await apiGet<Envelope<InvoiceAttachment[]>>(
+    `/shipments/invoices/${invoiceId}/reg-docs`,
+    token,
+  );
+  return response.data;
+}
+
+// ── Phase 3: internal tracking by master batch tracking number ───────────────
+
+export async function getDispatchBatchByMasterTracking(
+  token: string,
+  masterTrackingNumber: string,
+): Promise<DispatchBatch> {
+  const response = await apiGet<Envelope<DispatchBatch>>(
+    `/shipments/internal-track/${encodeURIComponent(masterTrackingNumber)}`,
+    token,
+  );
+  return response.data;
+}
+
+// ── Phase 3: dispatch-batch operations ───────────────────────────────────────
+
+export async function approveDispatchBatchCutoff(
+  token: string,
+  batchId: string,
+): Promise<DispatchBatch> {
+  const response = await apiPost<Envelope<DispatchBatch>>(
+    `/shipments/batches/${batchId}/approve-cutoff`,
+    undefined,
+    token,
+  );
+  return response.data;
+}
+
+export async function updateDispatchBatchCarrierInfo(
+  token: string,
+  batchId: string,
+  payload: DispatchBatchCarrierInfoPayload,
+): Promise<DispatchBatch> {
+  const response = await apiPatch<Envelope<DispatchBatch>>(
+    `/shipments/batches/${batchId}/carrier-info`,
+    payload,
+    token,
+  );
+  return response.data;
+}
+
+export async function updateDispatchBatchStatus(
+  token: string,
+  batchId: string,
+  payload: DispatchBatchStatusPayload,
+): Promise<DispatchBatch> {
+  const response = await apiPatch<Envelope<DispatchBatch>>(
+    `/shipments/batches/${batchId}/status`,
+    payload,
+    token,
+  );
+  return response.data;
+}
+
+export async function moveDispatchBatchToNext(
+  token: string,
+  batchId: string,
+  payload: DispatchBatchMoveToNextPayload,
+): Promise<DispatchBatch> {
+  const response = await apiPost<Envelope<DispatchBatch>>(
+    `/shipments/batches/${batchId}/move-to-next`,
+    payload,
+    token,
+  );
+  return response.data;
 }
