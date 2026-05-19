@@ -4,6 +4,9 @@ import type {
   PricingRule,
   NotificationTemplate,
   RestrictedGood,
+  ShipmentTypesCatalogResult,
+  ShipmentTypesUpdatePayload,
+  ShipmentTypesUpdateResult,
   SpecialPackagingType,
 } from '@/types';
 import { apiGet, apiPatch, apiPut } from '@/lib/apiClient';
@@ -110,6 +113,29 @@ export async function updatePricingRules(
   payload: unknown
 ): Promise<void> {
   await apiPatch('/settings/pricing', payload, token);
+}
+
+// ── Shipment Types catalog ─────────────────────────────────────
+export async function getShipmentTypesCatalog(
+  token: string
+): Promise<ShipmentTypesCatalogResult> {
+  const response = await apiGet<{ success: boolean; data: ShipmentTypesCatalogResult }>(
+    '/settings/shipment-types',
+    token
+  );
+  return response.data;
+}
+
+export async function updateShipmentTypesCatalog(
+  token: string,
+  payload: ShipmentTypesUpdatePayload
+): Promise<ShipmentTypesUpdateResult> {
+  const response = await apiPatch<{ success: boolean; data: ShipmentTypesUpdateResult }>(
+    '/settings/shipment-types',
+    payload,
+    token
+  );
+  return response.data;
 }
 
 // ── Notification Templates ─────────────────────────────────────

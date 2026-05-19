@@ -14,6 +14,7 @@ export const ROUTES = {
   GALLERY_PUBLIC: '/gallery',
   D2D_INTAKE_PUBLIC: '/d2d/intake',
   ADMIN_GALLERY: '/admin/gallery',
+  ADMIN_IMPORTS: '/admin/imports',
   DASHBOARD: '/dashboard',
   SHIPMENTS: '/shipments',
   SHIPMENT_TRACK: '/shipments/track',

@@ -51,6 +51,9 @@ const D2dIntakePage = lazy(() =>
 const AdminGalleryPage = lazy(() =>
   import('@/pages/admin/AdminGalleryPage').then((m) => ({ default: m.AdminGalleryPage })),
 );
+const AdminImportsPage = lazy(() =>
+  import('@/pages/admin/AdminImportsPage').then((m) => ({ default: m.AdminImportsPage })),
+);
 
 function AppRoutes(): ReactElement {
   const [launchGateActive, setLaunchGateActive] = useState<boolean>(() => isLaunchGateActive());
@@ -309,6 +312,16 @@ function AppRoutes(): ReactElement {
           <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
             <Suspense fallback={<PageLoader />}>
               <AdminGalleryPage />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.ADMIN_IMPORTS}
+        element={
+          <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+            <Suspense fallback={<PageLoader />}>
+              <AdminImportsPage />
             </Suspense>
           </ProtectedRoute>
         }

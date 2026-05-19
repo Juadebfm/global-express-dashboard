@@ -75,3 +75,36 @@ export interface SpecialPackagingType {
   surchargeUsd?: number;
   isActive?: boolean;
 }
+
+export interface ShipmentTypeCatalogItem {
+  key: string;
+  label: string;
+  isActive: boolean;
+  coreShipmentType: 'air' | 'ocean' | 'd2d';
+  estimatorMode: 'CALCULATED' | 'INTAKE';
+  infoTitle?: string | null;
+  infoDescription?: string | null;
+  submitEndpoint?: string | null;
+  requiredFields?: string[];
+  nextStep?: string | null;
+}
+
+export interface ShipmentTypesCatalogResult {
+  items: ShipmentTypeCatalogItem[];
+  updatedAt: string;
+}
+
+export interface ShipmentTypesUpdatePayload {
+  items?: ShipmentTypeCatalogItem[];
+  deleteKeys?: string[];
+}
+
+export interface ShipmentTypesUpdateResult {
+  summary: {
+    createdKeys: string[];
+    updatedKeys: string[];
+    deletedKeys: string[];
+  };
+  items: ShipmentTypeCatalogItem[];
+  updatedAt: string;
+}
