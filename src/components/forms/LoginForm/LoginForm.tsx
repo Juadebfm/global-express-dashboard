@@ -12,6 +12,8 @@ export function LoginForm({
   onSubmit,
   isLoading = false,
   error,
+  isLockedOut = false,
+  lockoutCountdownLabel,
 }: LoginFormProps): ReactElement {
   const { t } = useTranslation('auth');
   const {
@@ -47,6 +49,16 @@ export function LoginForm({
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200">
           <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
+      {/* 423 account-lockout countdown — disables submit until elapsed. */}
+      {isLockedOut && lockoutCountdownLabel && (
+        <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
+          <p className="text-sm font-medium text-amber-800">
+            Account temporarily locked.{' '}
+            <span className="font-mono">Try again in {lockoutCountdownLabel}.</span>
+          </p>
         </div>
       )}
 
@@ -87,6 +99,7 @@ export function LoginForm({
           className="auth-cta-btn w-full text-sm"
           size="lg"
           isLoading={isLoading}
+          disabled={isLockedOut}
         >
           {t('loginForm.loginButton')}
         </Button>
