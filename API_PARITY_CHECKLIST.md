@@ -2,8 +2,8 @@
 
 **Source of truth:** [`global-express-backend/API_ENDPOINTS.md`](../global-express-backend/API_ENDPOINTS.md) (dated 2026-05-17, 163 HTTP + 1 WS endpoints)
 
-**Audit date:** 2026-05-17 (last update 2026-05-18 — Phase 3 complete)
-**Current coverage:** 118 / 164 endpoints (≈72%) + 1 WS connected
+**Audit date:** 2026-05-17 (last update 2026-05-19 — Phase 4 complete)
+**Current coverage:** 139 / 164 endpoints (≈85%) + 1 WS connected
 
 This file is the working tracker. Tick items as they ship. Quality-standards section is non-negotiable — every new endpoint must satisfy it before being ticked.
 
@@ -267,31 +267,31 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 
 ### Public — `/api/v1/public` (11)
 
-- [x] `POST /public/calculator/estimate` — [src/services/ordersService.ts:333](src/services/ordersService.ts#L333) *(verify this hits the public route, not the authed one)*
-- [ ] `GET /public/shipment-types`
-- [ ] `GET /public/calculator/rates`
-- [ ] `POST /public/newsletter/subscribe`
-- [ ] `GET /public/gallery`
-- [ ] `GET /public/gallery/adverts`
-- [ ] `GET /public/gallery/sales`
-- [ ] `POST /public/gallery/claims/presign`
-- [ ] `POST /public/gallery/anonymous/:trackingNumber/claim`
-- [ ] `POST /public/gallery/cars/:trackingNumber/purchase-attempt`
-- [ ] `POST /public/d2d/intake`
+- [x] `POST /public/calculator/estimate` — [estimateShipping](src/services/publicService.ts#L31) + consumer at [useNewShipmentForm.ts:134](src/pages/shipments/NewShipmentPage/useNewShipmentForm.ts#L134)
+- [x] `GET /public/shipment-types` — [getPublicShipmentTypes](src/services/publicService.ts#L42) + [usePublicShipmentTypes](src/hooks/usePublic.ts#L22)
+- [x] `GET /public/calculator/rates` — [getPublicCalculatorRates](src/services/publicService.ts#L49) + [usePublicCalculatorRates](src/hooks/usePublic.ts#L36)
+- [x] `POST /public/newsletter/subscribe` — [subscribeToNewsletter](src/services/publicService.ts#L56) + [useSubscribeToNewsletter](src/hooks/usePublic.ts#L50)
+- [x] `GET /public/gallery` — [getPublicGallery](src/services/galleryService.ts#L34) + [usePublicGallery](src/hooks/useGallery.ts#L62)
+- [x] `GET /public/gallery/adverts` — [getPublicGalleryAdverts](src/services/galleryService.ts#L42) + [usePublicGalleryAdverts](src/hooks/useGallery.ts#L74)
+- [x] `GET /public/gallery/sales` — [getPublicGallerySales](src/services/galleryService.ts#L48) + [usePublicGallerySales](src/hooks/useGallery.ts#L86)
+- [x] `POST /public/gallery/claims/presign` — [presignPublicGalleryClaim](src/services/galleryService.ts#L54) + [useSubmitAnonymousClaim](src/hooks/useGallery.ts#L111)
+- [x] `POST /public/gallery/anonymous/:trackingNumber/claim` — [submitPublicAnonymousClaim](src/services/galleryService.ts#L64) + [useSubmitAnonymousClaim](src/hooks/useGallery.ts#L111)
+- [x] `POST /public/gallery/cars/:trackingNumber/purchase-attempt` — [submitPublicCarPurchaseAttempt](src/services/galleryService.ts#L74) + [useSubmitPublicCarPurchase](src/hooks/useGallery.ts#L177)
+- [x] `POST /public/d2d/intake` — [submitPublicD2dIntake](src/services/publicService.ts#L66) + [useSubmitPublicD2dIntake](src/hooks/usePublic.ts#L77)
 
 ### Gallery — `/api/v1/gallery` (11)
 
-- [ ] `GET /gallery/`
-- [ ] `POST /gallery/claims/presign`
-- [ ] `POST /gallery/items/media/presign`
-- [ ] `POST /gallery/anonymous/:trackingNumber/claim`
-- [ ] `POST /gallery/cars/:trackingNumber/purchase-attempt`
-- [ ] `POST /gallery/items`
-- [ ] `POST /gallery/adverts`
-- [ ] `PATCH /gallery/items/:id`
-- [ ] `PATCH /gallery/adverts/:id`
-- [ ] `GET /gallery/claims`
-- [ ] `PATCH /gallery/claims/:id/review`
+- [x] `GET /gallery/` — [getAuthedGallery](src/services/galleryService.ts#L86) + [useAuthedGallery](src/hooks/useGallery.ts#L218)
+- [x] `POST /gallery/claims/presign` — [presignGalleryClaim](src/services/galleryService.ts#L94) + consumed by [useSubmitAuthedClaim](src/hooks/useGallery.ts#L235)
+- [x] `POST /gallery/items/media/presign` — [presignGalleryItemMedia](src/services/galleryService.ts#L105) + [useUploadGalleryItemMedia](src/hooks/useGallery.ts#L328)
+- [x] `POST /gallery/anonymous/:trackingNumber/claim` — [submitAuthedAnonymousClaim](src/services/galleryService.ts#L116) + [useSubmitAuthedClaim](src/hooks/useGallery.ts#L235)
+- [x] `POST /gallery/cars/:trackingNumber/purchase-attempt` — [submitAuthedCarPurchaseAttempt](src/services/galleryService.ts#L128) + [useSubmitAuthedCarPurchase](src/hooks/useGallery.ts#L289)
+- [x] `POST /gallery/items` — [createGalleryItem](src/services/galleryService.ts#L140) + [useCreateGalleryItem](src/hooks/useGallery.ts#L367)
+- [x] `POST /gallery/adverts` — [createGalleryAdvert](src/services/galleryService.ts#L148) + [useCreateGalleryAdvert](src/hooks/useGallery.ts#L401)
+- [x] `PATCH /gallery/items/:id` — [updateGalleryItem](src/services/galleryService.ts#L156) + [useUpdateGalleryItem](src/hooks/useGallery.ts#L435)
+- [x] `PATCH /gallery/adverts/:id` — [updateGalleryAdvert](src/services/galleryService.ts#L168) + [useUpdateGalleryAdvert](src/hooks/useGallery.ts#L473)
+- [x] `GET /gallery/claims` — [getGalleryClaims](src/services/galleryService.ts#L180) + [useGalleryClaims](src/hooks/useGallery.ts#L513)
+- [x] `PATCH /gallery/claims/:id/review` — [reviewGalleryClaim](src/services/galleryService.ts#L195) + [useReviewGalleryClaim](src/hooks/useGallery.ts#L530)
 
 ### Webhooks (inbound — FE never calls)
 

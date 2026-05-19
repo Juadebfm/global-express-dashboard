@@ -1,14 +1,14 @@
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, Loader2, Package } from 'lucide-react';
-import type { ShippingEstimate } from '@/services';
+import type { PublicShippingEstimate } from '@/types';
 import i18n from '@/i18n/i18n';
 import { ORIGIN_WAREHOUSE, DESTINATION_OFFICE } from '../types';
 import type { ShipmentFormState } from '../types';
 
 interface ReviewStepProps {
   formState: ShipmentFormState;
-  estimate: ShippingEstimate | null;
+  estimate: PublicShippingEstimate | null;
   estimateLoading: boolean;
   fetchEstimate: () => Promise<void>;
 }
