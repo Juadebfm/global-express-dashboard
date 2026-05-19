@@ -176,6 +176,10 @@ export type {
   NotificationTemplate,
   RestrictedGood,
   SpecialPackagingType,
+  ShipmentTypeCatalogItem,
+  ShipmentTypesCatalogResult,
+  ShipmentTypesUpdatePayload,
+  ShipmentTypesUpdateResult,
 } from './settings.types';
 
 export type {
@@ -184,6 +188,13 @@ export type {
   ConfirmPayload,
   OrderImage,
 } from './upload.types';
+
+export type {
+  AdminImportResult,
+  AdminImportRowAction,
+  AdminImportRowResult,
+  AdminImportSummary,
+} from './adminImports.types';
 
 export type {
   AdminUserListParams,

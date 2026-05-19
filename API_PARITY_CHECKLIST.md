@@ -2,8 +2,8 @@
 
 **Source of truth:** [`global-express-backend/API_ENDPOINTS.md`](../global-express-backend/API_ENDPOINTS.md) (dated 2026-05-17, 163 HTTP + 1 WS endpoints)
 
-**Audit date:** 2026-05-17 (last update 2026-05-19 — Phase 4 complete)
-**Current coverage:** 139 / 164 endpoints (≈85%) + 1 WS connected
+**Audit date:** 2026-05-17 (last update 2026-05-19 — Phase 5 complete)
+**Current coverage:** 144 / 164 endpoints (≈88%) + 1 WS connected
 
 This file is the working tracker. Tick items as they ship. Quality-standards section is non-negotiable — every new endpoint must satisfy it before being ticked.
 
@@ -117,8 +117,8 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 - [x] `GET /users/:id` — [src/services/adminUsersService.ts:35](src/services/adminUsersService.ts#L35)
 - [x] `PATCH /users/:id` — [src/services/adminUsersService.ts:46](src/services/adminUsersService.ts#L46)
 - [x] `PATCH /users/:id/role` — [src/services/adminUsersService.ts:59](src/services/adminUsersService.ts#L59)
-- [ ] `PATCH /users/:id/client-login-permission`
-- [ ] `PATCH /users/:id/shipment-batch-permission`
+- [x] `PATCH /users/:id/client-login-permission` — [updateClientLoginPermission](src/services/adminUsersService.ts#L74) + [useUpdateClientLoginPermission](src/hooks/useAdminUsers.ts#L60)
+- [x] `PATCH /users/:id/shipment-batch-permission` — [updateShipmentBatchPermission](src/services/adminUsersService.ts#L87) + [useUpdateShipmentBatchPermission](src/hooks/useAdminUsers.ts#L99)
 - [x] `DELETE /users/:id` — [src/services/adminUsersService.ts:67](src/services/adminUsersService.ts#L67)
 
 ### Orders — `/api/v1/orders` (12)
@@ -231,7 +231,7 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 
 ### Admin — `/api/v1/admin` (10)
 
-- [ ] `POST /admin/imports/users-suppliers` — bulk CSV upload (dry-run + real)
+- [x] `POST /admin/imports/users-suppliers` — [importUsersSuppliers](src/services/adminImportsService.ts#L18) + [useImportUsersSuppliers](src/hooks/useAdminImports.ts#L36); multipart helper at [apiPostMultipart](src/lib/apiClient.ts#L178); UI at [AdminImportsPage](src/pages/admin/AdminImportsPage/AdminImportsPage.tsx)
 - [x] `POST /admin/clients` — [src/services/clientsService.ts:43](src/services/clientsService.ts#L43)
 - [x] `POST /admin/clients/:id/send-invite` — [src/services/clientsService.ts:55](src/services/clientsService.ts#L55)
 - [x] `GET /admin/clients` — [src/services/clientsService.ts:4](src/services/clientsService.ts#L4)
@@ -248,8 +248,8 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 - [x] `PATCH /settings/logistics` — [src/services/settingsService.ts:58](src/services/settingsService.ts#L58)
 - [x] `GET /settings/fx-rate` — [src/services/settingsService.ts:71](src/services/settingsService.ts#L71)
 - [x] `PATCH /settings/fx-rate` — [src/services/settingsService.ts:79](src/services/settingsService.ts#L79)
-- [ ] `GET /settings/shipment-types`
-- [ ] `PATCH /settings/shipment-types`
+- [x] `GET /settings/shipment-types` — [getShipmentTypesCatalog](src/services/settingsService.ts#L115) + [useShipmentTypesCatalog](src/hooks/useShipmentTypesCatalog.ts#L22)
+- [x] `PATCH /settings/shipment-types` — [updateShipmentTypesCatalog](src/services/settingsService.ts#L125) + [useUpdateShipmentTypesCatalog](src/hooks/useShipmentTypesCatalog.ts#L34)
 - [x] `GET /settings/templates` — [src/services/settingsService.ts:116](src/services/settingsService.ts#L116)
 - [x] `PATCH /settings/templates/:id` — [src/services/settingsService.ts:131](src/services/settingsService.ts#L131)
 - [x] `GET /settings/pricing` — [src/services/settingsService.ts:92](src/services/settingsService.ts#L92)

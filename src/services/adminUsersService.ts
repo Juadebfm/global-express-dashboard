@@ -70,3 +70,29 @@ export async function deleteUser(
 ): Promise<void> {
   await apiDelete(`/users/${id}`, token);
 }
+
+export async function updateClientLoginPermission(
+  token: string,
+  id: string,
+  canProvisionClientLogin: boolean
+): Promise<User> {
+  const response = await apiPatch<{ success: boolean; data: User }>(
+    `/users/${id}/client-login-permission`,
+    { canProvisionClientLogin },
+    token
+  );
+  return response.data;
+}
+
+export async function updateShipmentBatchPermission(
+  token: string,
+  id: string,
+  canManageShipmentBatches: boolean
+): Promise<User> {
+  const response = await apiPatch<{ success: boolean; data: User }>(
+    `/users/${id}/shipment-batch-permission`,
+    { canManageShipmentBatches },
+    token
+  );
+  return response.data;
+}
