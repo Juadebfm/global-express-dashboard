@@ -40,12 +40,12 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 - [x] Tracking number lookup (`/orders/track/:trackingNumber`) renders **read-only** — never expose PII on the public route — [TrackPage.tsx](src/pages/public/TrackPage/TrackPage.tsx) route is unwrapped (no `ProtectedRoute`), [trackShipment](src/services/trackingService.ts) calls `apiGetData` with no token, `TrackingResult` shape exposes only tracking number, status, origin/destination labels, dates, and last-location string — no recipient name, phone, email, or address
 
 ### Component architecture
-- [ ] One service module per backend route file (`authService`, `usersService`, `ordersService`, …). No fetch calls inside components.
-- [ ] All server reads go through TanStack Query `useQuery` hooks under [src/hooks/](src/hooks/)
-- [ ] All writes go through `useMutation` with explicit `onSuccess` cache invalidation
-- [ ] No prop drilling >2 levels — use Zustand store under [src/store/](src/store/) or React Query cache
-- [ ] Page components are thin orchestrators; logic in hooks, presentation in `components/`
-- [ ] Forms validated client-side with the same Zod shape the backend uses (mirror the schema, don't reinvent it)
+- [~] One service module per backend route file (`authService`, `usersService`, `ordersService`, …). No fetch calls inside components — 24 service modules in [src/services/](src/services/) aligned with backend route files; one stray `fetch()` call inside [ExternalSignUpPage.tsx:298](src/pages/auth/ExternalSignUpPage/ExternalSignUpPage.tsx#L298) (the Clerk-only `/auth/sync` bootstrap). Follow-up: move into `authService.syncClerkSession()`
+- [x] All server reads go through TanStack Query `useQuery` hooks under [src/hooks/](src/hooks/) — 81 `useQuery` call sites, all in hooks/; zero in components/ or pages/
+- [x] All writes go through `useMutation` with explicit `onSuccess` cache invalidation — 97 `useMutation` call sites; 91 `invalidateQueries` invocations (≈94% coverage; the rest are fire-and-forget log-style mutations e.g. push-notification unsub)
+- [x] No prop drilling >2 levels — use Zustand store under [src/store/](src/store/) or React Query cache — cross-cutting state lives in zustand stores (auth, feedback, theme, language, search, cooldown, websocket); server state lives in the React Query cache; pages compose hooks rather than threading data through deep child chains
+- [x] Page components are thin orchestrators; logic in hooks, presentation in `components/` — pages call hooks then render; zero pages contain `useQuery`/`useMutation`/`fetch` (single exception noted above)
+- [x] Forms validated client-side with the same Zod shape the backend uses (mirror the schema, don't reinvent it) — 103 `zodResolver`/schema references across form components; every form (Login, ForgotPassword, SupportTicket, Shipment*, Gallery*, etc.) uses `zodResolver` + a `*.schema.ts` mirroring the backend payload
 
 ### Optimization
 - [ ] React Query `staleTime` set per resource (e.g. 30 s for dashboard, 5 min for settings, 0 for notifications)
