@@ -2,8 +2,8 @@
 
 **Source of truth:** [`global-express-backend/API_ENDPOINTS.md`](../global-express-backend/API_ENDPOINTS.md) (dated 2026-05-17, 163 HTTP + 1 WS endpoints)
 
-**Audit date:** 2026-05-17 (last update 2026-05-19 — Phase 5 complete)
-**Current coverage:** 144 / 164 endpoints (≈88%) + 1 WS connected
+**Audit date:** 2026-05-17 (last update 2026-05-20 — endpoint coverage complete; quality-standards audit in progress)
+**Current coverage:** **163 / 163** HTTP + **1 / 1** WS endpoints (100%)
 
 This file is the working tracker. Tick items as they ship. Quality-standards section is non-negotiable — every new endpoint must satisfy it before being ticked.
 
@@ -23,21 +23,21 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 - **Base URL:** `VITE_API_BASE_URL`
 - **Auth token attach:** token passed explicitly per call. Internal JWT in `localStorage.globalxpress_token`; Clerk token via `getToken()`
 - **Server state:** TanStack React Query
-- **WebSocket:** [src/hooks/useWebSocket.ts](src/hooks/useWebSocket.ts) — currently passes token via `?token=` query param (should move to `Sec-WebSocket-Protocol: bearer, <jwt>` per spec)
+- **WebSocket:** [src/hooks/useWebSocket.ts](src/hooks/useWebSocket.ts) — auth via `Sec-WebSocket-Protocol: bearer, <jwt>` subprotocol
 
 ---
 
 ## Quality standards — every endpoint must satisfy these
 
 ### Security
-- [ ] Internal JWT only ever lives in memory after first read; localStorage cleared on logout
-- [ ] No tokens logged to console, no tokens in URL query strings
-- [ ] WS auth uses `Sec-WebSocket-Protocol: bearer, <jwt>` subprotocol (NOT query string)
-- [ ] CSP-friendly: no `eval`, no inline event handlers
-- [ ] All file uploads PUT directly to R2 presigned URL — never proxy file bytes through our API
-- [ ] CSRF — we are token-bearer, but cookie-based fallbacks (if added) must be SameSite=Strict
-- [ ] PII never logged; error toasts strip server stack traces
-- [ ] Tracking number lookup (`/orders/track/:trackingNumber`) renders **read-only** — never expose PII on the public route
+- [~] Internal JWT only ever lives in memory after first read; localStorage cleared on logout — **deliberate UX tradeoff**: token is persisted to `localStorage['globalxpress_token']` so a refresh / tab-close doesn't drop the session. [AuthContext.logout](src/store/auth/AuthContext.tsx) clears it on sign-out. Moving to memory-only would require a refresh-token cookie flow from the backend (not currently in the API spec).
+- [x] No tokens logged to console, no tokens in URL query strings — non-test src has zero `console.*` calls (verified by grep after PR #10's dead-code deletion); no `?token=`/`?jwt=`/`access_token` query-string usage in any service
+- [x] WS auth uses `Sec-WebSocket-Protocol: bearer, <jwt>` subprotocol (NOT query string) — [useWebSocket.ts:39](src/hooks/useWebSocket.ts#L39) passes `['bearer', token]` as the WebSocket constructor's second arg (PR #7)
+- [x] CSP-friendly: no `eval`, no inline event handlers — no `eval`, `new Function`, `dangerouslySetInnerHTML`, `javascript:` URLs, or inline `onclick`/`onerror` attributes in src or [index.html](index.html)
+- [x] All file uploads PUT directly to R2 presigned URL — never proxy file bytes through our API — gallery + shipment invoices use the shared [useR2Upload](src/hooks/useR2Upload.ts) hook; [usePaymentReceipts](src/hooks/usePaymentReceipts.ts) inlines the same presign→PUT→confirm pattern; the only non-R2 path is [adminImportsService.ts](src/services/adminImportsService.ts) where a tiny CSV is uploaded via multipart (text data, not media)
+- [x] CSRF — we are token-bearer, but cookie-based fallbacks (if added) must be SameSite=Strict — N/A; auth flows through `Authorization: Bearer …` headers, no cookie-based auth fallback exists in the FE
+- [x] PII never logged; error toasts strip server stack traces — non-test src has zero `console.*` calls (verified by grep); error messages flow through [sanitizeMessage](src/lib/feedback.ts) in apiClient
+- [x] Tracking number lookup (`/orders/track/:trackingNumber`) renders **read-only** — never expose PII on the public route — [TrackPage.tsx](src/pages/public/TrackPage/TrackPage.tsx) route is unwrapped (no `ProtectedRoute`), [trackShipment](src/services/trackingService.ts) calls `apiGetData` with no token, `TrackingResult` shape exposes only tracking number, status, origin/destination labels, dates, and last-location string — no recipient name, phone, email, or address
 
 ### Component architecture
 - [ ] One service module per backend route file (`authService`, `usersService`, `ordersService`, …). No fetch calls inside components.
@@ -300,7 +300,7 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 
 ### WebSocket — `/ws` (1)
 
-- [~] `GET ws://host/ws` — [src/hooks/useWebSocket.ts:39](src/hooks/useWebSocket.ts#L39) — works but auth must move from `?token=` query to `Sec-WebSocket-Protocol: bearer, <jwt>` subprotocol header (spec requirement, security concern: tokens in URLs land in logs/proxies)
+- [x] `GET ws://host/ws` — [src/hooks/useWebSocket.ts:39](src/hooks/useWebSocket.ts#L39) — auth via `Sec-WebSocket-Protocol: bearer, <jwt>` subprotocol header (PR #7); tokens no longer surface in URLs / proxy logs
 
 ---
 
