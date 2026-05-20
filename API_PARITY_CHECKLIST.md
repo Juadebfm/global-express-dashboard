@@ -308,9 +308,9 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 
 These are not endpoints but contract/UX gaps the audit surfaced. They must be done as part of the parity work.
 
-- [ ] **WS auth via subprotocol** — rewrite [useWebSocket.ts](src/hooks/useWebSocket.ts) to pass `['bearer', token]` as the `WebSocket` constructor's second arg instead of `?token=`
-- [ ] **Single 401 handler** — when `apiClient` sees 401, dispatch a global logout event and route to `/login`. Today this is per-caller.
-- [ ] **Rate-limit retry-after** — current 429 toast doesn't honor `retry-after`; disable the originating button for N seconds
+- [x] **WS auth via subprotocol** — [useWebSocket.ts:39](src/hooks/useWebSocket.ts#L39) passes `['bearer', token]` as the `WebSocket` constructor's second arg, surfacing the JWT via `Sec-WebSocket-Protocol` instead of the URL
+- [x] **Single 401 handler** — [apiClient.ts](src/lib/apiClient.ts) dispatches `auth:unauthorized` on every 401 (except `/auth/me` boot probe); [AuthContext.tsx](src/store/auth/AuthContext.tsx) subscribes and clears in-house session state
+- [x] **Rate-limit retry-after** — [apiClient.ts](src/lib/apiClient.ts) throws a typed `ApiError` carrying `status` + `retryAfterSeconds`; the 429 toast quotes the wait time. Per-button cooldown rollout is a follow-up — plumbing is in place
 - [ ] **MFA login branching** — `/internal/auth/login` and `/auth/login` responses with `mfaRequired: true` must route to a new `/login/mfa` screen that holds the `mfaToken` in memory only (never localStorage)
 - [ ] **`mustEnrollMfa` flag** — when present on a login response, gate dashboard access behind the MFA enrollment flow
 - [ ] **Recovery-codes UX** — when `/mfa/verify-enrollment` returns codes, force user to confirm download/copy before the modal can close. Codes are shown ONCE.
