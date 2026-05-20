@@ -4,11 +4,59 @@ import { useFeedbackStore } from '@/store/feedback/feedback.store';
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS ?? 15000);
 
-function showRateLimitToast(): void {
+// Typed error preserved for the HTTP failure path. Callers that want to
+// inspect status / retry-after on a thrown error can `instanceof ApiError`;
+// everything else still treats it as an Error via .message.
+export class ApiError extends Error {
+  status: number;
+  retryAfterSeconds: number | null;
+  constructor(message: string, status: number, retryAfterSeconds: number | null) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+// Parse Retry-After per RFC 7231 — either a non-negative integer (seconds)
+// or an HTTP-date. Returns null when missing or unparseable.
+function parseRetryAfter(headerValue: string | null): number | null {
+  if (!headerValue) return null;
+  const asInt = Number(headerValue);
+  if (Number.isFinite(asInt) && asInt >= 0) return Math.ceil(asInt);
+  const asDate = Date.parse(headerValue);
+  if (Number.isNaN(asDate)) return null;
+  const delta = Math.ceil((asDate - Date.now()) / 1000);
+  return delta > 0 ? delta : 0;
+}
+
+function showRateLimitToast(retryAfterSeconds: number | null): void {
+  const suffix =
+    retryAfterSeconds && retryAfterSeconds > 0
+      ? ` Please wait ${retryAfterSeconds}s and try again.`
+      : ' Please wait a moment and try again.';
   useFeedbackStore.getState().pushMessage({
     tone: 'warning',
-    message: 'Too many attempts. Please wait a moment and try again.',
+    message: `Too many attempts.${suffix}`,
   });
+}
+
+// Single 401 handler — apiClient dispatches a global `auth:unauthorized`
+// event, AuthContext subscribes and clears in-house session state. Per-caller
+// code no longer needs to special-case 401.
+//
+// Skip the dispatch for the `/auth/me` boot-time probe used by AuthContext
+// itself, because that caller already treats 401 as "no session" and handles
+// its own cleanup. Without this skip, the very first checkAuth() on app load
+// would loop through the global handler.
+function isAuthBootProbe(path: string): boolean {
+  return path === '/auth/me' || path === '/users/me';
+}
+
+function dispatchUnauthorized(path: string): void {
+  if (isAuthBootProbe(path)) return;
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('auth:unauthorized'));
 }
 
 // 423 Locked — backend returns { message, lockedUntil: <ISO 8601> } after 5
@@ -65,15 +113,18 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
+    if (response.status === 401) dispatchUnauthorized(path);
     if (response.status === 423) dispatchAccountLocked(payload);
-    if (response.status === 429) showRateLimitToast();
+    const retryAfter =
+      response.status === 429 ? parseRetryAfter(response.headers.get('Retry-After')) : null;
+    if (response.status === 429) showRateLimitToast(retryAfter);
 
     const rawMessage =
       payload && typeof payload === 'object' && 'message' in payload
         ? (payload.message as string | undefined)
         : undefined;
     const fallback = getHttpFallbackMessage(response.status);
-    throw new Error(sanitizeMessage(rawMessage, fallback));
+    throw new ApiError(sanitizeMessage(rawMessage, fallback), response.status, retryAfter);
   }
 
   return payload as T;
@@ -114,7 +165,10 @@ async function requestBlob(
   }
 
   if (!response.ok) {
-    if (response.status === 429) showRateLimitToast();
+    if (response.status === 401) dispatchUnauthorized(path);
+    const retryAfter =
+      response.status === 429 ? parseRetryAfter(response.headers.get('Retry-After')) : null;
+    if (response.status === 429) showRateLimitToast(retryAfter);
 
     let rawMessage: string | undefined;
 
@@ -129,7 +183,7 @@ async function requestBlob(
     }
 
     const fallback = getHttpFallbackMessage(response.status);
-    throw new Error(sanitizeMessage(rawMessage, fallback));
+    throw new ApiError(sanitizeMessage(rawMessage, fallback), response.status, retryAfter);
   }
 
   return {

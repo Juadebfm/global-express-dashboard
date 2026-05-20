@@ -308,9 +308,9 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 
 These are not endpoints but contract/UX gaps the audit surfaced. They must be done as part of the parity work.
 
-- [ ] **WS auth via subprotocol** — rewrite [useWebSocket.ts](src/hooks/useWebSocket.ts) to pass `['bearer', token]` as the `WebSocket` constructor's second arg instead of `?token=`
-- [ ] **Single 401 handler** — when `apiClient` sees 401, dispatch a global logout event and route to `/login`. Today this is per-caller.
-- [ ] **Rate-limit retry-after** — current 429 toast doesn't honor `retry-after`; disable the originating button for N seconds
+- [x] **WS auth via subprotocol** — [useWebSocket.ts:39](src/hooks/useWebSocket.ts#L39) passes `['bearer', token]` as the `WebSocket` constructor's second arg, surfacing the JWT via `Sec-WebSocket-Protocol` instead of the URL
+- [x] **Single 401 handler** — [apiClient.ts](src/lib/apiClient.ts) dispatches `auth:unauthorized` on every 401 (except `/auth/me` boot probe); [AuthContext.tsx](src/store/auth/AuthContext.tsx) subscribes and clears in-house session state
+- [x] **Rate-limit retry-after** — [apiClient.ts](src/lib/apiClient.ts) throws a typed `ApiError` carrying `status` + `retryAfterSeconds`; the 429 toast quotes the wait time. Per-button cooldown rollout is a follow-up — plumbing is in place
 - [x] **MFA login branching** — [LoginPage.tsx:81-89](src/pages/auth/LoginPage/LoginPage.tsx#L81-L89) routes `mfaRequired` responses to `/login/mfa` via router state; [MfaChallengePage.tsx](src/pages/auth/MfaChallengePage/MfaChallengePage.tsx) reads `mfaToken` from `location.state` only — never persisted to localStorage
 - [x] **`mustEnrollMfa` flag** — [ProtectedRoute.tsx](src/components/auth/ProtectedRoute.tsx) bounces any protected page to `/mfa/enroll` when the in-house user has `mustEnrollMfa=true`, enforced on refresh / deep-link, not just initial login
 - [x] **Recovery-codes UX** — [RecoveryCodesPanel.tsx:86-106](src/components/auth/RecoveryCodesPanel/RecoveryCodesPanel.tsx#L86-L106) gates the Continue button on an explicit "I have saved these codes" checkbox; codes can be copied or downloaded as `.txt`

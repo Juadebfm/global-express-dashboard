@@ -72,6 +72,25 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     checkAuth();
   }, [checkAuth]);
 
+  // Single 401 handler — apiClient dispatches `auth:unauthorized` whenever
+  // any request gets a 401. Clear in-house session state; ProtectedRoute
+  // sees isAuthenticated=false on the next render and redirects to /login.
+  useEffect(() => {
+    const handler = (): void => {
+      if (!localStorage.getItem(TOKEN_KEY)) return;
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('globalxpress_refresh');
+      setState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+      });
+    };
+    window.addEventListener('auth:unauthorized', handler);
+    return () => window.removeEventListener('auth:unauthorized', handler);
+  }, []);
+
   const login = useCallback(async (credentials: LoginCredentials): Promise<LoginResult> => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
