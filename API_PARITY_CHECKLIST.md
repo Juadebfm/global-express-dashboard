@@ -36,8 +36,8 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 - [ ] CSP-friendly: no `eval`, no inline event handlers
 - [ ] All file uploads PUT directly to R2 presigned URL — never proxy file bytes through our API
 - [ ] CSRF — we are token-bearer, but cookie-based fallbacks (if added) must be SameSite=Strict
-- [ ] PII never logged; error toasts strip server stack traces
-- [ ] Tracking number lookup (`/orders/track/:trackingNumber`) renders **read-only** — never expose PII on the public route
+- [x] PII never logged; error toasts strip server stack traces — non-test src has zero `console.*` calls (verified by grep); error messages flow through [sanitizeMessage](src/lib/feedback.ts) in apiClient
+- [x] Tracking number lookup (`/orders/track/:trackingNumber`) renders **read-only** — never expose PII on the public route — [TrackPage.tsx](src/pages/public/TrackPage/TrackPage.tsx) route is unwrapped (no `ProtectedRoute`), [trackShipment](src/services/trackingService.ts) calls `apiGetData` with no token, `TrackingResult` shape exposes only tracking number, status, origin/destination labels, dates, and last-location string — no recipient name, phone, email, or address
 
 ### Component architecture
 - [ ] One service module per backend route file (`authService`, `usersService`, `ordersService`, …). No fetch calls inside components.
@@ -67,7 +67,7 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 - [ ] 429 → toast + disable retry button until `retry-after` seconds elapse
 - [ ] 500/503 → toast "Something went wrong" with retry CTA; log the request ID if backend returns one
 - [ ] All network errors funnel through a single error boundary at the route level
-- [ ] Empty bodies on PATCH/DELETE must be sent with `Content-Type: application/json` (backend override allows it; some HTTP clients strip the header)
+- [x] Empty bodies on PATCH/DELETE must be sent with `Content-Type: application/json` (backend override allows it; some HTTP clients strip the header) — [apiClient.ts](src/lib/apiClient.ts) sets the header for every non-multipart request; FormData is the only carve-out so the browser owns the multipart boundary
 
 ### Contract conformance
 - [ ] Success envelope: services unwrap `{ success, data }` exactly once
@@ -310,16 +310,16 @@ These are not endpoints but contract/UX gaps the audit surfaced. They must be do
 
 - [x] **WS auth via subprotocol** — [useWebSocket.ts:39](src/hooks/useWebSocket.ts#L39) passes `['bearer', token]` as the `WebSocket` constructor's second arg, surfacing the JWT via `Sec-WebSocket-Protocol` instead of the URL
 - [x] **Single 401 handler** — [apiClient.ts](src/lib/apiClient.ts) dispatches `auth:unauthorized` on every 401 (except `/auth/me` boot probe); [AuthContext.tsx](src/store/auth/AuthContext.tsx) subscribes and clears in-house session state
-- [x] **Rate-limit retry-after** — [apiClient.ts](src/lib/apiClient.ts) throws a typed `ApiError` carrying `status` + `retryAfterSeconds`; the 429 toast quotes the wait time. Per-button cooldown rollout is a follow-up — plumbing is in place
+- [x] **Rate-limit retry-after** — [apiClient.ts](src/lib/apiClient.ts) throws a typed `ApiError` carrying `status` + `retryAfterSeconds`; the 429 toast quotes the wait time. Per-button cooldown wired via [useRetryCooldown](src/hooks/useRetryCooldown.ts) + [cooldown store](src/store/cooldown/cooldown.store.ts); [LoginPage](src/pages/auth/LoginPage/LoginPage.tsx) is the first consumer (key `auth:login` — banner + disabled submit + short-circuit during the cooldown). Other 429-prone surfaces (MFA verify, forgot-password, support ticket create) can adopt the same hook.
 - [x] **MFA login branching** — [LoginPage.tsx:81-89](src/pages/auth/LoginPage/LoginPage.tsx#L81-L89) routes `mfaRequired` responses to `/login/mfa` via router state; [MfaChallengePage.tsx](src/pages/auth/MfaChallengePage/MfaChallengePage.tsx) reads `mfaToken` from `location.state` only — never persisted to localStorage
 - [x] **`mustEnrollMfa` flag** — [ProtectedRoute.tsx](src/components/auth/ProtectedRoute.tsx) bounces any protected page to `/mfa/enroll` when the in-house user has `mustEnrollMfa=true`, enforced on refresh / deep-link, not just initial login
 - [x] **Recovery-codes UX** — [RecoveryCodesPanel.tsx:86-106](src/components/auth/RecoveryCodesPanel/RecoveryCodesPanel.tsx#L86-L106) gates the Continue button on an explicit "I have saved these codes" checkbox; codes can be copied or downloaded as `.txt`
 - [x] **Lockout (423) countdown** — [apiClient.ts](src/lib/apiClient.ts) dispatches `auth:locked` with `lockedUntil` on 423; [LoginPage.tsx](src/pages/auth/LoginPage/LoginPage.tsx) runs a 1-Hz countdown and [LoginForm.tsx](src/components/forms/LoginForm/LoginForm.tsx) shows the banner + disables submit until elapsed
-- [ ] **PII never logged** — audit all `console.log/error` for token, email, address values
-- [ ] **Public tracking page** — confirm `/orders/track/:trackingNumber` page does not require auth and does not render PII (recipient address, phone)
+- [x] **PII never logged** — deleted dead `src/data/` mock auth (was the only `console.log/error` site, leaking emails + OTPs in dev). Non-test src now has zero `console.*` calls.
+- [x] **Public tracking page** — [TrackPage.tsx](src/pages/public/TrackPage/TrackPage.tsx) route is unwrapped; service calls `apiGetData('/orders/track/:trackingNumber')` with no token; `TrackingResult` shape carries no recipient/sender PII (verified by reading the type)
 - [x] **Presigned upload pattern** — `useR2Upload` abstracts the `presign → PUT to R2 → confirm` flow ([src/hooks/useR2Upload.ts](src/hooks/useR2Upload.ts)); shipment task-invoice + reg-doc uploaders consume it. Payment-receipt uploader still has its own copy (planned migration).
 - [x] **Response envelope unifier** — [apiClient.ts](src/lib/apiClient.ts) exposes `apiGetData / apiPostData / apiPutData / apiPatchData / apiDeleteData / apiPostMultipartData` that auto-unwrap `{ success, data }`. Every non-legacy service migrated; legacy `/auth/*` and the `warehouse-verify` dual-shape endpoint keep using the raw helpers.
-- [ ] **Empty-body PATCH/DELETE** — verify `apiClient` always sends `Content-Type: application/json` even when body is `undefined`, so backend's empty-body override applies
+- [x] **Empty-body PATCH/DELETE** — [apiClient.ts](src/lib/apiClient.ts) now sets `Content-Type: application/json` on every non-multipart request (predicate switched from `typeof body === 'string'` to `!(body instanceof FormData)`); covered by `Content-Type header` test block in [apiClient.test.ts](src/lib/apiClient.test.ts)
 - [ ] **`Cache-Control: no-store`** — never cache authenticated responses in service workers; verify [public/sw.js](public/sw.js) (if any) excludes `/api/v1/*`
 
 ---
