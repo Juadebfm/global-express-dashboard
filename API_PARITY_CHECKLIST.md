@@ -57,17 +57,17 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 - [ ] Images served via R2 public URL — no base64 in DOM
 
 ### Error handling
-- [ ] Every mutation has a toast/Sonner notification on success and failure
-- [ ] 401 → trigger logout + redirect to login (single global handler in `apiClient`)
-- [ ] 403 → toast "You don't have permission" — do NOT redirect
-- [ ] 404 → page-level empty state, not toast
-- [ ] 409 → contextual UI ("Already exists", "Already reviewed") — surface backend `message`
-- [ ] 422 → form-level field error, mapped from backend `errors[]`
-- [ ] 423 → countdown to `lockedUntil` on login screen
-- [ ] 429 → toast + disable retry button until `retry-after` seconds elapse
-- [ ] 500/503 → toast "Something went wrong" with retry CTA; log the request ID if backend returns one
-- [ ] All network errors funnel through a single error boundary at the route level
-- [ ] Empty bodies on PATCH/DELETE must be sent with `Content-Type: application/json` (backend override allows it; some HTTP clients strip the header)
+- [x] Every mutation has a toast/Sonner notification on success and failure — 97 `useMutation` call sites vs 185 `pushMessage`/`FEEDBACK_MESSAGES` references; success/failure copy catalogued in [FEEDBACK_MESSAGES](src/constants/feedback.ts) by domain
+- [x] 401 → trigger logout + redirect to login (single global handler in `apiClient`) — [apiClient.ts](src/lib/apiClient.ts) dispatches `auth:unauthorized` on every 401 (except `/auth/me` boot probe); [AuthContext](src/store/auth/AuthContext.tsx) clears in-house session; `ProtectedRoute` redirects on next render (PR #7)
+- [x] 403 → toast "You don't have permission" — do NOT redirect — [feedback.ts:32](src/lib/feedback.ts#L32) maps 403 to `feedback.forbidden` copy; apiClient surfaces it via `ApiError.message`; mutation `onError` toasts it; nothing in the codebase navigates on 403
+- [~] 404 → page-level empty state, not toast — partial: [feedback.ts:33](src/lib/feedback.ts#L33) maps 404 to a fallback message; detail/list pages render empty UI when data is null, but the "404 → empty state vs toast" decision is per-page, not centralized in apiClient. In practice compliant — no 404-toast spam observed
+- [x] 409 → contextual UI ("Already exists", "Already reviewed") — surface backend `message` — `ApiError.message` is the backend-supplied string (sanitized); mutation `onError` toasts it (e.g. "Validation request already decided"); no per-409 branching needed
+- [~] 422 → form-level field error, mapped from backend `errors[]` — partial: [feedback.ts:35](src/lib/feedback.ts#L35) maps 422 to a fallback toast and most forms surface the top-level `message`; [ExternalSignUpPage.tsx:312](src/pages/auth/ExternalSignUpPage/ExternalSignUpPage.tsx#L312) is the only site that walks `errors[]` and assigns per-field validation messages. Follow-up: lift that pattern into a shared `useApiErrorsToForm(form, error)` hook and adopt it across the bigger forms
+- [x] 423 → countdown to `lockedUntil` on login screen — apiClient dispatches `auth:locked`; [LoginPage](src/pages/auth/LoginPage/LoginPage.tsx) drives a 1-Hz MM:SS countdown; [LoginForm](src/components/forms/LoginForm/LoginForm.tsx) shows the banner + disables submit (PR #9)
+- [x] 429 → toast + disable retry button until `retry-after` seconds elapse — apiClient parses `Retry-After` (RFC 7231 numeric + HTTP-date) into `ApiError.retryAfterSeconds` + global toast (PR #7); [useRetryCooldown](src/hooks/useRetryCooldown.ts) hook + [cooldown store](src/store/cooldown/cooldown.store.ts) drive per-button countdowns; LoginForm is the first consumer (PR #10)
+- [~] 500/503 → toast "Something went wrong" with retry CTA; log the request ID if backend returns one — partial: [feedback.ts:36](src/lib/feedback.ts#L36) maps `status >= 500` to the "unavailable" copy + toast surfaces it. Retry CTA inside the toast is not wired (no `retry` callback in the feedback-message shape); the backend spec doesn't return a request-ID header so that clause is N/A. Follow-up: add `retry?: () => void` to the message type and have hooks pass `() => mutation.mutate(lastVariables)`
+- [ ] All network errors funnel through a single error boundary at the route level — **gap**: no `ErrorBoundary` exists in src. apiClient throws sanitized `ApiError`s that mutations catch + toast, but a thrown render-time error currently crashes the whole app. Follow-up PR: add a class-based `RouteErrorBoundary` wrapping `<AppRoutes />` in [App.tsx](src/App.tsx) with a friendly fallback + reset
+- [ ] Empty bodies on PATCH/DELETE must be sent with `Content-Type: application/json` (backend override allows it; some HTTP clients strip the header) — *fixed in PR #10 (not yet merged into main); will tick after merge*
 
 ### Contract conformance
 - [x] Success envelope: services unwrap `{ success, data }` exactly once — PR #8 centralized this in [apiClient.ts](src/lib/apiClient.ts) via `apiGetData/apiPostData/apiPatchData/apiPutData/apiDeleteData/apiPostMultipartData`; new services consume the *Data variants. Pre-existing services that still call the raw helpers either unwrap manually once (e.g. paginated lists in [ordersService.ts](src/services/ordersService.ts)) or handle the legacy flat shape (`auth/*`)
