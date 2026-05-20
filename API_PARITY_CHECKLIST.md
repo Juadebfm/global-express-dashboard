@@ -70,11 +70,11 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 - [ ] Empty bodies on PATCH/DELETE must be sent with `Content-Type: application/json` (backend override allows it; some HTTP clients strip the header)
 
 ### Contract conformance
-- [ ] Success envelope: services unwrap `{ success, data }` exactly once
-- [ ] Legacy `auth/*` services tolerate the flat shape (no `success` key)
-- [ ] Pagination response unwrapping: `{ data, pagination }`
-- [ ] MFA branching: `if (response.mfaRequired) → /mfa/verify route`
-- [ ] `mustEnrollMfa`, `mustChangePassword`, `mustCompleteProfile` flags on login response all gate the next route
+- [x] Success envelope: services unwrap `{ success, data }` exactly once — PR #8 centralized this in [apiClient.ts](src/lib/apiClient.ts) via `apiGetData/apiPostData/apiPatchData/apiPutData/apiDeleteData/apiPostMultipartData`; new services consume the *Data variants. Pre-existing services that still call the raw helpers either unwrap manually once (e.g. paginated lists in [ordersService.ts](src/services/ordersService.ts)) or handle the legacy flat shape (`auth/*`)
+- [x] Legacy `auth/*` services tolerate the flat shape (no `success` key) — [authService.login](src/services/authService.ts) reads `response.data` from the `/internal/auth/login` envelope; [authService.getMe](src/services/authService.ts#L63) accepts both `{ success, data: User }` and the raw `User` shape (legacy spec quirk for Clerk vs internal JWT)
+- [x] Pagination response unwrapping: `{ data, pagination }` — [ordersService.ts:191-197](src/services/ordersService.ts#L191-L197) returns `{ data, pagination }` from `getOrders`; [adminUsersService.ts](src/services/adminUsersService.ts) shapes the same way for the admin users list; both feed `{ page, limit, total, totalPages }` straight to consumer hooks
+- [x] MFA branching: `if (response.mfaRequired) → /mfa/verify route` — [authService.ts:34-48](src/services/authService.ts#L34-L48) discriminates the login response; [LoginPage.tsx:126](src/pages/auth/LoginPage/LoginPage.tsx#L126) routes `result.kind === 'mfa_required'` to `/login/mfa` with the `mfaToken` in router state (memory only — PR #9)
+- [x] `mustEnrollMfa`, `mustChangePassword`, `mustCompleteProfile` flags on login response all gate the next route — [LoginPage.tsx:34-42](src/pages/auth/LoginPage/LoginPage.tsx#L34-L42) routes after-login; [ProtectedRoute.tsx:51-63](src/components/auth/ProtectedRoute.tsx#L51-L63) enforces all three flags on every protected page so the gates survive refresh / deep-link (PR #9)
 
 ---
 
