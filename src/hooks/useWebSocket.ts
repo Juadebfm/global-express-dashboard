@@ -9,13 +9,13 @@ import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
 
-function buildWsUrl(token: string): string {
+function buildWsUrl(): string {
   const base = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
   const wsBase = base
     .replace('/api/v1', '')
     .replace(/^https:\/\//, 'wss://')
     .replace(/^http:\/\//, 'ws://');
-  return `${wsBase}/ws?token=${token}`;
+  return `${wsBase}/ws`;
 }
 
 export function useWebSocket(): void {
@@ -36,7 +36,10 @@ export function useWebSocket(): void {
 
       if (!token || !isMounted) return;
 
-      const ws = new WebSocket(buildWsUrl(token));
+      // Auth via Sec-WebSocket-Protocol subprotocol header — the WebSocket
+      // constructor's second arg becomes the subprotocol list. Keeps the JWT
+      // out of the URL (and out of proxy/access logs) per backend spec.
+      const ws = new WebSocket(buildWsUrl(), ['bearer', token]);
       wsRef.current = ws;
       setWs(ws);
 
