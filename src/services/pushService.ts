@@ -1,13 +1,8 @@
-import { apiGet, apiPost } from '@/lib/apiClient';
-
-interface VapidKeyResponse {
-  success: boolean;
-  data: { publicKey: string };
-}
+import { apiGetData, apiPost } from '@/lib/apiClient';
 
 export async function getVapidPublicKey(token: string): Promise<string> {
-  const res = await apiGet<VapidKeyResponse>('/internal/push/vapid-key', token);
-  return res.data.publicKey;
+  const data = await apiGetData<{ publicKey: string }>('/internal/push/vapid-key', token);
+  return data.publicKey;
 }
 
 export async function subscribePush(

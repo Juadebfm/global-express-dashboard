@@ -1,12 +1,10 @@
-import { apiGet, apiPost, apiPatch } from '@/lib/apiClient';
+import { apiGet, apiGetData, apiPatch, apiPostData } from '@/lib/apiClient';
 import type {
   SupportTicket,
   SupportMessage,
   ApiSupportTicket,
   ApiSupportMessage,
   ApiSupportTicketsResponse,
-  ApiCreateSupportTicketResponse,
-  ApiTicketDetailResponse,
   CreateSupportTicketPayload,
   SendSupportMessagePayload,
   UpdateTicketStatusPayload,
@@ -77,13 +75,13 @@ export async function getSupportTicketById(
   ticketId: string,
   token: string,
 ): Promise<{ ticket: SupportTicket; messages: SupportMessage[] }> {
-  const response = await apiGet<ApiTicketDetailResponse>(
+  const data = await apiGetData<{ ticket: ApiSupportTicket; messages: ApiSupportMessage[] }>(
     `/support/tickets/${ticketId}`,
     token,
   );
   return {
-    ticket: mapSupportTicket(response.data.ticket),
-    messages: response.data.messages.map(mapSupportMessage),
+    ticket: mapSupportTicket(data.ticket),
+    messages: data.messages.map(mapSupportMessage),
   };
 }
 
@@ -99,12 +97,12 @@ export async function createSupportTicket(
     body: payload.description,
     relatedTrackingNumber: payload.relatedTrackingNumber,
   };
-  const response = await apiPost<ApiCreateSupportTicketResponse>(
+  const ticket = await apiPostData<ApiSupportTicket>(
     '/support/tickets',
     apiPayload,
     token,
   );
-  return mapSupportTicket(response.data);
+  return mapSupportTicket(ticket);
 }
 
 export async function sendSupportMessage(
@@ -112,12 +110,12 @@ export async function sendSupportMessage(
   payload: SendSupportMessagePayload,
   token: string,
 ): Promise<SupportMessage> {
-  const response = await apiPost<{ success: boolean; data: ApiSupportMessage }>(
+  const msg = await apiPostData<ApiSupportMessage>(
     `/support/tickets/${ticketId}/messages`,
     payload,
     token,
   );
-  return mapSupportMessage(response.data);
+  return mapSupportMessage(msg);
 }
 
 export async function updateTicketStatus(

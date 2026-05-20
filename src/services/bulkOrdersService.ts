@@ -4,13 +4,13 @@ import type {
   ApiBulkOrdersResponse,
   BulkOrderItem,
 } from '@/types';
-import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/apiClient';
+import { apiDelete, apiGetData, apiPatch, apiPost, apiPostData } from '@/lib/apiClient';
 
 function normalizeShipmentType(type: 'air' | 'sea' | 'ocean'): 'air' | 'sea' {
   return type === 'ocean' ? 'sea' : type;
 }
 
-export async function createBulkOrder(
+export function createBulkOrder(
   token: string,
   payload: CreateBulkOrderPayload
 ): Promise<ApiBulkOrder> {
@@ -18,15 +18,10 @@ export async function createBulkOrder(
     ...payload,
     shipmentType: normalizeShipmentType(payload.shipmentType),
   };
-  const response = await apiPost<{ success: boolean; data: ApiBulkOrder }>(
-    '/bulk-orders',
-    normalizedPayload,
-    token
-  );
-  return response.data;
+  return apiPostData<ApiBulkOrder>('/bulk-orders', normalizedPayload, token);
 }
 
-export async function getBulkOrders(
+export function getBulkOrders(
   token: string,
   params: { page?: number; limit?: number } = {}
 ): Promise<ApiBulkOrdersResponse['data']> {
@@ -34,22 +29,11 @@ export async function getBulkOrders(
   if (params.page !== undefined) searchParams.set('page', String(params.page));
   if (params.limit !== undefined) searchParams.set('limit', String(params.limit));
   const qs = searchParams.toString();
-  const response = await apiGet<ApiBulkOrdersResponse>(
-    `/bulk-orders${qs ? `?${qs}` : ''}`,
-    token
-  );
-  return response.data;
+  return apiGetData<ApiBulkOrdersResponse['data']>(`/bulk-orders${qs ? `?${qs}` : ''}`, token);
 }
 
-export async function getBulkOrderById(
-  token: string,
-  id: string
-): Promise<ApiBulkOrder> {
-  const response = await apiGet<{ success: boolean; data: ApiBulkOrder }>(
-    `/bulk-orders/${id}`,
-    token
-  );
-  return response.data;
+export function getBulkOrderById(token: string, id: string): Promise<ApiBulkOrder> {
+  return apiGetData<ApiBulkOrder>(`/bulk-orders/${id}`, token);
 }
 
 export async function updateBulkOrderStatus(
@@ -76,9 +60,6 @@ export async function removeBulkOrderItem(
   await apiDelete(`/bulk-orders/${id}/items/${itemId}`, token);
 }
 
-export async function deleteBulkOrder(
-  token: string,
-  id: string
-): Promise<void> {
+export async function deleteBulkOrder(token: string, id: string): Promise<void> {
   await apiDelete(`/bulk-orders/${id}`, token);
 }

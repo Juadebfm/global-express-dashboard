@@ -11,14 +11,9 @@ import type {
   PaginatedSuppliers,
   SupplierListParams,
 } from '@/types';
-import { apiGet, apiPost } from '@/lib/apiClient';
+import { apiGet, apiGetData, apiPost, apiPostData } from '@/lib/apiClient';
 
-interface Envelope<T> {
-  success: boolean;
-  data: T;
-}
-
-export async function getClients(
+export function getClients(
   token: string,
   params: { page?: number; limit?: number; isActive?: boolean } = {}
 ): Promise<ApiClientsResponse['data']> {
@@ -27,25 +22,17 @@ export async function getClients(
   searchParams.set('limit', String(params.limit ?? 100));
   if (params.isActive !== undefined) searchParams.set('isActive', String(params.isActive));
   const qs = searchParams.toString();
-  const response = await apiGet<ApiClientsResponse>(
+  return apiGetData<ApiClientsResponse['data']>(
     `/admin/clients${qs ? `?${qs}` : ''}`,
-    token
+    token,
   );
-  return response.data;
 }
 
-export async function getClientById(
-  token: string,
-  id: string
-): Promise<ApiClient> {
-  const response = await apiGet<{ success: boolean; data: ApiClient }>(
-    `/admin/clients/${id}`,
-    token
-  );
-  return response.data;
+export function getClientById(token: string, id: string): Promise<ApiClient> {
+  return apiGetData<ApiClient>(`/admin/clients/${id}`, token);
 }
 
-export async function getClientOrders(
+export function getClientOrders(
   token: string,
   id: string,
   params: { page?: number; limit?: number } = {}
@@ -54,42 +41,34 @@ export async function getClientOrders(
   if (params.page !== undefined) searchParams.set('page', String(params.page));
   if (params.limit !== undefined) searchParams.set('limit', String(params.limit));
   const qs = searchParams.toString();
+  // Raw payload — caller handles defensive shape extraction.
   return apiGet(`/admin/clients/${id}/orders${qs ? `?${qs}` : ''}`, token);
 }
 
-export async function createClient(
+export function createClient(
   token: string,
   payload: CreateClientPayload
 ): Promise<ApiClient> {
-  const response = await apiPost<{ success: boolean; data: ApiClient }>(
-    '/admin/clients',
-    payload,
-    token
-  );
-  return response.data;
+  return apiPostData<ApiClient>('/admin/clients', payload, token);
 }
 
-export async function sendClientInvite(
-  token: string,
-  id: string
-): Promise<void> {
+export async function sendClientInvite(token: string, id: string): Promise<void> {
   await apiPost(`/admin/clients/${id}/send-invite`, undefined, token);
 }
 
 // ── Admin client workbench ──────────────────────────────────────────────────
 
-export async function getClientWorkbench(
+export function getClientWorkbench(
   token: string,
   id: string,
 ): Promise<ClientWorkbenchData<ApiSupplier, ApiOrder>> {
-  const response = await apiGet<Envelope<ClientWorkbenchData<ApiSupplier, ApiOrder>>>(
+  return apiGetData<ClientWorkbenchData<ApiSupplier, ApiOrder>>(
     `/admin/clients/${id}/workbench`,
     token,
   );
-  return response.data;
 }
 
-export async function getClientSuppliers(
+export function getClientSuppliers(
   token: string,
   id: string,
   params: SupplierListParams = {},
@@ -99,35 +78,28 @@ export async function getClientSuppliers(
   if (params.limit !== undefined) search.set('limit', String(params.limit));
   if (params.isActive !== undefined) search.set('isActive', String(params.isActive));
   const qs = search.toString();
-  const response = await apiGet<Envelope<PaginatedSuppliers>>(
+  return apiGetData<PaginatedSuppliers>(
     `/admin/clients/${id}/suppliers${qs ? `?${qs}` : ''}`,
     token,
   );
-  return response.data;
 }
 
-export async function addClientSupplier(
+export function addClientSupplier(
   token: string,
   id: string,
   payload: AddSupplierPayload,
 ): Promise<AddSupplierResult> {
-  const response = await apiPost<Envelope<AddSupplierResult>>(
+  return apiPostData<AddSupplierResult>(
     `/admin/clients/${id}/suppliers`,
     payload,
     token,
   );
-  return response.data;
 }
 
-export async function createClientGoodsIntake(
+export function createClientGoodsIntake(
   token: string,
   id: string,
   payload: CreateGoodsIntakePayload,
 ): Promise<ApiOrder> {
-  const response = await apiPost<Envelope<ApiOrder>>(
-    `/admin/clients/${id}/goods-intake`,
-    payload,
-    token,
-  );
-  return response.data;
+  return apiPostData<ApiOrder>(`/admin/clients/${id}/goods-intake`, payload, token);
 }

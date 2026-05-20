@@ -10,7 +10,7 @@ import type {
   PaymentBreakdown,
   ShipmentComparison,
 } from '@/types';
-import { apiGet } from '@/lib/apiClient';
+import { apiGetData } from '@/lib/apiClient';
 
 /* ── helpers ────────────────────────────────────────────── */
 
@@ -25,116 +25,68 @@ function buildQs(params: Record<string, string | number | boolean | undefined>):
 
 /* ── legacy (used by useReports hooks) ──────────────────── */
 
-export async function getReportSummary(token: string): Promise<ReportSummary> {
-  const response = await apiGet<{ success: boolean; data: ReportSummary }>(
-    '/reports/summary',
-    token
-  );
-  return response.data;
+export function getReportSummary(token: string): Promise<ReportSummary> {
+  return apiGetData<ReportSummary>('/reports/summary', token);
 }
 
-export async function getOrdersByStatus(token: string): Promise<OrdersByStatusEntry[]> {
-  const response = await apiGet<{ success: boolean; data: OrdersByStatusEntry[] }>(
-    '/reports/orders/by-status',
-    token
-  );
-  return response.data;
+export function getOrdersByStatus(token: string): Promise<OrdersByStatusEntry[]> {
+  return apiGetData<OrdersByStatusEntry[]>('/reports/orders/by-status', token);
 }
 
-export async function getRevenueReport(
+export function getRevenueReport(
   token: string,
   params: { from?: string; to?: string } = {}
 ): Promise<RevenueEntry[]> {
-  const qs = buildQs(params);
-  const response = await apiGet<{ success: boolean; data: RevenueEntry[] }>(
-    `/reports/revenue${qs}`,
-    token
-  );
-  return response.data;
+  return apiGetData<RevenueEntry[]>(`/reports/revenue${buildQs(params)}`, token);
 }
 
 /* ── new endpoints ──────────────────────────────────────── */
 
-export async function getRevenueAnalytics(
+export function getRevenueAnalytics(
   token: string,
   params: { groupBy?: string; compareToLastPeriod?: boolean; from?: string; to?: string } = {},
 ): Promise<RevenueAnalytics> {
-  const qs = buildQs(params);
-  const res = await apiGet<{ success: boolean; data: RevenueAnalytics }>(
-    `/reports/revenue${qs}`,
-    token,
-  );
-  return res.data;
+  return apiGetData<RevenueAnalytics>(`/reports/revenue${buildQs(params)}`, token);
 }
 
-export async function getShipmentVolume(
+export function getShipmentVolume(
   token: string,
   params: { groupBy?: string; from?: string; to?: string } = {},
 ): Promise<ShipmentVolume> {
-  const qs = buildQs(params);
-  const res = await apiGet<{ success: boolean; data: ShipmentVolume }>(
-    `/reports/shipment-volume${qs}`,
-    token,
-  );
-  return res.data;
+  return apiGetData<ShipmentVolume>(`/reports/shipment-volume${buildQs(params)}`, token);
 }
 
-export async function getTopCustomers(
+export function getTopCustomers(
   token: string,
   params: { sortBy?: string; limit?: number } = {},
 ): Promise<TopCustomer[]> {
-  const qs = buildQs(params);
-  const res = await apiGet<{ success: boolean; data: TopCustomer[] }>(
-    `/reports/top-customers${qs}`,
-    token,
-  );
-  return res.data;
+  return apiGetData<TopCustomer[]>(`/reports/top-customers${buildQs(params)}`, token);
 }
 
-export async function getDeliveryPerformance(
+export function getDeliveryPerformance(
   token: string,
   params: { from?: string; to?: string } = {},
 ): Promise<DeliveryPerformance> {
-  const qs = buildQs(params);
-  const res = await apiGet<{ success: boolean; data: DeliveryPerformance }>(
-    `/reports/delivery-performance${qs}`,
-    token,
-  );
-  return res.data;
+  return apiGetData<DeliveryPerformance>(`/reports/delivery-performance${buildQs(params)}`, token);
 }
 
-export async function getStatusPipeline(
+export function getStatusPipeline(
   token: string,
   params: { transportMode?: string } = {},
 ): Promise<StatusPipeline> {
-  const qs = buildQs(params);
-  const res = await apiGet<{ success: boolean; data: StatusPipeline }>(
-    `/reports/status-pipeline${qs}`,
-    token,
-  );
-  return res.data;
+  return apiGetData<StatusPipeline>(`/reports/status-pipeline${buildQs(params)}`, token);
 }
 
-export async function getPaymentBreakdown(
+export function getPaymentBreakdown(
   token: string,
   params: { from?: string; to?: string } = {},
 ): Promise<PaymentBreakdown> {
-  const qs = buildQs(params);
-  const res = await apiGet<{ success: boolean; data: PaymentBreakdown }>(
-    `/reports/payment-breakdown${qs}`,
-    token,
-  );
-  return res.data;
+  return apiGetData<PaymentBreakdown>(`/reports/payment-breakdown${buildQs(params)}`, token);
 }
 
-export async function getShipmentComparison(
+export function getShipmentComparison(
   token: string,
   params: { from?: string; to?: string } = {},
 ): Promise<ShipmentComparison> {
-  const qs = buildQs(params);
-  const res = await apiGet<{ success: boolean; data: ShipmentComparison }>(
-    `/reports/shipment-comparison${qs}`,
-    token,
-  );
-  return res.data;
+  return apiGetData<ShipmentComparison>(`/reports/shipment-comparison${buildQs(params)}`, token);
 }

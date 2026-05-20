@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost } from '@/lib/apiClient';
+import { apiGetData, apiPatchData, apiPostData } from '@/lib/apiClient';
 import type {
   AddSupplierPayload,
   AddSupplierResult,
@@ -11,11 +11,6 @@ import type {
   SupplierUpdateRequestPayload,
   SupplierValidationDecisionPayload,
 } from '@/types';
-
-interface Envelope<T> {
-  success: boolean;
-  data: T;
-}
 
 function buildSupplierQuery(params: SupplierListParams = {}): string {
   const search = new URLSearchParams();
@@ -39,88 +34,77 @@ function buildUpdateRequestQuery(
 
 // ── Customer-facing supplier address book ────────────────────────────────────
 
-export async function getMySuppliers(
+export function getMySuppliers(
   token: string,
   params: SupplierListParams = {},
 ): Promise<PaginatedSuppliers> {
-  const response = await apiGet<Envelope<PaginatedSuppliers>>(
+  return apiGetData<PaginatedSuppliers>(
     `/users/me/suppliers${buildSupplierQuery(params)}`,
     token,
   );
-  return response.data;
 }
 
-export async function addMySupplier(
+export function addMySupplier(
   token: string,
   payload: AddSupplierPayload,
 ): Promise<AddSupplierResult> {
-  const response = await apiPost<Envelope<AddSupplierResult>>(
-    '/users/me/suppliers',
-    payload,
-    token,
-  );
-  return response.data;
+  return apiPostData<AddSupplierResult>('/users/me/suppliers', payload, token);
 }
 
-export async function requestSupplierUpdate(
+export function requestSupplierUpdate(
   token: string,
   supplierId: string,
   payload: SupplierUpdateRequestPayload,
 ): Promise<ApiSupplierUpdateRequest> {
-  const response = await apiPost<Envelope<ApiSupplierUpdateRequest>>(
+  return apiPostData<ApiSupplierUpdateRequest>(
     `/users/me/suppliers/${supplierId}/update-request`,
     payload,
     token,
   );
-  return response.data;
 }
 
-export async function getMySupplierUpdateRequests(
+export function getMySupplierUpdateRequests(
   token: string,
   params: SupplierUpdateRequestListParams = {},
 ): Promise<PaginatedSupplierUpdateRequests> {
-  const response = await apiGet<Envelope<PaginatedSupplierUpdateRequests>>(
+  return apiGetData<PaginatedSupplierUpdateRequests>(
     `/users/me/suppliers/update-requests${buildUpdateRequestQuery(params)}`,
     token,
   );
-  return response.data;
 }
 
-export async function getMySupplierValidationRequests(
+export function getMySupplierValidationRequests(
   token: string,
   params: SupplierUpdateRequestListParams = {},
 ): Promise<PaginatedSupplierUpdateRequests> {
-  const response = await apiGet<Envelope<PaginatedSupplierUpdateRequests>>(
+  return apiGetData<PaginatedSupplierUpdateRequests>(
     `/users/me/suppliers/validation-requests${buildUpdateRequestQuery(params)}`,
     token,
   );
-  return response.data;
 }
 
-export async function decideSupplierValidationRequest(
+export function decideSupplierValidationRequest(
   token: string,
   id: string,
   payload: SupplierValidationDecisionPayload,
 ): Promise<ApiSupplierUpdateRequest> {
-  const response = await apiPatch<Envelope<ApiSupplierUpdateRequest>>(
+  return apiPatchData<ApiSupplierUpdateRequest>(
     `/users/me/suppliers/validation-requests/${id}`,
     payload,
     token,
   );
-  return response.data;
 }
 
 // ── Admin-scoped supplier list ───────────────────────────────────────────────
 
-export async function getAllSuppliers(
+export function getAllSuppliers(
   token: string,
   params: SupplierListParams = {},
 ): Promise<PaginatedSuppliers> {
-  const response = await apiGet<Envelope<PaginatedSuppliers>>(
+  return apiGetData<PaginatedSuppliers>(
     `/users/suppliers${buildSupplierQuery(params)}`,
     token,
   );
-  return response.data;
 }
 
 // Re-export the supplier shape so callers can import from a single module.

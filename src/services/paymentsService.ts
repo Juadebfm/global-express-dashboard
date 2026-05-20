@@ -9,33 +9,20 @@ import type {
   ReceiptSubmitPayload,
   ReceiptVerifyPayload,
 } from '@/types';
-import { apiGet, apiPatch, apiPost } from '@/lib/apiClient';
+import { apiGetData, apiPatchData, apiPostData } from '@/lib/apiClient';
 
-export async function initializePayment(
+export function initializePayment(
   token: string,
   payload: InitializePaymentPayload
 ): Promise<PaystackInitResponse> {
-  const response = await apiPost<{ success: boolean; data: PaystackInitResponse }>(
-    '/payments/initialize',
-    payload,
-    token
-  );
-  return response.data;
+  return apiPostData<PaystackInitResponse>('/payments/initialize', payload, token);
 }
 
-export async function verifyPayment(
-  token: string,
-  reference: string
-): Promise<ApiPayment> {
-  const response = await apiPost<{ success: boolean; data: ApiPayment }>(
-    `/payments/verify/${reference}`,
-    undefined,
-    token
-  );
-  return response.data;
+export function verifyPayment(token: string, reference: string): Promise<ApiPayment> {
+  return apiPostData<ApiPayment>(`/payments/verify/${reference}`, undefined, token);
 }
 
-export async function getPayments(
+export function getPayments(
   token: string,
   params: { page?: number; limit?: number; userId?: string; status?: string; isCustomer?: boolean } = {}
 ): Promise<ApiPaymentsResponse['data']> {
@@ -46,72 +33,41 @@ export async function getPayments(
   if (params.status) searchParams.set('status', params.status);
   const qs = searchParams.toString();
   const basePath = params.isCustomer ? '/payments/me' : '/payments';
-  const response = await apiGet<ApiPaymentsResponse>(
-    `${basePath}${qs ? `?${qs}` : ''}`,
-    token
-  );
-  return response.data;
+  return apiGetData<ApiPaymentsResponse['data']>(`${basePath}${qs ? `?${qs}` : ''}`, token);
 }
 
-export async function getPaymentById(
-  token: string,
-  id: string
-): Promise<ApiPayment> {
-  const response = await apiGet<{ success: boolean; data: ApiPayment }>(
-    `/payments/${id}`,
-    token
-  );
-  return response.data;
+export function getPaymentById(token: string, id: string): Promise<ApiPayment> {
+  return apiGetData<ApiPayment>(`/payments/${id}`, token);
 }
 
-export async function recordOfflinePayment(
+export function recordOfflinePayment(
   token: string,
   orderId: string,
   payload: RecordOfflinePayload
 ): Promise<ApiPayment> {
-  const response = await apiPost<{ success: boolean; data: ApiPayment }>(
-    `/payments/${orderId}/record-offline`,
-    payload,
-    token
-  );
-  return response.data;
+  return apiPostData<ApiPayment>(`/payments/${orderId}/record-offline`, payload, token);
 }
 
 // ── Offline receipt flow (presign → submit → superadmin verify) ──────────────
 
-export async function presignPaymentReceipt(
+export function presignPaymentReceipt(
   token: string,
   payload: ReceiptPresignPayload,
 ): Promise<ReceiptPresignResponse> {
-  const response = await apiPost<{ success: boolean; data: ReceiptPresignResponse }>(
-    '/payments/receipts/presign',
-    payload,
-    token,
-  );
-  return response.data;
+  return apiPostData<ReceiptPresignResponse>('/payments/receipts/presign', payload, token);
 }
 
-export async function submitPaymentReceipt(
+export function submitPaymentReceipt(
   token: string,
   payload: ReceiptSubmitPayload,
 ): Promise<ApiPayment> {
-  const response = await apiPost<{ success: boolean; data: ApiPayment }>(
-    '/payments/receipts',
-    payload,
-    token,
-  );
-  return response.data;
+  return apiPostData<ApiPayment>('/payments/receipts', payload, token);
 }
 
-export async function verifyPaymentReceipt(
+export function verifyPaymentReceipt(
   token: string,
   receiptId: string,
   payload: ReceiptVerifyPayload,
 ): Promise<ApiPayment> {
-  const response = await apiPatch<{ success: boolean; data: ApiPayment }>(
-    `/payments/receipts/${receiptId}/verify`,
-    payload,
-    token,
-  );
-  return response.data;
+  return apiPatchData<ApiPayment>(`/payments/receipts/${receiptId}/verify`, payload, token);
 }

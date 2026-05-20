@@ -318,7 +318,7 @@ These are not endpoints but contract/UX gaps the audit surfaced. They must be do
 - [ ] **PII never logged** — audit all `console.log/error` for token, email, address values
 - [ ] **Public tracking page** — confirm `/orders/track/:trackingNumber` page does not require auth and does not render PII (recipient address, phone)
 - [x] **Presigned upload pattern** — `useR2Upload` abstracts the `presign → PUT to R2 → confirm` flow ([src/hooks/useR2Upload.ts](src/hooks/useR2Upload.ts)); shipment task-invoice + reg-doc uploaders consume it. Payment-receipt uploader still has its own copy (planned migration).
-- [ ] **Response envelope unifier** — move `{ success, data }` unwrap into `apiClient` instead of each service re-implementing it (legacy `auth/*` exceptions still possible via a flag)
+- [x] **Response envelope unifier** — [apiClient.ts](src/lib/apiClient.ts) exposes `apiGetData / apiPostData / apiPutData / apiPatchData / apiDeleteData / apiPostMultipartData` that auto-unwrap `{ success, data }`. Every non-legacy service migrated; legacy `/auth/*` and the `warehouse-verify` dual-shape endpoint keep using the raw helpers.
 - [ ] **Empty-body PATCH/DELETE** — verify `apiClient` always sends `Content-Type: application/json` even when body is `undefined`, so backend's empty-body override applies
 - [ ] **`Cache-Control: no-store`** — never cache authenticated responses in service workers; verify [public/sw.js](public/sw.js) (if any) excludes `/api/v1/*`
 
