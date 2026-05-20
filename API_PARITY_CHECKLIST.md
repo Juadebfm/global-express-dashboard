@@ -48,13 +48,13 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 - [x] Forms validated client-side with the same Zod shape the backend uses (mirror the schema, don't reinvent it) — 103 `zodResolver`/schema references across form components; every form (Login, ForgotPassword, SupportTicket, Shipment*, Gallery*, etc.) uses `zodResolver` + a `*.schema.ts` mirroring the backend payload
 
 ### Optimization
-- [ ] React Query `staleTime` set per resource (e.g. 30 s for dashboard, 5 min for settings, 0 for notifications)
-- [ ] Lists paginated using the backend's `{ page, limit }` contract — never request `limit: 100` "to be safe"
-- [ ] Suspense / skeleton loaders on every async surface — no spinner-only fallbacks
-- [ ] Code-split routes via `React.lazy` (admin pages, gallery editor, reports charts)
-- [ ] Charts use the smallest possible recharts/visx import (tree-shaken)
-- [ ] No `useEffect` for data fetching — that's React Query's job
-- [ ] Images served via R2 public URL — no base64 in DOM
+- [~] React Query `staleTime` set per resource (e.g. 30 s for dashboard, 5 min for settings, 0 for notifications) — partial: 23 of 81 `useQuery` call sites set `staleTime` explicitly (≈28%); the rest fall back to React Query's defaults. Follow-up: audit each hook category and set sane per-resource values (settings → 5 min, dashboard → 30 s, notifications → 0)
+- [ ] Lists paginated using the backend's `{ page, limit }` contract — never request `limit: 100` "to be safe" — **gap**: 4 violations — [ShipmentsPage.tsx:92](src/pages/shipments/ShipmentsPage/ShipmentsPage.tsx#L92), [BulkOrdersPage.tsx:153](src/pages/bulkOrders/BulkOrdersPage/BulkOrdersPage.tsx#L153), [OrdersPage.tsx:88](src/pages/orders/OrdersPage/OrdersPage.tsx#L88), [shipmentsService.ts:276](src/services/shipmentsService.ts#L276). Follow-up: wire proper page/limit/total state with `{ page, limit }` controls
+- [~] Suspense / skeleton loaders on every async surface — no spinner-only fallbacks — partial: 9 `Suspense` boundaries (mostly around `React.lazy` routes); no `Skeleton` component exists yet — most async surfaces fall back to `<PageLoader />` spinners. Follow-up: ship a `Skeleton` primitive and adopt it on list/table pages
+- [~] Code-split routes via `React.lazy` (admin pages, gallery editor, reports charts) — partial: gallery, D2D intake, admin gallery, admin imports are lazy; **ReportsPage is NOT** even though it pulls in recharts — this is the single biggest bundle-size win available. Other admin pages and the orders/dashboard surfaces are also static imports. Bundle warning at build time shows `dist/.../index-*.js 1.95 MB / 517 kB gz`. Follow-up: lazy-wrap ReportsPage first, then the admin tree
+- [~] Charts use the smallest possible recharts/visx import (tree-shaken) — partial: [ReportsPage.tsx:4-18](src/pages/reports/ReportsPage/ReportsPage.tsx#L4-L18) uses named imports from `'recharts'` (tree-shakeable in principle), but because ReportsPage is statically imported the chart code ends up in the main bundle regardless. Real fix is to lazy-load ReportsPage (see above)
+- [x] No `useEffect` for data fetching — that's React Query's job — grep finds zero `useEffect` blocks that call `api*`/`fetch`; data fetching exclusively goes through `useQuery`/`useMutation`
+- [x] Images served via R2 public URL — no base64 in DOM — no `data:image`/base64-encoded image data anywhere in src
 
 ### Error handling
 - [x] Every mutation has a toast/Sonner notification on success and failure — 97 `useMutation` call sites vs 185 `pushMessage`/`FEEDBACK_MESSAGES` references; success/failure copy catalogued in [FEEDBACK_MESSAGES](src/constants/feedback.ts) by domain
