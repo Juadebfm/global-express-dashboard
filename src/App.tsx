@@ -4,6 +4,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/store';
 import { ProtectedRoute } from '@/components/auth';
 import { FeedbackCenter, PageLoader } from '@/components/ui';
+// Static imports — auth + landing + error pages + public tracking. These are
+// either needed on the initial paint (landing, login) or so small they aren't
+// worth splitting (error fallbacks). Everything else is lazy below.
 import {
   LandingPage,
   LoginPage,
@@ -17,31 +20,77 @@ import {
   ForbiddenPage,
   NotFoundPage,
   TrackPage,
-  DashboardPage,
-  AdminDashboardPage,
-  ShipmentsPage,
-  TrackShipmentPage,
-  NewShipmentPage,
-  ShipmentDetailPage,
-  ClientsPage,
-  ClientWorkbenchPage,
-  SuppliersPage,
-  OrdersPage,
-  NotificationsPage,
-  TeamPage,
-  SettingsPage,
-  SupportPage,
-  DeliverySchedulePage,
-  PaymentsPage,
-  PaymentCallbackPage,
-  BulkOrdersPage,
-  ReportsPage,
-  ProfilePage,
 } from '@/pages';
 import { ROUTES, isLaunchGateActive } from '@/constants';
 
-// Code-split Phase 4 marketing surfaces — they are visitor-first and rarely
-// hit by signed-in users.
+// Code-split everything that lives behind auth or behind a less-trafficked
+// public surface. The named-export `.then(m => ({ default: m.X }))` form
+// matches our barrel re-export pattern. The whole authed surface area shares
+// one Suspense boundary on the <Routes> tree below.
+const DashboardPage = lazy(() =>
+  import('@/pages/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })),
+);
+const AdminDashboardPage = lazy(() =>
+  import('@/pages/admin/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage })),
+);
+const ShipmentsPage = lazy(() =>
+  import('@/pages/shipments/ShipmentsPage').then((m) => ({ default: m.ShipmentsPage })),
+);
+const TrackShipmentPage = lazy(() =>
+  import('@/pages/shipments/TrackShipmentPage').then((m) => ({ default: m.TrackShipmentPage })),
+);
+const NewShipmentPage = lazy(() =>
+  import('@/pages/shipments/NewShipmentPage').then((m) => ({ default: m.NewShipmentPage })),
+);
+const ShipmentDetailPage = lazy(() =>
+  import('@/pages/shipments/ShipmentDetailPage').then((m) => ({ default: m.ShipmentDetailPage })),
+);
+const ClientsPage = lazy(() =>
+  import('@/pages/clients/ClientsPage').then((m) => ({ default: m.ClientsPage })),
+);
+const ClientWorkbenchPage = lazy(() =>
+  import('@/pages/clients/ClientWorkbenchPage').then((m) => ({ default: m.ClientWorkbenchPage })),
+);
+const SuppliersPage = lazy(() =>
+  import('@/pages/suppliers/SuppliersPage').then((m) => ({ default: m.SuppliersPage })),
+);
+const OrdersPage = lazy(() =>
+  import('@/pages/orders/OrdersPage').then((m) => ({ default: m.OrdersPage })),
+);
+const NotificationsPage = lazy(() =>
+  import('@/pages/notifications/NotificationsPage').then((m) => ({ default: m.NotificationsPage })),
+);
+const TeamPage = lazy(() =>
+  import('@/pages/team/TeamPage').then((m) => ({ default: m.TeamPage })),
+);
+const SettingsPage = lazy(() =>
+  import('@/pages/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })),
+);
+const SupportPage = lazy(() =>
+  import('@/pages/support/SupportPage').then((m) => ({ default: m.SupportPage })),
+);
+const DeliverySchedulePage = lazy(() =>
+  import('@/pages/deliverySchedule/DeliverySchedulePage').then((m) => ({ default: m.DeliverySchedulePage })),
+);
+const PaymentsPage = lazy(() =>
+  import('@/pages/payments/PaymentsPage').then((m) => ({ default: m.PaymentsPage })),
+);
+const PaymentCallbackPage = lazy(() =>
+  import('@/pages/payments/PaymentCallbackPage').then((m) => ({ default: m.PaymentCallbackPage })),
+);
+const BulkOrdersPage = lazy(() =>
+  import('@/pages/bulkOrders/BulkOrdersPage').then((m) => ({ default: m.BulkOrdersPage })),
+);
+// ReportsPage owns the recharts import — keeping it lazy is the single
+// biggest bundle-size win available.
+const ReportsPage = lazy(() =>
+  import('@/pages/reports/ReportsPage').then((m) => ({ default: m.ReportsPage })),
+);
+const ProfilePage = lazy(() =>
+  import('@/pages/profile/ProfilePage').then((m) => ({ default: m.ProfilePage })),
+);
+
+// Phase 4 marketing + Phase 5 admin surfaces (already lazy).
 const GalleryPage = lazy(() =>
   import('@/pages/public/GalleryPage').then((m) => ({ default: m.GalleryPage })),
 );
@@ -79,6 +128,7 @@ function AppRoutes(): ReactElement {
   }
 
   return (
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       {/* Public routes */}
       <Route path={ROUTES.HOME} element={<LandingPage />} />
@@ -99,22 +149,8 @@ function AppRoutes(): ReactElement {
       <Route path={ROUTES.FORBIDDEN} element={<ForbiddenPage />} />
       <Route path={ROUTES.TRACK_PUBLIC} element={<TrackPage />} />
       <Route path={`${ROUTES.TRACK_PUBLIC}/:trackingNumber`} element={<TrackPage />} />
-      <Route
-        path={ROUTES.GALLERY_PUBLIC}
-        element={
-          <Suspense fallback={<PageLoader />}>
-            <GalleryPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={ROUTES.D2D_INTAKE_PUBLIC}
-        element={
-          <Suspense fallback={<PageLoader />}>
-            <D2dIntakePage />
-          </Suspense>
-        }
-      />
+      <Route path={ROUTES.GALLERY_PUBLIC} element={<GalleryPage />} />
+      <Route path={ROUTES.D2D_INTAKE_PUBLIC} element={<D2dIntakePage />} />
 
       {/* Clerk user profile completion (handled inside page, no ProtectedRoute wrapper needed) */}
       <Route path={ROUTES.COMPLETE_PROFILE} element={<CompleteProfilePage />} />
@@ -310,9 +346,7 @@ function AppRoutes(): ReactElement {
         path={ROUTES.ADMIN_GALLERY}
         element={
           <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
-            <Suspense fallback={<PageLoader />}>
-              <AdminGalleryPage />
-            </Suspense>
+            <AdminGalleryPage />
           </ProtectedRoute>
         }
       />
@@ -320,9 +354,7 @@ function AppRoutes(): ReactElement {
         path={ROUTES.ADMIN_IMPORTS}
         element={
           <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-            <Suspense fallback={<PageLoader />}>
-              <AdminImportsPage />
-            </Suspense>
+            <AdminImportsPage />
           </ProtectedRoute>
         }
       />
@@ -330,6 +362,7 @@ function AppRoutes(): ReactElement {
       {/* Fallback */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </Suspense>
   );
 }
 
