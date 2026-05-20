@@ -52,6 +52,17 @@ export function ProtectedRoute({
     return <Navigate to={ROUTES.STAFF_ONBOARDING} replace />;
   }
 
+  // Roles flagged with mustEnrollMfa cannot reach any protected page until
+  // they finish enrollment — block here even on refresh / deep-link so the
+  // gate isn't bypassable past the initial login redirect.
+  if (
+    isAuthenticated &&
+    user?.mustEnrollMfa &&
+    location.pathname !== ROUTES.MFA_ENROLL
+  ) {
+    return <Navigate to={ROUTES.MFA_ENROLL} replace />;
+  }
+
   if (blockedRoles && blockedRoles.includes(effectiveRole)) {
     return <Navigate to={redirectTo ?? ROUTES.FORBIDDEN} replace />;
   }

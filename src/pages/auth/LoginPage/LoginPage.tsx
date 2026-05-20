@@ -54,6 +54,45 @@ export function LoginPage(): ReactElement {
     };
   }, [clearError]);
 
+  // 423 account-lockout — apiClient dispatches `auth:locked` with the
+  // backend's `lockedUntil` ISO timestamp. Hold it locally and drive a
+  // 1-Hz countdown until the lock elapses.
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const handler = (event: Event): void => {
+      const detail = (event as CustomEvent<{ lockedUntil?: string }>).detail;
+      const parsed = detail?.lockedUntil ? Date.parse(detail.lockedUntil) : NaN;
+      if (Number.isNaN(parsed) || parsed <= Date.now()) return;
+      setLockedUntil(parsed);
+    };
+    window.addEventListener('auth:locked', handler);
+    return () => window.removeEventListener('auth:locked', handler);
+  }, []);
+
+  useEffect(() => {
+    if (lockedUntil === null) return;
+    const id = window.setInterval(() => {
+      const now = Date.now();
+      setNowMs(now);
+      if (now >= lockedUntil) {
+        setLockedUntil(null);
+        window.clearInterval(id);
+      }
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [lockedUntil]);
+
+  const lockoutRemainingSec =
+    lockedUntil !== null ? Math.max(0, Math.ceil((lockedUntil - nowMs) / 1000)) : 0;
+  const isLockedOut = lockoutRemainingSec > 0;
+  const lockoutCountdownLabel = isLockedOut
+    ? `${Math.floor(lockoutRemainingSec / 60)
+        .toString()
+        .padStart(2, '0')}:${(lockoutRemainingSec % 60).toString().padStart(2, '0')}`
+    : undefined;
+
   const closeProvisioningModal = (): void => {
     setDismissedProvisioningTarget(PROVISIONING_GATE_TARGET_UTC);
   };
@@ -68,6 +107,9 @@ export function LoginPage(): ReactElement {
       reopenProvisioningModal();
       return;
     }
+
+    // Short-circuit: don't even hit the network while the lockout is active.
+    if (isLockedOut) return;
 
     try {
       const result = await login({
@@ -98,7 +140,9 @@ export function LoginPage(): ReactElement {
       <LoginForm
         onSubmit={handleSubmit}
         isLoading={isLoading}
-        error={isProvisioningActive ? null : error}
+        error={isProvisioningActive || isLockedOut ? null : error}
+        isLockedOut={isLockedOut}
+        lockoutCountdownLabel={lockoutCountdownLabel}
       />
       <ProvisioningGateModal
         isOpen={isProvisioningModalOpen}

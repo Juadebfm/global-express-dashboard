@@ -59,6 +59,21 @@ function dispatchUnauthorized(path: string): void {
   window.dispatchEvent(new CustomEvent('auth:unauthorized'));
 }
 
+// 423 Locked — backend returns { message, lockedUntil: <ISO 8601> } after 5
+// failed login attempts. Dispatch a global event so the login screen can
+// show a countdown without each form re-parsing the response body.
+function dispatchAccountLocked(payload: unknown): void {
+  if (typeof window === 'undefined') return;
+  const lockedUntil =
+    payload && typeof payload === 'object' && 'lockedUntil' in payload
+      ? (payload as { lockedUntil?: unknown }).lockedUntil
+      : undefined;
+  if (typeof lockedUntil !== 'string') return;
+  window.dispatchEvent(
+    new CustomEvent('auth:locked', { detail: { lockedUntil } }),
+  );
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const { headers: optionHeaders, body, ...restOptions } = options;
   const headers = new Headers(optionHeaders);
@@ -99,6 +114,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!response.ok) {
     if (response.status === 401) dispatchUnauthorized(path);
+    if (response.status === 423) dispatchAccountLocked(payload);
     const retryAfter =
       response.status === 429 ? parseRetryAfter(response.headers.get('Retry-After')) : null;
     if (response.status === 429) showRateLimitToast(retryAfter);
