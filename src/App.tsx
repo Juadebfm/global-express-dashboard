@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/store';
 import { ProtectedRoute } from '@/components/auth';
+import { RouteErrorBoundary } from '@/components/errors';
 import { FeedbackCenter, PageLoader } from '@/components/ui';
 import {
   LandingPage,
@@ -338,7 +339,9 @@ function App(): ReactElement {
     <BrowserRouter>
       <AuthProvider>
         <FeedbackCenter />
-        <AppRoutes />
+        <RouteErrorBoundary>
+          <AppRoutes />
+        </RouteErrorBoundary>
       </AuthProvider>
     </BrowserRouter>
   );
