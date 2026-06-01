@@ -4,18 +4,95 @@ import { useFeedbackStore } from '@/store/feedback/feedback.store';
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS ?? 15000);
 
+// RFC 7807 Problem Details — the backend now returns this shape on every
+// error status (400, 401, 403, 404, 409, 422, 423, 429, 500, 503) with
+// Content-Type `application/problem+json; charset=utf-8`.
+//
+// Known `type` URIs are enumerated in PROBLEM_TYPE for switch-on safety.
+// Extension fields (`lockedUntil`, `code: "captcha_failed"`, etc.) appear
+// at the top level, NOT nested — so the index signature catches them.
+export interface ProblemValidationError {
+  path: (string | number)[];
+  message: string;
+  code?: string;
+}
+
+export interface Problem {
+  type: string;
+  title: string;
+  status: number;
+  detail: string;
+  instance: string;
+  requestId: string;
+  errors?: ProblemValidationError[];
+  // Extension fields live at the top level. Callers that know they're
+  // looking at e.g. `/problems/locked` can read `problem.lockedUntil as string`.
+  [extension: string]: unknown;
+}
+
+export const PROBLEM_TYPE = {
+  VALIDATION: '/problems/validation',
+  UNAUTHORIZED: '/problems/unauthorized',
+  FORBIDDEN: '/problems/forbidden',
+  NOT_FOUND: '/problems/not-found',
+  CONFLICT: '/problems/conflict',
+  UNPROCESSABLE: '/problems/unprocessable',
+  LOCKED: '/problems/locked',
+  RATE_LIMITED: '/problems/rate-limited',
+  INTERNAL: '/problems/internal',
+  SERVICE_UNAVAILABLE: '/problems/service-unavailable',
+} as const;
+
 // Typed error preserved for the HTTP failure path. Callers that want to
-// inspect status / retry-after on a thrown error can `instanceof ApiError`;
-// everything else still treats it as an Error via .message.
+// inspect status / retry-after / requestId / per-field validation errors on
+// a thrown error can `instanceof ApiError`; everything else still treats it
+// as a plain Error via .message.
 export class ApiError extends Error {
   status: number;
   retryAfterSeconds: number | null;
-  constructor(message: string, status: number, retryAfterSeconds: number | null) {
+  /**
+   * The server's request correlation ID, surfaced in error UIs so a user
+   * can quote it in support. Sourced from `problem.requestId` when the body
+   * parsed as Problem Details, otherwise from the `X-Request-ID` header,
+   * otherwise null.
+   */
+  requestId: string | null;
+  /**
+   * The parsed Problem Details body when the response was
+   * `application/problem+json`. null for non-problem responses (legacy or
+   * network errors). Callers can read `err.problem?.errors` for per-field
+   * validation messages, or `err.problem?.code` for extension fields like
+   * the CAPTCHA / lockout signals.
+   */
+  problem: Problem | null;
+
+  constructor(
+    message: string,
+    status: number,
+    retryAfterSeconds: number | null,
+    requestId: string | null = null,
+    problem: Problem | null = null,
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.retryAfterSeconds = retryAfterSeconds;
+    this.requestId = requestId;
+    this.problem = problem;
   }
+}
+
+// Type guard — does the parsed body look like an RFC 7807 Problem? We don't
+// require all fields (server omits `errors` outside validation, may omit
+// `instance` in edge cases), but `type` + `title` + `status` are the core.
+function isProblem(payload: unknown): payload is Problem {
+  if (!payload || typeof payload !== 'object') return false;
+  const p = payload as Record<string, unknown>;
+  return (
+    typeof p.type === 'string' &&
+    typeof p.title === 'string' &&
+    typeof p.status === 'number'
+  );
 }
 
 // Parse Retry-After per RFC 7231 — either a non-negative integer (seconds)
@@ -59,9 +136,9 @@ function dispatchUnauthorized(path: string): void {
   window.dispatchEvent(new CustomEvent('auth:unauthorized'));
 }
 
-// 423 Locked — backend returns { message, lockedUntil: <ISO 8601> } after 5
-// failed login attempts. Dispatch a global event so the login screen can
-// show a countdown without each form re-parsing the response body.
+// 423 Locked — backend's Problem body has `lockedUntil: <ISO 8601>` as an
+// extension field at the top level. Dispatch a global event so the login
+// screen can show a countdown without each form re-parsing the response.
 function dispatchAccountLocked(payload: unknown): void {
   if (typeof window === 'undefined') return;
   const lockedUntil =
@@ -71,6 +148,48 @@ function dispatchAccountLocked(payload: unknown): void {
   if (typeof lockedUntil !== 'string') return;
   window.dispatchEvent(
     new CustomEvent('auth:locked', { detail: { lockedUntil } }),
+  );
+}
+
+// Build an ApiError from a non-OK Response + its already-parsed body.
+// Picks the best human-readable message (problem.detail → problem.title →
+// per-status HTTP fallback) and the best requestId (problem.requestId →
+// X-Request-ID header → null).
+function buildApiError(
+  response: Response,
+  payload: unknown,
+  retryAfterSeconds: number | null,
+): ApiError {
+  const fallback = getHttpFallbackMessage(response.status);
+  const headerRequestId = response.headers.get('x-request-id');
+
+  if (isProblem(payload)) {
+    const message = sanitizeMessage(
+      payload.detail || payload.title,
+      fallback,
+    );
+    return new ApiError(
+      message,
+      response.status,
+      retryAfterSeconds,
+      payload.requestId || headerRequestId,
+      payload,
+    );
+  }
+
+  // Legacy / non-conforming body — fall back to the pre-RFC-7807 shape
+  // (`{ message }`) so endpoints that haven't migrated yet still surface a
+  // sensible string, and X-Request-ID still threads through.
+  const legacyMessage =
+    payload && typeof payload === 'object' && 'message' in payload
+      ? ((payload as { message?: unknown }).message as string | undefined)
+      : undefined;
+  return new ApiError(
+    sanitizeMessage(legacyMessage, fallback),
+    response.status,
+    retryAfterSeconds,
+    headerRequestId,
+    null,
   );
 }
 
@@ -119,12 +238,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       response.status === 429 ? parseRetryAfter(response.headers.get('Retry-After')) : null;
     if (response.status === 429) showRateLimitToast(retryAfter);
 
-    const rawMessage =
-      payload && typeof payload === 'object' && 'message' in payload
-        ? (payload.message as string | undefined)
-        : undefined;
-    const fallback = getHttpFallbackMessage(response.status);
-    throw new ApiError(sanitizeMessage(rawMessage, fallback), response.status, retryAfter);
+    throw buildApiError(response, payload, retryAfter);
   }
 
   return payload as T;
@@ -170,20 +284,16 @@ async function requestBlob(
       response.status === 429 ? parseRetryAfter(response.headers.get('Retry-After')) : null;
     if (response.status === 429) showRateLimitToast(retryAfter);
 
-    let rawMessage: string | undefined;
-
-    const payload = await response.clone().json().catch(() => null);
-    if (payload && typeof payload === 'object' && 'message' in payload) {
-      rawMessage = payload.message as string | undefined;
-    }
-
-    if (!rawMessage) {
+    // Try to parse JSON; if the server sent text/plain or no body, fall
+    // back to the raw text so the message isn't lost.
+    let payload: unknown = await response.clone().json().catch(() => null);
+    if (payload === null) {
       const text = await response.clone().text().catch(() => '');
-      rawMessage = text || undefined;
+      if (text) payload = { message: text };
     }
+    if (response.status === 423) dispatchAccountLocked(payload);
 
-    const fallback = getHttpFallbackMessage(response.status);
-    throw new ApiError(sanitizeMessage(rawMessage, fallback), response.status, retryAfter);
+    throw buildApiError(response, payload, retryAfter);
   }
 
   return {
