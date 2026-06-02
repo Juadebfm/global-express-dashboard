@@ -3,11 +3,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiError,
   PROBLEM_TYPE,
+  apiDelete,
   apiDeleteData,
   apiGet,
   apiGetData,
+  apiPatch,
   apiPatchData,
   apiPostData,
+  apiPostMultipart,
   apiPostMultipartData,
   apiPutData,
 } from './apiClient';
@@ -367,5 +370,38 @@ describe('RFC 7807 Problem Details parsing', () => {
       expect(apiErr.message).toBe('Forbidden');
       expect(apiErr.problem).toBeNull();
     }
+  });
+});
+
+describe('Content-Type header', () => {
+  function contentType(): string | null {
+    const headers = lastCall().init.headers as HeadersInit;
+    return new Headers(headers).get('Content-Type');
+  }
+
+  it('sets application/json on empty-body PATCH', async () => {
+    mockFetch({ success: true, data: {} });
+    await apiPatch('/users/u1', undefined, 'token');
+    expect(contentType()).toBe('application/json');
+  });
+
+  it('sets application/json on empty-body DELETE', async () => {
+    mockFetch({ success: true, data: {} });
+    await apiDelete('/users/u1', 'token');
+    expect(contentType()).toBe('application/json');
+  });
+
+  it('sets application/json on JSON-body POST', async () => {
+    mockFetch({ success: true, data: {} });
+    await apiPostData('/orders', { foo: 'bar' }, 'token');
+    expect(contentType()).toBe('application/json');
+  });
+
+  it('does NOT set Content-Type on multipart uploads (browser owns the boundary)', async () => {
+    mockFetch({ success: true, data: {} });
+    const fd = new FormData();
+    fd.set('file', new File(['x'], 'x.csv', { type: 'text/csv' }));
+    await apiPostMultipart('/admin/imports/users-suppliers', fd, 'token');
+    expect(contentType()).toBeNull();
   });
 });

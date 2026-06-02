@@ -196,7 +196,13 @@ function buildApiError(
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const { headers: optionHeaders, body, ...restOptions } = options;
   const headers = new Headers(optionHeaders);
-  if (typeof body === 'string' && !headers.has('Content-Type')) {
+  // Set Content-Type: application/json on every request EXCEPT multipart
+  // uploads (FormData), where the browser must own the multipart boundary.
+  // This covers both JSON-body requests and the empty-body PATCH/DELETE
+  // case — Fastify on the backend rejects empty bodies unless the header
+  // is present, and some HTTP clients strip the header when the body is
+  // undefined, so we set it explicitly.
+  if (!(body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
