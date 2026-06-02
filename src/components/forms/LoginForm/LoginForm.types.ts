@@ -11,4 +11,10 @@ export interface LoginFormProps {
    */
   isLockedOut?: boolean;
   lockoutCountdownLabel?: string;
+  /**
+   * When set (non-empty MM:SS string), the submit button is disabled and a
+   * rate-limit banner is shown. Used for HTTP 429 retry-after — semantically
+   * distinct from the 423 lockout, so it has its own copy.
+   */
+  rateLimitCountdownLabel?: string;
 }

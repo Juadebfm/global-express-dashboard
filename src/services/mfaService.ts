@@ -1,4 +1,4 @@
-import { apiGetData, apiPost, apiPostData } from '@/lib/apiClient';
+import { apiGetData, apiPostData } from '@/lib/apiClient';
 import type {
   MfaStatus,
   MfaEnrollmentSecret,
@@ -13,23 +13,21 @@ import type {
 } from '@/types';
 
 // ── Challenge endpoints (unauth, mfaToken-bearing) ───────────────────────────
-// These use the legacy auth/* flat shape — no { success, data } envelope —
-// so they stay on the raw apiPost helper.
+// As of the BE REST standards pass, /auth/mfa/* responses are wrapped in
+// { success, data: T } like everything else. apiPostData unwraps once.
 
 export async function verifyMfaChallenge(payload: MfaVerifyPayload): Promise<AuthResponse> {
-  // Spec: POST /api/v1/auth/mfa/verify returns legacy flat shape
-  //   { user, tokens: { accessToken } }
-  const response = await apiPost<{ user: AuthResponse['user']; tokens: { accessToken: string } }>(
-    '/auth/mfa/verify',
-    payload,
-  );
-  return { user: response.user, token: response.tokens.accessToken };
+  const data = await apiPostData<{
+    user: AuthResponse['user'];
+    tokens: { accessToken: string };
+  }>('/auth/mfa/verify', payload);
+  return { user: data.user, token: data.tokens.accessToken };
 }
 
 export function recoverWithMfaRecoveryCode(
   payload: MfaRecoveryPayload,
 ): Promise<MfaRecoveryResult> {
-  return apiPost<MfaRecoveryResult>('/auth/mfa/recovery', payload);
+  return apiPostData<MfaRecoveryResult>('/auth/mfa/recovery', payload);
 }
 
 // ── Internal enrollment endpoints (Bearer-authed, enveloped) ─────────────────
