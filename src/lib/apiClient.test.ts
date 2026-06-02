@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   ApiError,
+  PROBLEM_TYPE,
   apiDelete,
   apiDeleteData,
   apiGet,
@@ -196,6 +197,179 @@ describe('envelope unwrap helpers', () => {
   it('still propagates HTTP errors through .then chain', async () => {
     mockFetch({ message: 'Forbidden' }, 403);
     await expect(apiGetData('/orders', 'token')).rejects.toThrow('Forbidden');
+  });
+});
+
+describe('RFC 7807 Problem Details parsing', () => {
+  function mockProblem(problem: Record<string, unknown>, status: number): void {
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify(problem), {
+          status,
+          headers: {
+            'Content-Type': 'application/problem+json; charset=utf-8',
+            'X-Request-ID': 'req-fallback',
+          },
+        }),
+      ),
+    ) as typeof fetch;
+  }
+
+  it('uses problem.detail as ApiError.message when present', async () => {
+    mockProblem(
+      {
+        type: PROBLEM_TYPE.UNAUTHORIZED,
+        title: 'Unauthorized',
+        status: 401,
+        detail: 'Invalid email or password',
+        instance: '/api/v1/auth/login',
+        requestId: 'req-2y',
+      },
+      401,
+    );
+    try {
+      await apiGet('/auth/login', 'token');
+      throw new Error('should not resolve');
+    } catch (err) {
+      expect(err).toBeInstanceOf(ApiError);
+      const apiErr = err as ApiError;
+      expect(apiErr.message).toBe('Invalid email or password');
+      expect(apiErr.status).toBe(401);
+      expect(apiErr.requestId).toBe('req-2y');
+      expect(apiErr.problem?.type).toBe(PROBLEM_TYPE.UNAUTHORIZED);
+    }
+  });
+
+  it('falls back to problem.title when detail is missing', async () => {
+    mockProblem(
+      {
+        type: PROBLEM_TYPE.CONFLICT,
+        title: 'Resource already exists',
+        status: 409,
+        // detail intentionally absent
+        instance: '/api/v1/orders',
+        requestId: 'req-9z',
+      },
+      409,
+    );
+    try {
+      await apiGet('/orders');
+      throw new Error('should not resolve');
+    } catch (err) {
+      expect((err as ApiError).message).toBe('Resource already exists');
+    }
+  });
+
+  it('populates ApiError.problem.errors for 400 validation', async () => {
+    mockProblem(
+      {
+        type: PROBLEM_TYPE.VALIDATION,
+        title: 'Validation failed',
+        status: 400,
+        detail: 'One or more request fields failed validation.',
+        instance: '/api/v1/payments/initialize',
+        requestId: 'req-21',
+        errors: [
+          {
+            path: ['amount'],
+            message: 'Invalid input: expected number, received undefined',
+            code: 'invalid_type',
+          },
+          { path: ['callbackUrl'], message: 'Required', code: 'invalid_type' },
+        ],
+      },
+      400,
+    );
+    try {
+      await apiGet('/payments', 'token');
+      throw new Error('should not resolve');
+    } catch (err) {
+      const apiErr = err as ApiError;
+      expect(apiErr.problem?.errors).toHaveLength(2);
+      expect(apiErr.problem?.errors?.[0].path).toEqual(['amount']);
+      expect(apiErr.problem?.errors?.[1].path).toEqual(['callbackUrl']);
+    }
+  });
+
+  it('reads lockedUntil as an extension field on a 423 problem', async () => {
+    const lockedUntil = new Date(Date.now() + 60_000).toISOString();
+    mockProblem(
+      {
+        type: PROBLEM_TYPE.LOCKED,
+        title: 'Account locked',
+        status: 423,
+        detail: 'Too many failed attempts. Try again later.',
+        instance: '/api/v1/auth/login',
+        requestId: 'req-77',
+        lockedUntil,
+      },
+      423,
+    );
+    try {
+      await apiGet('/auth/login');
+      throw new Error('should not resolve');
+    } catch (err) {
+      const apiErr = err as ApiError;
+      expect(apiErr.status).toBe(423);
+      expect(apiErr.problem?.type).toBe(PROBLEM_TYPE.LOCKED);
+      expect(apiErr.problem?.lockedUntil).toBe(lockedUntil);
+    }
+  });
+
+  it('reads code as an extension field on a 422 CAPTCHA problem', async () => {
+    mockProblem(
+      {
+        type: PROBLEM_TYPE.UNPROCESSABLE,
+        title: 'Unprocessable',
+        status: 422,
+        detail: 'Captcha verification failed.',
+        instance: '/api/v1/public/newsletter/subscribe',
+        requestId: 'req-cf',
+        code: 'captcha_failed',
+      },
+      422,
+    );
+    try {
+      await apiGet('/public/newsletter');
+      throw new Error('should not resolve');
+    } catch (err) {
+      const apiErr = err as ApiError;
+      expect(apiErr.problem?.code).toBe('captcha_failed');
+    }
+  });
+
+  it('prefers problem.requestId but falls back to X-Request-ID header', async () => {
+    // Problem body missing requestId — header should fill in.
+    mockProblem(
+      {
+        type: PROBLEM_TYPE.NOT_FOUND,
+        title: 'Not found',
+        status: 404,
+        detail: 'Resource not found',
+        instance: '/api/v1/orders/x',
+        // requestId omitted
+      } as Record<string, unknown>,
+      404,
+    );
+    try {
+      await apiGet('/orders/x');
+      throw new Error('should not resolve');
+    } catch (err) {
+      // The body had no requestId, but the header did.
+      expect((err as ApiError).requestId).toBe('req-fallback');
+    }
+  });
+
+  it('keeps the legacy { message } fallback for non-Problem bodies', async () => {
+    mockFetch({ message: 'Forbidden' }, 403);
+    try {
+      await apiGet('/orders');
+      throw new Error('should not resolve');
+    } catch (err) {
+      const apiErr = err as ApiError;
+      expect(apiErr.message).toBe('Forbidden');
+      expect(apiErr.problem).toBeNull();
+    }
   });
 });
 
