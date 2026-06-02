@@ -134,3 +134,4 @@ export {
 } from './adminUsersService';
 export { importUsersSuppliers } from './adminImportsService';
 export type { ImportUsersSuppliersInput } from './adminImportsService';
+export { getFileScanStatus } from './fileScansService';

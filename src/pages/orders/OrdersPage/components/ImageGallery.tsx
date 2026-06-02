@@ -2,7 +2,7 @@ import type { FormEvent, ReactElement } from 'react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Trash2, Upload } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { Button, GatedFileViewer } from '@/components/ui';
 import { cn } from '@/utils';
 import { formatDate } from '@/utils';
 import type { OrderImage } from '@/types';
@@ -109,12 +109,17 @@ export function ImageGallery({
                 key={image.id}
                 className="group relative overflow-hidden rounded-xl border border-gray-200"
               >
-                <img
-                  src={image.url}
-                  alt={image.r2Key || image.id}
-                  className="aspect-square w-full object-cover"
-                  loading="lazy"
-                />
+                {/* File-scan gate: img only renders when scan is clean/skipped.
+                    For pending/error/malicious, the gate renders an inline
+                    placeholder in the same tile slot. */}
+                <GatedFileViewer r2Key={image.r2Key} className="h-full">
+                  <img
+                    src={image.url}
+                    alt={image.r2Key || image.id}
+                    className="aspect-square w-full object-cover"
+                    loading="lazy"
+                  />
+                </GatedFileViewer>
                 <div
                   className={cn(
                     'absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 pb-2 pt-6',

@@ -1,0 +1,1 @@
+export { GatedFileViewer } from './GatedFileViewer';

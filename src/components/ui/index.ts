@@ -19,6 +19,8 @@ export { FlagIcon } from './FlagIcon';
 export { CopyButton } from './CopyButton';
 export { StepIndicator } from './StepIndicator';
 export type { StepIndicatorItem } from './StepIndicator';
+export { FileScanPill } from './FileScanPill';
+export { GatedFileViewer } from './GatedFileViewer';
 export {
   TurnstileGate,
   TURNSTILE_DEV_TOKEN,
