@@ -198,10 +198,40 @@ export function apiGet<T>(path: string, token?: string): Promise<T> {
   });
 }
 
-export function apiPost<T>(path: string, body?: unknown, token?: string): Promise<T> {
+/**
+ * Per-POST options. Currently carries Cloudflare Turnstile tokens; future
+ * per-request headers (request-id override, abort signal, etc.) would land
+ * here too.
+ */
+export interface PostOpts {
+  /**
+   * Cloudflare Turnstile token captured by the widget. When set, attaches
+   * `cf-turnstile-response: <token>` to the request. Required by the BE
+   * for the 5 unauthenticated public POSTs (newsletter subscribe, gallery
+   * claim presign/submit, car purchase attempt, D2D intake). Tokens are
+   * single-use and expire after 5 minutes — on a 422 with
+   * `code: "captcha_failed"`/"captcha_missing", reset the widget and
+   * re-issue.
+   */
+  turnstileToken?: string;
+}
+
+function buildPostHeaders(token?: string, opts?: PostOpts): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (opts?.turnstileToken) headers['cf-turnstile-response'] = opts.turnstileToken;
+  return headers;
+}
+
+export function apiPost<T>(
+  path: string,
+  body?: unknown,
+  token?: string,
+  opts?: PostOpts,
+): Promise<T> {
   return request<T>(path, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: buildPostHeaders(token, opts),
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 }
@@ -245,11 +275,12 @@ export function apiGetBlob(
 export function apiPostMultipart<T>(
   path: string,
   formData: FormData,
-  token?: string
+  token?: string,
+  opts?: PostOpts,
 ): Promise<T> {
   return request<T>(path, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: buildPostHeaders(token, opts),
     body: formData,
   });
 }
@@ -275,8 +306,13 @@ export function apiGetData<T>(path: string, token?: string): Promise<T> {
   return apiGet<Envelope<T>>(path, token).then(unwrap);
 }
 
-export function apiPostData<T>(path: string, body?: unknown, token?: string): Promise<T> {
-  return apiPost<Envelope<T>>(path, body, token).then(unwrap);
+export function apiPostData<T>(
+  path: string,
+  body?: unknown,
+  token?: string,
+  opts?: PostOpts,
+): Promise<T> {
+  return apiPost<Envelope<T>>(path, body, token, opts).then(unwrap);
 }
 
 export function apiPutData<T>(path: string, body?: unknown, token?: string): Promise<T> {
@@ -294,7 +330,8 @@ export function apiDeleteData<T>(path: string, token?: string, body?: unknown): 
 export function apiPostMultipartData<T>(
   path: string,
   formData: FormData,
-  token?: string
+  token?: string,
+  opts?: PostOpts,
 ): Promise<T> {
-  return apiPostMultipart<Envelope<T>>(path, formData, token).then(unwrap);
+  return apiPostMultipart<Envelope<T>>(path, formData, token, opts).then(unwrap);
 }

@@ -45,27 +45,39 @@ export function getPublicGallerySales(limit?: number): Promise<GalleryItem[]> {
 
 export function presignPublicGalleryClaim(
   payload: GalleryUploadPresignPayload,
+  turnstileToken: string,
 ): Promise<GalleryUploadPresignResult> {
-  return apiPostData<GalleryUploadPresignResult>('/public/gallery/claims/presign', payload);
+  return apiPostData<GalleryUploadPresignResult>(
+    '/public/gallery/claims/presign',
+    payload,
+    undefined,
+    { turnstileToken },
+  );
 }
 
 export function submitPublicAnonymousClaim(
   trackingNumber: string,
   payload: AnonymousClaimPayload,
+  turnstileToken: string,
 ): Promise<GalleryClaimSubmissionResult> {
   return apiPostData<GalleryClaimSubmissionResult>(
     `/public/gallery/anonymous/${encodeURIComponent(trackingNumber)}/claim`,
     payload,
+    undefined,
+    { turnstileToken },
   );
 }
 
 export function submitPublicCarPurchaseAttempt(
   trackingNumber: string,
   payload: AnonymousCarPurchasePayload,
+  turnstileToken: string,
 ): Promise<GalleryClaimSubmissionResult> {
   return apiPostData<GalleryClaimSubmissionResult>(
     `/public/gallery/cars/${encodeURIComponent(trackingNumber)}/purchase-attempt`,
     payload,
+    undefined,
+    { turnstileToken },
   );
 }
 

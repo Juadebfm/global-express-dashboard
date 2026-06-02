@@ -19,3 +19,9 @@ export { FlagIcon } from './FlagIcon';
 export { CopyButton } from './CopyButton';
 export { StepIndicator } from './StepIndicator';
 export type { StepIndicatorItem } from './StepIndicator';
+export {
+  TurnstileGate,
+  TURNSTILE_DEV_TOKEN,
+  isTurnstileError,
+} from './TurnstileGate';
+export type { TurnstileGateRef, TurnstileGateProps } from './TurnstileGate';

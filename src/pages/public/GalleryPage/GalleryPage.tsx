@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,7 +13,13 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { Button, Input } from '@/components/ui';
+import {
+  Button,
+  Input,
+  TurnstileGate,
+  isTurnstileError,
+  type TurnstileGateRef,
+} from '@/components/ui';
 import { ROUTES } from '@/constants';
 import {
   useFeedbackStore,
@@ -261,6 +267,23 @@ function ClaimModal({ item, onClose }: ClaimModalProps): ReactElement {
   const pushMessage = useFeedbackStore((s) => s.pushMessage);
   const [files, setFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
+  // Claim flow fires N+1 protected POSTs (N presigns + 1 submit). Each
+  // consumes a single-use Turnstile token, so the hook requests a fresh
+  // one per call via this ref.
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const turnstileRef = useRef<TurnstileGateRef | null>(null);
+  // Stable callbacks so ref access lives outside the render-time closure
+  // handleSubmit creates (satisfies react-hooks/refs).
+  const resetTurnstile = useCallback(() => {
+    setTurnstileToken('');
+    turnstileRef.current?.reset();
+  }, []);
+  const requestNextToken = useCallback((): Promise<string> => {
+    if (!turnstileRef.current) {
+      return Promise.reject(new Error('Turnstile widget unavailable.'));
+    }
+    return turnstileRef.current.requestNextToken();
+  }, []);
 
   const {
     register,
@@ -287,6 +310,10 @@ function ClaimModal({ item, onClose }: ClaimModalProps): ReactElement {
         <span className="ml-1 font-mono text-xs uppercase">{item.trackingNumberMasked}</span>
       </p>
       <form
+        // react-hooks/refs flags ref access in render-time closures; safe
+        // here because the closure runs on submit (event handler) and the
+        // ref is read via the stable callbacks above.
+        // eslint-disable-next-line react-hooks/refs
         onSubmit={handleSubmit(async (values) => {
           if (files.length === 0) {
             setFileError('Attach at least one proof file (ID, invoice, packing slip).');
@@ -304,9 +331,12 @@ function ClaimModal({ item, onClose }: ClaimModalProps): ReactElement {
               city: values.city?.trim() || undefined,
               country: values.country?.trim() || undefined,
               message: values.message?.trim() || undefined,
+              // Hook calls this once per protected POST in the chain.
+              getTurnstileToken: requestNextToken,
             });
             onClose();
-          } catch {
+          } catch (err) {
+            if (isTurnstileError(err)) resetTurnstile();
             /* feedback handled in hook */
           }
         })}
@@ -361,6 +391,7 @@ function ClaimModal({ item, onClose }: ClaimModalProps): ReactElement {
           )}
         </div>
 
+        <TurnstileGate ref={turnstileRef} onToken={setTurnstileToken} />
         <div className="flex justify-end gap-2 pt-2">
           <button
             type="button"
@@ -369,7 +400,12 @@ function ClaimModal({ item, onClose }: ClaimModalProps): ReactElement {
           >
             Cancel
           </button>
-          <Button type="submit" variant="primary" isLoading={submit.isPending}>
+          <Button
+            type="submit"
+            variant="primary"
+            isLoading={submit.isPending}
+            disabled={!turnstileToken || submit.isPending}
+          >
             Submit claim
           </Button>
         </div>
@@ -385,6 +421,12 @@ interface CarPurchaseModalProps {
 
 function CarPurchaseModal({ item, onClose }: CarPurchaseModalProps): ReactElement {
   const submit = useSubmitPublicCarPurchase();
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const turnstileRef = useRef<TurnstileGateRef | null>(null);
+  const resetTurnstile = useCallback(() => {
+    setTurnstileToken('');
+    turnstileRef.current?.reset();
+  }, []);
   const {
     register,
     handleSubmit,
@@ -401,6 +443,10 @@ function CarPurchaseModal({ item, onClose }: CarPurchaseModalProps): ReactElemen
         <span className="font-mono text-xs uppercase">{item.trackingNumberMasked}</span>
       </p>
       <form
+        // react-hooks/refs flags ref access in render-time closures; safe
+        // here because the closure runs on submit (event handler) and the
+        // ref is read via the stable callbacks above.
+        // eslint-disable-next-line react-hooks/refs
         onSubmit={handleSubmit(async (values) => {
           const payload: AnonymousCarPurchasePayload = {
             fullName: values.fullName,
@@ -411,9 +457,14 @@ function CarPurchaseModal({ item, onClose }: CarPurchaseModalProps): ReactElemen
             message: values.message?.trim() || undefined,
           };
           try {
-            await submit.mutate({ trackingNumber: item.trackingNumberMasked, payload });
+            await submit.mutate({
+              trackingNumber: item.trackingNumberMasked,
+              payload,
+              turnstileToken,
+            });
             onClose();
-          } catch {
+          } catch (err) {
+            if (isTurnstileError(err)) resetTurnstile();
             /* feedback handled in hook */
           }
         })}
@@ -439,6 +490,7 @@ function CarPurchaseModal({ item, onClose }: CarPurchaseModalProps): ReactElemen
             {...register('message')}
           />
         </div>
+        <TurnstileGate ref={turnstileRef} onToken={setTurnstileToken} />
         <div className="flex justify-end gap-2 pt-2">
           <button
             type="button"
@@ -447,7 +499,12 @@ function CarPurchaseModal({ item, onClose }: CarPurchaseModalProps): ReactElemen
           >
             Cancel
           </button>
-          <Button type="submit" variant="primary" isLoading={submit.isPending}>
+          <Button
+            type="submit"
+            variant="primary"
+            isLoading={submit.isPending}
+            disabled={!turnstileToken || submit.isPending}
+          >
             Submit interest
           </Button>
         </div>
@@ -458,6 +515,12 @@ function CarPurchaseModal({ item, onClose }: CarPurchaseModalProps): ReactElemen
 
 function NewsletterSection(): ReactElement {
   const subscribe = useSubscribeToNewsletter();
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const turnstileRef = useRef<TurnstileGateRef | null>(null);
+  const resetTurnstile = useCallback(() => {
+    setTurnstileToken('');
+    turnstileRef.current?.reset();
+  }, []);
   const {
     register,
     handleSubmit,
@@ -482,11 +545,16 @@ function NewsletterSection(): ReactElement {
         </div>
       </div>
       <form
+        // react-hooks/refs flags ref access in render-time closures; safe
+        // here because the closure runs on submit (event handler) and the
+        // ref is read via the stable callbacks above.
+        // eslint-disable-next-line react-hooks/refs
         onSubmit={handleSubmit(async (values) => {
           try {
-            await subscribe.mutate(values);
+            await subscribe.mutate({ payload: values, turnstileToken });
             reset({ email: '' });
-          } catch {
+          } catch (err) {
+            if (isTurnstileError(err)) resetTurnstile();
             /* feedback handled in hook */
           }
         })}
@@ -502,11 +570,19 @@ function NewsletterSection(): ReactElement {
           />
         </div>
         <div className="sm:pt-7">
-          <Button type="submit" variant="primary" isLoading={subscribe.isPending}>
+          <Button
+            type="submit"
+            variant="primary"
+            isLoading={subscribe.isPending}
+            disabled={!turnstileToken || subscribe.isPending}
+          >
             Subscribe
           </Button>
         </div>
       </form>
+      <div className="mt-3">
+        <TurnstileGate ref={turnstileRef} onToken={setTurnstileToken} />
+      </div>
     </section>
   );
 }
