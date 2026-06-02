@@ -15,8 +15,9 @@ import { AuthLayout } from '@/components/layout';
 import { Button, Card, Checkbox, Input, OtpInput, StepIndicator } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import { useLanguage } from '@/hooks';
-import { apiPatch } from '@/lib/apiClient';
+import { ApiError, apiPatch } from '@/lib/apiClient';
 import {
+  syncClerkAccount,
   updateMyNotificationPreferences,
 } from '@/services';
 
@@ -295,47 +296,40 @@ export function ExternalSignUpPage(): ReactElement {
       throw new Error('Authentication token is missing.');
     }
 
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/sync`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({}),
-    });
-
-    const payload = await response.json().catch(() => null);
-    if (response.ok) {
+    // Goes through apiClient so we get the 15s AbortController timeout +
+    // RFC 7807 Problem Details parsing. The bare fetch this replaces had
+    // no timeout, so a hung BE would spin the submit button forever
+    // instead of surfacing an error.
+    try {
+      await syncClerkAccount(token);
       return token;
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 422) {
+        // BE Problem Details may carry validation errors in
+        // `problem.errors[].path` (path segments), but older shapes
+        // packed { missingFields: string[] } into `data` or root.
+        // Walk both shapes to keep the existing UX working.
+        const missingFields = err.problem
+          ? extractMissingFields(err.problem)
+          : extractMissingFields({ data: { missingFields: [] } });
+        const pathFields = err.problem?.errors
+          ?.map((e) => (Array.isArray(e.path) ? String(e.path[0] ?? '') : ''))
+          .filter(Boolean) ?? [];
+        const fields = missingFields.length > 0 ? missingFields : pathFields;
+        const message =
+          fields.length > 0
+            ? `Missing required fields: ${fields.join(', ')}.`
+            : err.message ||
+              'Some required profile fields are missing. Please complete the form and try again.';
+        throw new SyncValidationError(message, fields);
+      }
+
+      throw new Error(
+        err instanceof Error
+          ? err.message
+          : 'Unable to sync your account right now. Please try again.',
+      );
     }
-
-    if (response.status === 422) {
-      const missingFields = extractMissingFields(payload);
-      const message = missingFields.length > 0
-        ? `Missing required fields: ${missingFields.join(', ')}.`
-        : (
-          payload &&
-          typeof payload === 'object' &&
-          'message' in payload &&
-          typeof payload.message === 'string' &&
-          payload.message.trim()
-            ? payload.message
-            : 'Some required profile fields are missing. Please complete the form and try again.'
-        );
-
-      throw new SyncValidationError(message, missingFields);
-    }
-
-    const message =
-      payload &&
-      typeof payload === 'object' &&
-      'message' in payload &&
-      typeof payload.message === 'string' &&
-      payload.message.trim()
-        ? payload.message
-        : 'Unable to sync your account right now. Please try again.';
-
-    throw new Error(message);
   }, [getToken]);
 
   const finalizeProfileSetup = useCallback(async (token: string): Promise<void> => {
