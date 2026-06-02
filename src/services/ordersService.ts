@@ -11,12 +11,20 @@ function normalizeShipmentType(type: 'air' | 'sea' | 'ocean'): 'air' | 'sea' {
   return type === 'ocean' ? 'sea' : type;
 }
 
-export function createOrder(payload: CreateOrderPayload, token: string): Promise<ApiOrder> {
+export function createOrder(
+  payload: CreateOrderPayload,
+  token: string,
+  idempotencyKey: string,
+): Promise<ApiOrder> {
   const normalizedPayload: CreateOrderPayload = {
     ...payload,
     shipmentType: normalizeShipmentType(payload.shipmentType),
   };
-  return apiPostData<ApiOrder>('/orders', normalizedPayload, token);
+  // Idempotency-Key prevents the order wizard's double-submit from creating
+  // duplicate orders. Hook generates the key per submit click.
+  return apiPostData<ApiOrder>('/orders', normalizedPayload, token, {
+    idempotencyKey,
+  });
 }
 
 type AnyRecord = Record<string, unknown>;

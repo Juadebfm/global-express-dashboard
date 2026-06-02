@@ -88,6 +88,7 @@ export async function getSupportTicketById(
 export async function createSupportTicket(
   payload: CreateSupportTicketPayload,
   token: string,
+  idempotencyKey: string,
 ): Promise<SupportTicket> {
   // Backend expects `body` instead of `description`
   const apiPayload = {
@@ -97,10 +98,13 @@ export async function createSupportTicket(
     body: payload.description,
     relatedTrackingNumber: payload.relatedTrackingNumber,
   };
+  // Idempotency-Key prevents the "open ticket" form's double-submit from
+  // creating duplicate tickets. Hook generates the key per submit click.
   const ticket = await apiPostData<ApiSupportTicket>(
     '/support/tickets',
     apiPayload,
     token,
+    { idempotencyKey },
   );
   return mapSupportTicket(ticket);
 }

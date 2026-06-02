@@ -109,6 +109,13 @@ export interface AnonymousClaimSubmissionInput {
   country?: string;
   message?: string;
   itemId: string;
+  /**
+   * Async factory that resolves with a fresh Turnstile token for each call.
+   * The claim flow fires N+1 protected POSTs (N presigns + 1 submit) and
+   * Turnstile tokens are single-use, so the form passes
+   * `() => gateRef.current!.requestNextToken()` here.
+   */
+  getTurnstileToken: () => Promise<string>;
 }
 
 export function useSubmitAnonymousClaim(): {
@@ -127,11 +134,15 @@ export function useSubmitAnonymousClaim(): {
       let uploadToken: string | undefined;
       const r2Keys: string[] = [];
       for (const file of input.files) {
-        const presign = await presignPublicGalleryClaim({
-          uploadToken,
-          contentType: file.type as GalleryUploadPresignPayload['contentType'],
-          originalFileName: file.name,
-        });
+        const turnstileToken = await input.getTurnstileToken();
+        const presign = await presignPublicGalleryClaim(
+          {
+            uploadToken,
+            contentType: file.type as GalleryUploadPresignPayload['contentType'],
+            originalFileName: file.name,
+          },
+          turnstileToken,
+        );
         uploadToken = presign.uploadToken;
         const putResp = await fetch(presign.uploadUrl, {
           method: 'PUT',
@@ -157,7 +168,8 @@ export function useSubmitAnonymousClaim(): {
         uploadToken,
         proofR2Keys: r2Keys,
       };
-      return submitPublicAnonymousClaim(input.trackingNumber, payload);
+      const submitToken = await input.getTurnstileToken();
+      return submitPublicAnonymousClaim(input.trackingNumber, payload, submitToken);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gallery', 'public'] });
@@ -185,6 +197,7 @@ export function useSubmitPublicCarPurchase(): {
   mutate: (input: {
     trackingNumber: string;
     payload: AnonymousCarPurchasePayload;
+    turnstileToken: string;
   }) => Promise<GalleryClaimSubmissionResult>;
   isPending: boolean;
   error: Error | null;
@@ -194,10 +207,10 @@ export function useSubmitPublicCarPurchase(): {
   const m = useMutation<
     GalleryClaimSubmissionResult,
     Error,
-    { trackingNumber: string; payload: AnonymousCarPurchasePayload }
+    { trackingNumber: string; payload: AnonymousCarPurchasePayload; turnstileToken: string }
   >({
-    mutationFn: ({ trackingNumber, payload }) =>
-      submitPublicCarPurchaseAttempt(trackingNumber, payload),
+    mutationFn: ({ trackingNumber, payload, turnstileToken }) =>
+      submitPublicCarPurchaseAttempt(trackingNumber, payload, turnstileToken),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gallery', 'public'] });
       pushMessage({

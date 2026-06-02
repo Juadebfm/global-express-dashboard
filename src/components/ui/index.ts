@@ -21,3 +21,9 @@ export { StepIndicator } from './StepIndicator';
 export type { StepIndicatorItem } from './StepIndicator';
 export { FileScanPill } from './FileScanPill';
 export { GatedFileViewer } from './GatedFileViewer';
+export {
+  TurnstileGate,
+  TURNSTILE_DEV_TOKEN,
+  isTurnstileError,
+} from './TurnstileGate';
+export type { TurnstileGateRef, TurnstileGateProps } from './TurnstileGate';

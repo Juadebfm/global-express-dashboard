@@ -78,38 +78,47 @@ describe('public gallery reads', () => {
 });
 
 describe('public gallery write flows', () => {
-  it('presignPublicGalleryClaim POSTs without Authorization', async () => {
+  it('presignPublicGalleryClaim POSTs without Authorization but with cf-turnstile-response', async () => {
     mockFetch({ success: true, data: { uploadUrl: 'u', r2Key: 'k', uploadToken: 't' } });
-    await presignPublicGalleryClaim({ contentType: 'image/png' });
+    await presignPublicGalleryClaim({ contentType: 'image/png' }, 'cf-token-1');
     const { url, init } = lastCall();
     expect(url).toContain('/public/gallery/claims/presign');
     expect(init.method).toBe('POST');
-    expect(new Headers(init.headers).has('Authorization')).toBe(false);
+    const headers = new Headers(init.headers);
+    expect(headers.has('Authorization')).toBe(false);
+    expect(headers.get('cf-turnstile-response')).toBe('cf-token-1');
   });
 
-  it('submitPublicAnonymousClaim encodes the tracking number', async () => {
+  it('submitPublicAnonymousClaim encodes the tracking number + attaches turnstile header', async () => {
     mockFetch({ success: true, data: { item: {}, claim: {}, ticket: {} } });
-    await submitPublicAnonymousClaim('TRK 1/2', {
-      itemId: '00000000-0000-0000-0000-000000000001',
-      fullName: 'Ada',
-      email: 'a@b.test',
-      phone: '+234555',
-      uploadToken: 'tok',
-      proofR2Keys: ['k1'],
-    });
+    await submitPublicAnonymousClaim(
+      'TRK 1/2',
+      {
+        itemId: '00000000-0000-0000-0000-000000000001',
+        fullName: 'Ada',
+        email: 'a@b.test',
+        phone: '+234555',
+        uploadToken: 'tok',
+        proofR2Keys: ['k1'],
+      },
+      'cf-token-2',
+    );
     const { url, init } = lastCall();
     expect(url).toContain('/public/gallery/anonymous/TRK%201%2F2/claim');
     expect(init.method).toBe('POST');
+    expect(new Headers(init.headers).get('cf-turnstile-response')).toBe('cf-token-2');
   });
 
-  it('submitPublicCarPurchaseAttempt hits the purchase-attempt path', async () => {
+  it('submitPublicCarPurchaseAttempt hits the purchase-attempt path + attaches turnstile header', async () => {
     mockFetch({ success: true, data: { item: {}, claim: {}, ticket: {} } });
-    await submitPublicCarPurchaseAttempt('CAR1', {
-      fullName: 'Ada',
-      email: 'a@b.test',
-      phone: '+234555',
-    });
-    expect(lastCall().url).toContain('/public/gallery/cars/CAR1/purchase-attempt');
+    await submitPublicCarPurchaseAttempt(
+      'CAR1',
+      { fullName: 'Ada', email: 'a@b.test', phone: '+234555' },
+      'cf-token-3',
+    );
+    const { url, init } = lastCall();
+    expect(url).toContain('/public/gallery/cars/CAR1/purchase-attempt');
+    expect(new Headers(init.headers).get('cf-turnstile-response')).toBe('cf-token-3');
   });
 });
 

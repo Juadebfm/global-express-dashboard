@@ -37,12 +37,24 @@ export function getPublicCalculatorRates(): Promise<PublicCalculatorRates> {
 
 export function subscribeToNewsletter(
   payload: NewsletterSubscribePayload,
+  turnstileToken: string,
 ): Promise<NewsletterSubscribeResult> {
-  return apiPostData<NewsletterSubscribeResult>('/public/newsletter/subscribe', payload);
+  return apiPostData<NewsletterSubscribeResult>(
+    '/public/newsletter/subscribe',
+    payload,
+    undefined,
+    { turnstileToken },
+  );
 }
 
 export function submitPublicD2dIntake(
   payload: PublicD2dIntakePayload,
+  turnstileToken: string,
 ): Promise<PublicD2dIntakeResult> {
-  return apiPostData<PublicD2dIntakeResult>('/public/d2d/intake', payload);
+  return apiPostData<PublicD2dIntakeResult>(
+    '/public/d2d/intake',
+    payload,
+    undefined,
+    { turnstileToken },
+  );
 }

@@ -1,9 +1,16 @@
-import { useState, type ReactElement } from 'react';
+import { useCallback, useRef, useState, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle2, PackageOpen } from 'lucide-react';
-import { Button, Checkbox, Input } from '@/components/ui';
+import {
+  Button,
+  Checkbox,
+  Input,
+  TurnstileGate,
+  isTurnstileError,
+  type TurnstileGateRef,
+} from '@/components/ui';
 import { ROUTES } from '@/constants';
 import { useSubmitPublicD2dIntake } from '@/hooks';
 import {
@@ -15,6 +22,14 @@ import type { PublicD2dIntakeResult } from '@/types';
 export default function D2dIntakePage(): ReactElement {
   const submit = useSubmitPublicD2dIntake();
   const [result, setResult] = useState<PublicD2dIntakeResult | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const turnstileRef = useRef<TurnstileGateRef | null>(null);
+  // Stable callback so the ref-access lives outside the render-time closure
+  // that handleSubmit creates (satisfies react-hooks/refs).
+  const resetTurnstile = useCallback(() => {
+    setTurnstileToken('');
+    turnstileRef.current?.reset();
+  }, []);
 
   const {
     register,
@@ -82,6 +97,11 @@ export default function D2dIntakePage(): ReactElement {
           }} />
         ) : (
           <form
+            // react-hooks/refs flags ref access inside any render-time
+            // closure; here the closure only runs on submit (an event
+            // handler), and the ref is read via the stable `resetTurnstile`
+            // callback. Safe to suppress.
+            // eslint-disable-next-line react-hooks/refs
             onSubmit={handleSubmit(async (values) => {
               try {
                 const trimmedOptional = (v: string | undefined): string | undefined => {
@@ -89,26 +109,31 @@ export default function D2dIntakePage(): ReactElement {
                   return t.length > 0 ? t : undefined;
                 };
                 const data = await submit.mutate({
-                  fullName: values.fullName,
-                  email: values.email,
-                  phone: values.phone,
-                  city: values.city,
-                  country: values.country,
-                  goodsDescription: values.goodsDescription,
-                  deliveryPhone: values.deliveryPhone,
-                  deliveryAddressLine1: values.deliveryAddressLine1,
-                  deliveryState: trimmedOptional(values.deliveryState),
-                  deliveryCity: trimmedOptional(values.deliveryCity),
-                  deliveryPostalCode: trimmedOptional(values.deliveryPostalCode),
-                  deliveryLandmark: trimmedOptional(values.deliveryLandmark),
-                  wantsAccount: values.wantsAccount,
-                  consentAcknowledgement: values.consentAcknowledgement,
-                  estimatedWeightKg: Number(values.estimatedWeightKg),
-                  estimatedCbm: Number(values.estimatedCbm),
+                  payload: {
+                    fullName: values.fullName,
+                    email: values.email,
+                    phone: values.phone,
+                    city: values.city,
+                    country: values.country,
+                    goodsDescription: values.goodsDescription,
+                    deliveryPhone: values.deliveryPhone,
+                    deliveryAddressLine1: values.deliveryAddressLine1,
+                    deliveryState: trimmedOptional(values.deliveryState),
+                    deliveryCity: trimmedOptional(values.deliveryCity),
+                    deliveryPostalCode: trimmedOptional(values.deliveryPostalCode),
+                    deliveryLandmark: trimmedOptional(values.deliveryLandmark),
+                    wantsAccount: values.wantsAccount,
+                    consentAcknowledgement: values.consentAcknowledgement,
+                    estimatedWeightKg: Number(values.estimatedWeightKg),
+                    estimatedCbm: Number(values.estimatedCbm),
+                  },
+                  turnstileToken,
                 });
                 setResult(data);
-              } catch {
-                /* feedback handled in hook */
+              } catch (err) {
+                // CAPTCHA failure → reset the widget so the user can re-issue
+                // without reloading. Toast is handled in the hook.
+                if (isTurnstileError(err)) resetTurnstile();
               }
             })}
             className="mt-8 space-y-8"
@@ -213,8 +238,14 @@ export default function D2dIntakePage(): ReactElement {
               </div>
             </Fieldset>
 
-            <div className="flex justify-end">
-              <Button type="submit" variant="primary" isLoading={submit.isPending}>
+            <div className="flex flex-col items-end gap-3">
+              <TurnstileGate ref={turnstileRef} onToken={setTurnstileToken} />
+              <Button
+                type="submit"
+                variant="primary"
+                isLoading={submit.isPending}
+                disabled={!turnstileToken || submit.isPending}
+              >
                 Submit request
               </Button>
             </div>

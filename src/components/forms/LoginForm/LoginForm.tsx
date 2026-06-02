@@ -14,7 +14,10 @@ export function LoginForm({
   error,
   isLockedOut = false,
   lockoutCountdownLabel,
+  rateLimitCountdownLabel,
 }: LoginFormProps): ReactElement {
+  const isRateLimited = Boolean(rateLimitCountdownLabel);
+  const isSubmitBlocked = isLockedOut || isRateLimited;
   const { t } = useTranslation('auth');
   const {
     register,
@@ -62,6 +65,17 @@ export function LoginForm({
         </div>
       )}
 
+      {/* 429 rate-limit cooldown — distinct from 423; the user isn't
+          locked out, they just hit the per-IP rate limiter. */}
+      {!isLockedOut && isRateLimited && rateLimitCountdownLabel && (
+        <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
+          <p className="text-sm font-medium text-amber-800">
+            Too many attempts.{' '}
+            <span className="font-mono">Retry in {rateLimitCountdownLabel}.</span>
+          </p>
+        </div>
+      )}
+
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <Input
@@ -99,7 +113,7 @@ export function LoginForm({
           className="auth-cta-btn w-full text-sm"
           size="lg"
           isLoading={isLoading}
-          disabled={isLockedOut}
+          disabled={isSubmitBlocked}
         >
           {t('loginForm.loginButton')}
         </Button>

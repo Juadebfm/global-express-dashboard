@@ -8,6 +8,13 @@ interface AlertBannerProps extends HTMLAttributes<HTMLDivElement> {
   tone: AlertTone;
   message: string;
   title?: string;
+  /**
+   * Backend request correlation ID (RFC 7807 `requestId`). When present,
+   * renders as small monospace footer text — "Ref: <id>" — so users can
+   * quote it in support tickets. (Not named `ref` because React reserves
+   * that prop for DOM refs.)
+   */
+  referenceId?: string;
   onClose?: () => void;
 }
 
@@ -37,6 +44,7 @@ export function AlertBanner({
   tone,
   message,
   title,
+  referenceId,
   onClose,
   className,
   ...props
@@ -57,6 +65,9 @@ export function AlertBanner({
       <div className="min-w-0 flex-1">
         {title && <p className="font-semibold">{title}</p>}
         <p className={title ? 'mt-0.5' : ''}>{message}</p>
+        {referenceId && (
+          <p className="mt-1 font-mono text-xs opacity-70">Ref: {referenceId}</p>
+        )}
       </div>
       {onClose && (
         <button

@@ -9,11 +9,11 @@ function createMessageId(): string {
 
 export const useFeedbackStore = create<FeedbackStore>((set, get) => ({
   messages: [],
-  pushMessage: ({ tone, message, title, durationMs }) => {
+  pushMessage: ({ tone, message, title, referenceId, durationMs }) => {
     const id = createMessageId();
     const nextDuration = durationMs ?? DEFAULT_DURATION_MS;
     set((state) => ({
-      messages: [...state.messages, { id, tone, message, title }],
+      messages: [...state.messages, { id, tone, message, title, referenceId }],
     }));
 
     if (nextDuration > 0) {

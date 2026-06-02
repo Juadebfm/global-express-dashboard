@@ -108,46 +108,51 @@ describe('getPublicCalculatorRates', () => {
 });
 
 describe('subscribeToNewsletter', () => {
-  it('POSTs the email and surfaces 409 conflicts', async () => {
+  it('POSTs the email + attaches cf-turnstile-response, surfaces 409 conflicts', async () => {
     mockFetch({ success: true, data: { message: 'Subscribed' } });
-    await subscribeToNewsletter({ email: 'a@b.test' });
+    await subscribeToNewsletter({ email: 'a@b.test' }, 'cf-token-1');
     const { url, init } = lastCall();
     expect(url).toContain('/public/newsletter/subscribe');
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body as string)).toEqual({ email: 'a@b.test' });
+    expect(new Headers(init.headers).get('cf-turnstile-response')).toBe('cf-token-1');
 
     mockFetch({ message: 'Email already subscribed' }, 409);
-    await expect(subscribeToNewsletter({ email: 'a@b.test' })).rejects.toThrow(
-      'Email already subscribed',
-    );
+    await expect(
+      subscribeToNewsletter({ email: 'a@b.test' }, 'cf-token-2'),
+    ).rejects.toThrow('Email already subscribed');
   });
 });
 
 describe('submitPublicD2dIntake', () => {
-  it('POSTs the intake payload without Authorization', async () => {
+  it('POSTs the intake payload + attaches cf-turnstile-response, no Authorization', async () => {
     mockFetch({
       success: true,
       data: { ticket: { id: 't1' }, contact: { email: 'a@b.test', accountLinked: false }, intakeRequest: {} },
     });
-    const result = await submitPublicD2dIntake({
-      fullName: 'Ada',
-      email: 'a@b.test',
-      phone: '+234555',
-      city: 'Lagos',
-      country: 'Nigeria',
-      goodsDescription: 'Cup',
-      deliveryPhone: '+234555',
-      deliveryAddressLine1: '1 Marina',
-      wantsAccount: false,
-      consentAcknowledgement: true,
-      estimatedWeightKg: 0,
-      estimatedCbm: 0,
-    });
+    const result = await submitPublicD2dIntake(
+      {
+        fullName: 'Ada',
+        email: 'a@b.test',
+        phone: '+234555',
+        city: 'Lagos',
+        country: 'Nigeria',
+        goodsDescription: 'Cup',
+        deliveryPhone: '+234555',
+        deliveryAddressLine1: '1 Marina',
+        wantsAccount: false,
+        consentAcknowledgement: true,
+        estimatedWeightKg: 0,
+        estimatedCbm: 0,
+      },
+      'cf-token-d2d',
+    );
     expect(result.ticket.id).toBe('t1');
     const { url, init } = lastCall();
     expect(url).toContain('/public/d2d/intake');
     expect(init.method).toBe('POST');
     const headers = new Headers(init.headers);
     expect(headers.has('Authorization')).toBe(false);
+    expect(headers.get('cf-turnstile-response')).toBe('cf-token-d2d');
   });
 });
