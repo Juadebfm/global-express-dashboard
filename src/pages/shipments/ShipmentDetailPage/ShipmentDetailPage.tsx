@@ -4,7 +4,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, FileText, FileUp, Plus, Ruler, X } from 'lucide-react';
 import { AppShell } from '@/pages/shared';
-import { Button, Input } from '@/components/ui';
+import { Button, FileScanPill, Input } from '@/components/ui';
+import { useFileScanStatus } from '@/hooks';
+import { SAFE_FILE_SCAN_STATUSES } from '@/types';
 import { ROUTES } from '@/constants';
 import {
   useDashboardData,
@@ -335,26 +337,7 @@ function AttachmentPanel({
         ) : (
           <ul className="space-y-2">
             {rows.map((r) => (
-              <li
-                key={r.id}
-                className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-700"
-              >
-                <span className="truncate font-medium" title={r.originalFileName}>
-                  {r.originalFileName}
-                </span>
-                {r.publicUrl ? (
-                  <a
-                    className="text-brand-600 hover:underline"
-                    href={r.publicUrl}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                  >
-                    View
-                  </a>
-                ) : (
-                  <span className="text-gray-400">{r.contentType}</span>
-                )}
-              </li>
+              <AttachmentRow key={r.id} attachment={r} />
             ))}
           </ul>
         )}
@@ -497,5 +480,47 @@ function Modal({ title, onClose, children }: ModalProps): ReactElement {
         <div className="px-6 py-5">{children}</div>
       </div>
     </div>
+  );
+}
+
+
+interface AttachmentRowProps {
+  attachment: InvoiceAttachment;
+}
+
+/**
+ * Renders one task-invoice / regulatory-doc row with a scan-status pill +
+ * a "View" link that only activates when the BE confirms the file is safe.
+ * Pending → disabled link with spinner; malicious / error → disabled link
+ * with a red pill explaining why.
+ */
+function AttachmentRow({ attachment }: AttachmentRowProps): ReactElement {
+  const { data, isLoading } = useFileScanStatus(attachment.r2Key);
+  const status = data?.status;
+  const isSafe = status !== undefined && SAFE_FILE_SCAN_STATUSES.includes(status);
+
+  return (
+    <li className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-700">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <span className="truncate font-medium" title={attachment.originalFileName}>
+          {attachment.originalFileName}
+        </span>
+        {status && <FileScanPill status={status} compact />}
+      </div>
+      {attachment.publicUrl && isSafe ? (
+        <a
+          className="text-brand-600 hover:underline"
+          href={attachment.publicUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          View
+        </a>
+      ) : (
+        <span className="text-gray-400">
+          {isLoading ? "Checking..." : !attachment.publicUrl ? attachment.contentType : "Not viewable"}
+        </span>
+      )}
+    </li>
   );
 }

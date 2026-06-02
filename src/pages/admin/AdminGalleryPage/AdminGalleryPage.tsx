@@ -11,7 +11,9 @@ import {
   XCircle,
 } from 'lucide-react';
 import { AppShell } from '@/pages/shared';
-import { Button, Input } from '@/components/ui';
+import { Button, FileScanPill, Input } from '@/components/ui';
+import { useFileScanStatus } from '@/hooks';
+import { SAFE_FILE_SCAN_STATUSES } from '@/types';
 import { useDashboardData } from '@/hooks';
 import {
   useAuthedGallery,
@@ -571,16 +573,7 @@ function ClaimsTab(): ReactElement {
                   {claim.proofUrls && claim.proofUrls.length > 0 && (
                     <ul className="mt-2 flex flex-wrap gap-2">
                       {claim.proofUrls.map((u, idx) => (
-                        <li key={u}>
-                          <a
-                            className="text-xs font-semibold text-brand-700 hover:underline"
-                            href={u}
-                            target="_blank"
-                            rel="noreferrer noopener"
-                          >
-                            Proof #{idx + 1}
-                          </a>
-                        </li>
+                        <ClaimProofLink key={u} url={u} index={idx} />
                       ))}
                     </ul>
                   )}
@@ -830,5 +823,67 @@ function Modal({ title, onClose, children }: ModalProps): ReactElement {
         <div className="px-6 py-5">{children}</div>
       </div>
     </div>
+  );
+}
+
+
+/**
+ * Extracts an R2 storage key from a public proof URL. R2 public URLs follow
+ * `https://<host>/<r2Key>` — the key is the entire URL path. Returns null
+ * for malformed URLs.
+ *
+ * BE follow-up: the cleaner fix is to expose `proofR2Keys: string[]` on
+ * the GalleryClaim shape so we donʼt have to URL-parse here.
+ */
+function extractR2KeyFromUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    return parsed.pathname.replace(/^\//, "") || null;
+  } catch {
+    return null;
+  }
+}
+
+interface ClaimProofLinkProps {
+  url: string;
+  index: number;
+}
+
+/**
+ * One proof attachment in the claim review queue. Calls the file-scan
+ * endpoint to gate the "open in new tab" link. Pending → disabled with a
+ * spinner pill; flagged / errored → disabled with a red pill; clean /
+ * skipped → real link.
+ */
+function ClaimProofLink({ url, index }: ClaimProofLinkProps): ReactElement {
+  const r2Key = useMemo(() => extractR2KeyFromUrl(url), [url]);
+  const { data, isLoading } = useFileScanStatus(r2Key);
+  const status = data?.status;
+  const isSafe = status !== undefined && SAFE_FILE_SCAN_STATUSES.includes(status);
+
+  if (!r2Key) {
+    return (
+      <li className="text-xs text-gray-400">Proof #{index + 1} (key missing)</li>
+    );
+  }
+
+  return (
+    <li className="inline-flex items-center gap-1.5">
+      {isSafe ? (
+        <a
+          className="text-xs font-semibold text-brand-700 hover:underline"
+          href={url}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          Proof #{index + 1}
+        </a>
+      ) : (
+        <span className="text-xs font-semibold text-gray-400" title={isLoading ? "Checking scan status" : "Not viewable"}>
+          Proof #{index + 1}
+        </span>
+      )}
+      {status && <FileScanPill status={status} compact />}
+    </li>
   );
 }

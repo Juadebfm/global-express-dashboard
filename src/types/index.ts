@@ -288,3 +288,9 @@ export type {
   PublicD2dIntakeContact,
   PublicD2dIntakeResult,
 } from './public.types';
+
+export type { FileScanStatus, FileScanStatusResult } from './fileScan.types';
+export {
+  SAFE_FILE_SCAN_STATUSES,
+  TERMINAL_FILE_SCAN_STATUSES,
+} from './fileScan.types';
