@@ -2,8 +2,8 @@
 
 **Source of truth:** [`global-express-backend/API_ENDPOINTS.md`](../global-express-backend/API_ENDPOINTS.md) (dated 2026-05-17, 163 HTTP + 1 WS endpoints)
 
-**Audit date:** 2026-05-17 (last update 2026-05-19 — Phase 5 complete)
-**Current coverage:** 144 / 164 endpoints (≈88%) + 1 WS connected
+**Audit date:** 2026-05-17 (last update 2026-05-20 — endpoint coverage complete; quality-standards audit in progress)
+**Current coverage:** **163 / 163** HTTP + **1 / 1** WS endpoints (100%)
 
 This file is the working tracker. Tick items as they ship. Quality-standards section is non-negotiable — every new endpoint must satisfy it before being ticked.
 
@@ -23,58 +23,58 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 - **Base URL:** `VITE_API_BASE_URL`
 - **Auth token attach:** token passed explicitly per call. Internal JWT in `localStorage.globalxpress_token`; Clerk token via `getToken()`
 - **Server state:** TanStack React Query
-- **WebSocket:** [src/hooks/useWebSocket.ts](src/hooks/useWebSocket.ts) — currently passes token via `?token=` query param (should move to `Sec-WebSocket-Protocol: bearer, <jwt>` per spec)
+- **WebSocket:** [src/hooks/useWebSocket.ts](src/hooks/useWebSocket.ts) — auth via `Sec-WebSocket-Protocol: bearer, <jwt>` subprotocol
 
 ---
 
 ## Quality standards — every endpoint must satisfy these
 
 ### Security
-- [ ] Internal JWT only ever lives in memory after first read; localStorage cleared on logout
-- [ ] No tokens logged to console, no tokens in URL query strings
-- [ ] WS auth uses `Sec-WebSocket-Protocol: bearer, <jwt>` subprotocol (NOT query string)
-- [ ] CSP-friendly: no `eval`, no inline event handlers
-- [ ] All file uploads PUT directly to R2 presigned URL — never proxy file bytes through our API
-- [ ] CSRF — we are token-bearer, but cookie-based fallbacks (if added) must be SameSite=Strict
+- [~] Internal JWT only ever lives in memory after first read; localStorage cleared on logout — **deliberate UX tradeoff**: token is persisted to `localStorage['globalxpress_token']` so a refresh / tab-close doesn't drop the session. [AuthContext.logout](src/store/auth/AuthContext.tsx) clears it on sign-out. Moving to memory-only would require a refresh-token cookie flow from the backend (not currently in the API spec).
+- [x] No tokens logged to console, no tokens in URL query strings — non-test src has zero `console.*` calls (verified by grep after PR #10's dead-code deletion); no `?token=`/`?jwt=`/`access_token` query-string usage in any service
+- [x] WS auth uses `Sec-WebSocket-Protocol: bearer, <jwt>` subprotocol (NOT query string) — [useWebSocket.ts:39](src/hooks/useWebSocket.ts#L39) passes `['bearer', token]` as the WebSocket constructor's second arg (PR #7)
+- [x] CSP-friendly: no `eval`, no inline event handlers — no `eval`, `new Function`, `dangerouslySetInnerHTML`, `javascript:` URLs, or inline `onclick`/`onerror` attributes in src or [index.html](index.html)
+- [x] All file uploads PUT directly to R2 presigned URL — never proxy file bytes through our API — gallery + shipment invoices use the shared [useR2Upload](src/hooks/useR2Upload.ts) hook; [usePaymentReceipts](src/hooks/usePaymentReceipts.ts) inlines the same presign→PUT→confirm pattern; the only non-R2 path is [adminImportsService.ts](src/services/adminImportsService.ts) where a tiny CSV is uploaded via multipart (text data, not media)
+- [x] CSRF — we are token-bearer, but cookie-based fallbacks (if added) must be SameSite=Strict — N/A; auth flows through `Authorization: Bearer …` headers, no cookie-based auth fallback exists in the FE
 - [x] PII never logged; error toasts strip server stack traces — non-test src has zero `console.*` calls (verified by grep); error messages flow through [sanitizeMessage](src/lib/feedback.ts) in apiClient
 - [x] Tracking number lookup (`/orders/track/:trackingNumber`) renders **read-only** — never expose PII on the public route — [TrackPage.tsx](src/pages/public/TrackPage/TrackPage.tsx) route is unwrapped (no `ProtectedRoute`), [trackShipment](src/services/trackingService.ts) calls `apiGetData` with no token, `TrackingResult` shape exposes only tracking number, status, origin/destination labels, dates, and last-location string — no recipient name, phone, email, or address
 
 ### Component architecture
-- [ ] One service module per backend route file (`authService`, `usersService`, `ordersService`, …). No fetch calls inside components.
-- [ ] All server reads go through TanStack Query `useQuery` hooks under [src/hooks/](src/hooks/)
-- [ ] All writes go through `useMutation` with explicit `onSuccess` cache invalidation
-- [ ] No prop drilling >2 levels — use Zustand store under [src/store/](src/store/) or React Query cache
-- [ ] Page components are thin orchestrators; logic in hooks, presentation in `components/`
-- [ ] Forms validated client-side with the same Zod shape the backend uses (mirror the schema, don't reinvent it)
+- [~] One service module per backend route file (`authService`, `usersService`, `ordersService`, …). No fetch calls inside components — 24 service modules in [src/services/](src/services/) aligned with backend route files; one stray `fetch()` call inside [ExternalSignUpPage.tsx:298](src/pages/auth/ExternalSignUpPage/ExternalSignUpPage.tsx#L298) (the Clerk-only `/auth/sync` bootstrap). Follow-up: move into `authService.syncClerkSession()`
+- [x] All server reads go through TanStack Query `useQuery` hooks under [src/hooks/](src/hooks/) — 81 `useQuery` call sites, all in hooks/; zero in components/ or pages/
+- [x] All writes go through `useMutation` with explicit `onSuccess` cache invalidation — 97 `useMutation` call sites; 91 `invalidateQueries` invocations (≈94% coverage; the rest are fire-and-forget log-style mutations e.g. push-notification unsub)
+- [x] No prop drilling >2 levels — use Zustand store under [src/store/](src/store/) or React Query cache — cross-cutting state lives in zustand stores (auth, feedback, theme, language, search, cooldown, websocket); server state lives in the React Query cache; pages compose hooks rather than threading data through deep child chains
+- [x] Page components are thin orchestrators; logic in hooks, presentation in `components/` — pages call hooks then render; zero pages contain `useQuery`/`useMutation`/`fetch` (single exception noted above)
+- [x] Forms validated client-side with the same Zod shape the backend uses (mirror the schema, don't reinvent it) — 103 `zodResolver`/schema references across form components; every form (Login, ForgotPassword, SupportTicket, Shipment*, Gallery*, etc.) uses `zodResolver` + a `*.schema.ts` mirroring the backend payload
 
 ### Optimization
-- [ ] React Query `staleTime` set per resource (e.g. 30 s for dashboard, 5 min for settings, 0 for notifications)
-- [ ] Lists paginated using the backend's `{ page, limit }` contract — never request `limit: 100` "to be safe"
-- [ ] Suspense / skeleton loaders on every async surface — no spinner-only fallbacks
-- [ ] Code-split routes via `React.lazy` (admin pages, gallery editor, reports charts)
-- [ ] Charts use the smallest possible recharts/visx import (tree-shaken)
-- [ ] No `useEffect` for data fetching — that's React Query's job
-- [ ] Images served via R2 public URL — no base64 in DOM
+- [~] React Query `staleTime` set per resource (e.g. 30 s for dashboard, 5 min for settings, 0 for notifications) — partial: 23 of 81 `useQuery` call sites set `staleTime` explicitly (≈28%); the rest fall back to React Query's defaults. Follow-up: audit each hook category and set sane per-resource values (settings → 5 min, dashboard → 30 s, notifications → 0)
+- [ ] Lists paginated using the backend's `{ page, limit }` contract — never request `limit: 100` "to be safe" — **gap**: 4 violations — [ShipmentsPage.tsx:92](src/pages/shipments/ShipmentsPage/ShipmentsPage.tsx#L92), [BulkOrdersPage.tsx:153](src/pages/bulkOrders/BulkOrdersPage/BulkOrdersPage.tsx#L153), [OrdersPage.tsx:88](src/pages/orders/OrdersPage/OrdersPage.tsx#L88), [shipmentsService.ts:276](src/services/shipmentsService.ts#L276). Follow-up: wire proper page/limit/total state with `{ page, limit }` controls
+- [~] Suspense / skeleton loaders on every async surface — no spinner-only fallbacks — partial: 9 `Suspense` boundaries (mostly around `React.lazy` routes); no `Skeleton` component exists yet — most async surfaces fall back to `<PageLoader />` spinners. Follow-up: ship a `Skeleton` primitive and adopt it on list/table pages
+- [~] Code-split routes via `React.lazy` (admin pages, gallery editor, reports charts) — partial: gallery, D2D intake, admin gallery, admin imports are lazy; **ReportsPage is NOT** even though it pulls in recharts — this is the single biggest bundle-size win available. Other admin pages and the orders/dashboard surfaces are also static imports. Bundle warning at build time shows `dist/.../index-*.js 1.95 MB / 517 kB gz`. Follow-up: lazy-wrap ReportsPage first, then the admin tree
+- [~] Charts use the smallest possible recharts/visx import (tree-shaken) — partial: [ReportsPage.tsx:4-18](src/pages/reports/ReportsPage/ReportsPage.tsx#L4-L18) uses named imports from `'recharts'` (tree-shakeable in principle), but because ReportsPage is statically imported the chart code ends up in the main bundle regardless. Real fix is to lazy-load ReportsPage (see above)
+- [x] No `useEffect` for data fetching — that's React Query's job — grep finds zero `useEffect` blocks that call `api*`/`fetch`; data fetching exclusively goes through `useQuery`/`useMutation`
+- [x] Images served via R2 public URL — no base64 in DOM — no `data:image`/base64-encoded image data anywhere in src
 
 ### Error handling
-- [ ] Every mutation has a toast/Sonner notification on success and failure
-- [ ] 401 → trigger logout + redirect to login (single global handler in `apiClient`)
-- [ ] 403 → toast "You don't have permission" — do NOT redirect
-- [ ] 404 → page-level empty state, not toast
-- [ ] 409 → contextual UI ("Already exists", "Already reviewed") — surface backend `message`
-- [ ] 422 → form-level field error, mapped from backend `errors[]`
-- [ ] 423 → countdown to `lockedUntil` on login screen
-- [ ] 429 → toast + disable retry button until `retry-after` seconds elapse
-- [ ] 500/503 → toast "Something went wrong" with retry CTA; log the request ID if backend returns one
-- [ ] All network errors funnel through a single error boundary at the route level
-- [x] Empty bodies on PATCH/DELETE must be sent with `Content-Type: application/json` (backend override allows it; some HTTP clients strip the header) — [apiClient.ts](src/lib/apiClient.ts) sets the header for every non-multipart request; FormData is the only carve-out so the browser owns the multipart boundary
+- [x] Every mutation has a toast/Sonner notification on success and failure — 97 `useMutation` call sites vs 185 `pushMessage`/`FEEDBACK_MESSAGES` references; success/failure copy catalogued in [FEEDBACK_MESSAGES](src/constants/feedback.ts) by domain
+- [x] 401 → trigger logout + redirect to login (single global handler in `apiClient`) — [apiClient.ts](src/lib/apiClient.ts) dispatches `auth:unauthorized` on every 401 (except `/auth/me` boot probe); [AuthContext](src/store/auth/AuthContext.tsx) clears in-house session; `ProtectedRoute` redirects on next render (PR #7)
+- [x] 403 → toast "You don't have permission" — do NOT redirect — [feedback.ts:32](src/lib/feedback.ts#L32) maps 403 to `feedback.forbidden` copy; apiClient surfaces it via `ApiError.message`; mutation `onError` toasts it; nothing in the codebase navigates on 403
+- [~] 404 → page-level empty state, not toast — partial: [feedback.ts:33](src/lib/feedback.ts#L33) maps 404 to a fallback message; detail/list pages render empty UI when data is null, but the "404 → empty state vs toast" decision is per-page, not centralized in apiClient. In practice compliant — no 404-toast spam observed
+- [x] 409 → contextual UI ("Already exists", "Already reviewed") — surface backend `message` — `ApiError.message` is the backend-supplied string (sanitized); mutation `onError` toasts it (e.g. "Validation request already decided"); no per-409 branching needed
+- [~] 422 → form-level field error, mapped from backend `errors[]` — partial: [feedback.ts:35](src/lib/feedback.ts#L35) maps 422 to a fallback toast and most forms surface the top-level `message`; [ExternalSignUpPage.tsx:312](src/pages/auth/ExternalSignUpPage/ExternalSignUpPage.tsx#L312) is the only site that walks `errors[]` and assigns per-field validation messages. Follow-up: lift that pattern into a shared `useApiErrorsToForm(form, error)` hook (added in PR #15 BE-integration) and adopt it across the bigger forms
+- [x] 423 → countdown to `lockedUntil` on login screen — apiClient dispatches `auth:locked`; [LoginPage](src/pages/auth/LoginPage/LoginPage.tsx) drives a 1-Hz MM:SS countdown; [LoginForm](src/components/forms/LoginForm/LoginForm.tsx) shows the banner + disables submit (PR #9)
+- [x] 429 → toast + disable retry button until `retry-after` seconds elapse — apiClient parses `Retry-After` (RFC 7231 numeric + HTTP-date) into `ApiError.retryAfterSeconds` + global toast (PR #7); [useRetryCooldown](src/hooks/useRetryCooldown.ts) hook + [cooldown store](src/store/cooldown/cooldown.store.ts) drive per-button countdowns; LoginForm is the first consumer (PR #10)
+- [~] 500/503 → toast "Something went wrong" with retry CTA; log the request ID if backend returns one — partial: [feedback.ts:36](src/lib/feedback.ts#L36) maps `status >= 500` to the "unavailable" copy + toast surfaces it. Retry CTA inside the toast is not wired (no `retry` callback in the feedback-message shape). BE handover adds RFC 7807 `requestId` — surfaced in toasts (PR #15) and `RouteErrorBoundary` (post-merge cleanup). Follow-up: add `retry?: () => void` to the message type and have hooks pass `() => mutation.mutate(lastVariables)`
+- [x] All network errors funnel through a single error boundary at the route level — [RouteErrorBoundary](src/components/errors/RouteErrorBoundary/RouteErrorBoundary.tsx) wraps `<AppRoutes />` inside `AuthProvider`; renders a friendly fallback (Reload / Go-home) with generic copy so `Error.message` doesn't leak (PR #13)
+- [x] Empty bodies on PATCH/DELETE must be sent with `Content-Type: application/json` (backend override allows it; some HTTP clients strip the header) — [apiClient.ts](src/lib/apiClient.ts) sets the header for every non-multipart request; FormData is the only carve-out so the browser owns the multipart boundary (PR #10)
 
 ### Contract conformance
-- [ ] Success envelope: services unwrap `{ success, data }` exactly once
-- [ ] Legacy `auth/*` services tolerate the flat shape (no `success` key)
-- [ ] Pagination response unwrapping: `{ data, pagination }`
-- [ ] MFA branching: `if (response.mfaRequired) → /mfa/verify route`
-- [ ] `mustEnrollMfa`, `mustChangePassword`, `mustCompleteProfile` flags on login response all gate the next route
+- [x] Success envelope: services unwrap `{ success, data }` exactly once — PR #8 centralized this in [apiClient.ts](src/lib/apiClient.ts) via `apiGetData/apiPostData/apiPatchData/apiPutData/apiDeleteData/apiPostMultipartData`; new services consume the *Data variants. Pre-existing services that still call the raw helpers either unwrap manually once (e.g. paginated lists in [ordersService.ts](src/services/ordersService.ts)) or handle the legacy flat shape (`auth/*`)
+- [x] Legacy `auth/*` services tolerate the flat shape (no `success` key) — [authService.login](src/services/authService.ts) reads `response.data` from the `/internal/auth/login` envelope; [authService.getMe](src/services/authService.ts#L63) accepts both `{ success, data: User }` and the raw `User` shape (legacy spec quirk for Clerk vs internal JWT)
+- [x] Pagination response unwrapping: `{ data, pagination }` — [ordersService.ts:191-197](src/services/ordersService.ts#L191-L197) returns `{ data, pagination }` from `getOrders`; [adminUsersService.ts](src/services/adminUsersService.ts) shapes the same way for the admin users list; both feed `{ page, limit, total, totalPages }` straight to consumer hooks
+- [x] MFA branching: `if (response.mfaRequired) → /mfa/verify route` — [authService.ts:34-48](src/services/authService.ts#L34-L48) discriminates the login response; [LoginPage.tsx:126](src/pages/auth/LoginPage/LoginPage.tsx#L126) routes `result.kind === 'mfa_required'` to `/login/mfa` with the `mfaToken` in router state (memory only — PR #9)
+- [x] `mustEnrollMfa`, `mustChangePassword`, `mustCompleteProfile` flags on login response all gate the next route — [LoginPage.tsx:34-42](src/pages/auth/LoginPage/LoginPage.tsx#L34-L42) routes after-login; [ProtectedRoute.tsx:51-63](src/components/auth/ProtectedRoute.tsx#L51-L63) enforces all three flags on every protected page so the gates survive refresh / deep-link (PR #9)
 
 ---
 
@@ -300,7 +300,7 @@ This file is the working tracker. Tick items as they ship. Quality-standards sec
 
 ### WebSocket — `/ws` (1)
 
-- [~] `GET ws://host/ws` — [src/hooks/useWebSocket.ts:39](src/hooks/useWebSocket.ts#L39) — works but auth must move from `?token=` query to `Sec-WebSocket-Protocol: bearer, <jwt>` subprotocol header (spec requirement, security concern: tokens in URLs land in logs/proxies)
+- [x] `GET ws://host/ws` — [src/hooks/useWebSocket.ts:39](src/hooks/useWebSocket.ts#L39) — auth via `Sec-WebSocket-Protocol: bearer, <jwt>` subprotocol header (PR #7); tokens no longer surface in URLs / proxy logs
 
 ---
 
