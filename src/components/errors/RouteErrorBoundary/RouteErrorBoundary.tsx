@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { ApiError } from '@/lib/apiClient';
 
 interface RouteErrorBoundaryProps {
   children: ReactNode;
@@ -7,6 +8,12 @@ interface RouteErrorBoundaryProps {
 
 interface RouteErrorBoundaryState {
   hasError: boolean;
+  /**
+   * The backend request correlation ID from a caught `ApiError`. Surfaced
+   * in the fallback so the user can quote it in a support ticket. Null for
+   * render-time exceptions that aren't HTTP errors.
+   */
+  requestId: string | null;
 }
 
 /**
@@ -16,6 +23,11 @@ interface RouteErrorBoundaryState {
  * lazy-import network failure, etc.) so the app shows a friendly fallback
  * instead of going blank.
  *
+ * When the caught error is an `ApiError` carrying RFC 7807 `requestId`, the
+ * fallback shows it as a `Ref: req-X` footer line so support can correlate
+ * to the server log. The boundary never logs the raw `Error.message` because
+ * it can carry arbitrary user input.
+ *
  * Resets state via "Reload" (full page refresh — also re-runs lazy chunks
  * that failed to load) or "Go home" (hard nav to /, which unmounts the
  * thrown subtree).
@@ -24,16 +36,18 @@ export class RouteErrorBoundary extends Component<
   RouteErrorBoundaryProps,
   RouteErrorBoundaryState
 > {
-  state: RouteErrorBoundaryState = { hasError: false };
+  state: RouteErrorBoundaryState = { hasError: false, requestId: null };
 
-  static getDerivedStateFromError(): RouteErrorBoundaryState {
-    return { hasError: true };
+  static getDerivedStateFromError(error: unknown): RouteErrorBoundaryState {
+    const requestId = error instanceof ApiError ? error.requestId : null;
+    return { hasError: true, requestId };
   }
 
   componentDidCatch(): void {
     // Intentionally no remote logging here — the audit forbids logging PII to
     // any sink, and a thrown Error's message can carry arbitrary user input.
-    // If a request-ID telemetry channel is added later, surface it here.
+    // If a remote telemetry channel lands, ship `state.requestId` (a
+    // non-PII correlation key) rather than the raw error.
   }
 
   private handleReload = (): void => {
@@ -62,6 +76,12 @@ export class RouteErrorBoundary extends Component<
           <p className="mt-3 text-sm text-gray-500">
             The page hit an unexpected error. Reloading usually fixes it.
           </p>
+
+          {this.state.requestId && (
+            <p className="mt-2 font-mono text-xs text-gray-400">
+              Ref: {this.state.requestId}
+            </p>
+          )}
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <button
