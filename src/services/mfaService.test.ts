@@ -30,9 +30,13 @@ afterEach(() => {
 
 describe('verifyMfaChallenge', () => {
   it('exchanges mfaToken + code for a real access token', async () => {
+    // BE wraps in { success, data } as of the REST standards pass.
     mockFetch({
-      user: { id: 'u1', email: 'a@b.com', firstName: 'A', lastName: 'B', role: 'staff', createdAt: '', updatedAt: '' },
-      tokens: { accessToken: 'jwt-123' },
+      success: true,
+      data: {
+        user: { id: 'u1', email: 'a@b.com', firstName: 'A', lastName: 'B', role: 'staff', createdAt: '', updatedAt: '' },
+        tokens: { accessToken: 'jwt-123' },
+      },
     });
 
     const result = await verifyMfaChallenge({ mfaToken: 'm-token', code: '123456' });
@@ -56,9 +60,12 @@ describe('verifyMfaChallenge', () => {
 describe('recoverWithMfaRecoveryCode', () => {
   it('returns user + token + remainingRecoveryCodes', async () => {
     mockFetch({
-      user: { id: 'u1', email: 'a@b.com', firstName: 'A', lastName: 'B', role: 'superadmin', createdAt: '', updatedAt: '' },
-      tokens: { accessToken: 'jwt-r' },
-      remainingRecoveryCodes: 7,
+      success: true,
+      data: {
+        user: { id: 'u1', email: 'a@b.com', firstName: 'A', lastName: 'B', role: 'superadmin', createdAt: '', updatedAt: '' },
+        tokens: { accessToken: 'jwt-r' },
+        remainingRecoveryCodes: 7,
+      },
     });
 
     const result = await recoverWithMfaRecoveryCode({ mfaToken: 'm', recoveryCode: 'XXXXX-YYYYY' });

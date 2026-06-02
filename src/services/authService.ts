@@ -16,7 +16,15 @@ import type {
   StaffProfilePayload,
   ProfileRequirements,
 } from '@/types';
-import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost } from '@/lib/apiClient';
+import {
+  apiDelete,
+  apiGet,
+  apiGetBlob,
+  apiGetData,
+  apiPatch,
+  apiPost,
+  apiPostData,
+} from '@/lib/apiClient';
 
 interface InternalLoginSuccessPayload {
   token: string;
@@ -36,36 +44,32 @@ function isMfaChallenge(p: InternalLoginPayload): p is InternalLoginMfaPayload {
 }
 
 export async function login(credentials: LoginCredentials): Promise<LoginOutcome> {
-  const response = await apiPost<{ success: boolean; data: InternalLoginPayload }>(
+  // BE now wraps every /auth/* response in { success, data: T }. apiPostData
+  // unwraps once and gives us the inner payload directly.
+  const payload = await apiPostData<InternalLoginPayload>(
     '/internal/auth/login',
     {
       email: credentials.email,
       password: credentials.password,
     },
   );
-  const payload = response.data;
   if (isMfaChallenge(payload)) {
     return { kind: 'mfa_required', mfaToken: payload.mfaToken, userId: payload.userId };
   }
   return { kind: 'success', user: payload.user, token: payload.token };
 }
 
-export async function register(): Promise<{ message: string; clerkSignUpUrl: string }> {
-  // Legacy informational endpoint: backend just returns the Clerk sign-up URL.
+export function register(): Promise<{ message: string; clerkSignUpUrl: string }> {
+  // Informational endpoint: BE returns the Clerk sign-up URL.
   // Customers register via Clerk directly; this is a fallback link only.
-  const response = await apiPost<{ message: string; clerkSignUpUrl: string }>(
-    '/auth/register',
-    {},
-  );
-  return response;
+  return apiPostData<{ message: string; clerkSignUpUrl: string }>('/auth/register', {});
 }
 
-export async function getMe(token: string): Promise<User> {
-  // The response may be wrapped in { success, data: User } or returned directly
-  // depending on the auth type (Clerk vs internal JWT).
-  const response = await apiGet<Record<string, unknown>>('/auth/me', token);
-  const user = (response?.data ?? response) as User;
-  return user;
+export function getMe(token: string): Promise<User> {
+  // Used to tolerate a flat shape via `response?.data ?? response` — BE now
+  // always wraps in { success, data }, so the fallback was lying about the
+  // contract and is gone.
+  return apiGetData<User>('/auth/me', token);
 }
 
 export function logout(token: string): Promise<void> {
