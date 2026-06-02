@@ -38,10 +38,15 @@ export function useSupportTickets(params?: SupportTicketListParams): UseSupportT
   });
 
   const createTicketMutation = useMutation({
+    // Idempotency-Key prevents the "open ticket" form from creating duplicate
+    // tickets on a double-submit. TanStack's useMutation default is retry=0,
+    // so this runs exactly once per mutate(). Do NOT enable retry without
+    // restructuring the input to carry the key.
     mutationFn: async (payload: CreateSupportTicketPayload) => {
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
-      return createSupportTicket(payload, token);
+      const idempotencyKey = crypto.randomUUID();
+      return createSupportTicket(payload, token, idempotencyKey);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['support', 'tickets'] });
