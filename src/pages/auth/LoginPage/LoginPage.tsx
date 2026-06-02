@@ -5,7 +5,7 @@ import { useClerk } from '@clerk/clerk-react';
 import { AuthLayout } from '@/components/layout';
 import { LoginForm, type LoginFormData } from '@/components/forms';
 import { ProvisioningGateModal } from '@/components/ui';
-import { useAuth, useProvisioningGate } from '@/hooks';
+import { useAuth, useProvisioningGate, useRetryCooldown } from '@/hooks';
 import {
   PROVISIONING_GATE_BLOCK_MESSAGE,
   PROVISIONING_GATE_TARGET_UTC,
@@ -93,6 +93,11 @@ export function LoginPage(): ReactElement {
         .padStart(2, '0')}:${(lockoutRemainingSec % 60).toString().padStart(2, '0')}`
     : undefined;
 
+  // 429 rate-limit cooldown — apiClient throws an ApiError carrying
+  // retryAfterSeconds; the hook starts a per-key countdown that survives
+  // re-renders and is shared across components that pass the same key.
+  const loginCooldown = useRetryCooldown('auth:login');
+
   const closeProvisioningModal = (): void => {
     setDismissedProvisioningTarget(PROVISIONING_GATE_TARGET_UTC);
   };
@@ -108,8 +113,9 @@ export function LoginPage(): ReactElement {
       return;
     }
 
-    // Short-circuit: don't even hit the network while the lockout is active.
-    if (isLockedOut) return;
+    // Short-circuit: don't even hit the network while the lockout or
+    // rate-limit cooldown is active.
+    if (isLockedOut || loginCooldown.isCoolingDown) return;
 
     try {
       const result = await login({
@@ -130,8 +136,10 @@ export function LoginPage(): ReactElement {
         return;
       }
       // result.kind === 'success' → useEffect handles redirect once user lands
-    } catch {
-      // Error is handled by context
+    } catch (err) {
+      // Start a button cooldown if this was a 429 with Retry-After.
+      // Non-429 errors are surfaced via the auth context's `error` state.
+      loginCooldown.startFromError(err);
     }
   };
 
@@ -140,9 +148,16 @@ export function LoginPage(): ReactElement {
       <LoginForm
         onSubmit={handleSubmit}
         isLoading={isLoading}
-        error={isProvisioningActive || isLockedOut ? null : error}
+        error={
+          isProvisioningActive || isLockedOut || loginCooldown.isCoolingDown
+            ? null
+            : error
+        }
         isLockedOut={isLockedOut}
         lockoutCountdownLabel={lockoutCountdownLabel}
+        rateLimitCountdownLabel={
+          loginCooldown.isCoolingDown ? loginCooldown.label : undefined
+        }
       />
       <ProvisioningGateModal
         isOpen={isProvisioningModalOpen}

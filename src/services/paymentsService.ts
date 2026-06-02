@@ -13,9 +13,15 @@ import { apiGetData, apiPatchData, apiPostData } from '@/lib/apiClient';
 
 export function initializePayment(
   token: string,
-  payload: InitializePaymentPayload
+  payload: InitializePaymentPayload,
+  idempotencyKey: string,
 ): Promise<PaystackInitResponse> {
-  return apiPostData<PaystackInitResponse>('/payments/initialize', payload, token);
+  // Idempotency-Key is required by the BE — prevents a network failure or
+  // double-click from creating two pending Paystack transactions. The hook
+  // generates the key per submit click and reuses it across retries.
+  return apiPostData<PaystackInitResponse>('/payments/initialize', payload, token, {
+    idempotencyKey,
+  });
 }
 
 export function verifyPayment(token: string, reference: string): Promise<ApiPayment> {

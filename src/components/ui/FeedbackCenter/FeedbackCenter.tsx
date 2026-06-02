@@ -16,6 +16,7 @@ export function FeedbackCenter(): ReactElement | null {
           tone={item.tone}
           title={item.title}
           message={item.message}
+          referenceId={item.referenceId}
           onClose={() => dismissMessage(item.id)}
           className="pointer-events-auto"
         />

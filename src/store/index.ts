@@ -7,6 +7,8 @@ export type { SearchState, SearchStore } from './search';
 export { useFeedbackStore } from './feedback';
 export type { FeedbackTone, FeedbackMessage, PushFeedbackInput, FeedbackStore } from './feedback';
 
+export { useCooldownStore } from './cooldown';
+
 export { useWebSocketStore } from './websocket';
 
 export { useLanguageStore, LANGUAGE_STORAGE_KEY } from './language';
