@@ -1,9 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { RouteErrorBoundary } from './RouteErrorBoundary';
+import { ApiError } from '@/lib/apiClient';
 
 function Boom(): never {
   throw new Error('kaboom');
+}
+
+function BoomApi({ requestId }: { requestId: string | null }): never {
+  throw new ApiError('Internal server error', 500, null, requestId, null);
 }
 
 let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -16,6 +21,7 @@ beforeEach(() => {
 
 afterEach(() => {
   errorSpy.mockRestore();
+  cleanup();
 });
 
 describe('RouteErrorBoundary', () => {
@@ -48,5 +54,33 @@ describe('RouteErrorBoundary', () => {
     // The user-facing copy is intentionally generic — error.message can
     // carry arbitrary inputs we don't want to surface.
     expect(screen.queryByText(/kaboom/i)).not.toBeInTheDocument();
+  });
+
+  it('renders the ApiError requestId as a Ref: line in the fallback', () => {
+    render(
+      <RouteErrorBoundary>
+        <BoomApi requestId="req-abc-123" />
+      </RouteErrorBoundary>,
+    );
+    expect(screen.getByText(/Ref:/)).toBeInTheDocument();
+    expect(screen.getByText(/req-abc-123/)).toBeInTheDocument();
+  });
+
+  it('omits the Ref: line when the caught error is not an ApiError', () => {
+    render(
+      <RouteErrorBoundary>
+        <Boom />
+      </RouteErrorBoundary>,
+    );
+    expect(screen.queryByText(/Ref:/)).not.toBeInTheDocument();
+  });
+
+  it('omits the Ref: line when an ApiError has no requestId', () => {
+    render(
+      <RouteErrorBoundary>
+        <BoomApi requestId={null} />
+      </RouteErrorBoundary>,
+    );
+    expect(screen.queryByText(/Ref:/)).not.toBeInTheDocument();
   });
 });
