@@ -198,10 +198,43 @@ export function apiGet<T>(path: string, token?: string): Promise<T> {
   });
 }
 
-export function apiPost<T>(path: string, body?: unknown, token?: string): Promise<T> {
+/**
+ * Per-POST options. Today only carries `idempotencyKey`; future per-request
+ * headers (request-id override, abort signal, etc.) would land here too.
+ */
+export interface PostOpts {
+  /**
+   * Attaches `Idempotency-Key: <key>` to the request. BE caches the response
+   * for 24h: same key + same body → cached response (header
+   * `Idempotent-Replayed: true`); same key + different body → 422
+   * (`Idempotency-Key has already been used with a different request`).
+   *
+   * Wire this on every payment / order / ticket creation. Generate via
+   * `crypto.randomUUID()` per logical submit click; reuse the same key
+   * across retries (network failure, page reload mid-submit) until success
+   * OR a fresh user action.
+   *
+   * Backend format: [A-Za-z0-9_-]{8,255}. UUID v4 (36 chars) fits.
+   */
+  idempotencyKey?: string;
+}
+
+function buildPostHeaders(token?: string, opts?: PostOpts): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (opts?.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey;
+  return headers;
+}
+
+export function apiPost<T>(
+  path: string,
+  body?: unknown,
+  token?: string,
+  opts?: PostOpts,
+): Promise<T> {
   return request<T>(path, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: buildPostHeaders(token, opts),
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 }
@@ -245,11 +278,12 @@ export function apiGetBlob(
 export function apiPostMultipart<T>(
   path: string,
   formData: FormData,
-  token?: string
+  token?: string,
+  opts?: PostOpts,
 ): Promise<T> {
   return request<T>(path, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: buildPostHeaders(token, opts),
     body: formData,
   });
 }
@@ -275,8 +309,13 @@ export function apiGetData<T>(path: string, token?: string): Promise<T> {
   return apiGet<Envelope<T>>(path, token).then(unwrap);
 }
 
-export function apiPostData<T>(path: string, body?: unknown, token?: string): Promise<T> {
-  return apiPost<Envelope<T>>(path, body, token).then(unwrap);
+export function apiPostData<T>(
+  path: string,
+  body?: unknown,
+  token?: string,
+  opts?: PostOpts,
+): Promise<T> {
+  return apiPost<Envelope<T>>(path, body, token, opts).then(unwrap);
 }
 
 export function apiPutData<T>(path: string, body?: unknown, token?: string): Promise<T> {
@@ -294,7 +333,8 @@ export function apiDeleteData<T>(path: string, token?: string, body?: unknown): 
 export function apiPostMultipartData<T>(
   path: string,
   formData: FormData,
-  token?: string
+  token?: string,
+  opts?: PostOpts,
 ): Promise<T> {
-  return apiPostMultipart<Envelope<T>>(path, formData, token).then(unwrap);
+  return apiPostMultipart<Envelope<T>>(path, formData, token, opts).then(unwrap);
 }

@@ -209,6 +209,14 @@ export function useNewShipmentForm() {
       const token = await getApiToken();
       if (!token) throw new Error('Authentication token is missing.');
 
+      // Idempotency-Key — fresh UUID per submit click. UI blocks the
+      // double-click window via `isCreatingOrder`. Note: a fresh user
+      // retry after failure generates a new key (treated as a new attempt
+      // by BE), which is the right semantic for orders — if the previous
+      // attempt actually succeeded server-side, the user will see the
+      // order in their list and not retry.
+      const idempotencyKey = crypto.randomUUID();
+
       const order = await createOrder(
         {
           recipientName: recipientName.trim(),
@@ -226,6 +234,7 @@ export function useNewShipmentForm() {
           }),
         },
         token,
+        idempotencyKey,
       );
 
       setCreatedTrackingNumber(order.trackingNumber ?? null);
