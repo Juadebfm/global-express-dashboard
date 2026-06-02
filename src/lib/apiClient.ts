@@ -315,8 +315,10 @@ export function apiGet<T>(path: string, token?: string): Promise<T> {
 }
 
 /**
- * Per-POST options. Today only carries `idempotencyKey`; future per-request
- * headers (request-id override, abort signal, etc.) would land here too.
+ * Per-POST options. Combines Idempotency-Key (payment / order / ticket
+ * creation) and Cloudflare Turnstile (5 unauthenticated public POSTs).
+ * Future per-request headers (request-id override, abort signal, etc.)
+ * would land here too.
  */
 export interface PostOpts {
   /**
@@ -333,12 +335,23 @@ export interface PostOpts {
    * Backend format: [A-Za-z0-9_-]{8,255}. UUID v4 (36 chars) fits.
    */
   idempotencyKey?: string;
+  /**
+   * Cloudflare Turnstile token captured by the widget. When set, attaches
+   * `cf-turnstile-response: <token>` to the request. Required by the BE
+   * for the 5 unauthenticated public POSTs (newsletter subscribe, gallery
+   * claim presign/submit, car purchase attempt, D2D intake). Tokens are
+   * single-use and expire after 5 minutes — on a 422 with
+   * `code: "captcha_failed"`/"captcha_missing", reset the widget and
+   * re-issue.
+   */
+  turnstileToken?: string;
 }
 
 function buildPostHeaders(token?: string, opts?: PostOpts): Record<string, string> {
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
   if (opts?.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey;
+  if (opts?.turnstileToken) headers['cf-turnstile-response'] = opts.turnstileToken;
   return headers;
 }
 

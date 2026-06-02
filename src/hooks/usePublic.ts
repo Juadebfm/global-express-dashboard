@@ -45,14 +45,24 @@ export function usePublicCalculatorRates(): {
   return { data: query.data, isLoading: query.isLoading, error: query.error };
 }
 
+// Mutation input bundles the user payload with the Turnstile token captured
+// by the form's <TurnstileGate>. Tokens are single-use; the caller is
+// responsible for asking the gate for a fresh one before each submit.
+
+interface NewsletterSubscribeInput {
+  payload: NewsletterSubscribePayload;
+  turnstileToken: string;
+}
+
 export function useSubscribeToNewsletter(): {
-  mutate: (payload: NewsletterSubscribePayload) => Promise<NewsletterSubscribeResult>;
+  mutate: (input: NewsletterSubscribeInput) => Promise<NewsletterSubscribeResult>;
   isPending: boolean;
   error: Error | null;
 } {
   const pushMessage = useFeedbackStore((s) => s.pushMessage);
-  const m = useMutation<NewsletterSubscribeResult, Error, NewsletterSubscribePayload>({
-    mutationFn: (payload) => subscribeToNewsletter(payload),
+  const m = useMutation<NewsletterSubscribeResult, Error, NewsletterSubscribeInput>({
+    mutationFn: ({ payload, turnstileToken }) =>
+      subscribeToNewsletter(payload, turnstileToken),
     onSuccess: () => {
       pushMessage({
         tone: 'success',
@@ -67,20 +77,26 @@ export function useSubscribeToNewsletter(): {
     },
   });
   return {
-    mutate: (payload) => m.mutateAsync(payload),
+    mutate: (input) => m.mutateAsync(input),
     isPending: m.isPending,
     error: m.error,
   };
 }
 
+interface SubmitPublicD2dIntakeInput {
+  payload: PublicD2dIntakePayload;
+  turnstileToken: string;
+}
+
 export function useSubmitPublicD2dIntake(): {
-  mutate: (payload: PublicD2dIntakePayload) => Promise<PublicD2dIntakeResult>;
+  mutate: (input: SubmitPublicD2dIntakeInput) => Promise<PublicD2dIntakeResult>;
   isPending: boolean;
   error: Error | null;
 } {
   const pushMessage = useFeedbackStore((s) => s.pushMessage);
-  const m = useMutation<PublicD2dIntakeResult, Error, PublicD2dIntakePayload>({
-    mutationFn: (payload) => submitPublicD2dIntake(payload),
+  const m = useMutation<PublicD2dIntakeResult, Error, SubmitPublicD2dIntakeInput>({
+    mutationFn: ({ payload, turnstileToken }) =>
+      submitPublicD2dIntake(payload, turnstileToken),
     onSuccess: () => {
       pushMessage({
         tone: 'success',
@@ -95,7 +111,7 @@ export function useSubmitPublicD2dIntake(): {
     },
   });
   return {
-    mutate: (payload) => m.mutateAsync(payload),
+    mutate: (input) => m.mutateAsync(input),
     isPending: m.isPending,
     error: m.error,
   };
