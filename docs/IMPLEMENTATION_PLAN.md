@@ -92,6 +92,8 @@ These weren't in the original gap list but surfaced when I swept the codebase fo
 
 **Goal:** sign off the BE handover end-to-end against staging. These are click-throughs, not code — I can write the test plans but **you have to do them**.
 
+**Printable checklist:** [docs/PHASE_6_SMOKE_TESTS.md](PHASE_6_SMOKE_TESTS.md) — full step-by-step with preconditions, expected results, and bonus checks. Test #8 is already pre-flighted via curl (see top of that doc).
+
 | Status | Test | Expected outcome | Wired in |
 |---|---|---|---|
 | ⬜ | No-MFA login → dashboard | Reaches dashboard without prompts | PR #15 (A) + PR #16 (B) |
@@ -101,7 +103,7 @@ These weren't in the original gap list but surfaced when I swept the codebase fo
 | ⬜ | Payment-init kill-network mid-request, retry | Single Paystack transaction created; retry response carries `Idempotent-Replayed: true` header | PR #17 (C) |
 | ⬜ | Staff opens unscanned receipt | Pending placeholder + auto-refresh, file not displayed | PR #19 (E) |
 | ⬜ | Staff opens malicious receipt | Red warning, file not displayed | PR #19 (E) |
-| ⬜ | Any error response in DevTools | `Content-Type: application/problem+json`, body has `type/title/status/detail/instance/requestId` | PR #15 (A) |
+| ✅ | Any error response in DevTools | `Content-Type: application/problem+json`, body has `type/title/status/detail/instance/requestId` | PR #15 (A) — curl-verified 2026-06-03 |
 
 ---
 
