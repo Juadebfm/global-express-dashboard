@@ -7,6 +7,7 @@ import { AlertBanner, ConfirmModal } from '@/components/ui';
 import { MfaSettingsCard } from '@/components/auth';
 import {
   useAuth,
+  useCan,
   useChangePassword,
   useDashboardData,
   useFxRate,
@@ -79,7 +80,7 @@ export function SettingsPage(): ReactElement {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const isCustomer = isClerkSignedIn && !user;
-  const isOperator = !!user;
+  const isOperator = useCan('app.operator');
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
@@ -102,7 +103,7 @@ export function SettingsPage(): ReactElement {
   };
 
   /* ── Onboarding settings (superadmin only) ────────────────── */
-  const isSuperadmin = user?.role === 'superadmin';
+  const isSuperadmin = useCan('app.superadmin');
   const [onboardingReqs, setOnboardingReqs] = useState<ProfileRequirements | null>(null);
   const [onboardingLoading, setOnboardingLoading] = useState(false);
   const [onboardingError, setOnboardingError] = useState<string | null>(null);

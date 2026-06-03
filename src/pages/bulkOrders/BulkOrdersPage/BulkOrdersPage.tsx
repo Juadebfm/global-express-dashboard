@@ -14,7 +14,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { useAuth, useDashboardData, useSearch } from '@/hooks';
+import { useCan, useDashboardData, useSearch } from '@/hooks';
 import { useBulkOrders } from '@/hooks/useBulkOrders';
 import { AppShell, PageHeader } from '@/pages/shared';
 import type { ApiClient, ApiBulkOrder, ApiBulkOrderItem, BulkOrderItem } from '@/types';
@@ -96,7 +96,6 @@ export function BulkOrdersPage(): ReactElement {
     refetch: refetchOrders,
   } = useBulkOrders({ page });
   const { query, setQuery } = useSearch();
-  const { user } = useAuth();
 
   const [activeOrder, setActiveOrder] = useState<ApiBulkOrder | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -107,8 +106,10 @@ export function BulkOrdersPage(): ReactElement {
   const [actionError, setActionError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
-  const canCreateBulk = user?.role === 'staff' || isAdmin;
+  const isAdmin = useCan('app.admin');
+  // canCreateBulk is the union "staff or above" — i.e. any operator. The
+  // 'app.operator' action is the canonical key for that bucket.
+  const canCreateBulk = useCan('app.operator');
 
   // ── Create form state ────────────────────────────────────────
   const [showCreateForm, setShowCreateForm] = useState(false);

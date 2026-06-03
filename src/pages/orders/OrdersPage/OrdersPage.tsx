@@ -11,7 +11,7 @@ import {
   Truck,
 } from 'lucide-react';
 import {
-  useAuth,
+  useCan,
   useDashboardData,
   useDeleteOrderImage,
   useOrderDetail,
@@ -63,10 +63,9 @@ const TABS: Array<{ key: DetailTab; icon: typeof ClipboardList }> = [
 export function OrdersPage(): ReactElement {
   const { t } = useTranslation(['orders', 'shipments']);
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const isOperator = user?.role === 'staff' || user?.role === 'admin' || user?.role === 'superadmin';
-  const canDeleteImage = user?.role === 'admin' || user?.role === 'superadmin';
-  const canApproveOverride = user?.role === 'admin' || user?.role === 'superadmin';
+  const isOperator = useCan('app.operator');
+  const canDeleteImage = useCan('orders.deleteImage');
+  const canApproveOverride = useCan('orders.approveOverride');
   const { query, setQuery } = useSearch();
 
   // ── Local UI state ────────────────────────────────────────────

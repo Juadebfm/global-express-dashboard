@@ -1,4 +1,5 @@
 export { useAuth } from './useAuth';
+export { useCan } from './useCan';
 export { useLanguage } from './useLanguage';
 export { useFileScanStatus } from './useFileScanStatus';
 export { useApiErrorsToForm } from './useApiErrorsToForm';

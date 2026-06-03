@@ -11,7 +11,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { AppShell } from '@/pages/shared';
-import { useAuth, useClients, useDashboardData, useSearch } from '@/hooks';
+import { useCan, useClients, useDashboardData, useSearch } from '@/hooks';
 import i18n from '@/i18n/i18n';
 import type { ApiClient } from '@/types';
 import { cn } from '@/utils';
@@ -64,7 +64,7 @@ export function ClientsPage(): ReactElement {
   const dateLocale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
   const { data, isLoading, error } = useDashboardData();
   const { query, setQuery } = useSearch();
-  const { user } = useAuth();
+  const hasAccess = useCan('clients.view');
   const { clients: apiClients, isLoading: clientsLoading } = useClients();
 
   const [activeClient, setActiveClient] = useState<ApiClient | null>(null);
@@ -112,8 +112,7 @@ export function ClientsPage(): ReactElement {
     return () => window.clearTimeout(timeout);
   }, [actionMessage]);
 
-  const role = user?.role;
-  const hasAccess = role === 'staff' || role === 'admin' || role === 'superadmin';
+  // `hasAccess` is set above via useCan('clients.view') — STAFF_PLUS.
 
   const filteredClients = useMemo(() => {
     const needle = query.trim().toLowerCase();

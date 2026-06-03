@@ -7,6 +7,7 @@ import { Layers, PackagePlus } from 'lucide-react';
 import { AppShell } from '@/pages/shared';
 import {
   useAuth,
+  useCan,
   useDashboardData,
   useRecordShipmentIntake,
   useSearch,
@@ -83,7 +84,7 @@ export function ShipmentsPage(): ReactElement {
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn } = useClerkAuth();
   const isCustomer = isClerkSignedIn && !user;
-  const isOperator = !!user;
+  const isOperator = useCan('app.operator');
   const [activeFilter, setActiveFilter] = useState<ShipmentFilterTab['value']>('all');
   const operatorStatusV2 = isOperator && activeFilter !== 'all' ? activeFilter : undefined;
 
