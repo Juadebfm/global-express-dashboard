@@ -49,6 +49,13 @@ export interface ShipmentRecord {
   valueUSD: number;
 }
 
+export interface ShipmentsDashboardPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface ShipmentsDashboardData {
   header: {
     title: string;
@@ -63,6 +70,10 @@ export interface ShipmentsDashboardData {
     title: string;
   };
   shipments: ShipmentRecord[];
+  // Server-side pagination metadata (total = total matching rows, NOT
+  // the count of `shipments` here). Used by the FE to render Prev/Next
+  // controls + the authoritative "Total Shipments" headline.
+  pagination: ShipmentsDashboardPagination;
 }
 
 // ── Raw API types ─────────────────────────────────────────────────────────────

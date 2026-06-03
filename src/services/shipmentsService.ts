@@ -201,7 +201,8 @@ function mapMyShipment(item: AnyRecord, index: number): ShipmentRecord {
 function buildShipmentsDashboardData(
   shipments: ShipmentRecord[],
   headerTitle: string,
-  headerSubtitle: string
+  headerSubtitle: string,
+  pagination: ShipmentsDashboardData['pagination'],
 ): ShipmentsDashboardData {
 
   const counts: Record<StatusCategory, number> = {
@@ -264,27 +265,72 @@ function buildShipmentsDashboardData(
     ],
     table: { title: 'Shipment List' },
     shipments,
+    pagination,
   };
 }
+
+// Pull { page, limit, total, totalPages } from an arbitrary BE response shape.
+// Falls back to a single-page page-of-N when the server didn't surface
+// pagination (older /orders/my-shipments shapes for legacy customers).
+function extractPagination(
+  payload: unknown,
+  shipments: ShipmentRecord[],
+  requestedPage: number,
+  requestedLimit: number,
+): ShipmentsDashboardData['pagination'] {
+  const root = asRecord(payload);
+  const candidate =
+    asRecord(root?.pagination) ?? asRecord(asRecord(root?.data)?.pagination);
+
+  if (candidate) {
+    return {
+      page: firstNumber(candidate, ['page'], requestedPage),
+      limit: firstNumber(candidate, ['limit'], requestedLimit),
+      total: firstNumber(candidate, ['total'], shipments.length),
+      totalPages: firstNumber(candidate, ['totalPages'], 1),
+    };
+  }
+
+  return {
+    page: requestedPage,
+    limit: requestedLimit,
+    total: shipments.length,
+    totalPages: Math.max(1, Math.ceil(shipments.length / requestedLimit)),
+  };
+}
+
+// BE default is also 20 (max 100). We pick 20 explicitly here so the contract
+// is visible at the call site instead of relying on the server default.
+const DEFAULT_SHIPMENTS_PAGE_SIZE = 20;
 
 export async function getShipmentsDashboard(
   token: string,
   isCustomer = false,
   params: InternalShipmentsQueryParams = {}
 ): Promise<ShipmentsDashboardData> {
+  const page = params.page ?? 1;
+  const limit = params.limit ?? DEFAULT_SHIPMENTS_PAGE_SIZE;
+
   if (isCustomer) {
-    const response = await apiGet<unknown>('/orders/my-shipments?page=1&limit=100', token);
+    const customerParams = new URLSearchParams();
+    customerParams.set('page', String(page));
+    customerParams.set('limit', String(limit));
+    const response = await apiGet<unknown>(
+      `/orders/my-shipments?${customerParams.toString()}`,
+      token,
+    );
     const shipments = extractMyShipmentItems(response).map(mapMyShipment);
     return buildShipmentsDashboardData(
       shipments,
       'My Shipments',
-      'Track your orders and bulk shipment items'
+      'Track your orders and bulk shipment items',
+      extractPagination(response, shipments, page, limit),
     );
   }
 
   const searchParams = new URLSearchParams();
-  searchParams.set('page', String(params.page ?? 1));
-  searchParams.set('limit', String(params.limit ?? 100));
+  searchParams.set('page', String(page));
+  searchParams.set('limit', String(limit));
   if (params.statusV2) searchParams.set('statusV2', params.statusV2);
   if (params.senderId) searchParams.set('senderId', params.senderId);
 
@@ -294,7 +340,13 @@ export async function getShipmentsDashboard(
   return buildShipmentsDashboardData(
     shipments,
     'Shipments',
-    'Track and manage your shipments'
+    'Track and manage your shipments',
+    {
+      page: response.data.pagination.page,
+      limit: response.data.pagination.limit,
+      total: response.data.pagination.total,
+      totalPages: response.data.pagination.totalPages,
+    },
   );
 }
 

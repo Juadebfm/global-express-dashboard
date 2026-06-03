@@ -32,6 +32,13 @@
     "nothingToDownload": "No shipments to download.",
     "downloaded": "Downloaded {{count}} rows."
   },
+  "pagination": {
+    "pageOf": "Page {{page}} of {{totalPages}}",
+    "total_one": "{{count}} shipment",
+    "total_other": "{{count}} shipments",
+    "prev": "Previous",
+    "next": "Next"
+  },
   "header": {
     "titleOperator": "Shipments",
     "subtitleOperator": "Track and manage your shipments",
