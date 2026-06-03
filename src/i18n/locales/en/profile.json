@@ -57,5 +57,23 @@
     "nationalIdRequired": "National ID is required for your organization settings.",
     "externalSaved": "Profile updated successfully.",
     "internalSaved": "Internal profile updated successfully."
+  },
+  "shippingMark": {
+    "title": "Shipping Mark",
+    "description": "A short alias the warehouse hand-writes on your packages so they can match cargo to you at a glance. Not a tracking number.",
+    "currentLabel": "Current mark",
+    "edit": "Change",
+    "save": "Save shipping mark",
+    "cancel": "Cancel",
+    "placeholder": "e.g., juadeb",
+    "format": "3-20 lowercase letters and digits, starting with a letter.",
+    "oneTimeNotice": "You can change this once. After saving, only support can edit it.",
+    "lockedNotice": "Your shipping mark is locked.",
+    "contactSupport": "Contact support",
+    "contactSupportToChange": "to change it.",
+    "formatError": "Use 3-20 lowercase letters and digits, starting with a letter.",
+    "conflictError": "Shipping mark already set. Contact support to change it.",
+    "saved": "Shipping mark saved.",
+    "noneYet": "Not assigned yet"
   }
 }

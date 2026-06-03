@@ -58,6 +58,11 @@ export interface CustomerProfile {
   addressState: string | null;
   addressCountry: string | null;
   addressPostalCode: string | null;
+  // Auto-generated at signup (e.g. Julius Adebowale → "julade"). Customers may
+  // replace it ONCE; after that `shippingMarkUserEditedAt` is non-null and
+  // PATCH /users/me with a new `shippingMark` returns 409.
+  shippingMark: string | null;
+  shippingMarkUserEditedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

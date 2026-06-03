@@ -8,6 +8,7 @@ import { AlertBanner, Button, Card, Input } from '@/components/ui';
 import { useAuth, useAuthToken } from '@/hooks';
 import { PageHeader } from '@/pages/shared';
 import { ROUTES } from '@/constants';
+import { ApiError } from '@/lib/apiClient';
 import {
   getInternalProfileRequirements,
   getMyProfile,
@@ -38,6 +39,9 @@ interface ExternalFormState {
   addressState: string;
   addressCountry: string;
   addressPostalCode: string;
+  shippingMark: string;
+  // null while the one-time customer edit is still available; ISO once consumed.
+  shippingMarkUserEditedAt: string | null;
 }
 
 const initialExternalForm: ExternalFormState = {
@@ -52,7 +56,14 @@ const initialExternalForm: ExternalFormState = {
   addressState: '',
   addressCountry: '',
   addressPostalCode: '',
+  shippingMark: '',
+  shippingMarkUserEditedAt: null,
 };
+
+// Mirror of the server's validation. The BE also lowercases input, so we do
+// the same on submit — but we still surface format errors client-side to skip
+// the round-trip when the user mistypes.
+const SHIPPING_MARK_REGEX = /^[a-z][a-z0-9]{2,19}$/;
 
 const initialInternalForm: StaffProfilePayload = {
   gender: 'male',
@@ -91,6 +102,8 @@ function mapCustomerToForm(profile: CustomerProfile): ExternalFormState {
     addressState: toText(profile.addressState),
     addressCountry: toText(profile.addressCountry),
     addressPostalCode: toText(profile.addressPostalCode),
+    shippingMark: toText(profile.shippingMark),
+    shippingMarkUserEditedAt: profile.shippingMarkUserEditedAt ?? null,
   };
 }
 
@@ -144,6 +157,15 @@ export function ProfilePage(): ReactElement {
   const [externalForm, setExternalForm] = useState<ExternalFormState>(initialExternalForm);
   const [externalBaseline, setExternalBaseline] = useState<ExternalFormState>(initialExternalForm);
   const [completeness, setCompleteness] = useState<ProfileCompleteness | null>(null);
+
+  // Shipping-mark is its own little flow: one-time edit per customer, locked
+  // forever after that. Sits separately from the broader "Update Profile"
+  // form so the lock UI can stay obvious.
+  const [isEditingShippingMark, setIsEditingShippingMark] = useState(false);
+  const [shippingMarkInput, setShippingMarkInput] = useState('');
+  const [shippingMarkError, setShippingMarkError] = useState<string | null>(null);
+  const [shippingMarkSuccess, setShippingMarkSuccess] = useState<string | null>(null);
+  const [isSavingShippingMark, setIsSavingShippingMark] = useState(false);
 
   const [internalForm, setInternalForm] = useState<StaffProfilePayload>(initialInternalForm);
   const [internalBaseline, setInternalBaseline] = useState<StaffProfilePayload>(initialInternalForm);
@@ -464,6 +486,75 @@ export function ProfilePage(): ReactElement {
     }
   };
 
+  const canEditShippingMark = externalForm.shippingMarkUserEditedAt === null;
+
+  const handleStartEditShippingMark = () => {
+    setShippingMarkError(null);
+    setShippingMarkSuccess(null);
+    setShippingMarkInput(externalForm.shippingMark);
+    setIsEditingShippingMark(true);
+  };
+
+  const handleCancelEditShippingMark = () => {
+    setShippingMarkError(null);
+    setShippingMarkInput('');
+    setIsEditingShippingMark(false);
+  };
+
+  const handleSaveShippingMark = async (): Promise<void> => {
+    const normalised = shippingMarkInput.trim().toLowerCase();
+    if (!SHIPPING_MARK_REGEX.test(normalised)) {
+      setShippingMarkError(t('shippingMark.formatError'));
+      return;
+    }
+
+    // No-op: saving the same value would consume the one-time edit without
+    // actually changing anything. Just close the editor.
+    if (normalised === externalForm.shippingMark) {
+      setIsEditingShippingMark(false);
+      return;
+    }
+
+    setIsSavingShippingMark(true);
+    setShippingMarkError(null);
+    setShippingMarkSuccess(null);
+
+    try {
+      const token = await getToken();
+      if (!token) throw new Error('Authentication token is missing.');
+
+      const updatedProfile = await updateMyProfile(token, { shippingMark: normalised });
+      const mappedProfile = mapCustomerToForm(updatedProfile);
+      setExternalForm(mappedProfile);
+      setExternalBaseline(mappedProfile);
+      setIsEditingShippingMark(false);
+      setShippingMarkSuccess(t('shippingMark.saved'));
+    } catch (saveError) {
+      // 409 means another tab / a stale local state tried to consume the edit
+      // after it was already used. Refetch so the lock UI reflects reality.
+      if (saveError instanceof ApiError && saveError.status === 409) {
+        try {
+          const token = await getToken();
+          if (token) {
+            const fresh = await getMyProfile(token);
+            const mappedProfile = mapCustomerToForm(fresh);
+            setExternalForm(mappedProfile);
+            setExternalBaseline(mappedProfile);
+          }
+        } catch {
+          // Best-effort refetch — if it fails the lock state will sync on
+          // next page load. Don't mask the original conflict message.
+        }
+        setIsEditingShippingMark(false);
+        setShippingMarkError(t('shippingMark.conflictError'));
+        return;
+      }
+      setShippingMarkError(getErrorMessage(saveError));
+    } finally {
+      setIsSavingShippingMark(false);
+    }
+  };
+
   return (
     <AppLayout user={layoutUser}>
       <div className="space-y-6">
@@ -509,6 +600,100 @@ export function ProfilePage(): ReactElement {
                   <p className="mt-1">
                     {t('external.missingFieldsLabel')}: {completeness.missingFields.join(', ')}
                   </p>
+                )}
+              </div>
+            )}
+
+            {mode === 'external' && (
+              <div className="mb-6 rounded-2xl border border-gray-200 bg-gray-50 p-5">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      {t('shippingMark.title')}
+                    </h3>
+                    <p className="mt-1 text-xs leading-relaxed text-gray-600">
+                      {t('shippingMark.description')}
+                    </p>
+                  </div>
+                </div>
+
+                {shippingMarkError && (
+                  <div className="mb-3">
+                    <AlertBanner tone="error" message={shippingMarkError} />
+                  </div>
+                )}
+                {shippingMarkSuccess && (
+                  <div className="mb-3">
+                    <AlertBanner tone="success" message={shippingMarkSuccess} />
+                  </div>
+                )}
+
+                {!isEditingShippingMark ? (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="rounded-lg border border-gray-300 bg-white px-3 py-2 font-mono text-sm font-semibold text-gray-900">
+                      {externalForm.shippingMark || t('shippingMark.noneYet')}
+                    </span>
+                    {canEditShippingMark ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleStartEditShippingMark}
+                        disabled={isBootstrapping}
+                      >
+                        {t('shippingMark.edit')}
+                      </Button>
+                    ) : (
+                      <p className="text-xs text-gray-600">
+                        {t('shippingMark.lockedNotice')}{' '}
+                        <Link
+                          to={ROUTES.SUPPORT}
+                          className="font-semibold text-brand-600 hover:text-brand-700"
+                        >
+                          {t('shippingMark.contactSupport')}
+                        </Link>{' '}
+                        {t('shippingMark.contactSupportToChange')}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <Input
+                      label={t('shippingMark.currentLabel')}
+                      value={shippingMarkInput}
+                      onChange={(event) =>
+                        setShippingMarkInput(event.target.value.toLowerCase())
+                      }
+                      placeholder={t('shippingMark.placeholder')}
+                      className="auth-form-control text-sm font-mono"
+                      maxLength={20}
+                      autoComplete="off"
+                      disabled={isSavingShippingMark}
+                    />
+                    <p className="text-xs text-gray-600">{t('shippingMark.format')}</p>
+                    <p className="text-xs font-medium text-amber-700">
+                      {t('shippingMark.oneTimeNotice')}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleCancelEditShippingMark}
+                        disabled={isSavingShippingMark}
+                      >
+                        {t('shippingMark.cancel')}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        isLoading={isSavingShippingMark}
+                        onClick={() => void handleSaveShippingMark()}
+                      >
+                        {t('shippingMark.save')}
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
