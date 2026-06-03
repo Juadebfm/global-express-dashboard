@@ -157,25 +157,6 @@
       "pickupRepName": "수령자 이름",
       "pickupRepPhone": "수령자 전화번호"
     },
-    "review": {
-      "preheading": "마지막 확인",
-      "heading": "배송 내역입니다",
-      "subheading": "아래를 모두 확인했습니다. 준비되면 생성하세요.",
-      "estimatedCost": "예상 비용",
-      "costPending": "대기 중",
-      "airSummaryLine": "항공 운송 · 약 7일 도착",
-      "oceanSummaryLine": "해상 운송 · 약 3개월 도착",
-      "airTransit": "~7일",
-      "oceanTransit": "~3개월",
-      "contents": "내용물",
-      "weightValue": "무게 / 가치",
-      "declared": "신고가",
-      "pickup": "픽업",
-      "from": "출발",
-      "to": "도착",
-      "recipient": "수령인",
-      "warehouseNote": "출발은 이벤트 기반입니다. 최종 가격은 창고 검수 후 확정됩니다."
-    },
     "footer": {
       "routeLabel": "{{from}} → {{to}} · {{type}}",
       "readyToCreate": "생성 준비 완료",
@@ -270,7 +251,21 @@
       "estimatedShippingCost": "예상 배송 비용",
       "recalculate": "견적 재계산",
       "enterWeightForEstimate": "견적을 보려면 무게를 입력하세요",
-      "enterVolumeForEstimate": "견적을 보려면 부피(CBM)를 입력하세요"
+      "enterVolumeForEstimate": "견적을 보려면 부피(CBM)를 입력하세요",
+      "preheading": "마지막 확인",
+      "heading": "배송 내역입니다",
+      "subheading": "아래를 모두 확인했습니다. 준비되면 생성하세요.",
+      "estimatedCost": "예상 비용",
+      "costPending": "대기 중",
+      "airSummaryLine": "항공 운송 · 약 7일 도착",
+      "oceanSummaryLine": "해상 운송 · 약 3개월 도착",
+      "airTransit": "~7일",
+      "oceanTransit": "~3개월",
+      "contents": "내용물",
+      "weightValue": "무게 / 가치",
+      "declared": "신고가",
+      "pickup": "픽업",
+      "warehouseNote": "출발은 이벤트 기반입니다. 최종 가격은 창고 검수 후 확정됩니다."
     },
     "navigation": {
       "previous": "이전",

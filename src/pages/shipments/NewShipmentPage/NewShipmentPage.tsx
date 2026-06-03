@@ -27,8 +27,8 @@ export function NewShipmentPage(): ReactElement {
       error={form.completenessError ?? error}
       loadingLabel={t('newShipment.loadingLabel')}
     >
-      {/* Bottom padding leaves room for the sticky footer */}
-      <div className="mx-auto max-w-3xl space-y-8 pb-32">
+      {/* Bottom padding leaves room for the (taller) sticky footer */}
+      <div className="mx-auto max-w-3xl space-y-8 pb-44">
         {form.createError && <AlertBanner tone="error" message={form.createError} />}
 
         {form.activeStep === 0 && (

@@ -70,13 +70,13 @@ export function StickyFooter({
     : t('newShipment.footer.continue');
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/75">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-4 px-4 py-3 sm:px-6">
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 shadow-[0_-4px_24px_-12px_rgba(0,0,0,0.12)] backdrop-blur supports-[backdrop-filter]:bg-white/85">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-5 px-5 py-5 sm:gap-6 sm:px-8 sm:py-6">
         {/* Route + state */}
-        <div className="flex flex-1 items-center gap-3 min-w-[180px]">
+        <div className="flex flex-1 items-center gap-4 min-w-[200px]">
           <RoutePills />
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-gray-900">
+            <p className="truncate text-base font-semibold text-gray-900">
               {t('newShipment.footer.routeLabel', {
                 from: t('newShipment.recipient.originCity'),
                 to: t('newShipment.recipient.destinationCity'),
@@ -86,37 +86,37 @@ export function StickyFooter({
                     : t('newShipment.basics.oceanShort'),
               })}
             </p>
-            <p className="truncate text-xs text-gray-500">{stateLine}</p>
+            <p className="truncate text-sm text-gray-500">{stateLine}</p>
           </div>
         </div>
 
         {/* Cost */}
         <div className="hidden text-right sm:block">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
             {t('newShipment.footer.estCost')}
           </p>
-          <p className={cn('text-base font-bold text-gray-900', !costLine && 'text-gray-400')}>
+          <p className={cn('text-2xl font-extrabold text-gray-900 leading-tight', !costLine && 'text-gray-400')}>
             {estimateLoading ? '—' : costLine ?? t('newShipment.footer.costPending')}
-            <span className="ml-1 text-xs font-medium text-gray-500">· {transitLine}</span>
+            <span className="ml-1.5 text-xs font-medium text-gray-500">· {transitLine}</span>
           </p>
         </div>
 
         {/* Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {!isFirst && (
-            <Button variant="secondary" size="sm" onClick={onBack} className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
+            <Button variant="secondary" size="lg" onClick={onBack} className="gap-2">
+              <ArrowLeft className="h-5 w-5" />
               {t('newShipment.footer.back')}
             </Button>
           )}
           <Button
-            size="sm"
+            size="lg"
             onClick={onPrimary}
             disabled={isCreatingOrder}
             className="gap-2"
           >
             {primaryLabel}
-            {!isCreatingOrder && <ArrowRight className="h-4 w-4" />}
+            {!isCreatingOrder && <ArrowRight className="h-5 w-5" />}
           </Button>
         </div>
       </div>
@@ -131,11 +131,11 @@ export function StickyFooter({
  */
 function RoutePills(): ReactElement {
   return (
-    <div className="flex items-center gap-1 text-xl">
+    <div className="flex items-center gap-1.5 text-3xl">
       <span aria-label="Korea" role="img">
         🇰🇷
       </span>
-      <ArrowRight className="h-4 w-4 text-gray-400" />
+      <ArrowRight className="h-5 w-5 text-gray-400" />
       <span aria-label="Nigeria" role="img">
         🇳🇬
       </span>

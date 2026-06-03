@@ -157,25 +157,6 @@
       "pickupRepName": "Collector's name",
       "pickupRepPhone": "Collector's phone"
     },
-    "review": {
-      "preheading": "Last look",
-      "heading": "Here's your shipment",
-      "subheading": "Everything checks out below. Create it whenever you're ready.",
-      "estimatedCost": "Estimated cost",
-      "costPending": "Pending",
-      "airSummaryLine": "Air freight · arrives in ~7 days",
-      "oceanSummaryLine": "Ocean freight · arrives in ~3 months",
-      "airTransit": "~7d",
-      "oceanTransit": "~3mo",
-      "contents": "Contents",
-      "weightValue": "Weight / value",
-      "declared": "declared",
-      "pickup": "Pick-up",
-      "from": "From",
-      "to": "To",
-      "recipient": "Recipient",
-      "warehouseNote": "Departures are event-driven. Final price confirmed after warehouse weigh-in."
-    },
     "footer": {
       "routeLabel": "{{from}} → {{to}} · {{type}}",
       "readyToCreate": "Ready to create",
@@ -270,7 +251,21 @@
       "estimatedShippingCost": "Estimated Shipping Cost",
       "recalculate": "Recalculate Estimation",
       "enterWeightForEstimate": "Enter weight to see estimate",
-      "enterVolumeForEstimate": "Enter volume (CBM) to see estimate"
+      "enterVolumeForEstimate": "Enter volume (CBM) to see estimate",
+      "preheading": "Last look",
+      "heading": "Here's your shipment",
+      "subheading": "Everything checks out below. Create it whenever you're ready.",
+      "estimatedCost": "Estimated cost",
+      "costPending": "Pending",
+      "airSummaryLine": "Air freight · arrives in ~7 days",
+      "oceanSummaryLine": "Ocean freight · arrives in ~3 months",
+      "airTransit": "~7d",
+      "oceanTransit": "~3mo",
+      "contents": "Contents",
+      "weightValue": "Weight / value",
+      "declared": "declared",
+      "pickup": "Pick-up",
+      "warehouseNote": "Departures are event-driven. Final price confirmed after warehouse weigh-in."
     },
     "navigation": {
       "previous": "Previous",
