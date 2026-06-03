@@ -14,6 +14,13 @@ interface UseClientsParams {
   isActive?: boolean;
   page?: number;
   limit?: number;
+  /**
+   * Server-side free-text search (matches firstName, lastName, email,
+   * businessName, shippingMark). Empty / whitespace-only is treated
+   * as no filter — same as omitting the param. Callers are expected
+   * to debounce the input themselves (300ms is the in-house default).
+   */
+  search?: string;
 }
 
 interface ClientsState {
@@ -26,7 +33,16 @@ interface ClientsState {
 export function useClients(params: UseClientsParams = {}): ClientsState {
   const page = params.page ?? 1;
   const limit = params.limit ?? DEFAULT_CLIENTS_PAGE_SIZE;
-  const effectiveParams = { page, limit, isActive: params.isActive };
+  // Normalise the search key so two equivalent empties (undefined, '',
+  // '   ') collapse to a single React Query cache entry. The service
+  // applies the same normalisation before sending.
+  const trimmedSearch = params.search?.trim() || undefined;
+  const effectiveParams = {
+    page,
+    limit,
+    isActive: params.isActive,
+    search: trimmedSearch,
+  };
 
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();

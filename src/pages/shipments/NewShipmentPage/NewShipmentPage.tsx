@@ -37,7 +37,6 @@ export function NewShipmentPage(): ReactElement {
             formActions={form.formActions}
             fieldErrors={form.fieldErrors}
             isCustomer={form.isCustomer}
-            clients={form.clients}
           />
         )}
         {form.activeStep === 1 && (

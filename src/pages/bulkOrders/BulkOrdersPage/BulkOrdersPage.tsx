@@ -18,8 +18,11 @@ import { useCan, useDashboardData, useSearch } from '@/hooks';
 import { useBulkOrders } from '@/hooks/useBulkOrders';
 import { AppShell, PageHeader } from '@/pages/shared';
 import type { ApiClient, ApiBulkOrder, ApiBulkOrderItem, BulkOrderItem } from '@/types';
+// ApiClient is still used as the parameter type on selectClient even though
+// we no longer pre-fetch the list — kept so the callback signature stays
+// honest about what comes back from the combobox.
 import { getStatusStyle } from '@/lib/statusUtils';
-import { createBulkOrder, deleteBulkOrder, getBulkOrderById, getClients, updateBulkOrderStatus } from '@/services';
+import { createBulkOrder, deleteBulkOrder, getBulkOrderById, updateBulkOrderStatus } from '@/services';
 import { AlertBanner, Button, Checkbox, ClientCombobox, ConfirmModal, CopyButton, Pagination, TableRowsSkeleton } from '@/components/ui';
 import { cn, resolveLocation } from '@/utils';
 
@@ -118,7 +121,6 @@ export function BulkOrdersPage(): ReactElement {
   const [createItems, setCreateItems] = useState<Array<BulkOrderItem & { _key: number; usePickupRep?: boolean }>>([]);
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [clients, setClients] = useState<ApiClient[]>([]);
   const nextKeyRef = useRef(0);
 
   const addItem = useCallback((): void => {
@@ -166,21 +168,11 @@ export function BulkOrdersPage(): ReactElement {
     );
   };
 
-  // Fetch clients when form opens
+  // Seed the first empty row when the create form opens. ClientCombobox
+  // fetches its own client list now (server-side search), so we don't
+  // pre-fetch here anymore.
   useEffect(() => {
     if (!showCreateForm) return;
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) return;
-
-    // ClientCombobox does FE-side filter over this fetched set. Pull the
-    // BE max (100). Above 100 the long tail is invisible — follow-up
-    // when BE adds /admin/clients?search= is to swap for server-side
-    // search so this hook can drop back to the default page-of-20.
-    void getClients(token, { limit: 100 }).then((result) => {
-      setClients(result.data);
-    });
-
-    // Add first empty row
     if (createItems.length === 0) addItem();
   }, [showCreateForm, addItem, createItems.length]);
 
@@ -649,7 +641,6 @@ export function BulkOrdersPage(): ReactElement {
                       {/* Customer picker */}
                       <div className="mt-3">
                         <ClientCombobox
-                          clients={clients}
                           selectedId={item.customerId ?? ''}
                           onSelect={(c) => selectClient(item._key, c)}
                           label={t('createForm.items.customerLabel')}

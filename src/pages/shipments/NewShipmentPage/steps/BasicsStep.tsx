@@ -14,7 +14,6 @@ interface BasicsStepProps {
   formActions: ShipmentFormActions;
   fieldErrors: Record<string, string>;
   isCustomer: boolean;
-  clients: Array<{ id: string; firstName?: string; lastName?: string; email: string }>;
 }
 
 const TYPE_META: Record<string, { Icon: typeof Send; descriptionKey: string }> = {
@@ -35,7 +34,6 @@ export function BasicsStep({
   formActions,
   fieldErrors,
   isCustomer,
-  clients,
 }: BasicsStepProps): ReactElement {
   const { t } = useTranslation('shipments');
 
@@ -113,7 +111,6 @@ export function BasicsStep({
       {!isCustomer && (
         <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
           <ClientCombobox
-            clients={clients}
             selectedId={formState.selectedSenderId}
             onSelect={(c) => formActions.setSelectedSenderId(c.id)}
             label={t('newShipment.basics.senderLabel')}

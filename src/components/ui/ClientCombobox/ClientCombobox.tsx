@@ -1,14 +1,14 @@
 import type { ReactElement } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Loader2 } from 'lucide-react';
+import { useClients, useDebounce } from '@/hooks';
+import type { ApiClient } from '@/types';
 import { cn } from '@/utils';
 
 /**
- * Narrow shape the combobox needs to render + filter. Defined here
- * (rather than importing `ApiClient`) so callers with a trimmed-down
- * projection (e.g. the 4-field shape `useNewShipmentForm` passes to
- * `BasicsStep`) can pass it without a cast. Any object with these
- * fields satisfies the contract via TypeScript's structural typing.
+ * Narrow shape exposed to callers of `onSelect`. Lets call sites avoid
+ * importing the full `ApiClient` if they only need id / name / email
+ * for downstream state.
  */
 export interface ClientComboboxClient {
   id: string;
@@ -17,18 +17,19 @@ export interface ClientComboboxClient {
   email: string;
 }
 
-export interface ClientComboboxProps<T extends ClientComboboxClient = ClientComboboxClient> {
-  /** Pre-fetched client list — caller is responsible for the fetch. */
-  clients: T[];
+export interface ClientComboboxProps {
   /** Currently selected client id (form-controlled). */
   selectedId: string;
   /**
-   * Fires with the selected client; caller persists the id + any side
-   * state. Generic over T so callers passing `ApiClient[]` get
-   * `ApiClient` back, callers passing a narrow projection get the
-   * projection back — no casts needed at the call site.
+   * Snapshot of the selected client so the input can render the name
+   * even when the current search results don't contain it (e.g. user
+   * picked "Julius", then typed a search that excludes him). Optional —
+   * if absent the combobox falls back to whatever it finds in its own
+   * latest results, then to a blank input.
    */
-  onSelect: (client: T) => void;
+  selectedClient?: ClientComboboxClient | null;
+  /** Fires with the picked client when the user selects a row. */
+  onSelect: (client: ApiClient) => void;
   /** Placeholder shown in the search input when no client is selected. */
   placeholder?: string;
   /** Label rendered above the input. Optional — caller can render its own. */
@@ -39,57 +40,68 @@ export interface ClientComboboxProps<T extends ClientComboboxClient = ClientComb
   error?: string | null;
   /** Empty-state copy when the search returns no matches. */
   emptyMessage?: string;
-  /** Max number of dropdown rows to render (avoids rendering 50 buttons). */
-  maxResults?: number;
+  /** Loading state copy shown while the BE query is in flight. */
+  loadingMessage?: string;
   /** Disables the input + closes the dropdown. */
   disabled?: boolean;
 }
 
+const DEBOUNCE_MS = 300;
+const PAGE_LIMIT = 20;
+
 /**
- * Customer-picker combobox. Wraps a pre-fetched `ApiClient[]` (typically
- * from `useClients`) with a text input that filters by `firstName`,
- * `lastName`, or `email`, and a dropdown that surfaces matches.
+ * Customer-picker combobox backed by server-side search.
+ *
+ * Wraps `useClients({ search: debouncedSearch, limit: 20 })` internally
+ * so callers don't manage the fetch lifecycle. Each instance runs its
+ * own 300ms debounce on the search input; React Query dedupes
+ * cross-component queries with identical search terms (so N picker
+ * instances on the same page with empty search → 1 request).
  *
  * UX notes:
- * - Click-outside dismisses the open dropdown (uses `data-client-picker`
- *   on the wrapper + a document-level mousedown listener).
- * - Selected client renders as `"First Last (email)"` in the input so the
- *   user can see who they picked at a glance.
- * - When the search returns more than `maxResults`, the dropdown caps
- *   silently — users typing a more specific query reach the long tail.
- *
- * Known limitation (documented in IMPLEMENTATION_PLAN.md): the search is
- * FE-side over the fetched set. Above the caller's fetch limit (50 today)
- * the long tail is invisible. Future BE work: expose
- * `/admin/clients?search=` and swap the filter for server-side search.
+ * - Click-outside dismisses the open dropdown.
+ * - Closed state shows the selected client's name (from
+ *   `selectedClient` snapshot, or from latest results, or empty).
+ * - Open state shows the live search input — typing fires a
+ *   debounced query.
+ * - Spinner replaces the chevron mid-fetch — same slot, no layout shift.
  */
-export function ClientCombobox<T extends ClientComboboxClient = ClientComboboxClient>({
-  clients,
+export function ClientCombobox({
   selectedId,
+  selectedClient = null,
   onSelect,
   placeholder,
   label,
   hint,
   error,
   emptyMessage = 'No matches',
-  maxResults = 15,
+  loadingMessage = 'Loading…',
   disabled = false,
-}: ClientComboboxProps<T>): ReactElement {
+}: ClientComboboxProps): ReactElement {
   const componentId = useId();
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
-  // Two pieces of state: what the user is typing (filters the dropdown)
-  // and whether the dropdown is open. Selection persists outside the
-  // component — we mirror it into the input only when the dropdown is
-  // closed so it reads as "current selection" rather than "search".
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
+  const debouncedSearch = useDebounce(search, DEBOUNCE_MS);
 
-  const selectedClient = clients.find((c) => c.id === selectedId);
+  // Server-side filter via useClients. Empty/whitespace search returns
+  // the unfiltered paginated list (BE contract); the hook normalises
+  // the value so trivial variants share a single React Query entry.
+  const { clients, isLoading } = useClients({
+    search: debouncedSearch,
+    limit: PAGE_LIMIT,
+  });
 
-  // Close on outside click. Wrapper carries `data-client-picker` so
-  // multiple instances on the same page each maintain their own open
-  // state without fighting over one global handler.
+  // Resolve the display name when the input is closed. Prefer the
+  // caller-supplied snapshot (always accurate for an in-session
+  // selection); fall back to whatever happens to be in the latest
+  // fetch (handles the case where the snapshot wasn't threaded).
+  const resolvedSelected =
+    selectedClient ?? clients.find((c) => c.id === selectedId) ?? null;
+
+  // Click-outside dismissal. Each combobox has its own wrapper ref so
+  // multiple instances on the same page don't fight over one handler.
   useEffect(() => {
     if (!open) return;
     const handler = (event: MouseEvent): void => {
@@ -102,21 +114,22 @@ export function ClientCombobox<T extends ClientComboboxClient = ClientComboboxCl
 
   const inputValue = (() => {
     if (open) return search;
-    if (selectedClient) {
-      const name = [selectedClient.firstName, selectedClient.lastName]
+    if (resolvedSelected) {
+      const name = [resolvedSelected.firstName, resolvedSelected.lastName]
         .filter(Boolean)
         .join(' ');
-      return name || selectedClient.email;
+      return name || resolvedSelected.email;
     }
     return '';
   })();
 
-  const filtered = search.trim()
-    ? clients.filter((c) => {
-        const hay = `${c.firstName ?? ''} ${c.lastName ?? ''} ${c.email}`.toLowerCase();
-        return hay.includes(search.toLowerCase());
-      })
-    : clients;
+  // Pick one of three dropdown states — loading > empty > results.
+  // Loading wins so the user always sees "we heard you, request out".
+  const dropdownState: 'loading' | 'empty' | 'results' = isLoading
+    ? 'loading'
+    : clients.length === 0
+      ? 'empty'
+      : 'results';
 
   return (
     <div ref={wrapperRef} data-client-picker className="relative">
@@ -141,12 +154,13 @@ export function ClientCombobox<T extends ClientComboboxClient = ClientComboboxCl
             setOpen(true);
           }}
           onFocus={() => {
-            // Clear any stale search so the dropdown shows the full
-            // fetched set when the user re-opens.
+            // Clear any stale search string so the dropdown shows the
+            // freshly-fetched first page when the user re-opens.
             setSearch('');
             setOpen(true);
           }}
           placeholder={placeholder}
+          autoComplete="off"
           className={cn(
             'w-full rounded-xl border bg-white px-4 py-2.5 pr-10 text-sm text-gray-900 focus:outline-none focus:ring-2',
             error
@@ -157,12 +171,20 @@ export function ClientCombobox<T extends ClientComboboxClient = ClientComboboxCl
           aria-invalid={!!error}
           aria-describedby={error ? `${componentId}-error` : undefined}
         />
-        <ChevronDown
-          className={cn(
-            'pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 transition',
-            open && 'rotate-180',
-          )}
-        />
+        {open && isLoading ? (
+          <Loader2
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400"
+            aria-hidden="true"
+          />
+        ) : (
+          <ChevronDown
+            className={cn(
+              'pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 transition',
+              open && 'rotate-180',
+            )}
+            aria-hidden="true"
+          />
+        )}
       </div>
 
       {open && !disabled && (
@@ -170,10 +192,14 @@ export function ClientCombobox<T extends ClientComboboxClient = ClientComboboxCl
           role="listbox"
           className="absolute left-0 right-0 z-20 mt-1 max-h-52 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
         >
-          {filtered.length === 0 ? (
+          {dropdownState === 'loading' && (
+            <p className="px-4 py-3 text-xs text-gray-400">{loadingMessage}</p>
+          )}
+          {dropdownState === 'empty' && (
             <p className="px-4 py-3 text-xs text-gray-400">{emptyMessage}</p>
-          ) : (
-            filtered.slice(0, maxResults).map((c) => (
+          )}
+          {dropdownState === 'results' &&
+            clients.map((c) => (
               <button
                 key={c.id}
                 type="button"
@@ -193,8 +219,7 @@ export function ClientCombobox<T extends ClientComboboxClient = ClientComboboxCl
                   <span className="ml-2 text-xs text-gray-400">{c.email}</span>
                 )}
               </button>
-            ))
-          )}
+            ))}
         </div>
       )}
 

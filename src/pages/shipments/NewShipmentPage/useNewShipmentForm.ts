@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
-import { useAuth, useClients } from '@/hooks';
+import { useAuth } from '@/hooks';
 import { ROUTES } from '@/constants';
 import {
   createOrder,
@@ -28,11 +28,6 @@ export function useNewShipmentForm() {
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
   const navigate = useNavigate();
-  // ClientCombobox does FE-side filter over the fetched set. We pull
-  // the BE max (100) here so the combobox has the largest possible
-  // local pool. Above 100 the long tail is invisible — follow-up when
-  // BE exposes /admin/clients?search= is to swap to server-side search.
-  const { clients } = useClients({ limit: 100 });
 
   const isCustomer = !!isClerkSignedIn && !user;
 
@@ -289,7 +284,7 @@ export function useNewShipmentForm() {
     // Estimate
     estimate, estimateLoading, fetchEstimate,
     // Auth
-    isCustomer, clients,
+    isCustomer,
   };
 }
 

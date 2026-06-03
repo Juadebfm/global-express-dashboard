@@ -470,7 +470,7 @@ Notification `type` enum: `order_status_update | payment_event | system_announce
 | `POST /admin/imports/users-suppliers` | Bearer (staff+) | **`multipart/form-data`** CSV bulk import. Run with `?dryRun=true` first. |
 | `POST /admin/clients` | Bearer (staff+) | Provision new customer + return one-time login link |
 | `POST /admin/clients/:id/send-invite` | Bearer (staff+) | Re-send login link |
-| `GET /admin/clients` | Bearer (staff+) | CRM list |
+| `GET /admin/clients` | Bearer (staff+) | CRM list. Accepts `?search=` for server-side free-text filter across `firstName`, `lastName`, `email`, `businessName`, `shippingMark` (case-insensitive partial match). Empty / missing returns unfiltered. |
 | `GET /admin/clients/:id` | Bearer (staff+) | Client detail |
 | `GET /admin/clients/:id/orders` | Bearer (staff+) | All orders for a client |
 | `GET /admin/clients/:id/workbench` | Bearer (staff+) | One-shot: client + suppliers + recent orders |
