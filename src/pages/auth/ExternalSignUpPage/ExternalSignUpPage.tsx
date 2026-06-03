@@ -1,6 +1,6 @@
 import type { ComponentType, ReactElement } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAuth, useSignUp, useUser } from '@clerk/clerk-react';
+import { useAuth, useClerk, useSignUp, useUser } from '@clerk/clerk-react';
 import type { Country } from 'react-phone-number-input';
 import {
   getCountries,
@@ -86,6 +86,21 @@ class SyncValidationError extends Error {
     super(message);
     this.name = 'SyncValidationError';
     this.missingFields = missingFields;
+  }
+}
+
+/**
+ * Thrown when Clerk's `getToken()` returns null on a path that expects an
+ * active session — usually means the Clerk session was lost (different tab
+ * signed out, expired, race condition during signup completion). The user
+ * is left in a stale Verify-screen state with no way to recover; the catch
+ * sites use this type to surface a recovery modal instead of a dead-end
+ * error banner.
+ */
+class SignUpSessionLostError extends Error {
+  constructor(message: string = 'Authentication token is missing.') {
+    super(message);
+    this.name = 'SignUpSessionLostError';
   }
 }
 
@@ -273,6 +288,7 @@ export function ExternalSignUpPage(): ReactElement {
   const { isLoaded, signUp, setActive } = useSignUp();
   const { getToken, isSignedIn } = useAuth();
   const { user: clerkUser } = useUser();
+  const { signOut } = useClerk();
   const inputClassName = 'auth-form-control text-sm placeholder:text-sm';
   const buttonTextClassName = 'text-sm';
   const emailPattern = /\S+@\S+\.\S+/;
@@ -290,6 +306,12 @@ export function ExternalSignUpPage(): ReactElement {
    * and prevents the CTA from sticking around after a successful retry.
    */
   const [clerkErrorCode, setClerkErrorCode] = useState<string | null>(null);
+  /**
+   * True when the user landed on a stale Verify-screen with no valid Clerk
+   * token (session lost). Drives the recovery modal that offers Sign-in or
+   * Start-over instead of trapping them in a failing "Finish setup" loop.
+   */
+  const [showSessionLostModal, setShowSessionLostModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [needsFinishSetupRetry, setNeedsFinishSetupRetry] = useState(false);
@@ -328,7 +350,7 @@ export function ExternalSignUpPage(): ReactElement {
   const syncCurrentSession = useCallback(async (): Promise<string> => {
     const token = await getToken();
     if (!token) {
-      throw new Error('Authentication token is missing.');
+      throw new SignUpSessionLostError();
     }
 
     // Goes through apiClient so we get the 15s AbortController timeout +
@@ -410,6 +432,13 @@ export function ExternalSignUpPage(): ReactElement {
         setFormError(error.message);
         return;
       }
+      if (error instanceof SignUpSessionLostError) {
+        // The Clerk session is gone — the "Finish setup" retry will fail
+        // the same way every time. Surface the recovery modal instead so
+        // the user has a clear way out (Sign in vs. Start over).
+        setShowSessionLostModal(true);
+        return;
+      }
       setNeedsFinishSetupRetry(true);
       setStep('verify');
       setFormError(getErrorMessage(error));
@@ -463,6 +492,10 @@ export function ExternalSignUpPage(): ReactElement {
             setNeedsFinishSetupRetry(false);
             setStep('details');
             setFormError(error.message);
+            return;
+          }
+          if (error instanceof SignUpSessionLostError) {
+            setShowSessionLostModal(true);
             return;
           }
           setNeedsFinishSetupRetry(true);
@@ -603,6 +636,14 @@ export function ExternalSignUpPage(): ReactElement {
       setNeedsFinishSetupRetry(false);
       setStep('verify');
     } catch (error) {
+      // Session-lost path — fires from the `isSignedIn` branch above when
+      // Clerk reports signed-in but can't produce a token. Surface the
+      // recovery modal (Sign-in / Start-over) instead of an opaque error.
+      if (error instanceof SignUpSessionLostError) {
+        setShowSessionLostModal(true);
+        return;
+      }
+
       // Clerk's errors are standardised — branch on `code` for the cases
       // that warrant a special UX (e.g. duplicate email → "Sign in instead?"
       // CTA rendered below the banner). Everything else falls through to
@@ -989,6 +1030,31 @@ export function ExternalSignUpPage(): ReactElement {
           // Close the modal but keep the banner visible underneath as a
           // reminder while the user edits the email field.
           setClerkErrorCode(null);
+        }}
+      />
+
+      <ConfirmModal
+        isOpen={showSessionLostModal}
+        title="Session expired"
+        message="Your Clerk session is no longer active, so we can't finish setting up this account here. Sign in to continue, or start over with a fresh signup."
+        confirmLabel="Sign in"
+        cancelLabel="Start over"
+        onConfirm={() => {
+          // Don't sign Clerk out — the user's account is verified; routing
+          // to /sign-in lets them re-establish the session.
+          setShowSessionLostModal(false);
+          navigate(ROUTES.SIGN_IN);
+        }}
+        onCancel={async () => {
+          // Hard restart: clear any residual Clerk session + local form
+          // state, then go back to /sign-up so the user can re-enter.
+          setShowSessionLostModal(false);
+          try {
+            await signOut();
+          } catch {
+            // signOut failure is fine — the user will sign back in anyway.
+          }
+          navigate(ROUTES.SIGN_UP, { replace: true });
         }}
       />
     </AuthLayout>
