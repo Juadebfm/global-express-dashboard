@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
-import type { DashboardUser, SidebarItem } from '@/types';
+import type { DashboardUser } from '@/types';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { getFooterItems, getNavItems } from './navConfig';
 import { WelcomePopup, OnboardingTour, useOnboarding } from '@/components/onboarding';
 import { cn } from '@/utils';
 import { useAuth, useDashboardData, usePushNotifications, useWebSocket } from '@/hooks';
@@ -15,59 +16,6 @@ interface AppLayoutProps {
   children: ReactNode;
   user: DashboardUser;
 }
-
-// ── Role-based nav definitions ────────────────────────────────────────────────
-
-const CUSTOMER_NAV: SidebarItem[] = [
-  { id: 'dashboard', icon: 'dashboard', href: ROUTES.DASHBOARD },
-  { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
-  { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
-  { id: 'deliverySchedule', icon: 'calendar', href: ROUTES.DELIVERY_SCHEDULE },
-  { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
-  { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
-];
-
-const STAFF_NAV: SidebarItem[] = [
-  { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
-  { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
-  { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
-  { id: 'bulkOrders', icon: 'package', href: ROUTES.BULK_ORDERS },
-  { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
-];
-
-const ADMIN_NAV: SidebarItem[] = [
-  { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
-  { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
-  { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
-  { id: 'bulkOrders', icon: 'package', href: ROUTES.BULK_ORDERS },
-  { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
-  { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
-  { id: 'team', icon: 'team', href: ROUTES.TEAM },
-  { id: 'reports', icon: 'chart', href: ROUTES.REPORTS },
-];
-
-const SUPERADMIN_NAV: SidebarItem[] = [
-  { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
-  { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
-  { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
-  { id: 'bulkOrders', icon: 'package', href: ROUTES.BULK_ORDERS },
-  { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
-  { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
-  { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
-  { id: 'team', icon: 'team', href: ROUTES.TEAM },
-  { id: 'reports', icon: 'chart', href: ROUTES.REPORTS },
-];
-
-const CUSTOMER_FOOTER: SidebarItem[] = [
-  { id: 'profile', icon: 'users', href: ROUTES.PROFILE },
-  { id: 'support', icon: 'help', href: ROUTES.SUPPORT },
-];
-
-const OPERATOR_FOOTER: SidebarItem[] = [
-  { id: 'profile', icon: 'users', href: ROUTES.PROFILE },
-  { id: 'settings', icon: 'settings', href: ROUTES.SETTINGS },
-  { id: 'support', icon: 'help', href: ROUTES.SUPPORT },
-];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -99,16 +47,8 @@ export function AppLayout({ children, user }: AppLayoutProps): ReactElement {
   const { showWelcome, runTour, dismissWelcome, completeTour } =
     useOnboarding(isCustomer, hasData, isDashboard);
 
-  const navItems: SidebarItem[] = (() => {
-    switch (effectiveRole) {
-      case 'superadmin': return SUPERADMIN_NAV;
-      case 'admin': return ADMIN_NAV;
-      case 'staff': return STAFF_NAV;
-      default: return CUSTOMER_NAV;
-    }
-  })();
-
-  const footerItems: SidebarItem[] = isCustomer ? CUSTOMER_FOOTER : OPERATOR_FOOTER;
+  const navItems = getNavItems(effectiveRole);
+  const footerItems = getFooterItems(effectiveRole);
 
   const effectiveUser: DashboardUser = (() => {
     if (authUser) {
