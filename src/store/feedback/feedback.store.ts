@@ -9,11 +9,15 @@ function createMessageId(): string {
 
 export const useFeedbackStore = create<FeedbackStore>((set, get) => ({
   messages: [],
-  pushMessage: ({ tone, message, title, referenceId, durationMs }) => {
+  pushMessage: ({ tone, message, title, referenceId, retry, durationMs }) => {
     const id = createMessageId();
-    const nextDuration = durationMs ?? DEFAULT_DURATION_MS;
+    // Retry-bearing toasts stay until the user dismisses or clicks Retry —
+    // auto-dismiss would yank the recovery affordance out from under them.
+    // Callers can still force a finite duration by passing durationMs.
+    const nextDuration =
+      durationMs ?? (retry ? 0 : DEFAULT_DURATION_MS);
     set((state) => ({
-      messages: [...state.messages, { id, tone, message, title, referenceId }],
+      messages: [...state.messages, { id, tone, message, title, referenceId, retry }],
     }));
 
     if (nextDuration > 0) {

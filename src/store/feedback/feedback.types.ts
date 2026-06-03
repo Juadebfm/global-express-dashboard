@@ -11,6 +11,14 @@ export interface FeedbackMessage {
    * support tickets. (Not named `ref` to avoid React's reserved prop.)
    */
   referenceId?: string;
+  /**
+   * Optional retry callback. When set, the toast renders a "Retry" button
+   * that fires this callback. Used for transient errors (HTTP 500/503)
+   * where the user's intent is unchanged and re-firing the mutation is
+   * the right next step. Wire via `buildErrorFeedback` so the gate (only
+   * 5xx errors get a Retry button) is centralised.
+   */
+  retry?: () => void;
 }
 
 export interface PushFeedbackInput {
@@ -18,6 +26,7 @@ export interface PushFeedbackInput {
   message: string;
   title?: string;
   referenceId?: string;
+  retry?: () => void;
   durationMs?: number;
 }
 
