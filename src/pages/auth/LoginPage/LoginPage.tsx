@@ -6,6 +6,7 @@ import { AuthLayout } from '@/components/layout';
 import { LoginForm, type LoginFormData } from '@/components/forms';
 import { ProvisioningGateModal } from '@/components/ui';
 import { useAuth, useProvisioningGate, useRetryCooldown } from '@/hooks';
+import { can } from '@/lib/permissions';
 import {
   PROVISIONING_GATE_BLOCK_MESSAGE,
   PROVISIONING_GATE_TARGET_UTC,
@@ -40,10 +41,9 @@ export function LoginPage(): ReactElement {
         navigate(ROUTES.MFA_ENROLL, { replace: true });
         return;
       }
-      const dest =
-        user.role === 'staff' || user.role === 'admin' || user.role === 'superadmin'
-          ? ROUTES.ADMIN_DASHBOARD
-          : ROUTES.DASHBOARD;
+      const dest = can(user.role, 'app.operator')
+        ? ROUTES.ADMIN_DASHBOARD
+        : ROUTES.DASHBOARD;
       navigate(dest, { replace: true });
     }
   }, [isLoading, isAuthenticated, user, navigate]);

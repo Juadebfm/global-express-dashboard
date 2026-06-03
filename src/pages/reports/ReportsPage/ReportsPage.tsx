@@ -25,7 +25,7 @@ import {
   Ship,
   TrendingUp,
 } from 'lucide-react';
-import { useAuth, useDashboardData } from '@/hooks';
+import { useCan, useDashboardData } from '@/hooks';
 import { useReportSummary } from '@/hooks/useReports';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { Skeleton } from '@/components/ui';
@@ -95,10 +95,9 @@ export function ReportsPage(): ReactElement {
   const { t } = useTranslation('reports');
   const { data, isLoading, error } = useDashboardData();
   const { data: summary, isLoading: summaryLoading } = useReportSummary();
-  const { user } = useAuth();
 
-  const isSuperAdmin = user?.role === 'superadmin';
-  const isAdminPlus = user?.role === 'admin' || user?.role === 'superadmin';
+  const isSuperAdmin = useCan('app.superadmin');
+  const isAdminPlus = useCan('app.admin');
 
   // Date range
   const [dateFrom, setDateFrom] = useState('');

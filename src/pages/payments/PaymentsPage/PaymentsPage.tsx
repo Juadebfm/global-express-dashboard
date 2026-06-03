@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppShell, PageHeader } from '@/pages/shared';
-import { useAuth, useDashboardData, usePayments, useSearch } from '@/hooks';
+import { useCan, useDashboardData, usePayments, useSearch } from '@/hooks';
 import type { ApiPayment } from '@/types';
 
 const PAYMENT_STATUSES = ['all', 'pending', 'successful', 'failed', 'abandoned'] as const;
@@ -45,8 +45,7 @@ function matchesQuery(payment: ApiPayment, query: string): boolean {
 
 export function PaymentsPage(): ReactElement {
   const { t } = useTranslation('payments');
-  const { user } = useAuth();
-  const isSuperadmin = user?.role === 'superadmin';
+  const isSuperadmin = useCan('app.superadmin');
   const { data, isLoading, error } = useDashboardData();
   const { query, setQuery } = useSearch();
   const [activeStatus, setActiveStatus] = useState<(typeof PAYMENT_STATUSES)[number]>('all');

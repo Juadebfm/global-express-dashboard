@@ -3,6 +3,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { ApiClient, ApiClientsResponse } from '@/types';
 import { getClients } from '@/services';
 import { STALE_TIME } from '@/lib/queryDefaults';
+import { can } from '@/lib/permissions';
 import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -31,9 +32,7 @@ export function useClients(params: UseClientsParams = {}): ClientsState {
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
 
   const isCustomer = isClerkSignedIn && !user;
-  const role = user?.role;
-  const enabled =
-    !!role && (role === 'staff' || role === 'admin' || role === 'superadmin');
+  const enabled = can(user?.role, 'clients.view');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['clients', effectiveParams],

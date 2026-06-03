@@ -10,6 +10,7 @@ import type {
 import { getTeam, approveTeamMember, createTeamMember } from '@/services';
 import type { CreateTeamMemberPayload } from '@/services';
 import { STALE_TIME } from '@/lib/queryDefaults';
+import { can } from '@/lib/permissions';
 import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -60,8 +61,7 @@ export function useTeam(params: UseTeamParams = {}): TeamState {
   const queryClient = useQueryClient();
 
   const isCustomer = isClerkSignedIn && !user;
-  const role = user?.role;
-  const enabled = !!role && (role === 'admin' || role === 'superadmin');
+  const enabled = can(user?.role, 'team.view');
 
   const getToken_ = async (): Promise<string | null> => {
     if (isCustomer) return getToken();
