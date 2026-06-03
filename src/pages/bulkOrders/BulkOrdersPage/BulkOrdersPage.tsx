@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
@@ -19,7 +20,7 @@ import { AppShell, PageHeader } from '@/pages/shared';
 import type { ApiClient, ApiBulkOrder, ApiBulkOrderItem, BulkOrderItem } from '@/types';
 import { getStatusStyle } from '@/lib/statusUtils';
 import { createBulkOrder, deleteBulkOrder, getBulkOrderById, getClients, updateBulkOrderStatus } from '@/services';
-import { AlertBanner, Button, Checkbox, ConfirmModal, CopyButton } from '@/components/ui';
+import { AlertBanner, Button, Checkbox, ConfirmModal, CopyButton, Pagination } from '@/components/ui';
 import { cn, resolveLocation } from '@/utils';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -59,14 +60,41 @@ function getStatusCategory(statusV2: string): StatusFilter {
 // ── Component ───────────────────────────────────────────────────
 
 export function BulkOrdersPage(): ReactElement {
-  const { t, i18n } = useTranslation('bulkOrders');
+  const { t, i18n } = useTranslation(['bulkOrders', 'shipments']);
   const dateLocale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
   const translateLocation = (value: unknown): string => {
     const str = resolveLocation(value);
     return str ? t(`shipments:locations.${str}`, { defaultValue: str }) : '';
   };
   const { data, isLoading, error } = useDashboardData();
-  const { bulkOrders, total, isLoading: ordersLoading, error: ordersError, refetch: refetchOrders } = useBulkOrders();
+
+  // `?page=N` in the URL is the source of truth so a refresh / deep link /
+  // browser-back keeps position. Coerce + clamp ≥1 so a hand-edited
+  // "page=foo" doesn't break the request.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Math.max(1, Number(searchParams.get('page')) || 1);
+  const setPage = (next: number): void => {
+    setSearchParams(
+      (prev) => {
+        const updated = new URLSearchParams(prev);
+        if (next <= 1) {
+          updated.delete('page');
+        } else {
+          updated.set('page', String(next));
+        }
+        return updated;
+      },
+      { replace: true },
+    );
+  };
+
+  const {
+    bulkOrders,
+    pagination,
+    isLoading: ordersLoading,
+    error: ordersError,
+    refetch: refetchOrders,
+  } = useBulkOrders({ page });
   const { query, setQuery } = useSearch();
   const { user } = useAuth();
 
@@ -150,7 +178,11 @@ export function BulkOrdersPage(): ReactElement {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
 
-    void getClients(token, { limit: 100 }).then((result) => {
+    // Dropdown picker — pulls the first 50 customers. Above 50, this becomes
+    // a usability problem: the user has no way to find a customer not on
+    // the first page. Follow-up: replace with a search-on-type autocomplete
+    // that hits `/admin/clients?search=...` server-side.
+    void getClients(token, { limit: 50 }).then((result) => {
       setClients(result.data);
     });
 
@@ -289,7 +321,12 @@ export function BulkOrdersPage(): ReactElement {
   // ── Summary stats ──────────────────────────────────────────────
 
   const summaryStats = useMemo(() => {
-    const totalOrders = bulkOrders.length;
+    // Headline reflects the full result set (from BE pagination.total) so
+    // the count is honest even when the user is mid-paging. The per-status
+    // / per-item totals below still reflect just the current page — that's
+    // acceptable since the page-level status filter dropdown lets users
+    // slice down when they need accurate per-status numbers.
+    const totalOrders = pagination.total;
     const totalItems = bulkOrders.reduce((acc, o) => acc + o.itemCount, 0);
     const statusCounts = bulkOrders.reduce(
       (acc, o) => {
@@ -300,7 +337,7 @@ export function BulkOrdersPage(): ReactElement {
       {} as Record<string, number>
     );
     return { totalOrders, totalItems, activeCount: statusCounts['active'] ?? 0 };
-  }, [bulkOrders]);
+  }, [bulkOrders, pagination.total]);
 
   // ── Actions ────────────────────────────────────────────────────
 
@@ -916,8 +953,8 @@ export function BulkOrdersPage(): ReactElement {
               <div className="space-y-2">
                 <h2 className="text-2xl font-semibold text-gray-900">{t('queue.title')}</h2>
                 <p className="text-sm text-gray-500">
-                  {total > 0
-                    ? t('queue.descriptionWithCount', { count: total })
+                  {pagination.total > 0
+                    ? t('queue.descriptionWithCount', { count: pagination.total })
                     : t('queue.descriptionEmpty')}
                 </p>
               </div>
@@ -951,6 +988,10 @@ export function BulkOrdersPage(): ReactElement {
                           key={value}
                           type="button"
                           onClick={() => {
+                            // Filter change reshapes the visible result set
+                            // (FE-side); drop back to page 1 so the URL
+                            // doesn't strand us past the new range.
+                            if (value !== statusFilter) setPage(1);
                             setStatusFilter(value);
                             setOpenMenu(false);
                           }}
@@ -1066,6 +1107,23 @@ export function BulkOrdersPage(): ReactElement {
                   </div>
                 )}
               </div>
+
+              {pagination.totalPages > 1 && (
+                <Pagination
+                  page={pagination.page}
+                  totalPages={pagination.totalPages}
+                  total={pagination.total}
+                  labels={{
+                    pageOf: (p, tp) =>
+                      t('shipments:pagination.pageOf', { page: p, totalPages: tp }),
+                    totalLabel: (count) =>
+                      t('shipments:pagination.total', { count }),
+                    prev: t('shipments:pagination.prev'),
+                    next: t('shipments:pagination.next'),
+                  }}
+                  onPageChange={setPage}
+                />
+              )}
             </div>
           </>
         )}
