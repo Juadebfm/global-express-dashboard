@@ -101,13 +101,34 @@ function extractMissingFields(payload: unknown): string[] {
   return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
 }
 
+interface ClerkErrorEntry {
+  message?: string;
+  long_message?: string;
+  code?: string;
+  meta?: { param_name?: string };
+}
+
+/**
+ * Pulls the first entry off Clerk's standard `error.errors[]` shape. Used by
+ * code-based switching at the call site (e.g. `form_identifier_exists`
+ * triggers a "Sign in instead?" CTA).
+ */
+function getClerkErrorEntry(error: unknown): ClerkErrorEntry | null {
+  if (!error || typeof error !== 'object' || !('errors' in error)) return null;
+  const clerk = error as { errors?: ClerkErrorEntry[] };
+  return clerk.errors?.[0] ?? null;
+}
+
 function getErrorMessage(error: unknown): string {
-  if (error && typeof error === 'object' && 'errors' in error) {
-    const clerkError = error as { errors?: Array<{ message?: string }> };
-    const message = clerkError.errors?.[0]?.message;
-    if (message) {
-      return message;
-    }
+  const clerkEntry = getClerkErrorEntry(error);
+  if (clerkEntry) {
+    // Prefer Clerk's long_message — it's the user-friendly variant. Fall
+    // back to the short message for entries that don't ship one.
+    return (
+      clerkEntry.long_message ??
+      clerkEntry.message ??
+      'Something went wrong. Please try again.'
+    );
   }
 
   if (error instanceof Error) {
@@ -255,6 +276,12 @@ export function ExternalSignUpPage(): ReactElement {
   const [selectedCountry, setSelectedCountry] = useState<Country>('NG');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  /**
+   * Last Clerk error code (e.g. `form_identifier_exists`). Drives the
+   * "Sign in instead?" inline CTA when the email is already registered,
+   * and prevents the CTA from sticking around after a successful retry.
+   */
+  const [clerkErrorCode, setClerkErrorCode] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [needsFinishSetupRetry, setNeedsFinishSetupRetry] = useState(false);
@@ -395,6 +422,7 @@ export function ExternalSignUpPage(): ReactElement {
   const handleVerify = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError(null);
+    setClerkErrorCode(null);
     const normalizedVerificationCode = verificationCode.replace(/\D/g, '').slice(0, 6);
 
     if (normalizedVerificationCode.length !== 6) {
@@ -473,6 +501,7 @@ export function ExternalSignUpPage(): ReactElement {
   const handleDetailsSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError(null);
+    setClerkErrorCode(null);
 
     const nextErrors: Record<string, string> = {};
 
@@ -566,6 +595,20 @@ export function ExternalSignUpPage(): ReactElement {
       setNeedsFinishSetupRetry(false);
       setStep('verify');
     } catch (error) {
+      // Clerk's errors are standardised — branch on `code` for the cases
+      // that warrant a special UX (e.g. duplicate email → "Sign in instead?"
+      // CTA rendered below the banner). Everything else falls through to
+      // the long_message text in the red banner.
+      const clerkEntry = getClerkErrorEntry(error);
+      setClerkErrorCode(clerkEntry?.code ?? null);
+
+      if (clerkEntry?.code === 'captcha_invalid' || clerkEntry?.code === 'captcha_not_enabled') {
+        // Clerk's own bot challenge failed — the widget is stale. Reload the
+        // page so Clerk re-issues; user re-enters details on the new instance.
+        window.location.reload();
+        return;
+      }
+
       setFormError(getErrorMessage(error));
     } finally {
       setIsSubmitting(false);
@@ -756,6 +799,17 @@ export function ExternalSignUpPage(): ReactElement {
             {formError && (
               <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
                 <p className="text-sm text-red-600">{formError}</p>
+                {clerkErrorCode === 'form_identifier_exists' && (
+                  <p className="mt-2 text-sm text-red-700">
+                    Already have an account?{' '}
+                    <Link
+                      to={ROUTES.SIGN_IN}
+                      className="font-semibold underline hover:text-red-900"
+                    >
+                      Sign in instead
+                    </Link>
+                  </p>
+                )}
               </div>
             )}
 
