@@ -49,7 +49,7 @@ Companion doc to [BACKEND_API_STATE.md](BACKEND_API_STATE.md). Captures the open
 | Status | PR title | Scope | Acceptance | Effort |
 |---|---|---|---|---|
 | 🟡 | `feat(shipments): paginate ShipmentsPage list` | [ShipmentsPage.tsx:92](../src/pages/shipments/ShipmentsPage/ShipmentsPage.tsx#L92) currently passes `limit: 100`. Replace with proper `{ page, limit }` state + pagination controls (Prev/Next + page indicator). Default `limit=20`. Wire to existing `pagination` field on the response. | ① First load fetches `?page=1&limit=20`. ② Prev/Next change `page` query and refetch. ③ Page indicator reads `pagination.totalPages`. ④ URL reflects page (querystring) so refresh keeps position. | ~1–2h |
-| ⬜ | `feat(orders): paginate OrdersPage list` | Same pattern for [OrdersPage.tsx:88](../src/pages/orders/OrdersPage/OrdersPage.tsx#L88). | Same as above, for the orders list. | ~1–2h |
+| 🟡 | `feat(orders): paginate OrdersPage list` | Same pattern for [OrdersPage.tsx:88](../src/pages/orders/OrdersPage/OrdersPage.tsx#L88). | Same as above, for the orders list. | ~1–2h |
 | ⬜ | `feat(bulk-orders): paginate BulkOrdersPage list` | Same pattern for [BulkOrdersPage.tsx:153](../src/pages/bulkOrders/BulkOrdersPage/BulkOrdersPage.tsx#L153). | Same as above, for bulk orders. | ~1–2h |
 | ⬜ | `fix(shipmentsService): respect default limit on getShipments` | [shipmentsService.ts:276](../src/services/shipmentsService.ts#L276) hard-codes `limit: 100`. Remove the default; let callers pass `{ page, limit }`. Update any internal caller that relied on the implicit 100. | ① Service no longer mentions `limit: 100`. ② Default applied at call site, not in the service. ③ All callers compile. | ~30min |
 
