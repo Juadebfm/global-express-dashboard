@@ -136,6 +136,19 @@ function dispatchUnauthorized(path: string): void {
   window.dispatchEvent(new CustomEvent('auth:unauthorized'));
 }
 
+// 403 Forbidden — usually means the user's role doesn't grant this action,
+// but it can ALSO mean the role changed mid-session (demote from staff →
+// user, etc.). Dispatch a global event so AuthContext can refresh /auth/me
+// and the FE chrome catches up without a reload.
+//
+// Skip the boot probe for the same reason as the 401 dispatch — first
+// /auth/me call already handles its own "no session" response cleanup.
+function dispatchForbidden(path: string): void {
+  if (isAuthBootProbe(path)) return;
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('auth:forbidden'));
+}
+
 // 423 Locked — backend's Problem body has `lockedUntil: <ISO 8601>` as an
 // extension field at the top level. Dispatch a global event so the login
 // screen can show a countdown without each form re-parsing the response.
@@ -239,6 +252,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!response.ok) {
     if (response.status === 401) dispatchUnauthorized(path);
+    if (response.status === 403) dispatchForbidden(path);
     if (response.status === 423) dispatchAccountLocked(payload);
     const retryAfter =
       response.status === 429 ? parseRetryAfter(response.headers.get('Retry-After')) : null;

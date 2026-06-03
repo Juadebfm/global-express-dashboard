@@ -116,3 +116,66 @@ describe('AuthContext — cache clearing on session loss', () => {
     expect(queryClient.getQueryCache().getAll()).toHaveLength(1);
   });
 });
+
+describe('AuthContext — role refresh on auth:forbidden', () => {
+  it('refetches /auth/me when a 403 fires so a demoted role catches up', async () => {
+    // Seed a token + a "staff" user the boot probe will return first.
+    localStorage.setItem(TOKEN_KEY, 'fake-token-789');
+    const wasStaff = {
+      id: 'u-2',
+      email: 'op@example.com',
+      firstName: 'Op',
+      lastName: 'Two',
+      role: 'staff' as const,
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
+    };
+    const nowCustomer = { ...wasStaff, role: 'user' as const, updatedAt: '2026-06-04' };
+
+    // First call (boot probe) returns the old staff role; second call
+    // (triggered by auth:forbidden) returns the demoted shape.
+    vi.mocked(authService.getMe)
+      .mockResolvedValueOnce(wasStaff as never)
+      .mockResolvedValueOnce(nowCustomer as never);
+
+    render(
+      <Wrapper>
+        <ProviderConsumer />
+      </Wrapper>,
+    );
+
+    // Wait for the boot probe to settle so we know we're in the
+    // "logged-in with the stale role" state before firing the event.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(authService.getMe).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('auth:forbidden'));
+      // Let the async handler resolve.
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(authService.getMe).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignores auth:forbidden when there is no active session', async () => {
+    // No token → don't fire /auth/me. Without this guard a stray 403
+    // on a logged-out tab would needlessly probe the BE.
+    render(
+      <Wrapper>
+        <ProviderConsumer />
+      </Wrapper>,
+    );
+
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('auth:forbidden'));
+      await Promise.resolve();
+    });
+
+    expect(authService.getMe).not.toHaveBeenCalled();
+  });
+});

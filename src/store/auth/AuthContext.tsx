@@ -73,6 +73,41 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     checkAuth();
   }, [checkAuth]);
 
+  // Single 403 handler — apiClient dispatches `auth:forbidden` whenever
+  // any non-boot-probe request gets a 403. Could mean (a) the user is
+  // trying to do something their role never allowed, OR (b) their role
+  // was demoted mid-session. We can't tell which from one response, so
+  // we refetch /auth/me to catch case (b). If the role didn't actually
+  // change, this is a cheap no-op.
+  //
+  // Inlined rather than calling refreshUser() (defined later) to avoid the
+  // useEffect dep / ref dance.
+  useEffect(() => {
+    const handler = async (): Promise<void> => {
+      const token = localStorage.getItem(TOKEN_KEY);
+      // Only refresh if we still think we're logged in — otherwise this
+      // races into the 401 handler below.
+      if (!token) return;
+      try {
+        const user = await getMe(token);
+        if (!user?.role) return;
+        syncLanguageFromUser(user);
+        setState((prev) => ({
+          ...prev,
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        }));
+      } catch {
+        /* If /auth/me fails too, the 401 handler will pick it up. */
+      }
+    };
+    const wrapper = (): void => { void handler(); };
+    window.addEventListener('auth:forbidden', wrapper);
+    return () => window.removeEventListener('auth:forbidden', wrapper);
+  }, []);
+
   // Single 401 handler — apiClient dispatches `auth:unauthorized` whenever
   // any request gets a 401. Clear in-house session state; ProtectedRoute
   // sees isAuthenticated=false on the next render and redirects to /login.
