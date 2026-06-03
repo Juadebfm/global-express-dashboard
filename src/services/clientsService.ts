@@ -19,11 +19,13 @@ export function getClients(
 ): Promise<ApiClientsResponse['data']> {
   const searchParams = new URLSearchParams();
   if (params.page !== undefined) searchParams.set('page', String(params.page));
-  // Default stays at 100 (BE max) pending ClientsPage pagination AND a
-  // search-on-type autocomplete for the new-shipment customer picker.
-  // Lowering this to 20 right now would silently truncate both surfaces.
-  // BulkOrdersPage already overrides to 50 with its own follow-up note.
-  searchParams.set('limit', String(params.limit ?? 100));
+  // Default matches the BE + rest of the FE. The picker dropdowns
+  // (BulkOrdersPage create form, useNewShipmentForm) explicitly opt
+  // into a larger limit because they need to render the full set in
+  // a single shot. The proper long-term fix for those is a
+  // search-on-type autocomplete against /admin/clients?search=...
+  // (see docs/IMPLEMENTATION_PLAN.md § Phase 7 follow-ups).
+  searchParams.set('limit', String(params.limit ?? 20));
   if (params.isActive !== undefined) searchParams.set('isActive', String(params.isActive));
   const qs = searchParams.toString();
   return apiGetData<ApiClientsResponse['data']>(

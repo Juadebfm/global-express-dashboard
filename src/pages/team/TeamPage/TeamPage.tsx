@@ -1,10 +1,12 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Mail, Search, User, UserPlus, X } from 'lucide-react';
 import {
   useAdminUserDetail,
   useAuth,
+  useCan,
   useDashboardData,
   useSearch,
   useTeam,
@@ -12,6 +14,7 @@ import {
   useUpdateShipmentBatchPermission,
 } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
+import { Pagination } from '@/components/ui';
 import type { TeamMember, TeamRole } from '@/types';
 import { cn } from '@/utils';
 import { useFeedbackStore } from '@/store';
@@ -68,11 +71,37 @@ const buildInitials = (name: string): string => {
 };
 
 export function TeamPage(): ReactElement {
-  const { t } = useTranslation('team');
+  const { t } = useTranslation(['team', 'shipments']);
   const { data, isLoading, error } = useDashboardData();
   const { query, setQuery } = useSearch();
   const { user } = useAuth();
-  const { members: apiMembers, isLoading: teamLoading, approveMember: approveApi, inviteMember, isInviting } = useTeam();
+
+  // ?page=N URL state — same shape as the other paginated pages.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Math.max(1, Number(searchParams.get('page')) || 1);
+  const setPage = (next: number): void => {
+    setSearchParams(
+      (prev) => {
+        const updated = new URLSearchParams(prev);
+        if (next <= 1) {
+          updated.delete('page');
+        } else {
+          updated.set('page', String(next));
+        }
+        return updated;
+      },
+      { replace: true },
+    );
+  };
+
+  const {
+    members: apiMembers,
+    pagination,
+    isLoading: teamLoading,
+    approveMember: approveApi,
+    inviteMember,
+    isInviting,
+  } = useTeam({ page });
   const pushMessage = useFeedbackStore((state) => state.pushMessage);
   const [activeTab, setActiveTab] = useState<TeamTab>('all');
   const [membersOverride, setMembersOverride] = useState<TeamMember[] | null>(null);
@@ -87,10 +116,12 @@ export function TeamPage(): ReactElement {
     setMembersOverride((prev) => updater(prev ?? apiMembers));
   };
 
-  const role = user?.role;
-  const isSuperAdmin = role === 'superadmin';
-  const isAdmin = role === 'admin';
-  const hasAccess = isSuperAdmin || isAdmin;
+  const isSuperAdmin = useCan('app.superadmin');
+  // 'isAdmin' here historically meant the literal admin role (not "admin
+  // or above"). Keep the same semantics — the existing canEditMember /
+  // canRemoveMember logic branches on it as a distinct middle tier.
+  const isAdmin = user?.role === 'admin';
+  const hasAccess = useCan('team.view');
 
   const roleOptions: TeamRole[] = isSuperAdmin ? ['staff', 'admin', 'superadmin'] : ['staff'];
 
@@ -317,7 +348,8 @@ export function TeamPage(): ReactElement {
                 </button>
               </div>
             ) : (
-              <div className="mt-6 overflow-hidden rounded-2xl border border-gray-200">
+              <div className="mt-6 space-y-3">
+                <div className="overflow-hidden rounded-2xl border border-gray-200">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <tr>
@@ -400,6 +432,23 @@ export function TeamPage(): ReactElement {
                     })}
                   </tbody>
                 </table>
+                </div>
+                {pagination.totalPages > 1 && (
+                  <Pagination
+                    page={pagination.page}
+                    totalPages={pagination.totalPages}
+                    total={pagination.total}
+                    labels={{
+                      pageOf: (p, tp) =>
+                        t('shipments:pagination.pageOf', { page: p, totalPages: tp }),
+                      totalLabel: (count) =>
+                        t('shipments:pagination.total', { count }),
+                      prev: t('shipments:pagination.prev'),
+                      next: t('shipments:pagination.next'),
+                    }}
+                    onPageChange={setPage}
+                  />
+                )}
               </div>
             )}
           </div>

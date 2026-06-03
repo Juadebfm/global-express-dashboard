@@ -61,8 +61,8 @@ These weren't in the original gap list but surfaced when I swept the codebase fo
 
 | Status | PR title | Scope | Effort |
 |---|---|---|---|
-| ⬜ | `feat(team): paginate TeamPage list` | Add `?page=N` + Pagination chrome to [TeamPage.tsx](../src/pages/team/TeamPage/TeamPage.tsx). Wire `useTeam` to surface `pagination` (same shape as `useOrders` after Phase 3 PR 2). Once landed, drop `getTeam`'s default `limit ?? 100` → `?? 20`. | ~1–2h |
-| ⬜ | `feat(clients): paginate ClientsPage + replace customer picker with search-on-type` | Two halves: (a) paginate [ClientsPage](../src/pages/clients/ClientsPage/ClientsPage.tsx); (b) replace the customer-picker dropdowns in [BulkOrdersPage:185](../src/pages/bulkOrders/BulkOrdersPage/BulkOrdersPage.tsx#L185) and [useNewShipmentForm](../src/pages/shipments/NewShipmentPage/useNewShipmentForm.ts) with an async search hitting `/admin/clients?search=...`. Once landed, drop `getClients`'s default `limit ?? 100` → `?? 20`. | ~3–4h |
+| 🟡 | `feat(team): paginate TeamPage list` | Add `?page=N` + Pagination chrome. `useTeam` surfaces `pagination`; `getTeam` default 100→20. Migrated `role === 'admin' \|\| 'superadmin'` checks to `useCan`. | ~1–2h |
+| 🟡 | `feat(clients): paginate ClientsPage` | Paginate ClientsPage; `useClients` surfaces `pagination`; `getClients` default 100→20. **Customer-picker autocomplete deferred** — the BulkOrdersPage + useNewShipmentForm dropdowns explicitly opt into `limit: 50` with inline TODOs. Async search-on-type is a separate product/UX decision. | ~2h |
 
 ---
 

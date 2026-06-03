@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
@@ -15,7 +16,7 @@ import { useCan, useClients, useDashboardData, useSearch } from '@/hooks';
 import i18n from '@/i18n/i18n';
 import type { ApiClient } from '@/types';
 import { cn } from '@/utils';
-import { CopyButton } from '@/components/ui';
+import { CopyButton, Pagination } from '@/components/ui';
 
 type ClientStatus = 'active' | 'inactive';
 
@@ -60,12 +61,35 @@ const buildInitials = (name: string): string => {
 };
 
 export function ClientsPage(): ReactElement {
-  const { t } = useTranslation('clients');
+  const { t } = useTranslation(['clients', 'shipments']);
   const dateLocale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
   const { data, isLoading, error } = useDashboardData();
   const { query, setQuery } = useSearch();
   const hasAccess = useCan('clients.view');
-  const { clients: apiClients, isLoading: clientsLoading } = useClients();
+
+  // ?page=N URL state — same shape as the other paginated pages.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Math.max(1, Number(searchParams.get('page')) || 1);
+  const setPage = (next: number): void => {
+    setSearchParams(
+      (prev) => {
+        const updated = new URLSearchParams(prev);
+        if (next <= 1) {
+          updated.delete('page');
+        } else {
+          updated.set('page', String(next));
+        }
+        return updated;
+      },
+      { replace: true },
+    );
+  };
+
+  const {
+    clients: apiClients,
+    pagination,
+    isLoading: clientsLoading,
+  } = useClients({ page });
 
   const [activeClient, setActiveClient] = useState<ApiClient | null>(null);
   const [statusFilter, setStatusFilter] = useState<ClientStatus | 'all'>('all');
@@ -547,6 +571,25 @@ export function ClientsPage(): ReactElement {
                   </div>
                 )}
               </div>
+
+              {pagination.totalPages > 1 && (
+                <div className="mt-3">
+                  <Pagination
+                    page={pagination.page}
+                    totalPages={pagination.totalPages}
+                    total={pagination.total}
+                    labels={{
+                      pageOf: (p, tp) =>
+                        t('shipments:pagination.pageOf', { page: p, totalPages: tp }),
+                      totalLabel: (count) =>
+                        t('shipments:pagination.total', { count }),
+                      prev: t('shipments:pagination.prev'),
+                      next: t('shipments:pagination.next'),
+                    }}
+                    onPageChange={setPage}
+                  />
+                </div>
+              )}
             </div>
           </>
         )}

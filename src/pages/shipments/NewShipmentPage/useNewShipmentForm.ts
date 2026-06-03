@@ -28,7 +28,11 @@ export function useNewShipmentForm() {
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
   const navigate = useNavigate();
-  const { clients } = useClients();
+  // Customer picker dropdown — needs to render the full set in one shot,
+  // so opt out of the default page-of-20. Above ~50 customers this
+  // becomes a usability problem; follow-up is to swap for a
+  // search-on-type autocomplete (same TODO as BulkOrdersPage).
+  const { clients } = useClients({ limit: 50 });
 
   const isCustomer = !!isClerkSignedIn && !user;
 
