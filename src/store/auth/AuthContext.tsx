@@ -9,6 +9,7 @@ import {
 import type { LoginCredentials, User } from '@/types';
 import { login as apiLogin, getMe, logout as apiLogout } from '@/services/authService';
 import { useLanguageStore } from '@/store/language';
+import { queryClient } from '@/lib/queryClient';
 import type { AuthContextValue, AuthState, LoginResult } from './auth.types';
 import { AuthContext } from './auth.context';
 
@@ -80,6 +81,11 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       if (!localStorage.getItem(TOKEN_KEY)) return;
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem('globalxpress_refresh');
+      // Wipe cached server state too — a revoked token means everything
+      // we have is from the now-invalid session. Without this, a user-B
+      // login on the same browser could briefly read user-A's cached
+      // orders/notifications/etc. (query keys don't include user.id).
+      queryClient.clear();
       setState({
         user: null,
         isAuthenticated: false,
@@ -145,6 +151,11 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     } finally {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem('globalxpress_refresh');
+      // Wipe the React Query cache so a same-browser switch (user-A
+      // logs out, user-B logs in) can't briefly render A's data. Most
+      // query keys don't include user.id, so without this the next
+      // render would hit the cache instead of refetching.
+      queryClient.clear();
       setState({
         user: null,
         isAuthenticated: false,

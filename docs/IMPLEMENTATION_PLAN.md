@@ -117,6 +117,36 @@ These weren't in the original gap list but surfaced when I swept the codebase fo
 
 ---
 
+## Phase 7 — RBAC hardening
+
+**Goal:** close the gaps surfaced by the 2026-06-03 RBAC audit. Three real risks + a deferred set of smaller items.
+
+**Surfaced from the audit:**
+
+1. 🔴 React Query cache **not cleared on logout** — user-B can briefly see user-A's cached data on a same-browser switch (most query keys don't include `user.id`).
+2. 🔴 **Zero RBAC tests.** 188 tests today, none cover route guards / nav gating / 403 handling.
+3. 🟡 **145 scattered `user?.role === '…'` checks** across `src/`. No `can(action)` helper. Maintenance bomb.
+4. 🟡 **Role demote mid-session** — FE doesn't refresh role on 403, user keeps seeing stale UI until reload.
+5. 🟡 **Role upgrade mid-session** — new nav items don't appear until log out / in.
+6. 🟢 **Supplier ≡ customer in the FE** — no distinct flow yet. Verify with PM before adding one.
+7. 🟢 **"Must X" order is pwd/profile → MFA** (deliberate, but undocumented). Add an inline comment + acceptance.
+
+| Status | PR title | Scope | Acceptance | Effort |
+|---|---|---|---|---|
+| 🟡 | `chore(auth): clear react-query cache on logout` | `AuthContext.logout` calls `queryClient.clear()` before clearing local state. Same on the `auth:unauthorized` (401) handler — token was revoked, all cached data is stale. Add a unit test asserting cache is empty after logout. | ① After logout, `queryClient.getQueryCache().getAll()` returns empty. ② After 401 dispatch, same. ③ Existing logout flow (BE `/auth/logout` call, localStorage clear, navigate) unchanged. | ~30min |
+| ⬜ | `feat(auth): can(action) capability helper` | New `src/lib/permissions.ts` — a single capability map keyed by action (e.g. `orders.deleteImage`, `shipments.batch.manage`, `clients.invite`). Export `can(role, action)` + `useCan(action)` hook. Migrate ~5 high-traffic exemplars (OrdersPage, ShipmentsPage, AppLayout, ProfilePage, BulkOrdersPage). Other 140 call sites migrate piecemeal as their surfaces get touched — establishing the helper is what closes the gap. Add an ESLint rule (or doc note) discouraging new raw `role === '…'` checks. | ① `can()` covers every action mentioned in the audit. ② 5+ call sites migrated. ③ Unit tests cover the truth table (every role × every action). ④ Plan doc notes the migration debt for the remaining ~140 sites. | ~2–3h |
+| ⬜ | `test(auth): RBAC route + nav + 403 coverage` | Add the missing test layer. ① `ProtectedRoute` — `user` accessing `allowedRoles=['staff']` → redirects to `redirectTo`. Customer accessing admin route → redirects. Missing role → /login. Must-enroll-MFA → /mfa/enroll. ② `AppLayout` — nav items rendered for each role match the per-role NAV arrays. ③ `AuthContext` — logout clears state + query cache. ④ Mutation 403 → `feedback.forbidden` toast + requestId. | ① ProtectedRoute test file with ≥6 cases. ② AppLayout nav-per-role test. ③ AuthContext logout test (depends on PR 1). ④ Mutation 403 test. ⑤ Suite stays green. | ~2–3h |
+
+### Phase 7 follow-ups (deferred — smaller, less critical)
+
+| Status | PR title | Scope |
+|---|---|---|
+| ⬜ | `feat(auth): refresh role on 403` | `apiClient` dispatches `auth:forbidden` on 403 (excluding the auth boot probe). `AuthContext` subscribes and calls `refreshUser()`. Demoted users catch up without a reload. |
+| ⬜ | `feat(auth): periodic refreshUser` | Refresh on `document.visibilitychange` (when tab regains focus after >5 min idle). Role upgrades / status flag changes propagate without log-out/in. |
+| ⬜ | `feat(supplier): distinct nav + onboarding (if PM wants)` | Verify with product first. If yes: separate `SUPPLIER_NAV` array + a supplier-specific landing. |
+
+---
+
 ## Suggested execution order
 
 If you want a "do this next" rule of thumb, work top-down through phases. Within each phase, PRs are independent — pick whatever's most ergonomic given what's already in your head.
@@ -127,5 +157,6 @@ If you want a "do this next" rule of thumb, work top-down through phases. Within
 4. **Phase 4** — UX polish; touches a lot but mechanical.
 5. **Phase 5** — staleTime audit; bigger investment, lower urgency.
 6. **Phase 6** — manual smokes against staging once Phases 1–4 are live.
+7. **Phase 7** — RBAC hardening; do PR 1 (cache clear) FIRST since it's a one-liner with real security value, then PR 2 (capability helper), then PR 3 (tests) which builds on both.
 
 After each PR, update this file (tick the Status column) so the next session can pick up cleanly.
