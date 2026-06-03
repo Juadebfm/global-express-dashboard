@@ -14,3 +14,4 @@ export {
   formatProvisioningCountdown,
   isProvisioningGateActive,
 } from './provisioningGate';
+export { buildPublicAppUrl, getPublicAppOrigin } from './publicAppUrl';
