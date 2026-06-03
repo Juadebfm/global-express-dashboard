@@ -141,8 +141,8 @@ These weren't in the original gap list but surfaced when I swept the codebase fo
 
 | Status | PR title | Scope |
 |---|---|---|
-| ⬜ | `feat(auth): refresh role on 403` | `apiClient` dispatches `auth:forbidden` on 403 (excluding the auth boot probe). `AuthContext` subscribes and calls `refreshUser()`. Demoted users catch up without a reload. |
-| ⬜ | `feat(auth): periodic refreshUser` | Refresh on `document.visibilitychange` (when tab regains focus after >5 min idle). Role upgrades / status flag changes propagate without log-out/in. |
+| ✅ | `feat(auth): refresh role on 403` (commit `d92042d`) | `apiClient` dispatches `auth:forbidden` on 403 (excluding the auth boot probe). `AuthContext` subscribes and inlines a `getMe()` refresh so demoted users catch up without a reload. |
+| 🟡 | `feat(auth): periodic refreshUser` | Refresh on `document.visibilitychange` (when tab regains focus after >5 min idle). Role upgrades / status flag changes propagate without log-out/in. |
 | ⬜ | `feat(supplier): distinct nav + onboarding (if PM wants)` | Verify with product first. If yes: separate `SUPPLIER_NAV` array + a supplier-specific landing. |
 
 ---

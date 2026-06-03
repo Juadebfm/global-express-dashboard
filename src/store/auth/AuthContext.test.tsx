@@ -179,3 +179,108 @@ describe('AuthContext — role refresh on auth:forbidden', () => {
     expect(authService.getMe).not.toHaveBeenCalled();
   });
 });
+
+describe('AuthContext — role refresh on tab refocus', () => {
+  it('refetches /auth/me when the tab regains focus after a long idle', async () => {
+    // Seed a token. The lastSyncedAtRef starts at 0, so Date.now() - 0
+    // is a huge number — guaranteed to exceed the 5-minute idle window.
+    localStorage.setItem(TOKEN_KEY, 'fake-token-vis-1');
+    vi.mocked(authService.getMe).mockResolvedValue({
+      id: 'u-3',
+      email: 'op3@example.com',
+      firstName: 'Op',
+      lastName: 'Three',
+      role: 'staff' as const,
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
+    } as never);
+
+    render(
+      <Wrapper>
+        <ProviderConsumer />
+      </Wrapper>,
+    );
+
+    // Wait for boot probe to settle.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const callsAfterBoot = vi.mocked(authService.getMe).mock.calls.length;
+
+    // Mid-test the boot just stamped lastSyncedAtRef = Date.now(), so a
+    // visibilitychange fired NOW would see elapsed ≈ 0 ms and skip.
+    // Push the ref back into the deep past by stubbing Date.now.
+    const realNow = Date.now;
+    const stubNow = realNow() + 10 * 60 * 1000; // 10 min later
+    vi.spyOn(Date, 'now').mockReturnValue(stubNow);
+
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(vi.mocked(authService.getMe).mock.calls.length).toBe(callsAfterBoot + 1);
+
+    vi.spyOn(Date, 'now').mockImplementation(realNow);
+  });
+
+  it('skips the visibility refresh when there is no token', async () => {
+    // No token → bail before probing. Without this an anonymous tab
+    // would hit /auth/me every time the user came back to it.
+    render(
+      <Wrapper>
+        <ProviderConsumer />
+      </Wrapper>,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const callsAfterBoot = vi.mocked(authService.getMe).mock.calls.length;
+
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      await Promise.resolve();
+    });
+
+    expect(vi.mocked(authService.getMe).mock.calls.length).toBe(callsAfterBoot);
+  });
+
+  it('skips the visibility refresh while the idle window is still fresh', async () => {
+    // Boot just succeeded → lastSyncedAtRef ≈ Date.now(). Firing
+    // visibilitychange immediately should NOT trigger a second probe —
+    // we don't want to hammer /auth/me when the user is just tab-flicking
+    // between two open windows of the dashboard.
+    localStorage.setItem(TOKEN_KEY, 'fake-token-vis-2');
+    vi.mocked(authService.getMe).mockResolvedValue({
+      id: 'u-4',
+      email: 'op4@example.com',
+      firstName: 'Op',
+      lastName: 'Four',
+      role: 'admin' as const,
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
+    } as never);
+
+    render(
+      <Wrapper>
+        <ProviderConsumer />
+      </Wrapper>,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const callsAfterBoot = vi.mocked(authService.getMe).mock.calls.length;
+
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      await Promise.resolve();
+    });
+
+    expect(vi.mocked(authService.getMe).mock.calls.length).toBe(callsAfterBoot);
+  });
+});

@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactElement,
   type ReactNode,
@@ -14,6 +15,12 @@ import type { AuthContextValue, AuthState, LoginResult } from './auth.types';
 import { AuthContext } from './auth.context';
 
 const TOKEN_KEY = 'globalxpress_token';
+
+// Tab refocus only refreshes /auth/me if the page has been idle for at
+// least this long. Without it a user clicking between two open tabs of
+// the app would fire a probe on every switch. 5 minutes lines up with
+// our SLOW_MOVING staleTime window for settings/catalogs.
+const REFRESH_ON_FOCUS_IDLE_MS = 5 * 60 * 1000;
 
 function syncLanguageFromUser(user: User): void {
   const lang = user.preferredLanguage;
@@ -36,6 +43,12 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const [state, setState] = useState<AuthState>(initialState);
 
+  // Timestamp of the last successful /auth/me call. The
+  // visibilitychange effect uses this to decide whether a tab refocus
+  // should re-sync (idle long enough to bother) or skip (user is just
+  // tab-flicking between two open windows of the app).
+  const lastSyncedAtRef = useRef<number>(0);
+
   const checkAuth = useCallback(async () => {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) {
@@ -52,6 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       }
 
       syncLanguageFromUser(user);
+      lastSyncedAtRef.current = Date.now();
       setState({
         user,
         isAuthenticated: true,
@@ -73,6 +87,40 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     checkAuth();
   }, [checkAuth]);
 
+  // Periodic role refresh on tab refocus. If the user came back after
+  // being idle ≥5 min, refetch /auth/me so a mid-session role upgrade
+  // (staff → admin, permission flag flipped, etc.) propagates without
+  // forcing a log-out / log-in. Same shape as the 403 handler below.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const handler = async (): Promise<void> => {
+      if (document.visibilityState !== 'visible') return;
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) return;
+      const elapsed = Date.now() - lastSyncedAtRef.current;
+      if (elapsed < REFRESH_ON_FOCUS_IDLE_MS) return;
+      try {
+        const user = await getMe(token);
+        if (!user?.role) return;
+        syncLanguageFromUser(user);
+        lastSyncedAtRef.current = Date.now();
+        setState((prev) => ({
+          ...prev,
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        }));
+      } catch {
+        /* If the refresh itself 401s, the apiClient handler clears
+           state. Don't double-handle here. */
+      }
+    };
+    const wrapper = (): void => { void handler(); };
+    document.addEventListener('visibilitychange', wrapper);
+    return () => document.removeEventListener('visibilitychange', wrapper);
+  }, []);
+
   // Single 403 handler — apiClient dispatches `auth:forbidden` whenever
   // any non-boot-probe request gets a 403. Could mean (a) the user is
   // trying to do something their role never allowed, OR (b) their role
@@ -92,6 +140,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
         const user = await getMe(token);
         if (!user?.role) return;
         syncLanguageFromUser(user);
+        lastSyncedAtRef.current = Date.now();
         setState((prev) => ({
           ...prev,
           user,
@@ -211,6 +260,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       const user = await getMe(token);
       if (!user?.role) return;
       syncLanguageFromUser(user);
+      lastSyncedAtRef.current = Date.now();
       setState({
         user,
         isAuthenticated: true,
