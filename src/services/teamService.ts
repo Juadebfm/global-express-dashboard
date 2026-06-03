@@ -23,6 +23,10 @@ export function getTeam(
   if (params.role) searchParams.set('role', params.role);
   if (params.isActive !== undefined) searchParams.set('isActive', String(params.isActive));
   if (params.page !== undefined) searchParams.set('page', String(params.page));
+  // Default stays at 100 (BE max) pending TeamPage pagination. Lowering this
+  // to 20 right now would silently truncate the team list since the page
+  // doesn't render pagination controls. Follow-up: paginate TeamPage, then
+  // drop this default to 20 to match the rest of the FE.
   searchParams.set('limit', String(params.limit ?? 100));
   const qs = searchParams.toString();
   return apiGetData<ApiTeamResponse['data']>(`/team${qs ? `?${qs}` : ''}`, token);
