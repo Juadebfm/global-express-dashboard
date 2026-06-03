@@ -28,11 +28,11 @@ export function useNewShipmentForm() {
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
   const navigate = useNavigate();
-  // Customer picker dropdown — needs to render the full set in one shot,
-  // so opt out of the default page-of-20. Above ~50 customers this
-  // becomes a usability problem; follow-up is to swap for a
-  // search-on-type autocomplete (same TODO as BulkOrdersPage).
-  const { clients } = useClients({ limit: 50 });
+  // ClientCombobox does FE-side filter over the fetched set. We pull
+  // the BE max (100) here so the combobox has the largest possible
+  // local pool. Above 100 the long tail is invisible — follow-up when
+  // BE exposes /admin/clients?search= is to swap to server-side search.
+  const { clients } = useClients({ limit: 100 });
 
   const isCustomer = !!isClerkSignedIn && !user;
 

@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Calendar, CheckCircle2, Scale, Send, Ship, ShieldCheck } from 'lucide-react';
 import { cn } from '@/utils';
+import { ClientCombobox } from '@/components/ui';
 import { SHIPMENT_TYPE_KEYS } from '../types';
 import type { ShipmentFormState, ShipmentFormActions } from '../types';
 import { DatePicker } from '../DatePicker';
@@ -111,32 +112,15 @@ export function BasicsStep({
       {/* Sender client — operator-only */}
       {!isCustomer && (
         <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-          <label className="block text-sm font-semibold text-gray-700">
-            {t('newShipment.basics.senderLabel')}
-          </label>
-          <p className="mt-0.5 text-xs text-gray-500">
-            {t('newShipment.basics.senderHint')}
-          </p>
-          <select
-            value={formState.selectedSenderId}
-            onChange={(e) => formActions.setSelectedSenderId(e.target.value)}
-            className={cn(
-              'mt-3 w-full rounded-xl border bg-white py-2.5 px-3 text-sm text-gray-900 focus:outline-none focus:ring-2',
-              fieldErrors.selectedSenderId
-                ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
-                : 'border-gray-200 focus:border-brand-400 focus:ring-brand-100',
-            )}
-          >
-            <option value="">{t('newShipment.basics.senderPlaceholder')}</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {[c.firstName, c.lastName].filter(Boolean).join(' ') || c.email}
-              </option>
-            ))}
-          </select>
-          {fieldErrors.selectedSenderId && (
-            <p className="mt-1 text-xs text-red-600">{fieldErrors.selectedSenderId}</p>
-          )}
+          <ClientCombobox
+            clients={clients}
+            selectedId={formState.selectedSenderId}
+            onSelect={(c) => formActions.setSelectedSenderId(c.id)}
+            label={t('newShipment.basics.senderLabel')}
+            hint={t('newShipment.basics.senderHint')}
+            placeholder={t('newShipment.basics.senderPlaceholder')}
+            error={fieldErrors.selectedSenderId ?? null}
+          />
         </div>
       )}
 

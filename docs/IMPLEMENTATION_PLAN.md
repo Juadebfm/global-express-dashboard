@@ -62,7 +62,7 @@ These weren't in the original gap list but surfaced when I swept the codebase fo
 | Status | PR title | Scope | Effort |
 |---|---|---|---|
 | ✅ | `feat(team): paginate TeamPage list` (commit `f69625d`) | `?page=N` + Pagination chrome; `useTeam` surfaces `pagination`; `getTeam` default 100→20; role checks migrated to `useCan`. |
-| 🟡 | `feat(clients): paginate ClientsPage` (commit `f69625d`) | ClientsPage paginated; `useClients` surfaces `pagination`; `getClients` default 100→20. **Customer-picker autocomplete still deferred** (separate product/UX decision). |
+| ✅ | `feat(clients): paginate ClientsPage + shared ClientCombobox` (commits `f69625d`, latest) | ClientsPage paginated; `useClients` surfaces `pagination`; `getClients` default 100→20. New shared `<ClientCombobox>` primitive in `src/components/ui/` — search-input + FE-side filter + dropdown — adopted in BulkOrdersPage (replacing the inline picker, ~60 lines deleted) AND in BasicsStep (replacing the raw `<select>`). 10 unit tests cover the combobox. Picker fetch bumped from 50→100 (BE max). **Long-tail follow-up** when BE adds `?search=`: swap the FE filter for server-side search, drop fetch back to the default 20. |
 
 ---
 

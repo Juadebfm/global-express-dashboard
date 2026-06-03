@@ -9,6 +9,9 @@ export type { CheckboxProps } from './Checkbox';
 
 export { Card } from './Card';
 
+export { ClientCombobox } from './ClientCombobox';
+export type { ClientComboboxProps } from './ClientCombobox';
+
 export { OtpInput } from './OtpInput';
 export { PageLoader } from './PageLoader';
 export { Pagination } from './Pagination';

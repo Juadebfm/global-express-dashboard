@@ -20,7 +20,7 @@ import { AppShell, PageHeader } from '@/pages/shared';
 import type { ApiClient, ApiBulkOrder, ApiBulkOrderItem, BulkOrderItem } from '@/types';
 import { getStatusStyle } from '@/lib/statusUtils';
 import { createBulkOrder, deleteBulkOrder, getBulkOrderById, getClients, updateBulkOrderStatus } from '@/services';
-import { AlertBanner, Button, Checkbox, ConfirmModal, CopyButton, Pagination, TableRowsSkeleton } from '@/components/ui';
+import { AlertBanner, Button, Checkbox, ClientCombobox, ConfirmModal, CopyButton, Pagination, TableRowsSkeleton } from '@/components/ui';
 import { cn, resolveLocation } from '@/utils';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -119,8 +119,6 @@ export function BulkOrdersPage(): ReactElement {
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [clients, setClients] = useState<ApiClient[]>([]);
-  const [clientSearch, setClientSearch] = useState<Record<number, string>>({});
-  const [openClientPicker, setOpenClientPicker] = useState<number | null>(null);
   const nextKeyRef = useRef(0);
 
   const addItem = useCallback((): void => {
@@ -166,11 +164,6 @@ export function BulkOrdersPage(): ReactElement {
           : item,
       ),
     );
-    setClientSearch((prev) => ({
-      ...prev,
-      [key]: `${client.firstName} ${client.lastName}`.trim(),
-    }));
-    setOpenClientPicker(null);
   };
 
   // Fetch clients when form opens
@@ -179,11 +172,11 @@ export function BulkOrdersPage(): ReactElement {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
 
-    // Dropdown picker — pulls the first 50 customers. Above 50, this becomes
-    // a usability problem: the user has no way to find a customer not on
-    // the first page. Follow-up: replace with a search-on-type autocomplete
-    // that hits `/admin/clients?search=...` server-side.
-    void getClients(token, { limit: 50 }).then((result) => {
+    // ClientCombobox does FE-side filter over this fetched set. Pull the
+    // BE max (100). Above 100 the long tail is invisible — follow-up
+    // when BE adds /admin/clients?search= is to swap for server-side
+    // search so this hook can drop back to the default page-of-20.
+    void getClients(token, { limit: 100 }).then((result) => {
       setClients(result.data);
     });
 
@@ -197,7 +190,6 @@ export function BulkOrdersPage(): ReactElement {
     setCreateNotes('');
     setCreateItems([]);
     setCreateError(null);
-    setClientSearch({});
   };
 
   const handleCreateSubmit = async (): Promise<void> => {
@@ -253,18 +245,6 @@ export function BulkOrdersPage(): ReactElement {
       setIsCreating(false);
     }
   };
-
-  // Close client picker on outside click
-  useEffect(() => {
-    if (openClientPicker === null) return;
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (target.closest('[data-client-picker]')) return;
-      setOpenClientPicker(null);
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [openClientPicker]);
 
   // Close status dropdown on outside click
   useEffect(() => {
@@ -647,14 +627,6 @@ export function BulkOrdersPage(): ReactElement {
 
               <div className="mt-5 space-y-4">
                 {createItems.map((item, index) => {
-                  const searchValue = clientSearch[item._key] ?? '';
-                  const filteredClients = searchValue.trim()
-                    ? clients.filter((c) => {
-                        const name = `${c.firstName} ${c.lastName} ${c.email}`.toLowerCase();
-                        return name.includes(searchValue.toLowerCase());
-                      })
-                    : clients;
-
                   return (
                     <div
                       key={item._key}
@@ -675,50 +647,15 @@ export function BulkOrdersPage(): ReactElement {
                       </div>
 
                       {/* Customer picker */}
-                      <div className="relative mt-3" data-client-picker>
-                        <span className="text-xs font-semibold uppercase text-gray-500">
-                          {t('createForm.items.customerLabel')}
-                        </span>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            value={searchValue}
-                            onChange={(e) => {
-                              setClientSearch((prev) => ({ ...prev, [item._key]: e.target.value }));
-                              setOpenClientPicker(item._key);
-                            }}
-                            onFocus={() => setOpenClientPicker(item._key)}
-                            placeholder={t('createForm.items.customerPlaceholder')}
-                            className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 pr-10 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
-                          />
-                          <ChevronDown
-                            className={cn(
-                              'pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 transition',
-                              openClientPicker === item._key && 'rotate-180',
-                            )}
-                          />
-                        </div>
-                        {openClientPicker === item._key && (
-                          <div className="absolute left-0 right-0 z-20 mt-1 max-h-52 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
-                            {filteredClients.length === 0 ? (
-                              <p className="px-4 py-3 text-xs text-gray-400">{t('createForm.items.noCustomersFound')}</p>
-                            ) : (
-                              filteredClients.slice(0, 15).map((c) => (
-                                <button
-                                  key={c.id}
-                                  type="button"
-                                  onClick={() => selectClient(item._key, c)}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50"
-                                >
-                                  <span className="font-medium">
-                                    {c.firstName} {c.lastName}
-                                  </span>
-                                  <span className="ml-2 text-xs text-gray-400">{c.email}</span>
-                                </button>
-                              ))
-                            )}
-                          </div>
-                        )}
+                      <div className="mt-3">
+                        <ClientCombobox
+                          clients={clients}
+                          selectedId={item.customerId ?? ''}
+                          onSelect={(c) => selectClient(item._key, c)}
+                          label={t('createForm.items.customerLabel')}
+                          placeholder={t('createForm.items.customerPlaceholder')}
+                          emptyMessage={t('createForm.items.noCustomersFound')}
+                        />
                       </div>
 
                       {/* Recipient fields */}
