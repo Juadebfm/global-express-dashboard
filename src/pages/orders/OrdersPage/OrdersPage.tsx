@@ -29,7 +29,7 @@ import {
   useWarehouseVerify,
 } from '@/hooks';
 import type { OrderListItem } from '@/types';
-import { Button, Pagination } from '@/components/ui';
+import { Button, Pagination, TableRowsSkeleton } from '@/components/ui';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
@@ -225,10 +225,10 @@ export function OrdersPage(): ReactElement {
     return true;
   });
 
-  const loading = appLoading || queueLoading;
-
+  // Only block-shell on the dashboard chrome data — the queue / detail
+  // panels render their own inline skeletons.
   return (
-    <AppShell data={appData} isLoading={loading} error={queueError ?? appError} loadingLabel={t('orders:loadingLabel')}>
+    <AppShell data={appData} isLoading={appLoading} error={queueError ?? appError} loadingLabel={t('orders:loadingLabel')}>
       <div className="space-y-6">
         <PageHeader
           title={t('orders:pageTitle')}
@@ -250,6 +250,9 @@ export function OrdersPage(): ReactElement {
         <div className="grid gap-6 xl:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
           {/* Left: Order Queue + Pagination */}
           <div className="space-y-3">
+            {queueLoading && queueOrders.length === 0 ? (
+              <TableRowsSkeleton columns={3} rows={8} ariaLabel={t('orders:loadingLabel')} />
+            ) : (
             <OrderQueue
               orders={visibleOrders}
               total={queueTotal}
@@ -266,6 +269,7 @@ export function OrdersPage(): ReactElement {
               }}
               onQueryChange={setQuery}
             />
+            )}
             {queuePagination.totalPages > 1 && (
               <Pagination
                 page={queuePagination.page}

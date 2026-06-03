@@ -28,6 +28,7 @@ import {
 import { useAuth, useDashboardData } from '@/hooks';
 import { useReportSummary } from '@/hooks/useReports';
 import { AppShell, PageHeader } from '@/pages/shared';
+import { Skeleton } from '@/components/ui';
 import { cn } from '@/utils';
 import i18n from '@/i18n/i18n';
 import {
@@ -172,7 +173,11 @@ export function ReportsPage(): ReactElement {
   return (
     <AppShell
       data={data}
-      isLoading={isLoading || summaryLoading}
+      // Only block-shell on the dashboard chrome data — KPI cards and
+      // charts render their own inline skeletons while the report data
+      // loads. (summaryLoading was previously rolled in here, which
+      // hid the date-range picker behind a full-screen spinner.)
+      isLoading={isLoading}
       error={error}
       loadingLabel={t('loading')}
     >
@@ -205,6 +210,22 @@ export function ReportsPage(): ReactElement {
           <div className="flex items-center gap-2 text-sm text-gray-400">
             <Loader2 className="h-4 w-4 animate-spin" />
             {t('loading')}
+          </div>
+        )}
+
+        {/* KPI skeleton — only shown when the summary data hasn't
+            arrived yet AND we don't already have a previous render
+            to keep on screen. */}
+        {summaryLoading && !summary && (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-gray-200 bg-white p-5">
+                <Skeleton height={12} width="40%" />
+                <div className="mt-3">
+                  <Skeleton height={28} width="60%" />
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

@@ -22,7 +22,7 @@ import {
   ShipmentsSummary,
   ShipmentsTable,
 } from '../components';
-import { Button, Pagination, Skeleton } from '@/components/ui';
+import { Button, Pagination, TableRowsSkeleton } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import i18n from '@/i18n/i18n';
 
@@ -444,7 +444,7 @@ export function ShipmentsPage(): ReactElement {
             )}
           </>
         ) : isShipmentsLoading ? (
-          <ShipmentsTableSkeleton ariaLabel={t('loadingShipmentList')} />
+          <TableRowsSkeleton columns={8} ariaLabel={t('loadingShipmentList')} />
         ) : (
           <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500">
             {shipmentsError ?? t('unavailable')}
@@ -468,37 +468,3 @@ export function ShipmentsPage(): ReactElement {
   );
 }
 
-/**
- * Inline skeleton for the shipments table while the first page of data is
- * in flight. Mirrors the real ShipmentsTable's row shape (8 columns at
- * varying widths) so the layout doesn't jump when real rows arrive.
- */
-function ShipmentsTableSkeleton({ ariaLabel }: { ariaLabel: string }): ReactElement {
-  return (
-    <div
-      role="status"
-      aria-busy="true"
-      aria-label={ariaLabel}
-      className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4"
-    >
-      <div className="border-b border-gray-100 pb-3">
-        <Skeleton height={18} width="22%" />
-      </div>
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-4 border-b border-gray-100 py-3 last:border-b-0 last:pb-0"
-        >
-          <Skeleton height={14} width="18%" />
-          <Skeleton height={14} width="18%" />
-          <Skeleton height={14} width="14%" />
-          <Skeleton height={14} width="14%" />
-          <Skeleton height={14} width="10%" />
-          <Skeleton height={14} width="10%" />
-          <Skeleton height={14} width="8%" />
-          <Skeleton height={14} width="8%" />
-        </div>
-      ))}
-    </div>
-  );
-}

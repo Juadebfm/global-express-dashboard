@@ -20,7 +20,7 @@ import { AppShell, PageHeader } from '@/pages/shared';
 import type { ApiClient, ApiBulkOrder, ApiBulkOrderItem, BulkOrderItem } from '@/types';
 import { getStatusStyle } from '@/lib/statusUtils';
 import { createBulkOrder, deleteBulkOrder, getBulkOrderById, getClients, updateBulkOrderStatus } from '@/services';
-import { AlertBanner, Button, Checkbox, ConfirmModal, CopyButton, Pagination } from '@/components/ui';
+import { AlertBanner, Button, Checkbox, ConfirmModal, CopyButton, Pagination, TableRowsSkeleton } from '@/components/ui';
 import { cn, resolveLocation } from '@/utils';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -390,7 +390,10 @@ export function BulkOrdersPage(): ReactElement {
   return (
     <AppShell
       data={data}
-      isLoading={isLoading || ordersLoading}
+      // Only block-shell on the dashboard chrome data — list loading
+      // renders inline skeleton rows so the user sees the page header /
+      // filters / create-button while the table fetches.
+      isLoading={isLoading}
       error={error}
       loadingLabel={t('loadingLabel')}
     >
@@ -1015,6 +1018,11 @@ export function BulkOrdersPage(): ReactElement {
             {/* Table */}
             <div>
               <h3 className="text-xl font-semibold text-gray-900">{t('table.title')}</h3>
+              {ordersLoading && bulkOrders.length === 0 ? (
+                <div className="mt-4">
+                  <TableRowsSkeleton columns={6} ariaLabel={t('loadingLabel')} />
+                </div>
+              ) : (
               <div className="mt-4 overflow-hidden rounded-3xl border border-gray-200 bg-white">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -1108,6 +1116,7 @@ export function BulkOrdersPage(): ReactElement {
                   </div>
                 )}
               </div>
+              )}
 
               {pagination.totalPages > 1 && (
                 <Pagination
