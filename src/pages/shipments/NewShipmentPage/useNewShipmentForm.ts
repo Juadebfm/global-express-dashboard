@@ -148,21 +148,25 @@ export function useNewShipmentForm() {
     return () => clearTimeout(timer);
   }, [fetchEstimate]);
 
-  // Validation
+  // Validation — 3-step flow (basics / recipient / review)
   const validateStep = useCallback((step: number): Record<string, string> => {
     const errors: Record<string, string> = {};
 
     if (step === 0) {
+      // Basics: freight type (always pre-selected, no error), sender
+      // selection (operator-only), package contents + weight/CBM +
+      // declared value + pickup date.
       if (!isCustomer && !selectedSenderId) {
         errors.selectedSenderId = t('newShipment.errors.senderRequired');
       }
-    }
-
-    if (step === 2) {
       if (!packageDescription.trim()) errors.packageDescription = t('newShipment.errors.descriptionRequired');
       if (shipmentType === 'air' && !packageWeightKg.trim()) errors.packageWeightKg = t('newShipment.errors.weightRequired');
       if (shipmentType === 'ocean' && !packageCbm.trim()) errors.packageCbm = t('newShipment.errors.volumeRequired');
       if (!packageDeclaredValue.trim()) errors.packageDeclaredValue = t('newShipment.errors.declaredValueRequired');
+    }
+
+    if (step === 1) {
+      // Recipient: name + email + phone, plus optional pickup rep.
       if (!recipientName.trim()) errors.recipientName = t('newShipment.errors.nameRequired');
       if (!recipientEmail.trim()) {
         errors.recipientEmail = t('newShipment.errors.emailRequired');
@@ -198,11 +202,11 @@ export function useNewShipmentForm() {
 
     setCreateError(null);
 
-    const step0Errors = validateStep(0);
-    if (Object.keys(step0Errors).length > 0) { setFieldErrors(step0Errors); setActiveStep(0); return; }
+    const basicsErrors = validateStep(0);
+    if (Object.keys(basicsErrors).length > 0) { setFieldErrors(basicsErrors); setActiveStep(0); return; }
 
-    const step2Errors = validateStep(2);
-    if (Object.keys(step2Errors).length > 0) { setFieldErrors(step2Errors); setActiveStep(2); return; }
+    const recipientErrors = validateStep(1);
+    if (Object.keys(recipientErrors).length > 0) { setFieldErrors(recipientErrors); setActiveStep(1); return; }
 
     setIsCreatingOrder(true);
     try {

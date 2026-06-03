@@ -1,6 +1,6 @@
 import type { PublicShippingEstimate } from '@/types';
 
-export type StepKey = 'shipment' | 'addresses' | 'packages' | 'review';
+export type StepKey = 'basics' | 'recipient' | 'review';
 
 export interface StepDefinition {
   id: StepKey;
@@ -53,10 +53,24 @@ export interface EstimateState {
 }
 
 export const STEP_KEYS: Array<{ id: StepKey; labelKey: string; descKey: string }> = [
-  { id: 'shipment', labelKey: 'newShipment.steps.shipment.label', descKey: 'newShipment.steps.shipment.description' },
-  { id: 'addresses', labelKey: 'newShipment.steps.addresses.label', descKey: 'newShipment.steps.addresses.description' },
-  { id: 'packages', labelKey: 'newShipment.steps.packages.label', descKey: 'newShipment.steps.packages.description' },
+  { id: 'basics', labelKey: 'newShipment.steps.basics.label', descKey: 'newShipment.steps.basics.description' },
+  { id: 'recipient', labelKey: 'newShipment.steps.recipient.label', descKey: 'newShipment.steps.recipient.description' },
   { id: 'review', labelKey: 'newShipment.steps.review.label', descKey: 'newShipment.steps.review.description' },
+];
+
+// Curated list of common cargo categories — surfaced in the BasicsStep
+// "What's inside?" picker as quick-pick chips. The user can also type
+// freeform text (e.g. "industrial bearings"), so this list is suggestive,
+// not exhaustive.
+export const SHIPMENT_CONTENT_CATEGORIES: Array<{ value: string; labelKey: string }> = [
+  { value: 'Electronics', labelKey: 'newShipment.contentCategory.electronics' },
+  { value: 'Clothing', labelKey: 'newShipment.contentCategory.clothing' },
+  { value: 'Documents', labelKey: 'newShipment.contentCategory.documents' },
+  { value: 'Food & Beverage', labelKey: 'newShipment.contentCategory.foodBeverage' },
+  { value: 'Cosmetics', labelKey: 'newShipment.contentCategory.cosmetics' },
+  { value: 'Machinery Parts', labelKey: 'newShipment.contentCategory.machineryParts' },
+  { value: 'Household Goods', labelKey: 'newShipment.contentCategory.householdGoods' },
+  { value: 'Other', labelKey: 'newShipment.contentCategory.other' },
 ];
 
 export const SHIPMENT_TYPE_KEYS = [
