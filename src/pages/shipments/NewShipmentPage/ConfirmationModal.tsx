@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Check, Copy, Mail, X } from 'lucide-react';
 import { Button } from '@/components/ui';
-import { ROUTES } from '@/constants';
+import { ROUTES, buildPublicAppUrl } from '@/constants';
 import { cn } from '@/utils';
 import type { PublicShippingEstimate } from '@/types';
 import i18n from '@/i18n/i18n';
@@ -28,8 +28,12 @@ export function ConfirmationModal({
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
 
+  // buildPublicAppUrl reads VITE_PUBLIC_APP_URL so share links generated
+  // from dev / preview deploys still point at the production tracker page
+  // (https://app.globalexpress.kr/track/...). Falls back to
+  // window.location.origin if the env var is unset.
   const trackUrl = trackingNumber
-    ? `${window.location.origin}${ROUTES.TRACK_PUBLIC}/${trackingNumber}`
+    ? buildPublicAppUrl(`${ROUTES.TRACK_PUBLIC}/${trackingNumber}`)
     : '';
 
   const typeLabel = shipmentType === 'air' ? 'Air Freight' : 'Ocean Freight';
