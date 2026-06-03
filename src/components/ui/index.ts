@@ -13,6 +13,8 @@ export { OtpInput } from './OtpInput';
 export { PageLoader } from './PageLoader';
 export { Pagination } from './Pagination';
 export type { PaginationProps } from './Pagination';
+export { Skeleton } from './Skeleton';
+export type { SkeletonProps } from './Skeleton';
 export { AlertBanner } from './AlertBanner';
 export { FeedbackCenter } from './FeedbackCenter';
 export { ConfirmModal } from './ConfirmModal/ConfirmModal';
