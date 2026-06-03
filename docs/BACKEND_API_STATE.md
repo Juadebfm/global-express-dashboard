@@ -595,14 +595,14 @@ The 9 BE handover changes vs FE state today (single source of truth replacing th
 
 Items still owed against the BE contract — non-blocking but worth a sweep:
 
-1. **Shipping mark editor** — see [Shipping mark UX](#shipping-mark-ux). Estimated effort: 1–2 hours.
+1. **Shipping mark editor** — ✅ Shipped 2026-06-03 (PR includes `feat(profile): editable shipping mark with one-time lock`). Section retained here for context; see [Shipping mark UX](#shipping-mark-ux) for the contract.
 2. **Pagination violations** — 4 sites request `limit=100`: [ShipmentsPage.tsx:92](../src/pages/shipments/ShipmentsPage/ShipmentsPage.tsx#L92), [BulkOrdersPage.tsx:153](../src/pages/bulkOrders/BulkOrdersPage/BulkOrdersPage.tsx#L153), [OrdersPage.tsx:88](../src/pages/orders/OrdersPage/OrdersPage.tsx#L88), [shipmentsService.ts:276](../src/services/shipmentsService.ts#L276). Wire proper `{ page, limit }` controls when you next touch these surfaces.
-3. **`Cache-Control: no-store` on service worker (if any)** — verify [public/sw.js](../public/sw.js) (or any future SW) excludes `/api/v1/*` from caching.
+3. **`Cache-Control: no-store` on service worker** — ✅ N/A. [public/sw.js](../public/sw.js) is a push-only worker (no `fetch` listener, no caching). Revisit if a caching SW is added.
 4. **`useEffect` for data fetching** — currently zero; keep it that way.
-5. **`/auth/sync` stray `fetch()`** — [ExternalSignUpPage.tsx:298](../src/pages/auth/ExternalSignUpPage/ExternalSignUpPage.tsx#L298) is the last non-service `fetch` call. Move into `authService.syncClerkSession()` next time you touch the file.
+5. **`/auth/sync` stray `fetch()`** — ✅ Already migrated. [ExternalSignUpPage](../src/pages/auth/ExternalSignUpPage/ExternalSignUpPage.tsx) calls `syncClerkAccount` from `authService` (with `ApiError` + 422 `problem.errors[].path` walking). Remaining bare `fetch()` calls in hooks are all R2 presigned-URL PUTs — intentional.
 6. **`staleTime` audit** — 23 of 81 `useQuery` call sites set it explicitly. Per-resource defaults: settings → 5 min, dashboard → 30 s, notifications → 0.
 7. **`Skeleton` primitive** — no `Skeleton` component exists yet; list/table pages fall back to `<PageLoader />` spinners. Worth shipping when you next touch a list page.
-8. **`ReportsPage` lazy import** — biggest single bundle-size win (`recharts` lives in main bundle today because the page is statically imported).
+8. **`ReportsPage` lazy import** — ✅ Already done. [App.tsx:87](../src/App.tsx#L87) wraps it in `React.lazy`; build output puts recharts in its own chunk.
 9. **Retry CTA in 500/503 toasts** — `pushMessage` needs a `retry?: () => void` field; hook callers pass `() => mutation.mutate(lastVariables)`.
 10. **Post-deploy manual smokes** (BE handover verification table — 6 still pending against staging):
     - No-MFA login → dashboard

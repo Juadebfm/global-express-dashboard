@@ -20,7 +20,7 @@ Companion doc to [BACKEND_API_STATE.md](BACKEND_API_STATE.md). Captures the open
 
 | Status | PR title | Scope | Acceptance | Effort |
 |---|---|---|---|---|
-| 🟡 | `feat(profile): editable shipping mark with one-time lock` | On `GET /users/me` show `shippingMark` and branch on `shippingMarkUserEditedAt`: `null` → editable input + client-side regex `^[a-z][a-z0-9]{2,19}$` validation; non-null → read-only chip + "Contact support" link. On 409 from `PATCH /users/me { shippingMark }`, refetch profile and re-render the locked UI. Auto-lowercase user input. | ① Customer with `shippingMarkUserEditedAt: null` sees editable field pre-filled with current mark. ② Submit valid mark → 200, field becomes read-only, server reflects updated timestamp. ③ Submit again → 409, FE refetches and shows locked UI. ④ Submit invalid format → client error surface (no round-trip). ⑤ Lowercase normalisation on `JUADEB` → `juadeb`. | ~1–2h |
+| ✅ | `feat(profile): editable shipping mark with one-time lock` (commit `e4d0a8e`) | On `GET /users/me` show `shippingMark` and branch on `shippingMarkUserEditedAt`: `null` → editable input + client-side regex `^[a-z][a-z0-9]{2,19}$` validation; non-null → read-only chip + "Contact support" link. On 409 from `PATCH /users/me { shippingMark }`, refetch profile and re-render the locked UI. Auto-lowercase user input. | ① Customer with `shippingMarkUserEditedAt: null` sees editable field pre-filled with current mark. ② Submit valid mark → 200, field becomes read-only, server reflects updated timestamp. ③ Submit again → 409, FE refetches and shows locked UI. ④ Submit invalid format → client error surface (no round-trip). ⑤ Lowercase normalisation on `JUADEB` → `juadeb`. | ~1–2h |
 
 > Once Phase 1 is shipped, the BE handover delta in `BACKEND_API_STATE.md` flips to "all shipped except `?sort=` (deferred)".
 
@@ -28,13 +28,15 @@ Companion doc to [BACKEND_API_STATE.md](BACKEND_API_STATE.md). Captures the open
 
 ## Phase 2 — Quick wins
 
-**Goal:** independent ~30-min improvements that close real gaps without touching cross-cutting code. Can land in any order.
+**Goal:** independent ~30-min improvements that close real gaps without touching cross-cutting code.
 
-| Status | PR title | Scope | Acceptance | Effort |
-|---|---|---|---|---|
-| ⬜ | `refactor(auth): move /auth/sync into authService` | [ExternalSignUpPage.tsx:298](../src/pages/auth/ExternalSignUpPage/ExternalSignUpPage.tsx#L298) bare `fetch('/auth/sync')` → new `authService.syncClerkSession(token)` using `apiPostData`. Caller swaps in the service call; remove the inline `fetch`. | ① Grep for `fetch(` in `src/` returns zero application-level call sites (test mocks fine). ② Sync errors now flow through `ApiError` (15s timeout, problem-details parsing). ③ ExternalSignUpPage smoke: end-to-end signup still works. | ~20min |
-| ⬜ | `perf(reports): lazy-load ReportsPage` | Wrap `ReportsPage` in `React.lazy` in [App.tsx](../src/App.tsx); add `<Suspense fallback={<PageLoader />} />`. Recharts moves out of the main bundle. | ① `npm run build` shows main chunk shrunk; a separate `reports-*.js` chunk exists. ② Navigating to `/reports` still works; loader briefly visible. ③ No type errors. | ~30min |
-| ⬜ | `chore(sw): cache-control no-store guard on /api/v1/*` | Audit [public/](../public/) for any service worker. If one exists, ensure `/api/v1/*` is excluded from `caches.match`/`caches.put`. If no SW exists, document that fact in the PR description and we're done. | ① Either: SW exists + excludes `/api/v1/*` via a `fetch` event listener filter, OR: PR notes "no SW present; this gap is N/A until one is added". ② Authenticated requests never re-served from cache after logout. | ~30min |
+**Status (audited 2026-06-03):** all three items resolved with no new code — the BACKEND_API_STATE.md gap list was stale at the time it was authored. See findings below; the doc has been corrected.
+
+| Status | PR title | Resolution |
+|---|---|---|
+| ✅ | `refactor(auth): move /auth/sync into authService` | Already done. [ExternalSignUpPage.tsx](../src/pages/auth/ExternalSignUpPage/ExternalSignUpPage.tsx) imports `syncClerkAccount` from `@/services` and calls it with proper `ApiError` handling (including 422 `problem.errors[].path` walking). The remaining bare `fetch()` call sites in `src/hooks/` are all R2 presigned-URL PUTs — those are intentional (file bytes must not be proxied through our API). |
+| ✅ | `perf(reports): lazy-load ReportsPage` | Already done. `ReportsPage` is `React.lazy`-imported in [App.tsx:87](../src/App.tsx#L87) with a comment explaining recharts is the reason. Build output shows it in its own chunk. |
+| ✅ | `chore(sw): cache-control no-store guard on /api/v1/*` | N/A. [public/sw.js](../public/sw.js) is a push-only worker (`push` + `notificationclick` listeners). It has no `fetch` event listener and intercepts no network requests, so there's nothing to cache and nothing to guard. Revisit if a caching SW is ever added. |
 
 ---
 
