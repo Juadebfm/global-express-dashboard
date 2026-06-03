@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { PricingRule } from '@/types';
 import { getPricingRules } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 
 const TOKEN_KEY = 'globalxpress_token';
 
@@ -12,5 +13,6 @@ export function usePricingRules(params: { mode?: string; customerId?: string; in
       if (!token) throw new Error('Not authenticated');
       return getPricingRules(token, params);
     },
+    staleTime: STALE_TIME.SLOW_MOVING,
   });
 }

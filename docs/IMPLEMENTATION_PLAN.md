@@ -84,7 +84,7 @@ These weren't in the original gap list but surfaced when I swept the codebase fo
 
 | Status | PR title | Scope | Acceptance | Effort |
 |---|---|---|---|---|
-| ⬜ | `perf(query): per-resource staleTime defaults` | Audit all 81 `useQuery` call sites. Group by resource type and set explicit `staleTime`: settings → 5 min, dashboard → 30 s, notifications → 0, reports → 30 s, lists → 30 s, detail views → 30 s. Document the convention in the touched hooks. | ① ≥95% of `useQuery` sites set `staleTime` explicitly. ② Bumping settings page → no refetch within 5 min. ③ Notifications still poll the way the bell expects. | ~2–3h |
+| ✅ | `perf(query): per-resource staleTime defaults` | Audit all `useQuery` call sites. Group by resource type and set explicit `staleTime` via the new `STALE_TIME` constants in [src/lib/queryDefaults.ts](../src/lib/queryDefaults.ts) — `ALWAYS_FRESH` (notifications), `REAL_TIME` 30 s (dashboard, lists, detail views, reports, support), `SLOW_MOVING` 5 min (settings + catalogs + user prefs), `STATIC` 30 min (public catalogs). 100% coverage: 0 `useQuery` sites without an explicit `staleTime`. | ① 100% of `useQuery` sites set `staleTime` explicitly. ② Bumping settings page → no refetch within 5 min. ③ Notifications still poll the way the bell expects. | ~2–3h |
 
 ---
 

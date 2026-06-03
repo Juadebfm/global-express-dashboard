@@ -15,6 +15,7 @@ import type {
   PublicD2dIntakeResult,
   PublicShipmentTypesResult,
 } from '@/types';
+import { STALE_TIME } from '@/lib/queryDefaults';
 
 const publicShipmentTypesKey = ['public', 'shipment-types'] as const;
 const publicRatesKey = ['public', 'calculator-rates'] as const;
@@ -27,7 +28,7 @@ export function usePublicShipmentTypes(): {
   const query = useQuery<PublicShipmentTypesResult>({
     queryKey: publicShipmentTypesKey,
     queryFn: () => getPublicShipmentTypes(),
-    staleTime: 5 * 60_000,
+    staleTime: STALE_TIME.STATIC,
   });
   return { data: query.data, isLoading: query.isLoading, error: query.error };
 }
@@ -40,7 +41,7 @@ export function usePublicCalculatorRates(): {
   const query = useQuery<PublicCalculatorRates>({
     queryKey: publicRatesKey,
     queryFn: () => getPublicCalculatorRates(),
-    staleTime: 5 * 60_000,
+    staleTime: STALE_TIME.STATIC,
   });
   return { data: query.data, isLoading: query.isLoading, error: query.error };
 }

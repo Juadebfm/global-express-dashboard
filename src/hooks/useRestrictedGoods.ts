@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { RestrictedGood } from '@/types';
 import { getRestrictedGoods } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuthToken } from './useAuthToken';
 
 interface UseRestrictedGoodsOptions {
@@ -21,5 +22,6 @@ export function useRestrictedGoods(
       return getRestrictedGoods(token, params);
     },
     enabled: options.enabled ?? true,
+    staleTime: STALE_TIME.SLOW_MOVING,
   });
 }

@@ -3,6 +3,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { TeamMember, TeamPermissions, TeamRole, ApiTeamMember } from '@/types';
 import { getTeam, approveTeamMember, createTeamMember } from '@/services';
 import type { CreateTeamMemberPayload } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -60,6 +61,7 @@ export function useTeam(): TeamState {
       return result.data.map(mapApiTeamMember);
     },
     enabled,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   const approveMutation = useMutation({

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { OrdersListResult } from '@/types';
 import { getOrders } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -42,6 +43,7 @@ export function useOrders(
       return getOrders(token, page, limit, statusV2);
     },
     enabled,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   const message =

@@ -5,11 +5,8 @@ import {
   fetchActiveDeliveries,
 } from '@/services/dashboardService';
 import type { ApiDashboardStats, ApiTrend, ApiActiveDelivery } from '@/types';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuthToken } from './useAuthToken';
-
-// Per-spec staleness: dashboard data refreshes every 30 s on the server side;
-// matching it here avoids redundant refetches while still feeling live.
-const STALE_TIME = 30_000;
 
 export function useDashboardStats(): {
   data: ApiDashboardStats | undefined;
@@ -24,7 +21,7 @@ export function useDashboardStats(): {
       if (!token) throw new Error('Not authenticated');
       return fetchDashboardStats(token);
     },
-    staleTime: STALE_TIME,
+    staleTime: STALE_TIME.REAL_TIME,
   });
   return { data: q.data, isLoading: q.isLoading, error: q.error };
 }
@@ -42,7 +39,7 @@ export function useDashboardTrends(months = 3): {
       if (!token) throw new Error('Not authenticated');
       return fetchDashboardTrends(token, months);
     },
-    staleTime: STALE_TIME,
+    staleTime: STALE_TIME.REAL_TIME,
   });
   return { data: q.data, isLoading: q.isLoading, error: q.error };
 }
@@ -60,7 +57,7 @@ export function useActiveDeliveries(): {
       if (!token) throw new Error('Not authenticated');
       return fetchActiveDeliveries(token);
     },
-    staleTime: STALE_TIME,
+    staleTime: STALE_TIME.REAL_TIME,
   });
   return { data: q.data, isLoading: q.isLoading, error: q.error };
 }

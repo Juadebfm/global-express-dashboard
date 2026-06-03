@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { FxRateSettings } from '@/types';
 import { getFxRate, updateFxRate } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 
 const TOKEN_KEY = 'globalxpress_token';
 
@@ -16,6 +17,7 @@ export function useFxRate() {
   const query = useQuery<FxRateSettings>({
     queryKey: ['settings', 'fx-rate'],
     queryFn: () => getFxRate(getToken()),
+    staleTime: STALE_TIME.SLOW_MOVING,
   });
 
   const mutation = useMutation({

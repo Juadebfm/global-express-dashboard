@@ -5,6 +5,7 @@ import { getDisplayErrorMessage } from '@/lib/feedback';
 import { useFeedbackStore } from '@/store';
 import type { CreateSupportTicketPayload, SupportTicket, SupportTicketListParams } from '@/types';
 import { createSupportTicket, getSupportTickets } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuth } from './useAuth';
 import { useAuthToken } from './useAuthToken';
 
@@ -35,6 +36,7 @@ export function useSupportTickets(params?: SupportTicketListParams): UseSupportT
       return getSupportTickets(token, params);
     },
     enabled,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   const createTicketMutation = useMutation({

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ApiOrder } from '@/types';
 import { getOrderById } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuthToken } from './useAuthToken';
 
 export function useOrderDetail(orderId: string | undefined) {
@@ -14,5 +15,6 @@ export function useOrderDetail(orderId: string | undefined) {
       return getOrderById(token, orderId!);
     },
     enabled: Boolean(orderId),
+    staleTime: STALE_TIME.REAL_TIME,
   });
 }

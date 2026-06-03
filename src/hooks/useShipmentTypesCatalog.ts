@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FEEDBACK_MESSAGES } from '@/constants';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useFeedbackStore } from '@/store';
 import {
   getShipmentTypesCatalog,
@@ -27,7 +28,7 @@ export function useShipmentTypesCatalog(): {
   const query = useQuery<ShipmentTypesCatalogResult>({
     queryKey: ['settings', 'shipment-types'],
     queryFn: () => getShipmentTypesCatalog(getToken()),
-    staleTime: 5 * 60_000,
+    staleTime: STALE_TIME.SLOW_MOVING,
   });
   return { data: query.data, isLoading: query.isLoading, error: query.error };
 }

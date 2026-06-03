@@ -4,6 +4,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useTranslation } from 'react-i18next';
 import type { DashboardData, ApiDashboardResponse } from '@/types';
 import { fetchDashboardRaw, mapToDashboardData } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -36,6 +37,7 @@ export function useDashboardData(year = new Date().getFullYear()): DashboardData
       return fetchDashboardRaw(token, year);
     },
     enabled,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   // Re-map when language or raw data changes so translations stay current

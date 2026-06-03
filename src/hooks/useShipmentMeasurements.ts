@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FEEDBACK_MESSAGES } from '@/constants';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useFeedbackStore } from '@/store';
 import {
   getShipmentMeasurements,
@@ -29,7 +30,7 @@ export function useShipmentMeasurements(shipmentId: string | undefined): {
       return getShipmentMeasurements(token, shipmentId);
     },
     enabled: !!shipmentId,
-    staleTime: 30_000,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   return {

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { ApiClient } from '@/types';
 import { getClients } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -30,6 +31,7 @@ export function useClients(params: { isActive?: boolean } = {}): ClientsState {
       return result.data;
     },
     enabled,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   const message =

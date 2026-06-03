@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { NotificationPreferenceChannels, NotificationPreferences } from '@/types';
 import { getMyNotificationPreferences, updateMyNotificationPreferences } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuth } from './useAuth';
 
 interface NotificationPreferencesState {
@@ -32,6 +33,7 @@ export function useMyNotificationPreferences(): NotificationPreferencesState {
       return getMyNotificationPreferences(token);
     },
     enabled: isCustomer,
+    staleTime: STALE_TIME.SLOW_MOVING,
   });
 
   const updateMutation = useMutation({

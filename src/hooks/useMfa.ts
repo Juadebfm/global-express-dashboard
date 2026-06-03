@@ -8,6 +8,7 @@ import {
   verifyMfaChallenge,
   recoverWithMfaRecoveryCode,
 } from '@/services/mfaService';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import type {
   MfaStatus,
   MfaEnrollmentSecret,
@@ -42,7 +43,7 @@ export function useMfaStatus(): {
       if (!token) throw new Error('Not authenticated');
       return getMfaStatus(token);
     },
-    staleTime: 30_000,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   return {

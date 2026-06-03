@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { getUnreadCount } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -21,6 +22,7 @@ export function useNotificationCount(): number {
     },
     enabled,
     refetchInterval: 30_000,
+    staleTime: STALE_TIME.ALWAYS_FRESH,
   });
 
   return data ?? 0;

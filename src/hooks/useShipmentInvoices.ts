@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FEEDBACK_MESSAGES } from '@/constants';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useFeedbackStore } from '@/store';
 import {
   confirmRegDoc,
@@ -41,7 +42,7 @@ export function useTaskInvoices(invoiceId: string | undefined): {
       return getTaskInvoices(token, invoiceId);
     },
     enabled: !!invoiceId,
-    staleTime: 30_000,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   return {
@@ -71,7 +72,7 @@ export function useRegDocs(invoiceId: string | undefined): {
       return getRegDocs(token, invoiceId);
     },
     enabled: !!invoiceId,
-    staleTime: 30_000,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   return {

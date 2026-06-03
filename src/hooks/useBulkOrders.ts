@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ApiBulkOrder, ApiBulkOrdersResponse } from '@/types';
 import { getBulkOrders } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 
 const TOKEN_KEY = 'globalxpress_token';
 
@@ -31,6 +32,7 @@ export function useBulkOrders(
       if (!token) throw new Error('Not authenticated');
       return getBulkOrders(token, effectiveParams);
     },
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   const message =
