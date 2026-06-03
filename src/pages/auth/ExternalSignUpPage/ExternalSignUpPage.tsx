@@ -12,7 +12,15 @@ import en from 'react-phone-number-input/locale/en';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthLayout } from '@/components/layout';
-import { Button, Card, Checkbox, Input, OtpInput, StepIndicator } from '@/components/ui';
+import {
+  Button,
+  Card,
+  Checkbox,
+  ConfirmModal,
+  Input,
+  OtpInput,
+  StepIndicator,
+} from '@/components/ui';
 import { ROUTES } from '@/constants';
 import { useLanguage } from '@/hooks';
 import { ApiError, apiPatch } from '@/lib/apiClient';
@@ -799,17 +807,6 @@ export function ExternalSignUpPage(): ReactElement {
             {formError && (
               <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
                 <p className="text-sm text-red-600">{formError}</p>
-                {clerkErrorCode === 'form_identifier_exists' && (
-                  <p className="mt-2 text-sm text-red-700">
-                    Already have an account?{' '}
-                    <Link
-                      to={ROUTES.SIGN_IN}
-                      className="font-semibold underline hover:text-red-900"
-                    >
-                      Sign in instead
-                    </Link>
-                  </p>
-                )}
               </div>
             )}
 
@@ -977,6 +974,23 @@ export function ExternalSignUpPage(): ReactElement {
         )}
         </Card>
       </div>
+
+      <ConfirmModal
+        isOpen={clerkErrorCode === 'form_identifier_exists'}
+        title="Email already registered"
+        message={
+          formError ??
+          'An account with this email already exists. Sign in to continue, or try a different email.'
+        }
+        confirmLabel="Sign in instead"
+        cancelLabel="Use a different email"
+        onConfirm={() => navigate(ROUTES.SIGN_IN)}
+        onCancel={() => {
+          // Close the modal but keep the banner visible underneath as a
+          // reminder while the user edits the email field.
+          setClerkErrorCode(null);
+        }}
+      />
     </AuthLayout>
   );
 }
