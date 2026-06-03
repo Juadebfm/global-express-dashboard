@@ -1,12 +1,13 @@
 import type { ReactElement } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { Layers, PackagePlus } from 'lucide-react';
 import { AppShell } from '@/pages/shared';
 import {
   useAuth,
+  useCan,
   useDashboardData,
   useRecordShipmentIntake,
   useSearch,
@@ -21,7 +22,7 @@ import {
   ShipmentsSummary,
   ShipmentsTable,
 } from '../components';
-import { Button, PageLoader } from '@/components/ui';
+import { Button, Pagination, TableRowsSkeleton } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import i18n from '@/i18n/i18n';
 
@@ -83,13 +84,34 @@ export function ShipmentsPage(): ReactElement {
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn } = useClerkAuth();
   const isCustomer = isClerkSignedIn && !user;
-  const isOperator = !!user;
+  const isOperator = useCan('app.operator');
   const [activeFilter, setActiveFilter] = useState<ShipmentFilterTab['value']>('all');
   const operatorStatusV2 = isOperator && activeFilter !== 'all' ? activeFilter : undefined;
+
+  // `?page=N` in the URL is the source of truth for the current page so a
+  // refresh / deep link / browser-back keeps position. We coerce + clamp to
+  // ≥1 so a hand-edited "page=0" or "page=foo" doesn't break the request.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Math.max(1, Number(searchParams.get('page')) || 1);
+  const setPage = (next: number): void => {
+    setSearchParams(
+      (prev) => {
+        const updated = new URLSearchParams(prev);
+        if (next <= 1) {
+          updated.delete('page');
+        } else {
+          updated.set('page', String(next));
+        }
+        return updated;
+      },
+      { replace: true },
+    );
+  };
+
   const { data: dashboardData, isLoading: isDashboardLoading, error: dashboardError } =
     useDashboardData();
   const { data: shipmentsData, isLoading: isShipmentsLoading, error: shipmentsError } =
-    useShipmentsDashboard({ statusV2: operatorStatusV2, limit: 100 });
+    useShipmentsDashboard({ statusV2: operatorStatusV2, page });
   const { query, setQuery } = useSearch();
   const navigate = useNavigate();
   const recordIntake = useRecordShipmentIntake();
@@ -167,14 +189,22 @@ export function ShipmentsPage(): ReactElement {
       }
     );
 
-    const totalShipments = effectiveShipments.length;
+    // Headline reflects ALL matching shipments (from BE pagination.total),
+    // while the per-status / weight / item totals below reflect only the
+    // current page. The status-filter tabs let the user get an accurate
+    // per-status total via the BE-filtered pagination.total of that tab.
+    const totalShipments = shipmentsData.pagination.total;
+    // Averages are over the rows we actually have weight/item data for
+    // (current page). Dividing by pagination.total would over-flatten on
+    // any page that isn't the full result set.
+    const pageShipmentCount = effectiveShipments.length;
     const locale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
     const averageFormat = new Intl.NumberFormat(locale, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
-    const averageWeight = totalShipments === 0 ? 0 : totals.totalWeight / totalShipments;
-    const averageItems = totalShipments === 0 ? 0 : totals.totalItems / totalShipments;
+    const averageWeight = pageShipmentCount === 0 ? 0 : totals.totalWeight / pageShipmentCount;
+    const averageItems = pageShipmentCount === 0 ? 0 : totals.totalItems / pageShipmentCount;
 
     return {
       overview: {
@@ -373,7 +403,12 @@ export function ShipmentsPage(): ReactElement {
             <ShipmentsFilters
               filters={translatedFilters}
               active={activeFilter}
-              onChange={setActiveFilter}
+              onChange={(value) => {
+                // Switching status filters changes the query — drop back to
+                // page 1 so the URL doesn't strand us past the new totalPages.
+                if (value !== activeFilter) setPage(1);
+                setActiveFilter(value);
+              }}
               onCopy={handleCopy}
               onDownload={handleDownload}
               actionMessage={actionMessage}
@@ -390,9 +425,26 @@ export function ShipmentsPage(): ReactElement {
               searchMeta={visibleLabel}
               onRowClick={isOperator ? handleOpenShipment : undefined}
             />
+
+            {shipmentsData.pagination.totalPages > 1 && (
+              <Pagination
+                page={shipmentsData.pagination.page}
+                totalPages={shipmentsData.pagination.totalPages}
+                total={shipmentsData.pagination.total}
+                labels={{
+                  pageOf: (p, tp) =>
+                    t('pagination.pageOf', { page: p, totalPages: tp }),
+                  totalLabel: (count) =>
+                    t('pagination.total', { count }),
+                  prev: t('pagination.prev'),
+                  next: t('pagination.next'),
+                }}
+                onPageChange={setPage}
+              />
+            )}
           </>
         ) : isShipmentsLoading ? (
-          <PageLoader label={t('loadingShipmentList')} />
+          <TableRowsSkeleton columns={8} ariaLabel={t('loadingShipmentList')} />
         ) : (
           <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500">
             {shipmentsError ?? t('unavailable')}
@@ -415,3 +467,4 @@ export function ShipmentsPage(): ReactElement {
     </AppShell>
   );
 }
+

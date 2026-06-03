@@ -12,10 +12,17 @@ const variantStyles: Record<string, string> = {
     'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500',
 };
 
+// Button sizes — tuned 2026-06-03 (second pass) after CTA height feedback.
+// Page-level CTAs in DashboardHeader / ShipmentsHeader / etc. are mostly
+// passing size="sm" today, so the previous bump didn't reach them. New
+// targets:
+//   sm  ≈ 40px tall  — even compact actions clear the "strip" feel
+//   md  ≈ 48px tall  — workhorse form buttons
+//   lg  ≈ 56px tall  — primary page-level CTAs (sticky footers, modal confirms)
 const sizeStyles: Record<string, string> = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-base',
-  lg: 'px-6 py-3 text-lg',
+  sm: 'px-3.5 py-2.5 text-sm',
+  md: 'px-5 py-3 text-base',
+  lg: 'px-7 py-4 text-base',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -38,9 +45,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || isLoading}
         className={cn(
-          'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors',
+          // Base — pulled together with the slightly larger radius
+          // (rounded-xl) so CTAs visually rhyme with surrounding card
+          // chrome. shadow-sm gives a subtle lift that disappears under
+          // ghost/secondary variants where the bg is transparent or
+          // identical to the surface. Font weight intentionally kept at
+          // `medium` per UX feedback — semibold reads too heavy alongside
+          // the dashboard's lighter card copy.
+          'inline-flex items-center justify-center gap-2 rounded-xl font-medium shadow-sm transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-offset-2',
-          'disabled:cursor-not-allowed disabled:opacity-60',
+          'disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none',
           variantStyles[variant],
           sizeStyles[size],
           className

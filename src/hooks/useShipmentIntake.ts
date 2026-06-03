@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FEEDBACK_MESSAGES } from '@/constants';
 import { useFeedbackStore } from '@/store';
+import { buildErrorFeedback } from '@/lib/feedback';
 import { recordShipmentIntake } from '@/services/shipmentsService';
 import type { ShipmentIntakePayload, ShipmentIntakeResult } from '@/types';
 import { useAuthToken } from './useAuthToken';
@@ -28,11 +29,19 @@ export function useRecordShipmentIntake(): {
         message: FEEDBACK_MESSAGES.shipments.intakeSuccess,
       });
     },
-    onError: (err) => {
-      pushMessage({
-        tone: 'error',
-        message: err.message || FEEDBACK_MESSAGES.shipments.intakeError,
-      });
+    onError: (err, variables) => {
+      // buildErrorFeedback decides whether to surface the Retry button
+      // (only 5xx). The retry re-fires with the exact same variables so
+      // the user doesn't lose their work to a transient BE blip.
+      pushMessage(
+        buildErrorFeedback({
+          err,
+          fallbackMessage: FEEDBACK_MESSAGES.shipments.intakeError,
+          retry: () => {
+            void m.mutateAsync(variables);
+          },
+        }),
+      );
     },
   });
 

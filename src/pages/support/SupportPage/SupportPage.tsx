@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react';
 import { AlertBanner, Button } from '@/components/ui';
 import {
   useAuth,
+  useCan,
   useDashboardData,
   useSearch,
   useSupportTickets,
@@ -30,9 +31,8 @@ import {
 
 function SupportListView(): ReactElement {
   const { t } = useTranslation('support');
-  const { user } = useAuth();
   const { query } = useSearch();
-  const isStaff = !!user && user.role !== 'user';
+  const isStaff = useCan('app.operator');
 
   const [statusFilter, setStatusFilter] = useState<SupportTicketStatus | 'all'>('all');
   const [modalOpen, setModalOpen] = useState(false);
@@ -105,7 +105,7 @@ function SupportDetailView({ ticketId }: { ticketId: string }): ReactElement {
   const { t } = useTranslation('support');
   const { user } = useAuth();
   const navigate = useNavigate();
-  const isStaff = !!user && user.role !== 'user';
+  const isStaff = useCan('app.operator');
   const currentUserId = user?.id ?? '';
 
   const { ticket, messages, isLoading, error } = useSupportTicketDetail(ticketId);

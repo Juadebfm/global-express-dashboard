@@ -11,9 +11,9 @@ interface DashboardHeaderProps {
 }
 
 const actionIconMap: Record<string, ReactElement> = {
-  export: <Download className="h-4 w-4" />,
-  tracking: <MapPin className="h-4 w-4" />,
-  plus: <Plus className="h-4 w-4" />,
+  export: <Download className="h-5 w-5" />,
+  tracking: <MapPin className="h-5 w-5" />,
+  plus: <Plus className="h-5 w-5" />,
 };
 
 export function DashboardHeader({
@@ -35,7 +35,7 @@ export function DashboardHeader({
       <Button
         key={action.id}
         type="button"
-        size="sm"
+        size="lg"
         variant={isPrimary ? 'primary' : 'secondary'}
         leftIcon={icon}
         onClick={() => onAction?.(action)}

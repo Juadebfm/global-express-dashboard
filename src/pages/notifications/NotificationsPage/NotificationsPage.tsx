@@ -9,6 +9,7 @@ import {
 } from '@/hooks';
 import type { ApiNotification } from '@/types';
 import { AppShell } from '@/pages/shared';
+import { TableRowsSkeleton } from '@/components/ui';
 import { cn } from '@/utils';
 import i18n from '@/i18n/i18n';
 
@@ -228,7 +229,10 @@ function CustomerNotificationsView(): ReactElement {
   return (
     <AppShell
       data={data}
-      isLoading={isLoading || notifLoading}
+      // Only block-shell on the dashboard chrome data — the notifications
+      // list renders an inline skeleton while it fetches so the page
+      // header / toolbar stay visible.
+      isLoading={isLoading}
       error={error}
       loadingLabel={t('loadingLabel')}
     >
@@ -291,7 +295,11 @@ function CustomerNotificationsView(): ReactElement {
           </div>
         </div>
 
-        {filteredItems.length === 0 ? (
+        {notifLoading && filteredItems.length === 0 ? (
+          <div className="p-4">
+            <TableRowsSkeleton columns={3} rows={6} ariaLabel={t('loadingLabel')} />
+          </div>
+        ) : filteredItems.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <p className="text-sm font-semibold text-gray-700">{t('empty.title')}</p>
             <p className="mt-2 text-sm text-gray-500">{t('empty.subtitle')}</p>

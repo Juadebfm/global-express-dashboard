@@ -7,6 +7,7 @@ import {
   updateShipmentBatchPermission,
 } from '@/services';
 import { FEEDBACK_MESSAGES } from '@/constants';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useFeedbackStore } from '@/store';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -26,6 +27,7 @@ export function useAdminUsers(params: AdminUserListParams = {}): AdminUsersState
       if (!token) throw new Error('Not authenticated');
       return getUsers(token, params);
     },
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   const message =
@@ -53,7 +55,7 @@ export function useAdminUserDetail(id: string | null): {
       return getUserById(token, id);
     },
     enabled: !!id,
-    staleTime: 30_000,
+    staleTime: STALE_TIME.REAL_TIME,
   });
   return { data: query.data, isLoading: query.isLoading, error: query.error };
 }

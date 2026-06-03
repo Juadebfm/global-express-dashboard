@@ -6,6 +6,7 @@ import { Button, OtpInput } from '@/components/ui';
 import { RecoveryCodesPanel } from '@/components/auth';
 import {
   useAuth,
+  useCan,
   useEnrollMfa,
   useVerifyMfaEnrollment,
   useMfaStatus,
@@ -17,7 +18,8 @@ type Stage = 'intro' | 'scan' | 'verify' | 'codes';
 
 export function MfaEnrollmentPage(): ReactElement {
   const navigate = useNavigate();
-  const { user, refreshUser } = useAuth();
+  const { refreshUser } = useAuth();
+  const isOperator = useCan('app.operator');
   const { data: status, isLoading: statusLoading } = useMfaStatus();
   const { mutate: startEnrollment, isPending: enrolling, error: enrollError } = useEnrollMfa();
   const {
@@ -63,9 +65,7 @@ export function MfaEnrollmentPage(): ReactElement {
   const handleDone = async (): Promise<void> => {
     await refreshUser();
     navigate(
-      user?.role === 'staff' || user?.role === 'admin' || user?.role === 'superadmin'
-        ? ROUTES.ADMIN_DASHBOARD
-        : ROUTES.DASHBOARD,
+      isOperator ? ROUTES.ADMIN_DASHBOARD : ROUTES.DASHBOARD,
       { replace: true },
     );
   };

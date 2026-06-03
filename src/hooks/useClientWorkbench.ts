@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FEEDBACK_MESSAGES } from '@/constants';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useFeedbackStore } from '@/store';
 import {
   addClientSupplier,
@@ -45,7 +46,7 @@ export function useClientWorkbench(clientId: string | undefined): {
       return getClientWorkbench(token, clientId);
     },
     enabled: !!clientId,
-    staleTime: 30_000,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   return {
@@ -82,7 +83,7 @@ export function useClientSuppliers(
       return getClientSuppliers(token, clientId, params);
     },
     enabled: !!clientId,
-    staleTime: 60_000,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   return {

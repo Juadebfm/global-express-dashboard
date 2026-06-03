@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ClipboardList,
@@ -11,7 +11,7 @@ import {
   Truck,
 } from 'lucide-react';
 import {
-  useAuth,
+  useCan,
   useDashboardData,
   useDeleteOrderImage,
   useOrderDetail,
@@ -29,7 +29,7 @@ import {
   useWarehouseVerify,
 } from '@/hooks';
 import type { OrderListItem } from '@/types';
-import { Button } from '@/components/ui';
+import { Button, Pagination, TableRowsSkeleton } from '@/components/ui';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
@@ -63,10 +63,9 @@ const TABS: Array<{ key: DetailTab; icon: typeof ClipboardList }> = [
 export function OrdersPage(): ReactElement {
   const { t } = useTranslation(['orders', 'shipments']);
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const isOperator = user?.role === 'staff' || user?.role === 'admin' || user?.role === 'superadmin';
-  const canDeleteImage = user?.role === 'admin' || user?.role === 'superadmin';
-  const canApproveOverride = user?.role === 'admin' || user?.role === 'superadmin';
+  const isOperator = useCan('app.operator');
+  const canDeleteImage = useCan('orders.deleteImage');
+  const canApproveOverride = useCan('orders.approveOverride');
   const { query, setQuery } = useSearch();
 
   // ── Local UI state ────────────────────────────────────────────
@@ -74,18 +73,41 @@ export function OrdersPage(): ReactElement {
   const [selectedOrderIdState, setSelectedOrderIdState] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>('overview');
 
+  // `?page=N` in the URL is the source of truth for the queue page so refresh
+  // / deep link / browser back keeps position. Coerce + clamp ≥1 so a
+  // hand-edited "page=foo" doesn't break the request.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Math.max(1, Number(searchParams.get('page')) || 1);
+  const setPage = (next: number): void => {
+    setSearchParams(
+      (prev) => {
+        const updated = new URLSearchParams(prev);
+        if (next <= 1) {
+          updated.delete('page');
+        } else {
+          updated.set('page', String(next));
+        }
+        return updated;
+      },
+      { replace: true },
+    );
+  };
+
   // ── Data hooks ────────────────────────────────────────────────
   const statusFilter = isOperator && activeFilter !== 'all' ? activeFilter : undefined;
   const { data: appData, isLoading: appLoading, error: appError } = useDashboardData();
-  const { orders, total, isLoading: ordersLoading, error: ordersError } = useOrders(1, 100, statusFilter, {
-    enabled: !isOperator,
-  });
+  const {
+    orders,
+    pagination: ordersPagination,
+    isLoading: ordersLoading,
+    error: ordersError,
+  } = useOrders(page, undefined, statusFilter, { enabled: !isOperator });
   const {
     data: shipmentsData,
     isLoading: shipmentsLoading,
     error: shipmentsError,
   } = useShipmentsDashboard(
-    { statusV2: statusFilter, page: 1, limit: 100 },
+    { statusV2: statusFilter, page },
     { enabled: isOperator }
   );
 
@@ -108,7 +130,14 @@ export function OrdersPage(): ReactElement {
   );
 
   const queueOrders = isOperator ? operatorQueueOrders : orders;
-  const queueTotal = isOperator ? operatorQueueOrders.length : total;
+  // Headline + pagination chrome reads from the BE-supplied pagination so
+  // the queue count is honest about the full result set, not just the
+  // current page.
+  const queuePagination =
+    isOperator && shipmentsData
+      ? shipmentsData.pagination
+      : ordersPagination;
+  const queueTotal = queuePagination.total;
   const queueError = isOperator ? shipmentsError : ordersError;
   const queueLoading = isOperator ? shipmentsLoading : ordersLoading;
   const visibleOrders = useMemo(() => queueOrders.filter((o) => includesQuery(o, query)), [queueOrders, query]);
@@ -196,10 +225,10 @@ export function OrdersPage(): ReactElement {
     return true;
   });
 
-  const loading = appLoading || queueLoading;
-
+  // Only block-shell on the dashboard chrome data — the queue / detail
+  // panels render their own inline skeletons.
   return (
-    <AppShell data={appData} isLoading={loading} error={queueError ?? appError} loadingLabel={t('orders:loadingLabel')}>
+    <AppShell data={appData} isLoading={appLoading} error={queueError ?? appError} loadingLabel={t('orders:loadingLabel')}>
       <div className="space-y-6">
         <PageHeader
           title={t('orders:pageTitle')}
@@ -219,18 +248,45 @@ export function OrdersPage(): ReactElement {
         />
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
-          {/* Left: Order Queue */}
-          <OrderQueue
-            orders={visibleOrders}
-            total={queueTotal}
-            selectedOrderId={selectedOrderId}
-            isOperator={isOperator}
-            activeFilter={activeFilter}
-            query={query}
-            onSelectOrder={handleSelectOrder}
-            onFilterChange={setActiveFilter}
-            onQueryChange={setQuery}
-          />
+          {/* Left: Order Queue + Pagination */}
+          <div className="space-y-3">
+            {queueLoading && queueOrders.length === 0 ? (
+              <TableRowsSkeleton columns={3} rows={8} ariaLabel={t('orders:loadingLabel')} />
+            ) : (
+            <OrderQueue
+              orders={visibleOrders}
+              total={queueTotal}
+              selectedOrderId={selectedOrderId}
+              isOperator={isOperator}
+              activeFilter={activeFilter}
+              query={query}
+              onSelectOrder={handleSelectOrder}
+              onFilterChange={(value) => {
+                // Filter change reshapes the result set; drop back to page
+                // 1 so the URL doesn't strand us past the new totalPages.
+                if (value !== activeFilter) setPage(1);
+                setActiveFilter(value);
+              }}
+              onQueryChange={setQuery}
+            />
+            )}
+            {queuePagination.totalPages > 1 && (
+              <Pagination
+                page={queuePagination.page}
+                totalPages={queuePagination.totalPages}
+                total={queuePagination.total}
+                labels={{
+                  pageOf: (p, tp) =>
+                    t('shipments:pagination.pageOf', { page: p, totalPages: tp }),
+                  totalLabel: (count) =>
+                    t('shipments:pagination.total', { count }),
+                  prev: t('shipments:pagination.prev'),
+                  next: t('shipments:pagination.next'),
+                }}
+                onPageChange={setPage}
+              />
+            )}
+          </div>
 
           {/* Right: Detail Panel */}
           <section className="space-y-4">

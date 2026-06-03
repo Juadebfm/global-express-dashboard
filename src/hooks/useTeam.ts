@@ -1,8 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import type { TeamMember, TeamPermissions, TeamRole, ApiTeamMember } from '@/types';
+import type {
+  TeamMember,
+  TeamPermissions,
+  TeamRole,
+  ApiTeamMember,
+  ApiTeamResponse,
+} from '@/types';
 import { getTeam, approveTeamMember, createTeamMember } from '@/services';
 import type { CreateTeamMemberPayload } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
+import { can } from '@/lib/permissions';
 import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -30,6 +38,7 @@ function mapApiTeamMember(m: ApiTeamMember): TeamMember {
 
 interface TeamState {
   members: TeamMember[];
+  pagination: ApiTeamResponse['data']['pagination'];
   isLoading: boolean;
   error: string | null;
   approveMember: (id: string) => void;
@@ -37,14 +46,22 @@ interface TeamState {
   isInviting: boolean;
 }
 
-export function useTeam(): TeamState {
+interface UseTeamParams {
+  page?: number;
+  limit?: number;
+}
+
+const DEFAULT_TEAM_PAGE_SIZE = 20;
+
+export function useTeam(params: UseTeamParams = {}): TeamState {
+  const page = params.page ?? 1;
+  const limit = params.limit ?? DEFAULT_TEAM_PAGE_SIZE;
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
   const queryClient = useQueryClient();
 
   const isCustomer = isClerkSignedIn && !user;
-  const role = user?.role;
-  const enabled = !!role && (role === 'admin' || role === 'superadmin');
+  const enabled = can(user?.role, 'team.view');
 
   const getToken_ = async (): Promise<string | null> => {
     if (isCustomer) return getToken();
@@ -52,15 +69,20 @@ export function useTeam(): TeamState {
   };
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['team'],
+    queryKey: ['team', page, limit],
     queryFn: async () => {
       const token = await getToken_();
       if (!token) throw new Error('Not authenticated');
-      const result = await getTeam(token);
-      return result.data.map(mapApiTeamMember);
+      return getTeam(token, { page, limit });
     },
     enabled,
+    staleTime: STALE_TIME.REAL_TIME,
   });
+
+  // Fall back to the requested params so Pagination has stable numbers
+  // while the first request is in flight.
+  const pagination = data?.pagination ?? { total: 0, page, limit, totalPages: 1 };
+  const members = (data?.data ?? []).map(mapApiTeamMember);
 
   const approveMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -88,7 +110,8 @@ export function useTeam(): TeamState {
     error instanceof Error ? error.message : error ? 'Failed to load team' : null;
 
   return {
-    members: data ?? [],
+    members,
+    pagination,
     isLoading,
     error: message,
     approveMember: (id: string) => approveMutation.mutate(id),

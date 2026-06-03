@@ -5,6 +5,7 @@ import {
   updateSpecialPackagingTypes,
   type SpecialPackagingUpsertItem,
 } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuthToken } from './useAuthToken';
 
 interface UseSpecialPackagingTypesOptions {
@@ -22,6 +23,7 @@ export function useSpecialPackagingTypes(options: UseSpecialPackagingTypesOption
       return getSpecialPackagingTypes(token);
     },
     enabled: options.enabled ?? true,
+    staleTime: STALE_TIME.SLOW_MOVING,
   });
 }
 

@@ -190,7 +190,10 @@ function extractPagination(
 export async function getOrders(
   token: string,
   page = 1,
-  limit = 100,
+  // Matches the BE default. The hook (useOrders) also defaults to 20 so
+  // service + hook agree — a future direct service caller won't accidentally
+  // request a 100-row window.
+  limit = 20,
   statusV2?: string
 ): Promise<OrdersListResult> {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });

@@ -23,7 +23,10 @@ export function getTeam(
   if (params.role) searchParams.set('role', params.role);
   if (params.isActive !== undefined) searchParams.set('isActive', String(params.isActive));
   if (params.page !== undefined) searchParams.set('page', String(params.page));
-  searchParams.set('limit', String(params.limit ?? 100));
+  // Default matches the BE + the rest of the FE (ShipmentsPage etc).
+  // TeamPage paginates explicitly so the headline + Prev/Next stay
+  // honest about the full result set.
+  searchParams.set('limit', String(params.limit ?? 20));
   const qs = searchParams.toString();
   return apiGetData<ApiTeamResponse['data']>(`/team${qs ? `?${qs}` : ''}`, token);
 }

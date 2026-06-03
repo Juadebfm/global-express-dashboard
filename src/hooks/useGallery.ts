@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FEEDBACK_MESSAGES } from '@/constants';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useFeedbackStore } from '@/store';
 import {
   createGalleryAdvert,
@@ -66,7 +67,7 @@ export function usePublicGallery(limitPerSection?: number): {
   const query = useQuery<PublicGalleryListings>({
     queryKey: publicGalleryKey(limitPerSection),
     queryFn: () => getPublicGallery(limitPerSection),
-    staleTime: 60_000,
+    staleTime: STALE_TIME.SLOW_MOVING,
   });
   return { data: query.data, isLoading: query.isLoading, error: query.error };
 }
@@ -79,7 +80,7 @@ export function usePublicGalleryAdverts(limit?: number): {
   const query = useQuery<GalleryItem[]>({
     queryKey: publicAdvertsKey(limit),
     queryFn: () => getPublicGalleryAdverts(limit),
-    staleTime: 60_000,
+    staleTime: STALE_TIME.SLOW_MOVING,
   });
   return { data: query.data, isLoading: query.isLoading, error: query.error };
 }
@@ -92,7 +93,7 @@ export function usePublicGallerySales(limit?: number): {
   const query = useQuery<GalleryItem[]>({
     queryKey: publicSalesKey(limit),
     queryFn: () => getPublicGallerySales(limit),
-    staleTime: 60_000,
+    staleTime: STALE_TIME.SLOW_MOVING,
   });
   return { data: query.data, isLoading: query.isLoading, error: query.error };
 }
@@ -247,7 +248,7 @@ export function useAuthedGallery(limitPerSection?: number): {
       if (!token) throw new Error('Not authenticated');
       return getAuthedGallery(token, limitPerSection);
     },
-    staleTime: 30_000,
+    staleTime: STALE_TIME.REAL_TIME,
   });
   return { data: query.data, isLoading: query.isLoading, error: query.error };
 }
@@ -586,7 +587,7 @@ export function useGalleryClaims(query: GalleryClaimsQuery = {}): {
       if (!token) throw new Error('Not authenticated');
       return getGalleryClaims(token, query);
     },
-    staleTime: 15_000,
+    staleTime: STALE_TIME.REAL_TIME,
   });
   return { data: q.data, isLoading: q.isLoading, error: q.error };
 }

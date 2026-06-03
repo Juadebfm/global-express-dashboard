@@ -9,8 +9,15 @@ export type { CheckboxProps } from './Checkbox';
 
 export { Card } from './Card';
 
+export { ClientCombobox } from './ClientCombobox';
+export type { ClientComboboxProps } from './ClientCombobox';
+
 export { OtpInput } from './OtpInput';
 export { PageLoader } from './PageLoader';
+export { Pagination } from './Pagination';
+export type { PaginationProps } from './Pagination';
+export { Skeleton, TableRowsSkeleton } from './Skeleton';
+export type { SkeletonProps, TableRowsSkeletonProps } from './Skeleton';
 export { AlertBanner } from './AlertBanner';
 export { FeedbackCenter } from './FeedbackCenter';
 export { ConfirmModal } from './ConfirmModal/ConfirmModal';

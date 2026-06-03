@@ -3,6 +3,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { ShipmentsDashboardData } from '@/types';
 import { getShipmentsDashboard } from '@/services';
 import type { InternalShipmentsQueryParams } from '@/services/shipmentsService';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -37,6 +38,7 @@ export function useShipmentsDashboard(
       return getShipmentsDashboard(token, isCustomer, params);
     },
     enabled,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   const message =

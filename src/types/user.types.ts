@@ -3,7 +3,14 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'superadmin' | 'admin' | 'staff' | 'user';
+  // Roles the BE can return on /auth/me. The FE has historically used
+  // 'admin' as a tier between 'staff' and 'superadmin' even though the
+  // BE spec doesn't define one separately — leaving it in the union
+  // because the AppLayout / ProtectedRoute code branches on it. The BE
+  // also surfaces 'supplier' for Korean suppliers (Clerk JWT, like
+  // 'user'); the FE doesn't have a distinct supplier flow yet but the
+  // type needs to allow the value so permission checks compile.
+  role: 'superadmin' | 'admin' | 'staff' | 'user' | 'supplier';
   isActive?: boolean;
   preferredLanguage?: 'en' | 'ko';
   mustChangePassword?: boolean;
@@ -58,6 +65,11 @@ export interface CustomerProfile {
   addressState: string | null;
   addressCountry: string | null;
   addressPostalCode: string | null;
+  // Auto-generated at signup (e.g. Julius Adebowale → "julade"). Customers may
+  // replace it ONCE; after that `shippingMarkUserEditedAt` is non-null and
+  // PATCH /users/me with a new `shippingMark` returns 409.
+  shippingMark: string | null;
+  shippingMarkUserEditedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

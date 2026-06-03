@@ -9,6 +9,7 @@ import type {
 } from '@/types';
 import type { User } from '@/types';
 import { apiGetData } from '@/lib/apiClient';
+import { can } from '@/lib/permissions';
 import i18n from '@/i18n/i18n';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -143,7 +144,7 @@ function mapKpis(stats: ApiDashboardStats, role: User['role']): KpiCard[] {
   ];
 
   // Revenue is superadmin-only — the backend omits it for other roles
-  if (role === 'superadmin' && stats.revenueMtd) {
+  if (can(role, 'app.superadmin') && stats.revenueMtd) {
     const revenueMtdNum = parseFloat(stats.revenueMtd);
     const locale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
     const revenueMtdDisplay = `₦${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(revenueMtdNum)}`;
@@ -187,7 +188,7 @@ export function mapToDashboardData(
   raw: ApiDashboardResponse['data'],
   role: User['role']
 ): DashboardData {
-  const isOperator = role === 'staff' || role === 'admin' || role === 'superadmin';
+  const isOperator = can(role, 'app.operator');
 
   return {
     app: {

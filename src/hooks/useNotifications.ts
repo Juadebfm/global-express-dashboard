@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { ApiNotification } from '@/types';
 import { getNotifications, markNotificationRead, markAllNotificationsRead, toggleNotificationSave, deleteNotification, deleteNotificationsBulk } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -40,6 +41,7 @@ export function useNotifications(): NotificationsState {
       return getNotifications(token);
     },
     enabled,
+    staleTime: STALE_TIME.ALWAYS_FRESH,
   });
 
   const markReadMutation = useMutation({

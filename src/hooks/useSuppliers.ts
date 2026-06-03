@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FEEDBACK_MESSAGES } from '@/constants';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useFeedbackStore } from '@/store';
 import {
   addMySupplier,
@@ -46,7 +47,7 @@ export function useMySuppliers(params: SupplierListParams = {}): {
       if (!token) throw new Error('Not authenticated');
       return getMySuppliers(token, params);
     },
-    staleTime: 60_000,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   return {
@@ -75,7 +76,7 @@ export function useMySupplierUpdateRequests(
       if (!token) throw new Error('Not authenticated');
       return getMySupplierUpdateRequests(token, params);
     },
-    staleTime: 30_000,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   return {
@@ -104,7 +105,7 @@ export function useMySupplierValidationRequests(
       if (!token) throw new Error('Not authenticated');
       return getMySupplierValidationRequests(token, params);
     },
-    staleTime: 30_000,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   return {
@@ -131,7 +132,7 @@ export function useAllSuppliers(params: SupplierListParams = {}): {
       if (!token) throw new Error('Not authenticated');
       return getAllSuppliers(token, params);
     },
-    staleTime: 60_000,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   return {

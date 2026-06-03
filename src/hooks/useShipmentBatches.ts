@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FEEDBACK_MESSAGES } from '@/constants';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useFeedbackStore } from '@/store';
 import {
   approveDispatchBatchCutoff,
@@ -50,7 +51,7 @@ export function useInternalTrackByMasterTracking(
       return getDispatchBatchByMasterTracking(token, masterTrackingNumber);
     },
     enabled: !!masterTrackingNumber,
-    staleTime: 30_000,
+    staleTime: STALE_TIME.REAL_TIME,
     retry: false,
   });
 

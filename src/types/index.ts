@@ -49,6 +49,7 @@ export type {
   ShipmentFilterTab,
   ShipmentRecord,
   ShipmentsDashboardData,
+  ShipmentsDashboardPagination,
   ApiShipmentRecord,
   ApiShipmentsResponse,
 } from './shipment.types';

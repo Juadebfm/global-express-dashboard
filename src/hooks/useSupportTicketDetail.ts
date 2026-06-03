@@ -5,6 +5,7 @@ import { getDisplayErrorMessage } from '@/lib/feedback';
 import { useWebSocketStore } from '@/store';
 import type { SupportTicket, SupportMessage } from '@/types';
 import { getSupportTicketById } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuthToken } from './useAuthToken';
 
 interface UseSupportTicketDetailState {
@@ -26,6 +27,7 @@ export function useSupportTicketDetail(ticketId: string | undefined): UseSupport
       return getSupportTicketById(ticketId!, token);
     },
     enabled: !!ticketId,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   // Join / leave the WS room for real-time message delivery

@@ -25,8 +25,8 @@ export function ShipmentsHeader({
       <div className="flex flex-wrap items-center gap-3">
         <Button
           type="button"
-          size="sm"
-          leftIcon={<Navigation className="h-4 w-4" />}
+          size="lg"
+          leftIcon={<Navigation className="h-5 w-5" />}
           onClick={onTrackShipment}
           className="bg-brand-500 text-white hover:bg-brand-600"
         >

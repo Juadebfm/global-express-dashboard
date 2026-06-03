@@ -1,42 +1,75 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import type { ApiClient } from '@/types';
+import type { ApiClient, ApiClientsResponse } from '@/types';
 import { getClients } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
+import { can } from '@/lib/permissions';
 import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
 
+const DEFAULT_CLIENTS_PAGE_SIZE = 20;
+
+interface UseClientsParams {
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+  /**
+   * Server-side free-text search (matches firstName, lastName, email,
+   * businessName, shippingMark). Empty / whitespace-only is treated
+   * as no filter — same as omitting the param. Callers are expected
+   * to debounce the input themselves (300ms is the in-house default).
+   */
+  search?: string;
+}
+
 interface ClientsState {
   clients: ApiClient[];
+  pagination: ApiClientsResponse['data']['pagination'];
   isLoading: boolean;
   error: string | null;
 }
 
-export function useClients(params: { isActive?: boolean } = {}): ClientsState {
+export function useClients(params: UseClientsParams = {}): ClientsState {
+  const page = params.page ?? 1;
+  const limit = params.limit ?? DEFAULT_CLIENTS_PAGE_SIZE;
+  // Normalise the search key so two equivalent empties (undefined, '',
+  // '   ') collapse to a single React Query cache entry. The service
+  // applies the same normalisation before sending.
+  const trimmedSearch = params.search?.trim() || undefined;
+  const effectiveParams = {
+    page,
+    limit,
+    isActive: params.isActive,
+    search: trimmedSearch,
+  };
+
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
 
   const isCustomer = isClerkSignedIn && !user;
-  const role = user?.role;
-  const enabled =
-    !!role && (role === 'staff' || role === 'admin' || role === 'superadmin');
+  const enabled = can(user?.role, 'clients.view');
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['clients', params],
+    queryKey: ['clients', effectiveParams],
     queryFn: async () => {
       const token = isCustomer ? await getToken() : localStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
-      const result = await getClients(token, params);
-      return result.data;
+      return getClients(token, effectiveParams);
     },
     enabled,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   const message =
     error instanceof Error ? error.message : error ? 'Failed to load clients' : null;
 
+  // Stable fallback during the first fetch so Pagination doesn't flicker.
+  const pagination = data?.pagination ?? { total: 0, page, limit, totalPages: 1 };
+
   return {
-    clients: data ?? [],
+    clients: data?.data ?? [],
+    pagination,
     isLoading,
     error: message,
   };

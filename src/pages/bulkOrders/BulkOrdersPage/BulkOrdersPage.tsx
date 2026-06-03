@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
@@ -13,13 +14,16 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { useAuth, useDashboardData, useSearch } from '@/hooks';
+import { useCan, useDashboardData, useSearch } from '@/hooks';
 import { useBulkOrders } from '@/hooks/useBulkOrders';
 import { AppShell, PageHeader } from '@/pages/shared';
 import type { ApiClient, ApiBulkOrder, ApiBulkOrderItem, BulkOrderItem } from '@/types';
+// ApiClient is still used as the parameter type on selectClient even though
+// we no longer pre-fetch the list — kept so the callback signature stays
+// honest about what comes back from the combobox.
 import { getStatusStyle } from '@/lib/statusUtils';
-import { createBulkOrder, deleteBulkOrder, getBulkOrderById, getClients, updateBulkOrderStatus } from '@/services';
-import { AlertBanner, Button, Checkbox, ConfirmModal, CopyButton } from '@/components/ui';
+import { createBulkOrder, deleteBulkOrder, getBulkOrderById, updateBulkOrderStatus } from '@/services';
+import { AlertBanner, Button, Checkbox, ClientCombobox, ConfirmModal, CopyButton, Pagination, TableRowsSkeleton } from '@/components/ui';
 import { cn, resolveLocation } from '@/utils';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -59,16 +63,42 @@ function getStatusCategory(statusV2: string): StatusFilter {
 // ── Component ───────────────────────────────────────────────────
 
 export function BulkOrdersPage(): ReactElement {
-  const { t, i18n } = useTranslation('bulkOrders');
+  const { t, i18n } = useTranslation(['bulkOrders', 'shipments']);
   const dateLocale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
   const translateLocation = (value: unknown): string => {
     const str = resolveLocation(value);
     return str ? t(`shipments:locations.${str}`, { defaultValue: str }) : '';
   };
   const { data, isLoading, error } = useDashboardData();
-  const { bulkOrders, total, isLoading: ordersLoading, error: ordersError, refetch: refetchOrders } = useBulkOrders();
+
+  // `?page=N` in the URL is the source of truth so a refresh / deep link /
+  // browser-back keeps position. Coerce + clamp ≥1 so a hand-edited
+  // "page=foo" doesn't break the request.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Math.max(1, Number(searchParams.get('page')) || 1);
+  const setPage = (next: number): void => {
+    setSearchParams(
+      (prev) => {
+        const updated = new URLSearchParams(prev);
+        if (next <= 1) {
+          updated.delete('page');
+        } else {
+          updated.set('page', String(next));
+        }
+        return updated;
+      },
+      { replace: true },
+    );
+  };
+
+  const {
+    bulkOrders,
+    pagination,
+    isLoading: ordersLoading,
+    error: ordersError,
+    refetch: refetchOrders,
+  } = useBulkOrders({ page });
   const { query, setQuery } = useSearch();
-  const { user } = useAuth();
 
   const [activeOrder, setActiveOrder] = useState<ApiBulkOrder | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -79,8 +109,10 @@ export function BulkOrdersPage(): ReactElement {
   const [actionError, setActionError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
-  const canCreateBulk = user?.role === 'staff' || isAdmin;
+  const isAdmin = useCan('app.admin');
+  // canCreateBulk is the union "staff or above" — i.e. any operator. The
+  // 'app.operator' action is the canonical key for that bucket.
+  const canCreateBulk = useCan('app.operator');
 
   // ── Create form state ────────────────────────────────────────
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -89,9 +121,6 @@ export function BulkOrdersPage(): ReactElement {
   const [createItems, setCreateItems] = useState<Array<BulkOrderItem & { _key: number; usePickupRep?: boolean }>>([]);
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [clients, setClients] = useState<ApiClient[]>([]);
-  const [clientSearch, setClientSearch] = useState<Record<number, string>>({});
-  const [openClientPicker, setOpenClientPicker] = useState<number | null>(null);
   const nextKeyRef = useRef(0);
 
   const addItem = useCallback((): void => {
@@ -137,24 +166,13 @@ export function BulkOrdersPage(): ReactElement {
           : item,
       ),
     );
-    setClientSearch((prev) => ({
-      ...prev,
-      [key]: `${client.firstName} ${client.lastName}`.trim(),
-    }));
-    setOpenClientPicker(null);
   };
 
-  // Fetch clients when form opens
+  // Seed the first empty row when the create form opens. ClientCombobox
+  // fetches its own client list now (server-side search), so we don't
+  // pre-fetch here anymore.
   useEffect(() => {
     if (!showCreateForm) return;
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) return;
-
-    void getClients(token, { limit: 100 }).then((result) => {
-      setClients(result.data);
-    });
-
-    // Add first empty row
     if (createItems.length === 0) addItem();
   }, [showCreateForm, addItem, createItems.length]);
 
@@ -164,7 +182,6 @@ export function BulkOrdersPage(): ReactElement {
     setCreateNotes('');
     setCreateItems([]);
     setCreateError(null);
-    setClientSearch({});
   };
 
   const handleCreateSubmit = async (): Promise<void> => {
@@ -220,18 +237,6 @@ export function BulkOrdersPage(): ReactElement {
       setIsCreating(false);
     }
   };
-
-  // Close client picker on outside click
-  useEffect(() => {
-    if (openClientPicker === null) return;
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (target.closest('[data-client-picker]')) return;
-      setOpenClientPicker(null);
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [openClientPicker]);
 
   // Close status dropdown on outside click
   useEffect(() => {
@@ -289,7 +294,12 @@ export function BulkOrdersPage(): ReactElement {
   // ── Summary stats ──────────────────────────────────────────────
 
   const summaryStats = useMemo(() => {
-    const totalOrders = bulkOrders.length;
+    // Headline reflects the full result set (from BE pagination.total) so
+    // the count is honest even when the user is mid-paging. The per-status
+    // / per-item totals below still reflect just the current page — that's
+    // acceptable since the page-level status filter dropdown lets users
+    // slice down when they need accurate per-status numbers.
+    const totalOrders = pagination.total;
     const totalItems = bulkOrders.reduce((acc, o) => acc + o.itemCount, 0);
     const statusCounts = bulkOrders.reduce(
       (acc, o) => {
@@ -300,7 +310,7 @@ export function BulkOrdersPage(): ReactElement {
       {} as Record<string, number>
     );
     return { totalOrders, totalItems, activeCount: statusCounts['active'] ?? 0 };
-  }, [bulkOrders]);
+  }, [bulkOrders, pagination.total]);
 
   // ── Actions ────────────────────────────────────────────────────
 
@@ -352,7 +362,10 @@ export function BulkOrdersPage(): ReactElement {
   return (
     <AppShell
       data={data}
-      isLoading={isLoading || ordersLoading}
+      // Only block-shell on the dashboard chrome data — list loading
+      // renders inline skeleton rows so the user sees the page header /
+      // filters / create-button while the table fetches.
+      isLoading={isLoading}
       error={error}
       loadingLabel={t('loadingLabel')}
     >
@@ -606,14 +619,6 @@ export function BulkOrdersPage(): ReactElement {
 
               <div className="mt-5 space-y-4">
                 {createItems.map((item, index) => {
-                  const searchValue = clientSearch[item._key] ?? '';
-                  const filteredClients = searchValue.trim()
-                    ? clients.filter((c) => {
-                        const name = `${c.firstName} ${c.lastName} ${c.email}`.toLowerCase();
-                        return name.includes(searchValue.toLowerCase());
-                      })
-                    : clients;
-
                   return (
                     <div
                       key={item._key}
@@ -634,50 +639,14 @@ export function BulkOrdersPage(): ReactElement {
                       </div>
 
                       {/* Customer picker */}
-                      <div className="relative mt-3" data-client-picker>
-                        <span className="text-xs font-semibold uppercase text-gray-500">
-                          {t('createForm.items.customerLabel')}
-                        </span>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            value={searchValue}
-                            onChange={(e) => {
-                              setClientSearch((prev) => ({ ...prev, [item._key]: e.target.value }));
-                              setOpenClientPicker(item._key);
-                            }}
-                            onFocus={() => setOpenClientPicker(item._key)}
-                            placeholder={t('createForm.items.customerPlaceholder')}
-                            className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 pr-10 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
-                          />
-                          <ChevronDown
-                            className={cn(
-                              'pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 transition',
-                              openClientPicker === item._key && 'rotate-180',
-                            )}
-                          />
-                        </div>
-                        {openClientPicker === item._key && (
-                          <div className="absolute left-0 right-0 z-20 mt-1 max-h-52 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
-                            {filteredClients.length === 0 ? (
-                              <p className="px-4 py-3 text-xs text-gray-400">{t('createForm.items.noCustomersFound')}</p>
-                            ) : (
-                              filteredClients.slice(0, 15).map((c) => (
-                                <button
-                                  key={c.id}
-                                  type="button"
-                                  onClick={() => selectClient(item._key, c)}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50"
-                                >
-                                  <span className="font-medium">
-                                    {c.firstName} {c.lastName}
-                                  </span>
-                                  <span className="ml-2 text-xs text-gray-400">{c.email}</span>
-                                </button>
-                              ))
-                            )}
-                          </div>
-                        )}
+                      <div className="mt-3">
+                        <ClientCombobox
+                          selectedId={item.customerId ?? ''}
+                          onSelect={(c) => selectClient(item._key, c)}
+                          label={t('createForm.items.customerLabel')}
+                          placeholder={t('createForm.items.customerPlaceholder')}
+                          emptyMessage={t('createForm.items.noCustomersFound')}
+                        />
                       </div>
 
                       {/* Recipient fields */}
@@ -916,8 +885,8 @@ export function BulkOrdersPage(): ReactElement {
               <div className="space-y-2">
                 <h2 className="text-2xl font-semibold text-gray-900">{t('queue.title')}</h2>
                 <p className="text-sm text-gray-500">
-                  {total > 0
-                    ? t('queue.descriptionWithCount', { count: total })
+                  {pagination.total > 0
+                    ? t('queue.descriptionWithCount', { count: pagination.total })
                     : t('queue.descriptionEmpty')}
                 </p>
               </div>
@@ -951,6 +920,10 @@ export function BulkOrdersPage(): ReactElement {
                           key={value}
                           type="button"
                           onClick={() => {
+                            // Filter change reshapes the visible result set
+                            // (FE-side); drop back to page 1 so the URL
+                            // doesn't strand us past the new range.
+                            if (value !== statusFilter) setPage(1);
                             setStatusFilter(value);
                             setOpenMenu(false);
                           }}
@@ -973,6 +946,11 @@ export function BulkOrdersPage(): ReactElement {
             {/* Table */}
             <div>
               <h3 className="text-xl font-semibold text-gray-900">{t('table.title')}</h3>
+              {ordersLoading && bulkOrders.length === 0 ? (
+                <div className="mt-4">
+                  <TableRowsSkeleton columns={6} ariaLabel={t('loadingLabel')} />
+                </div>
+              ) : (
               <div className="mt-4 overflow-hidden rounded-3xl border border-gray-200 bg-white">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -1066,6 +1044,24 @@ export function BulkOrdersPage(): ReactElement {
                   </div>
                 )}
               </div>
+              )}
+
+              {pagination.totalPages > 1 && (
+                <Pagination
+                  page={pagination.page}
+                  totalPages={pagination.totalPages}
+                  total={pagination.total}
+                  labels={{
+                    pageOf: (p, tp) =>
+                      t('shipments:pagination.pageOf', { page: p, totalPages: tp }),
+                    totalLabel: (count) =>
+                      t('shipments:pagination.total', { count }),
+                    prev: t('shipments:pagination.prev'),
+                    next: t('shipments:pagination.next'),
+                  }}
+                  onPageChange={setPage}
+                />
+              )}
             </div>
           </>
         )}

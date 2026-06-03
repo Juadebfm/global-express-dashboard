@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { ApiPayment } from '@/types';
 import { getPayments } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
+import { can } from '@/lib/permissions';
 import { useAuth } from './useAuth';
 import { useAuthToken } from './useAuthToken';
 
@@ -18,7 +20,9 @@ export function usePayments(params: { page?: number; limit?: number; userId?: st
   const getToken = useAuthToken();
 
   const enabled = isClerkSignedIn || !!user;
-  const canViewAllPayments = user?.role === 'superadmin';
+  // Superadmin sees every user's payments (admin BE endpoint);
+  // anyone else is scoped to their own via /payments/me.
+  const canViewAllPayments = can(user?.role, 'app.superadmin');
   const isCustomerScope = !canViewAllPayments;
   const normalizedParams = {
     page: params.page ?? 1,
@@ -35,6 +39,7 @@ export function usePayments(params: { page?: number; limit?: number; userId?: st
       return getPayments(token, { ...normalizedParams, isCustomer: isCustomerScope });
     },
     enabled,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 
   const message =

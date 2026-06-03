@@ -15,12 +15,21 @@ import { apiGet, apiGetData, apiPost, apiPostData } from '@/lib/apiClient';
 
 export function getClients(
   token: string,
-  params: { page?: number; limit?: number; isActive?: boolean } = {}
+  params: { page?: number; limit?: number; isActive?: boolean; search?: string } = {}
 ): Promise<ApiClientsResponse['data']> {
   const searchParams = new URLSearchParams();
   if (params.page !== undefined) searchParams.set('page', String(params.page));
-  searchParams.set('limit', String(params.limit ?? 100));
+  // Default matches the BE. With server-side search shipped, the picker
+  // dropdowns pass { search } and let the BE filter — no need to
+  // pre-fetch a wide set FE-side anymore.
+  searchParams.set('limit', String(params.limit ?? 20));
   if (params.isActive !== undefined) searchParams.set('isActive', String(params.isActive));
+  // Empty / whitespace-only search is the same as no search per BE
+  // contract (returns unfiltered list). Trim defensively + only send
+  // when there's something to send to keep the query string clean and
+  // the React Query cache key consistent.
+  const trimmedSearch = params.search?.trim();
+  if (trimmedSearch) searchParams.set('search', trimmedSearch);
   const qs = searchParams.toString();
   return apiGetData<ApiClientsResponse['data']>(
     `/admin/clients${qs ? `?${qs}` : ''}`,

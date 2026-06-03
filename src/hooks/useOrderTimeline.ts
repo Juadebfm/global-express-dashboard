@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { OrderTimeline } from '@/services';
 import { getOrderTimeline } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuthToken } from './useAuthToken';
 
 export function useOrderTimeline(orderId: string | undefined, enabled = true) {
@@ -14,5 +15,6 @@ export function useOrderTimeline(orderId: string | undefined, enabled = true) {
       return getOrderTimeline(token, orderId!);
     },
     enabled: Boolean(orderId) && enabled,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 }

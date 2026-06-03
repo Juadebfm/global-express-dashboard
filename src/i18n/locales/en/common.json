@@ -20,7 +20,8 @@
     "unavailable": "Service is temporarily unavailable. Please try again shortly.",
     "rateLimited": "Too many attempts. Please wait a moment and try again.",
     "sessionExpired": "Your session expired. Please sign in again.",
-    "invalidDetails": "Some details are invalid. Please review and try again."
+    "invalidDetails": "Some details are invalid. Please review and try again.",
+    "retry": "Retry"
   },
   "errors": {
     "forbidden": {

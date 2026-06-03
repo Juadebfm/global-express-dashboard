@@ -1,5 +1,5 @@
 import type { HTMLAttributes, ReactElement } from 'react';
-import { AlertCircle, CheckCircle2, Info, TriangleAlert, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Info, RefreshCw, TriangleAlert, X } from 'lucide-react';
 import { cn } from '@/utils';
 
 type AlertTone = 'success' | 'error' | 'info' | 'warning';
@@ -15,6 +15,13 @@ interface AlertBannerProps extends HTMLAttributes<HTMLDivElement> {
    * that prop for DOM refs.)
    */
   referenceId?: string;
+  /**
+   * Retry callback. When set, renders a "Retry" button that fires the
+   * callback. Intended for transient 5xx errors where re-firing the
+   * mutation with the same payload is the right next step.
+   */
+  onRetry?: () => void;
+  retryLabel?: string;
   onClose?: () => void;
 }
 
@@ -45,6 +52,8 @@ export function AlertBanner({
   message,
   title,
   referenceId,
+  onRetry,
+  retryLabel = 'Retry',
   onClose,
   className,
   ...props
@@ -67,6 +76,25 @@ export function AlertBanner({
         <p className={title ? 'mt-0.5' : ''}>{message}</p>
         {referenceId && (
           <p className="mt-1 font-mono text-xs opacity-70">Ref: {referenceId}</p>
+        )}
+        {onRetry && (
+          <div className="mt-2">
+            <button
+              type="button"
+              onClick={onRetry}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold transition',
+                // Mirrors the banner tone so the action reads as part of
+                // the same alert rather than an unrelated control.
+                tone === 'error'
+                  ? 'border-red-300 bg-white text-red-700 hover:bg-red-50'
+                  : 'border-current bg-white hover:bg-black/5',
+              )}
+            >
+              <RefreshCw className="h-3 w-3" />
+              {retryLabel}
+            </button>
+          </div>
         )}
       </div>
       {onClose && (

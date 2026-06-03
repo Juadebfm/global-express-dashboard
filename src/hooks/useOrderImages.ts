@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { OrderImage } from '@/types';
 import { getOrderImages } from '@/services';
+import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuthToken } from './useAuthToken';
 
 export function useOrderImages(orderId: string | undefined) {
@@ -14,5 +15,6 @@ export function useOrderImages(orderId: string | undefined) {
       return getOrderImages(token, orderId!);
     },
     enabled: Boolean(orderId),
+    staleTime: STALE_TIME.REAL_TIME,
   });
 }

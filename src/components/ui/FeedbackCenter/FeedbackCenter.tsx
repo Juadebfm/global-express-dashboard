@@ -1,8 +1,10 @@
 import type { ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { useFeedbackStore } from '@/store';
 
 export function FeedbackCenter(): ReactElement | null {
+  const { t } = useTranslation('common');
   const messages = useFeedbackStore((state) => state.messages);
   const dismissMessage = useFeedbackStore((state) => state.dismissMessage);
 
@@ -17,6 +19,17 @@ export function FeedbackCenter(): ReactElement | null {
           title={item.title}
           message={item.message}
           referenceId={item.referenceId}
+          onRetry={
+            item.retry
+              ? () => {
+                  // Dismiss first so the user doesn't double-tap a stale
+                  // toast while the new mutation is in flight.
+                  dismissMessage(item.id);
+                  item.retry?.();
+                }
+              : undefined
+          }
+          retryLabel={t('feedback.retry')}
           onClose={() => dismissMessage(item.id)}
           className="pointer-events-auto"
         />

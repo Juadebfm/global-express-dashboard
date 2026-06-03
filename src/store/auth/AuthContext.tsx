@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactElement,
   type ReactNode,
@@ -9,10 +10,17 @@ import {
 import type { LoginCredentials, User } from '@/types';
 import { login as apiLogin, getMe, logout as apiLogout } from '@/services/authService';
 import { useLanguageStore } from '@/store/language';
+import { queryClient } from '@/lib/queryClient';
 import type { AuthContextValue, AuthState, LoginResult } from './auth.types';
 import { AuthContext } from './auth.context';
 
 const TOKEN_KEY = 'globalxpress_token';
+
+// Tab refocus only refreshes /auth/me if the page has been idle for at
+// least this long. Without it a user clicking between two open tabs of
+// the app would fire a probe on every switch. 5 minutes lines up with
+// our SLOW_MOVING staleTime window for settings/catalogs.
+const REFRESH_ON_FOCUS_IDLE_MS = 5 * 60 * 1000;
 
 function syncLanguageFromUser(user: User): void {
   const lang = user.preferredLanguage;
@@ -35,6 +43,12 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const [state, setState] = useState<AuthState>(initialState);
 
+  // Timestamp of the last successful /auth/me call. The
+  // visibilitychange effect uses this to decide whether a tab refocus
+  // should re-sync (idle long enough to bother) or skip (user is just
+  // tab-flicking between two open windows of the app).
+  const lastSyncedAtRef = useRef<number>(0);
+
   const checkAuth = useCallback(async () => {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) {
@@ -51,6 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       }
 
       syncLanguageFromUser(user);
+      lastSyncedAtRef.current = Date.now();
       setState({
         user,
         isAuthenticated: true,
@@ -72,6 +87,76 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     checkAuth();
   }, [checkAuth]);
 
+  // Periodic role refresh on tab refocus. If the user came back after
+  // being idle ≥5 min, refetch /auth/me so a mid-session role upgrade
+  // (staff → admin, permission flag flipped, etc.) propagates without
+  // forcing a log-out / log-in. Same shape as the 403 handler below.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const handler = async (): Promise<void> => {
+      if (document.visibilityState !== 'visible') return;
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) return;
+      const elapsed = Date.now() - lastSyncedAtRef.current;
+      if (elapsed < REFRESH_ON_FOCUS_IDLE_MS) return;
+      try {
+        const user = await getMe(token);
+        if (!user?.role) return;
+        syncLanguageFromUser(user);
+        lastSyncedAtRef.current = Date.now();
+        setState((prev) => ({
+          ...prev,
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        }));
+      } catch {
+        /* If the refresh itself 401s, the apiClient handler clears
+           state. Don't double-handle here. */
+      }
+    };
+    const wrapper = (): void => { void handler(); };
+    document.addEventListener('visibilitychange', wrapper);
+    return () => document.removeEventListener('visibilitychange', wrapper);
+  }, []);
+
+  // Single 403 handler — apiClient dispatches `auth:forbidden` whenever
+  // any non-boot-probe request gets a 403. Could mean (a) the user is
+  // trying to do something their role never allowed, OR (b) their role
+  // was demoted mid-session. We can't tell which from one response, so
+  // we refetch /auth/me to catch case (b). If the role didn't actually
+  // change, this is a cheap no-op.
+  //
+  // Inlined rather than calling refreshUser() (defined later) to avoid the
+  // useEffect dep / ref dance.
+  useEffect(() => {
+    const handler = async (): Promise<void> => {
+      const token = localStorage.getItem(TOKEN_KEY);
+      // Only refresh if we still think we're logged in — otherwise this
+      // races into the 401 handler below.
+      if (!token) return;
+      try {
+        const user = await getMe(token);
+        if (!user?.role) return;
+        syncLanguageFromUser(user);
+        lastSyncedAtRef.current = Date.now();
+        setState((prev) => ({
+          ...prev,
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        }));
+      } catch {
+        /* If /auth/me fails too, the 401 handler will pick it up. */
+      }
+    };
+    const wrapper = (): void => { void handler(); };
+    window.addEventListener('auth:forbidden', wrapper);
+    return () => window.removeEventListener('auth:forbidden', wrapper);
+  }, []);
+
   // Single 401 handler — apiClient dispatches `auth:unauthorized` whenever
   // any request gets a 401. Clear in-house session state; ProtectedRoute
   // sees isAuthenticated=false on the next render and redirects to /login.
@@ -80,6 +165,11 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       if (!localStorage.getItem(TOKEN_KEY)) return;
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem('globalxpress_refresh');
+      // Wipe cached server state too — a revoked token means everything
+      // we have is from the now-invalid session. Without this, a user-B
+      // login on the same browser could briefly read user-A's cached
+      // orders/notifications/etc. (query keys don't include user.id).
+      queryClient.clear();
       setState({
         user: null,
         isAuthenticated: false,
@@ -145,6 +235,11 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     } finally {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem('globalxpress_refresh');
+      // Wipe the React Query cache so a same-browser switch (user-A
+      // logs out, user-B logs in) can't briefly render A's data. Most
+      // query keys don't include user.id, so without this the next
+      // render would hit the cache instead of refetching.
+      queryClient.clear();
       setState({
         user: null,
         isAuthenticated: false,
@@ -165,6 +260,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       const user = await getMe(token);
       if (!user?.role) return;
       syncLanguageFromUser(user);
+      lastSyncedAtRef.current = Date.now();
       setState({
         user,
         isAuthenticated: true,
