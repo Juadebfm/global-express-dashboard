@@ -228,16 +228,34 @@ export function ProfilePage(): ReactElement {
         if (!token) throw new Error('Authentication token is missing.');
 
         if (mode === 'external') {
-          const [profile, profileCompleteness] = await Promise.all([
+          // Fetch the two endpoints independently. A failing completeness
+          // call (typical on a fresh BE deploy or when the endpoint hasn't
+          // been added yet) was previously dragging the whole bootstrap
+          // down via Promise.all → form stayed at initialExternalForm and
+          // every row rendered "Not provided yet" even though /users/me
+          // returned a fully populated record.
+          const [profileResult, completenessResult] = await Promise.allSettled([
             getMyProfile(token),
             getMyProfileCompleteness(token),
           ]);
           if (!isMounted) return;
 
-          const mappedProfile = mapCustomerToForm(profile);
-          setExternalForm(mappedProfile);
-          setExternalBaseline(mappedProfile);
-          setCompleteness(profileCompleteness);
+          if (profileResult.status === 'fulfilled') {
+            const mappedProfile = mapCustomerToForm(profileResult.value);
+            setExternalForm(mappedProfile);
+            setExternalBaseline(mappedProfile);
+          } else {
+            // Only treat a failing /users/me as a hard error — without the
+            // profile shape, there's nothing useful to render.
+            throw profileResult.reason;
+          }
+
+          if (completenessResult.status === 'fulfilled') {
+            setCompleteness(completenessResult.value);
+          }
+          // Silently swallow completeness failures: the banner is a
+          // nice-to-have, not load-bearing for the profile view.
+
           setIsEditing(false);
           return;
         }
