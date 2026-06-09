@@ -8,6 +8,8 @@ import type {
   ShipmentTypesUpdatePayload,
   ShipmentTypesUpdateResult,
   SpecialPackagingType,
+  BankAccountSettings,
+  UpdateBankAccountsPayload,
 } from '@/types';
 import {
   apiGet,
@@ -205,6 +207,20 @@ export interface SpecialPackagingUpsertItem {
   key: string;
   name: string;
   surchargeUsd: number;
+}
+
+// ── Bank accounts ─────────────────────────────────────────────────────────────
+
+export function getBankAccounts(): Promise<BankAccountSettings> {
+  // Public — no auth required.
+  return apiGetData<BankAccountSettings>('/settings/bank-accounts');
+}
+
+export function updateBankAccounts(
+  token: string,
+  payload: UpdateBankAccountsPayload,
+): Promise<BankAccountSettings> {
+  return apiPatchData<BankAccountSettings>('/settings/bank-accounts', payload, token);
 }
 
 export function updateSpecialPackagingTypes(

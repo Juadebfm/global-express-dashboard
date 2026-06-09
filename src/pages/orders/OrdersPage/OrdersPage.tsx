@@ -39,6 +39,7 @@ import {
   StatusProgression,
   WarehouseVerifyForm,
   OfflinePaymentForm,
+  CustomerPaymentPanel,
   PickupRepForm,
   ImageGallery,
   OrderTimeline,
@@ -216,12 +217,13 @@ export function OrdersPage(): ReactElement {
   const restrictedGoods = Array.isArray(restrictedGoodsQuery.data) ? restrictedGoodsQuery.data : [];
   const timelineEvents = timelineQuery.data?.timeline ?? [];
   const showWarehouse = isOperator && view && isWarehouseVerifiable(view.statusV2);
-  const showPayment = isOperator && view && isPaymentRelevant(view.paymentCollectionStatus);
+  const showPayment = view && isPaymentRelevant(view.paymentCollectionStatus);
 
   // Filter tabs to only show relevant ones
   const visibleTabs = TABS.filter((tab) => {
     if (tab.key === 'warehouse' && !isOperator) return false;
-    if (tab.key === 'payment' && !isOperator) return false;
+    // Customers see the payment tab too — they use it to upload receipts.
+    if (tab.key === 'payment' && !showPayment) return false;
     return true;
   });
 
@@ -385,18 +387,15 @@ export function OrdersPage(): ReactElement {
                 )}
 
                 {activeTab === 'payment' && isOperator && (
-                  showPayment ? (
-                    <OfflinePaymentForm
-                      view={view}
-                      isPending={recordOfflinePayment.isPending}
-                      onSubmit={handleRecordOffline}
-                    />
-                  ) : (
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                      <h3 className="text-base font-semibold text-gray-900">{t('orders:payment.title')}</h3>
-                      <p className="mt-2 text-sm text-gray-500">{t('orders:payment.alreadyPaid')}</p>
-                    </div>
-                  )
+                  <OfflinePaymentForm
+                    view={view}
+                    isPending={recordOfflinePayment.isPending}
+                    onSubmit={handleRecordOffline}
+                  />
+                )}
+
+                {activeTab === 'payment' && !isOperator && (
+                  <CustomerPaymentPanel view={view} />
                 )}
 
                 {activeTab === 'pickup' && (

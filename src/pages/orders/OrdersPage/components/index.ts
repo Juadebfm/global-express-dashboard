@@ -6,3 +6,4 @@ export { OfflinePaymentForm } from './OfflinePaymentForm';
 export { PickupRepForm } from './PickupRepForm';
 export { ImageGallery } from './ImageGallery';
 export { OrderTimeline } from './OrderTimeline';
+export { CustomerPaymentPanel } from './CustomerPaymentPanel';
