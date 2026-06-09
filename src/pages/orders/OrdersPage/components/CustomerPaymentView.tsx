@@ -1,0 +1,259 @@
+import type { ChangeEvent, FormEvent, ReactElement } from 'react';
+import { useRef, useState } from 'react';
+import { ArrowLeft, Building2, Check, Copy, Upload } from 'lucide-react';
+import { Button } from '@/components/ui';
+import { useBankAccounts } from '@/hooks';
+import { useUploadPaymentReceipt } from '@/hooks/usePaymentReceipts';
+import type { ReceiptContentType } from '@/types';
+import type { OrderView } from '../types';
+
+const ACCEPTED: ReceiptContentType[] = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
+function CopyRow({ label, value }: { label: string; value: string }): ReactElement {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (): void => {
+    void navigator.clipboard.writeText(value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="flex items-center justify-between gap-3 py-3 border-b border-gray-100 last:border-0">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+        <p className="mt-0.5 text-sm font-semibold text-gray-900">{value}</p>
+      </div>
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition"
+      >
+        {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+    </div>
+  );
+}
+
+interface CustomerPaymentViewProps {
+  view: OrderView;
+  onBack: () => void;
+}
+
+export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps): ReactElement {
+  const { data: bankSettings, isLoading: bankLoading } = useBankAccounts();
+  const { mutate: uploadReceipt, isPending, error: uploadError } = useUploadPaymentReceipt();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const amountDisplay = view.amountDue
+    ? `$${view.amountDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+    : view.finalChargeUsd
+      ? `$${view.finalChargeUsd.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+      : '—';
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    const picked = e.target.files?.[0] ?? null;
+    setFileError(null);
+    setSuccess(false);
+    if (!picked) { setFile(null); return; }
+    if (!ACCEPTED.includes(picked.type as ReceiptContentType)) {
+      setFileError('Only JPEG, PNG, WEBP, and PDF files are accepted.');
+      setFile(null);
+      return;
+    }
+    if (picked.size > MAX_BYTES) {
+      setFileError('File must be under 10 MB.');
+      setFile(null);
+      return;
+    }
+    setFile(picked);
+  };
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    if (!file) { setFileError('Please choose a receipt file first.'); return; }
+    setFileError(null);
+
+    const amount = view.amountDue ?? view.finalChargeUsd ?? 0;
+
+    await uploadReceipt({
+      presign: { orderId: view.id, contentType: file.type as ReceiptContentType, originalFileName: file.name },
+      file,
+      submit: { orderId: view.id, amount, currency: 'NGN', referenceCode: view.trackingNumber },
+    });
+
+    setSuccess(true);
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Back + status */}
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 transition"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to shipment
+        </button>
+      </div>
+
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Settle your balance</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Your shipment has reached Lagos. Transfer the balance, then upload your receipt — we confirm within 2 hours.
+          </p>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Balance Due</p>
+          <p className="text-2xl font-bold text-brand-500">{amountDisplay}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* ── Bank transfer details ── */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
+              <Building2 className="h-4 w-4 text-gray-500" />
+            </div>
+            <h3 className="text-base font-semibold text-gray-900">Pay by bank transfer</h3>
+          </div>
+
+          {bankLoading && (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-10 animate-pulse rounded-lg bg-gray-100" />
+              ))}
+            </div>
+          )}
+
+          {bankSettings && (
+            <div className="space-y-6">
+              {bankSettings.banks.map((bank) => (
+                <div key={bank.bankName}>
+                  <CopyRow label="Bank Name" value={bank.bankName} />
+                  <CopyRow label="Account Name" value={bankSettings.beneficiaryName} />
+                  {bank.accounts.map((acct) => (
+                    <CopyRow
+                      key={acct.currency}
+                      label={`Account Number (${acct.currency})`}
+                      value={acct.accountNumber}
+                    />
+                  ))}
+                  <CopyRow label="Payment Reference (Important)" value={view.trackingNumber} />
+                  <div className="pt-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Amount to Send</p>
+                    <p className="mt-0.5 text-xl font-bold text-brand-500">{amountDisplay}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3">
+            <span className="mt-0.5 text-amber-500">ⓘ</span>
+            <p className="text-xs text-amber-700">
+              Always include the payment reference so we can match your transfer to this shipment automatically.
+            </p>
+          </div>
+        </div>
+
+        {/* ── Receipt upload ── */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
+              <Upload className="h-4 w-4 text-gray-500" />
+            </div>
+            <h3 className="text-base font-semibold text-gray-900">Upload your receipt</h3>
+          </div>
+
+          {success ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+                <Check className="h-6 w-6 text-emerald-600" />
+              </div>
+              <p className="text-sm font-semibold text-gray-900">Receipt submitted</p>
+              <p className="text-xs text-gray-500">Staff will verify it and confirm your payment within 2 hours.</p>
+              <button
+                type="button"
+                onClick={() => { setSuccess(false); }}
+                className="mt-1 text-xs font-medium text-brand-500 hover:underline"
+              >
+                Upload another
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => { if (e.key === 'Enter') fileInputRef.current?.click(); }}
+                className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 p-8 text-center transition hover:border-brand-400 hover:bg-brand-50"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm">
+                  <Upload className="h-5 w-5 text-gray-400" />
+                </div>
+                {file ? (
+                  <p className="text-sm font-medium text-gray-700">{file.name}</p>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold text-gray-700">Drop your receipt here</p>
+                    <p className="text-xs text-gray-400">PNG, JPG or PDF · up to 10 MB</p>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                  className="mt-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition"
+                >
+                  Choose file
+                </button>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED.join(',')}
+                className="sr-only"
+                onChange={handleFileChange}
+              />
+
+              {(fileError ?? uploadError?.message) && (
+                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {fileError ?? uploadError?.message}
+                </p>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                isLoading={isPending}
+                disabled={!file}
+              >
+                I've sent the payment
+              </Button>
+            </form>
+          )}
+
+          <p className="mt-4 text-center text-xs text-gray-400">
+            We confirm your payment within 2 hours and email your receipt — then it's ready to collect.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

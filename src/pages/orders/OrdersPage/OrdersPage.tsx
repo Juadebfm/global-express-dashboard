@@ -39,7 +39,8 @@ import {
   StatusProgression,
   WarehouseVerifyForm,
   OfflinePaymentForm,
-  CustomerPaymentPanel,
+  CustomerShipmentDetail,
+  CustomerPaymentView,
   PickupRepForm,
   ImageGallery,
   OrderTimeline,
@@ -73,6 +74,7 @@ export function OrdersPage(): ReactElement {
   const [activeFilter, setActiveFilter] = useState<OperatorFilter>('all');
   const [selectedOrderIdState, setSelectedOrderIdState] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>('overview');
+  const [showPaymentView, setShowPaymentView] = useState(false);
 
   // `?page=N` in the URL is the source of truth for the queue page so refresh
   // / deep link / browser back keeps position. Coerce + clamp ≥1 so a
@@ -175,6 +177,7 @@ export function OrdersPage(): ReactElement {
     setActiveTab('overview');
     setStatusNotice(null);
     setStatusError(null);
+    setShowPaymentView(false);
   };
 
   const handleStatusAdvance = async (statusV2: string): Promise<void> => {
@@ -307,12 +310,28 @@ export function OrdersPage(): ReactElement {
                   ? orderDetailQuery.error.message
                   : t('orders:detail.error')}
               </div>
+            ) : !isOperator ? (
+              /* ── Customer (external) view ── */
+              showPaymentView ? (
+                <CustomerPaymentView
+                  view={view}
+                  onBack={() => setShowPaymentView(false)}
+                />
+              ) : (
+                <CustomerShipmentDetail
+                  view={view}
+                  timeline={timelineEvents}
+                  timelineLoading={timelineQuery.isLoading}
+                  onSettleBalance={() => setShowPaymentView(true)}
+                  updatePickupRepPending={updatePickupRep.isPending}
+                  onSubmitPickupRep={handlePickupRep}
+                />
+              )
             ) : (
+              /* ── Operator (internal) view — unchanged ── */
               <>
-                {/* Header + pipeline stepper */}
                 <OrderDetailHeader view={view} />
 
-                {/* Tab bar */}
                 <div className="flex gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1">
                   {visibleTabs.map((tab) => {
                     const Icon = tab.icon;
@@ -321,7 +340,6 @@ export function OrdersPage(): ReactElement {
                     if (tab.key === 'warehouse' && showWarehouse) badge = '!';
                     if (tab.key === 'payment' && showPayment) badge = '$';
                     if (tab.key === 'timeline') badge = String(timelineEvents.length);
-
                     return (
                       <button
                         key={tab.key}
@@ -329,24 +347,17 @@ export function OrdersPage(): ReactElement {
                         onClick={() => setActiveTab(tab.key)}
                         className={cn(
                           'relative flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition',
-                          isActive
-                            ? 'bg-white text-brand-600 shadow-sm'
-                            : 'text-gray-500 hover:text-gray-700',
+                          isActive ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700',
                         )}
                       >
                         <Icon className="h-3.5 w-3.5" />
                         <span className="hidden sm:inline">{t(`orders:tabs.${tab.key}`)}</span>
                         {badge && (
-                          <span
-                            className={cn(
-                              'ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold',
-                              tab.key === 'warehouse'
-                                ? 'bg-amber-100 text-amber-700'
-                                : tab.key === 'payment'
-                                  ? 'bg-emerald-100 text-emerald-700'
-                                  : 'bg-gray-200 text-gray-600',
-                            )}
-                          >
+                          <span className={cn('ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold',
+                            tab.key === 'warehouse' ? 'bg-amber-100 text-amber-700' :
+                            tab.key === 'payment' ? 'bg-emerald-100 text-emerald-700' :
+                            'bg-gray-200 text-gray-600',
+                          )}>
                             {badge}
                           </span>
                         )}
@@ -355,8 +366,7 @@ export function OrdersPage(): ReactElement {
                   })}
                 </div>
 
-                {/* Tab content */}
-                {activeTab === 'overview' && isOperator && (
+                {activeTab === 'overview' && (
                   <StatusProgression
                     view={view}
                     isPending={updateStatus.isPending}
@@ -365,8 +375,7 @@ export function OrdersPage(): ReactElement {
                     onAdvance={(s) => void handleStatusAdvance(s)}
                   />
                 )}
-
-                {activeTab === 'warehouse' && isOperator && (
+                {activeTab === 'warehouse' && (
                   showWarehouse ? (
                     <WarehouseVerifyForm
                       view={view}
@@ -385,41 +394,28 @@ export function OrdersPage(): ReactElement {
                     </div>
                   )
                 )}
-
-                {activeTab === 'payment' && isOperator && (
+                {activeTab === 'payment' && (
                   <OfflinePaymentForm
                     view={view}
                     isPending={recordOfflinePayment.isPending}
                     onSubmit={handleRecordOffline}
                   />
                 )}
-
-                {activeTab === 'payment' && !isOperator && (
-                  <CustomerPaymentPanel view={view} />
-                )}
-
                 {activeTab === 'pickup' && (
                   <>
-                    <PickupRepForm
-                      view={view}
-                      isPending={updatePickupRep.isPending}
-                      onSubmit={handlePickupRep}
+                    <PickupRepForm view={view} isPending={updatePickupRep.isPending} onSubmit={handlePickupRep} />
+                    <ImageGallery
+                      orderId={view.id}
+                      images={orderImages}
+                      isLoading={imagesQuery.isLoading}
+                      error={imagesQuery.error instanceof Error ? imagesQuery.error.message : null}
+                      canDelete={canDeleteImage}
+                      isUploading={uploadImage.isPending}
+                      onUpload={handleUploadImages}
+                      onDelete={handleDeleteImage}
                     />
-                    {isOperator && (
-                      <ImageGallery
-                        orderId={view.id}
-                        images={orderImages}
-                        isLoading={imagesQuery.isLoading}
-                        error={imagesQuery.error instanceof Error ? imagesQuery.error.message : null}
-                        canDelete={canDeleteImage}
-                        isUploading={uploadImage.isPending}
-                        onUpload={handleUploadImages}
-                        onDelete={handleDeleteImage}
-                      />
-                    )}
                   </>
                 )}
-
                 {activeTab === 'timeline' && (
                   <OrderTimeline
                     events={timelineEvents}
