@@ -4,8 +4,7 @@ import type { ApiNotification } from '@/types';
 import { getNotifications, markNotificationRead, markAllNotificationsRead, toggleNotificationSave, deleteNotification, deleteNotificationsBulk } from '@/services';
 import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuth } from './useAuth';
-
-const TOKEN_KEY = 'globalxpress_token';
+import { useAuthToken } from './useAuthToken';
 
 interface NotificationsState {
   notifications: ApiNotification[];
@@ -22,21 +21,16 @@ interface NotificationsState {
 
 export function useNotifications(): NotificationsState {
   const { user } = useAuth();
-  const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
+  const { isSignedIn: isClerkSignedIn } = useClerkAuth();
+  const getToken = useAuthToken();
   const queryClient = useQueryClient();
 
-  const isCustomer = isClerkSignedIn && !user;
   const enabled = isClerkSignedIn || !!user;
-
-  const getToken_ = async (): Promise<string | null> => {
-    if (isCustomer) return getToken();
-    return localStorage.getItem(TOKEN_KEY);
-  };
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['notifications', 'list'],
     queryFn: async () => {
-      const token = await getToken_();
+      const token = await getToken();
       if (!token) throw new Error('Not authenticated');
       return getNotifications(token);
     },
@@ -46,7 +40,7 @@ export function useNotifications(): NotificationsState {
 
   const markReadMutation = useMutation({
     mutationFn: async (id: string) => {
-      const token = await getToken_();
+      const token = await getToken();
       if (!token) throw new Error('Not authenticated');
       return markNotificationRead(id, token);
     },
@@ -57,7 +51,7 @@ export function useNotifications(): NotificationsState {
 
   const markAllReadMutation = useMutation({
     mutationFn: async () => {
-      const token = await getToken_();
+      const token = await getToken();
       if (!token) throw new Error('Not authenticated');
       return markAllNotificationsRead(token);
     },
@@ -68,7 +62,7 @@ export function useNotifications(): NotificationsState {
 
   const toggleSaveMutation = useMutation({
     mutationFn: async (id: string) => {
-      const token = await getToken_();
+      const token = await getToken();
       if (!token) throw new Error('Not authenticated');
       return toggleNotificationSave(id, token);
     },
@@ -79,7 +73,7 @@ export function useNotifications(): NotificationsState {
 
   const deleteOneMutation = useMutation({
     mutationFn: async (id: string) => {
-      const token = await getToken_();
+      const token = await getToken();
       if (!token) throw new Error('Not authenticated');
       return deleteNotification(id, token);
     },
@@ -90,7 +84,7 @@ export function useNotifications(): NotificationsState {
 
   const deleteBulkMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      const token = await getToken_();
+      const token = await getToken();
       if (!token) throw new Error('Not authenticated');
       return deleteNotificationsBulk(ids, token);
     },

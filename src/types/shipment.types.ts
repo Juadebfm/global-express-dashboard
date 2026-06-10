@@ -47,6 +47,9 @@ export interface ShipmentRecord {
   packageCount: number;
   weightKg: number;
   valueUSD: number;
+  transportMode?: string;
+  paymentCollectionStatus?: string;
+  flaggedForAdminReview?: boolean;
 }
 
 export interface ShipmentsDashboardPagination {

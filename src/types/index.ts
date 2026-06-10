@@ -181,6 +181,10 @@ export type {
   ShipmentTypesCatalogResult,
   ShipmentTypesUpdatePayload,
   ShipmentTypesUpdateResult,
+  BankAccountEntry,
+  BankInfo,
+  BankAccountSettings,
+  UpdateBankAccountsPayload,
 } from './settings.types';
 
 export type {

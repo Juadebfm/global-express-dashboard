@@ -143,6 +143,10 @@ function mapOrderRow(row: AnyRecord, index: number): OrderListItem {
     ]),
     createdAt: firstString(row, ['createdAt', 'created_at', 'date', 'updatedAt']),
     amount: firstNumber(row, ['amount', 'declaredValue', 'value', 'total']),
+    transportMode: firstString(row, ['transportMode', 'transport_mode', 'mode']) ?? 'air',
+    paymentCollectionStatus:
+      firstString(row, ['paymentCollectionStatus', 'payment_collection_status']) ?? 'PENDING',
+    flaggedForAdminReview: row.flaggedForAdminReview === true,
     raw: row,
   };
 }
@@ -227,12 +231,18 @@ export interface OrderTimelineEvent {
   timestamp: string;
 }
 
+export interface GoodsBreakdownItem {
+  weightKg: number;
+  cbm: number;
+}
+
 export interface OrderTimeline {
   orderId: string;
   trackingNumber: string;
   currentStatus: string;
   currentStatusLabel: string;
   timeline: OrderTimelineEvent[];
+  goodsBreakdown: GoodsBreakdownItem[];
 }
 
 export async function getOrderTimeline(
@@ -254,12 +264,18 @@ export async function getOrderTimeline(
     timestamp: firstString(item, ['timestamp', 'createdAt', 'updatedAt']) ?? '',
   }));
 
+  const goodsBreakdown = asRecordArray(record.goodsBreakdown).map((item) => ({
+    weightKg: asNumber(item.weightKg) ?? 0,
+    cbm: asNumber(item.cbm) ?? 0,
+  }));
+
   return {
     orderId: firstString(record, ['orderId', 'id']) ?? id,
     trackingNumber: firstString(record, ['trackingNumber', 'trackingNo']) ?? '',
     currentStatus: firstString(record, ['currentStatus', 'status', 'statusV2']) ?? '',
     currentStatusLabel: firstString(record, ['currentStatusLabel', 'statusLabel']) ?? '',
     timeline: timelineRows,
+    goodsBreakdown,
   };
 }
 

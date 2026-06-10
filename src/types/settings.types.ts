@@ -89,6 +89,27 @@ export interface ShipmentTypeCatalogItem {
   nextStep?: string | null;
 }
 
+export interface BankAccountEntry {
+  currency: string;
+  accountNumber: string;
+}
+
+export interface BankInfo {
+  bankName: string;
+  accounts: BankAccountEntry[];
+}
+
+export interface BankAccountSettings {
+  beneficiaryName: string;
+  banks: BankInfo[];
+  updatedAt: string | null;
+}
+
+export interface UpdateBankAccountsPayload {
+  beneficiaryName?: string;
+  banks: BankInfo[];
+}
+
 export interface ShipmentTypesCatalogResult {
   items: ShipmentTypeCatalogItem[];
   updatedAt: string;

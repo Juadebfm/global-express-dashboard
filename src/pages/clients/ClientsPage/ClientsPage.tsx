@@ -260,6 +260,7 @@ export function ClientsPage(): ReactElement {
               </div>
               <div className="px-6 py-6">
                 <div className="overflow-hidden rounded-2xl border border-gray-200">
+                  <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                       <tr>
@@ -304,6 +305,7 @@ export function ClientsPage(): ReactElement {
                       )}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             </div>

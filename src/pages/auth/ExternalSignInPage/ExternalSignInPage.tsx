@@ -68,6 +68,7 @@ export function ExternalSignInPage(): ReactElement {
   const [isSessionReady, setIsSessionReady] = useState(false);
 
   const hasPreparedSessionRef = useRef(false);
+  const verify2faFormRef = useRef<HTMLFormElement>(null);
   const isProvisioningModalOpen =
     isProvisioningActive && dismissedProvisioningTarget !== PROVISIONING_GATE_TARGET_UTC;
   const provisioningModalMessage =
@@ -201,11 +202,16 @@ export function ExternalSignInPage(): ReactElement {
           return;
         }
         await setActive({ session: result.createdSessionId });
-        const redirectPath = await resolvePostAuthRedirect();
-
-        localStorage.removeItem('globalxpress_token');
-        localStorage.removeItem('globalxpress_refresh');
-        navigate(redirectPath, { replace: true });
+        // Isolate backend sync: a timeout here must not propagate to the outer
+        // catch (which would call resetExistingSession and sign the user out).
+        try {
+          const redirectPath = await resolvePostAuthRedirect();
+          localStorage.removeItem('globalxpress_token');
+          localStorage.removeItem('globalxpress_refresh');
+          navigate(redirectPath, { replace: true });
+        } catch {
+          setFormError('Connection error — please try again.');
+        }
       } else if (resultStatus === 'needs_second_factor' || resultStatus === 'needs_client_trust') {
         await signIn.prepareSecondFactor({ strategy: 'email_code' });
         clearErrors();
@@ -243,6 +249,11 @@ export function ExternalSignInPage(): ReactElement {
     }
 
     setIsSubmitting(true);
+
+    // Step 1: Complete the Clerk 2FA challenge.
+    // If Clerk returns session_exists, a prior verify succeeded but our
+    // backend sync timed out — the session is already live, so skip straight
+    // to the sync below instead of showing a dead-end error.
     try {
       const result = await signIn.attemptSecondFactor({
         strategy: 'email_code',
@@ -251,19 +262,34 @@ export function ExternalSignInPage(): ReactElement {
 
       if (result.status === 'complete') {
         if (isBlockedByProvisioningGate()) {
+          setIsSubmitting(false);
           return;
         }
         await setActive({ session: result.createdSessionId });
-        const redirectPath = await resolvePostAuthRedirect();
-
-        localStorage.removeItem('globalxpress_token');
-        localStorage.removeItem('globalxpress_refresh');
-        navigate(redirectPath, { replace: true });
       } else {
         setFormError(getErrorMessage(null));
+        setIsSubmitting(false);
+        return;
       }
     } catch (error) {
-      setFormError(getErrorMessage(error));
+      if (getErrorCode(error) !== 'session_exists') {
+        setFormError(getErrorMessage(error));
+        setIsSubmitting(false);
+        return;
+      }
+      // session_exists → Clerk session is already active; fall through to sync.
+    }
+
+    // Step 2: Sync with our backend and navigate. Isolated from the Clerk step
+    // so a backend timeout doesn't leave the user stuck on this screen — they
+    // can click Verify again and we'll skip straight here via session_exists.
+    try {
+      const redirectPath = await resolvePostAuthRedirect();
+      localStorage.removeItem('globalxpress_token');
+      localStorage.removeItem('globalxpress_refresh');
+      navigate(redirectPath, { replace: true });
+    } catch {
+      setFormError('Connection error — please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -364,8 +390,13 @@ export function ExternalSignInPage(): ReactElement {
           return;
         }
         await setActive({ session: result.createdSessionId });
-        const redirectPath = await resolvePostAuthRedirect();
-        setPostAuthRedirect(redirectPath);
+        try {
+          const redirectPath = await resolvePostAuthRedirect();
+          setPostAuthRedirect(redirectPath);
+        } catch {
+          // Backend sync failed — proceed to success screen with the default
+          // redirect; the sync will be retried on the first authenticated call.
+        }
         setStep('forgot-success');
       } else {
         setFormError(getErrorMessage(null));
@@ -472,7 +503,7 @@ export function ExternalSignInPage(): ReactElement {
               </div>
             )}
 
-            <form onSubmit={handleVerify2fa} className="space-y-4">
+            <form ref={verify2faFormRef} onSubmit={handleVerify2fa} className="space-y-4">
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
                   {t('externalSignIn.verifyCodeLabel')}
@@ -485,6 +516,7 @@ export function ExternalSignInPage(): ReactElement {
                     setTwoFaCode(value);
                     clearErrors();
                   }}
+                  onComplete={() => verify2faFormRef.current?.requestSubmit()}
                   error={errors.twoFaCode}
                   disabled={isSubmitting || !isLoaded}
                 />

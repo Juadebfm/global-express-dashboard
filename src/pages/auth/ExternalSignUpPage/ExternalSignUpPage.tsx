@@ -316,6 +316,7 @@ export function ExternalSignUpPage(): ReactElement {
   const [isResending, setIsResending] = useState(false);
   const [needsFinishSetupRetry, setNeedsFinishSetupRetry] = useState(false);
   const [isFinishingSetup, setIsFinishingSetup] = useState(false);
+  const verifyFormRef = useRef<HTMLFormElement>(null);
 
   const selectedCountryOption =
     COUNTRY_OPTIONS.find((item) => item.code === selectedCountry) ||
@@ -784,7 +785,7 @@ export function ExternalSignUpPage(): ReactElement {
               </div>
             ) : (
               <>
-                <form onSubmit={handleVerify} className="space-y-4">
+                <form ref={verifyFormRef} onSubmit={handleVerify} className="space-y-4">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
                       {t('externalSignUp.verificationCode')}
@@ -797,6 +798,7 @@ export function ExternalSignUpPage(): ReactElement {
                         setVerificationCode(value);
                         setFormError(null);
                       }}
+                      onComplete={() => verifyFormRef.current?.requestSubmit()}
                       disabled={isSubmitting || !isLoaded}
                     />
                   </div>

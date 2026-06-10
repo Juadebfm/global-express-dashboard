@@ -5,10 +5,10 @@ import { useTranslation } from 'react-i18next';
 import {
   ClipboardList,
   CreditCard,
+  Image,
   Loader2,
   Package,
   Plus,
-  Truck,
 } from 'lucide-react';
 import {
   useCan,
@@ -16,16 +16,16 @@ import {
   useDeleteOrderImage,
   useOrderDetail,
   useOrderImages,
+  useOrderPayments,
   useOrders,
   useOrderTimeline,
   useRecordOfflinePayment,
-  useRestrictedGoods,
   useSearch,
   useShipmentsDashboard,
-  useSpecialPackagingTypes,
   useUpdateOrderStatus,
   useUpdatePickupRep,
   useUpload,
+  useVerifyOrderPayment,
   useWarehouseVerify,
 } from '@/hooks';
 import type { OrderListItem } from '@/types';
@@ -36,9 +36,12 @@ import { cn } from '@/utils';
 import {
   OrderQueue,
   OrderDetailHeader,
-  StatusProgression,
+  OverviewPanel,
   WarehouseVerifyForm,
   OfflinePaymentForm,
+  ReceiptApprovalPanel,
+  CustomerShipmentDetail,
+  CustomerPaymentView,
   PickupRepForm,
   ImageGallery,
   OrderTimeline,
@@ -47,6 +50,7 @@ import {
   includesQuery,
   isPaymentRelevant,
   isWarehouseVerifiable,
+  needsAction,
   statusLabel,
   toView,
 } from './types';
@@ -56,7 +60,7 @@ const TABS: Array<{ key: DetailTab; icon: typeof ClipboardList }> = [
   { key: 'overview', icon: ClipboardList },
   { key: 'warehouse', icon: Package },
   { key: 'payment', icon: CreditCard },
-  { key: 'pickup', icon: Truck },
+  { key: 'images', icon: Image },
   { key: 'timeline', icon: ClipboardList },
 ];
 
@@ -64,6 +68,7 @@ export function OrdersPage(): ReactElement {
   const { t } = useTranslation(['orders', 'shipments']);
   const navigate = useNavigate();
   const isOperator = useCan('app.operator');
+  const isSuperAdmin = useCan('app.superadmin');
   const canDeleteImage = useCan('orders.deleteImage');
   const canApproveOverride = useCan('orders.approveOverride');
   const { query, setQuery } = useSearch();
@@ -72,10 +77,9 @@ export function OrdersPage(): ReactElement {
   const [activeFilter, setActiveFilter] = useState<OperatorFilter>('all');
   const [selectedOrderIdState, setSelectedOrderIdState] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>('overview');
+  const [showPaymentView, setShowPaymentView] = useState(false);
+  const [mobileShowDetail, setMobileShowDetail] = useState(false);
 
-  // `?page=N` in the URL is the source of truth for the queue page so refresh
-  // / deep link / browser back keeps position. Coerce + clamp ≥1 so a
-  // hand-edited "page=foo" doesn't break the request.
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, Number(searchParams.get('page')) || 1);
   const setPage = (next: number): void => {
@@ -108,7 +112,7 @@ export function OrdersPage(): ReactElement {
     error: shipmentsError,
   } = useShipmentsDashboard(
     { statusV2: statusFilter, page },
-    { enabled: isOperator }
+    { enabled: isOperator },
   );
 
   const operatorQueueOrders = useMemo<OrderListItem[]>(
@@ -124,23 +128,32 @@ export function OrdersPage(): ReactElement {
         destination: shipment.destination,
         createdAt: shipment.createdAt ?? null,
         amount: shipment.valueUSD,
+        transportMode: shipment.transportMode ?? shipment.mode ?? 'air',
+        paymentCollectionStatus: shipment.paymentCollectionStatus ?? 'PENDING',
+        flaggedForAdminReview: shipment.flaggedForAdminReview === true,
         raw: shipment as unknown as Record<string, unknown>,
       })),
-    [shipmentsData]
+    [shipmentsData],
   );
 
   const queueOrders = isOperator ? operatorQueueOrders : orders;
-  // Headline + pagination chrome reads from the BE-supplied pagination so
-  // the queue count is honest about the full result set, not just the
-  // current page.
   const queuePagination =
-    isOperator && shipmentsData
-      ? shipmentsData.pagination
-      : ordersPagination;
+    isOperator && shipmentsData ? shipmentsData.pagination : ordersPagination;
   const queueTotal = queuePagination.total;
   const queueError = isOperator ? shipmentsError : ordersError;
   const queueLoading = isOperator ? shipmentsLoading : ordersLoading;
-  const visibleOrders = useMemo(() => queueOrders.filter((o) => includesQuery(o, query)), [queueOrders, query]);
+  const visibleOrders = useMemo(
+    () => queueOrders.filter((o) => includesQuery(o, query)),
+    [queueOrders, query],
+  );
+
+  const needsActionCount = useMemo(
+    () =>
+      operatorQueueOrders.filter((o) =>
+        needsAction(o.statusV2, o.paymentCollectionStatus, o.flaggedForAdminReview),
+      ).length,
+    [operatorQueueOrders],
+  );
 
   const selectedOrderId = useMemo(() => {
     if (!visibleOrders.length) return null;
@@ -151,11 +164,16 @@ export function OrdersPage(): ReactElement {
   }, [visibleOrders, selectedOrderIdState]);
 
   const orderDetailQuery = useOrderDetail(selectedOrderId ?? undefined);
-  const view = useMemo(() => (orderDetailQuery.data ? toView(orderDetailQuery.data) : null), [orderDetailQuery.data]);
+  const view = useMemo(
+    () => (orderDetailQuery.data ? toView(orderDetailQuery.data) : null),
+    [orderDetailQuery.data],
+  );
   const timelineQuery = useOrderTimeline(selectedOrderId ?? undefined, Boolean(selectedOrderId));
   const imagesQuery = useOrderImages(selectedOrderId ?? undefined);
-  const restrictedGoodsQuery = useRestrictedGoods({}, { enabled: isOperator });
-  const packagingTypesQuery = useSpecialPackagingTypes({ enabled: isOperator });
+  const paymentsQuery = useOrderPayments(
+    selectedOrderId ?? undefined,
+    isOperator && activeTab === 'payment',
+  );
 
   // ── Mutations ─────────────────────────────────────────────────
   const updateStatus = useUpdateOrderStatus();
@@ -164,36 +182,36 @@ export function OrdersPage(): ReactElement {
   const updatePickupRep = useUpdatePickupRep();
   const uploadImage = useUpload();
   const deleteOrderImage = useDeleteOrderImage();
+  const verifyPayment = useVerifyOrderPayment(selectedOrderId ?? undefined);
 
   // ── Handlers ──────────────────────────────────────────────────
-  const [statusNotice, setStatusNotice] = useState<string | null>(null);
-  const [statusError, setStatusError] = useState<string | null>(null);
-
   const handleSelectOrder = (id: string): void => {
     setSelectedOrderIdState(id);
     setActiveTab('overview');
-    setStatusNotice(null);
-    setStatusError(null);
+    setShowPaymentView(false);
+    setMobileShowDetail(true);
   };
 
   const handleStatusAdvance = async (statusV2: string): Promise<void> => {
     if (!selectedOrderId) return;
-    setStatusNotice(null);
-    setStatusError(null);
     try {
       await updateStatus.mutateAsync({ orderId: selectedOrderId, statusV2 });
-      setStatusNotice(t('orders:status.success', { status: statusLabel(statusV2) }));
-    } catch (err) {
-      setStatusError(err instanceof Error ? err.message : t('orders:status.errors.failed'));
+    } catch {
+      // error surfaced via updateStatus.error
     }
   };
 
-  const handleWarehouseVerify = async (payload: Parameters<typeof verifyWarehouse.mutateAsync>[0]['payload']) => {
+  const handleWarehouseVerify = async (
+    payload: Parameters<typeof verifyWarehouse.mutateAsync>[0]['payload'],
+  ) => {
     if (!selectedOrderId) throw new Error('No order selected');
     return verifyWarehouse.mutateAsync({ orderId: selectedOrderId, payload });
   };
 
-  const handleRecordOffline = async (orderId: string, payload: Parameters<typeof recordOfflinePayment.mutateAsync>[0]['payload']) => {
+  const handleRecordOffline = async (
+    orderId: string,
+    payload: Parameters<typeof recordOfflinePayment.mutateAsync>[0]['payload'],
+  ) => {
     await recordOfflinePayment.mutateAsync({ orderId, payload });
   };
 
@@ -210,25 +228,57 @@ export function OrdersPage(): ReactElement {
     await deleteOrderImage.mutateAsync({ imageId, orderId: selectedOrderId });
   };
 
+  const handleVerifyPayment = async (
+    paymentId: string,
+    decision: 'approve' | 'reject',
+    note?: string,
+  ) => {
+    await verifyPayment.mutateAsync({ paymentId, payload: { decision, note } });
+  };
+
   // ── Derived ───────────────────────────────────────────────────
   const orderImages = Array.isArray(imagesQuery.data) ? imagesQuery.data : [];
-  const packagingTypes = Array.isArray(packagingTypesQuery.data) ? packagingTypesQuery.data : [];
-  const restrictedGoods = Array.isArray(restrictedGoodsQuery.data) ? restrictedGoodsQuery.data : [];
   const timelineEvents = timelineQuery.data?.timeline ?? [];
-  const showWarehouse = isOperator && view && isWarehouseVerifiable(view.statusV2);
-  const showPayment = isOperator && view && isPaymentRelevant(view.paymentCollectionStatus);
+  const goodsBreakdown = timelineQuery.data?.goodsBreakdown ?? [];
+  const billableWeightKg = useMemo(() => {
+    if (!goodsBreakdown.length) return null;
+    const totalWeightKg = goodsBreakdown.reduce((sum, item) => sum + item.weightKg, 0);
+    const totalVolumetricKg = goodsBreakdown.reduce((sum, item) => sum + item.cbm, 0) * 1000;
+    return Math.max(totalWeightKg, totalVolumetricKg);
+  }, [goodsBreakdown]);
 
-  // Filter tabs to only show relevant ones
+  const orderPayments = Array.isArray(paymentsQuery.data) ? paymentsQuery.data : [];
+  const pendingReceiptPayments = orderPayments.filter(
+    (p) => p.proofReference && p.status === 'pending',
+  );
+
+  const effectiveView = useMemo(() => {
+    if (!view || !searchParams.has('sim')) return view;
+    return {
+      ...view,
+      statusV2: 'READY_FOR_PICKUP',
+      statusLabel: 'Ready for Pickup',
+      paymentCollectionStatus: 'AWAITING_PAYMENT',
+      amountDue: 500,
+    };
+  }, [view, searchParams]);
+
+  const showWarehouse = isOperator && effectiveView && isWarehouseVerifiable(effectiveView.statusV2);
+  const showPayment = effectiveView && isPaymentRelevant(effectiveView.paymentCollectionStatus);
+
   const visibleTabs = TABS.filter((tab) => {
     if (tab.key === 'warehouse' && !isOperator) return false;
-    if (tab.key === 'payment' && !isOperator) return false;
+    if (tab.key === 'payment' && !showPayment) return false;
     return true;
   });
 
-  // Only block-shell on the dashboard chrome data — the queue / detail
-  // panels render their own inline skeletons.
   return (
-    <AppShell data={appData} isLoading={appLoading} error={queueError ?? appError} loadingLabel={t('orders:loadingLabel')}>
+    <AppShell
+      data={appData}
+      isLoading={appLoading}
+      error={queueError ?? appError}
+      loadingLabel={t('orders:loadingLabel')}
+    >
       <div className="space-y-6">
         <PageHeader
           title={t('orders:pageTitle')}
@@ -247,28 +297,27 @@ export function OrdersPage(): ReactElement {
           }
         />
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
+        <div className="grid gap-4 lg:gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
           {/* Left: Order Queue + Pagination */}
-          <div className="space-y-3">
+          <div className={cn('space-y-3', mobileShowDetail ? 'hidden lg:block' : '')}>
             {queueLoading && queueOrders.length === 0 ? (
               <TableRowsSkeleton columns={3} rows={8} ariaLabel={t('orders:loadingLabel')} />
             ) : (
-            <OrderQueue
-              orders={visibleOrders}
-              total={queueTotal}
-              selectedOrderId={selectedOrderId}
-              isOperator={isOperator}
-              activeFilter={activeFilter}
-              query={query}
-              onSelectOrder={handleSelectOrder}
-              onFilterChange={(value) => {
-                // Filter change reshapes the result set; drop back to page
-                // 1 so the URL doesn't strand us past the new totalPages.
-                if (value !== activeFilter) setPage(1);
-                setActiveFilter(value);
-              }}
-              onQueryChange={setQuery}
-            />
+              <OrderQueue
+                orders={visibleOrders}
+                total={queueTotal}
+                needsActionCount={needsActionCount}
+                selectedOrderId={selectedOrderId}
+                isOperator={isOperator}
+                activeFilter={activeFilter}
+                query={query}
+                onSelectOrder={handleSelectOrder}
+                onFilterChange={(value) => {
+                  if (value !== activeFilter) setPage(1);
+                  setActiveFilter(value);
+                }}
+                onQueryChange={setQuery}
+              />
             )}
             {queuePagination.totalPages > 1 && (
               <Pagination
@@ -278,8 +327,7 @@ export function OrdersPage(): ReactElement {
                 labels={{
                   pageOf: (p, tp) =>
                     t('shipments:pagination.pageOf', { page: p, totalPages: tp }),
-                  totalLabel: (count) =>
-                    t('shipments:pagination.total', { count }),
+                  totalLabel: (count) => t('shipments:pagination.total', { count }),
                   prev: t('shipments:pagination.prev'),
                   next: t('shipments:pagination.next'),
                 }}
@@ -289,7 +337,7 @@ export function OrdersPage(): ReactElement {
           </div>
 
           {/* Right: Detail Panel */}
-          <section className="space-y-4">
+          <section className={cn('space-y-4', !mobileShowDetail ? 'hidden lg:block' : '')}>
             {!selectedOrderId ? (
               <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
                 {t('orders:detail.selectOrder')}
@@ -299,18 +347,55 @@ export function OrdersPage(): ReactElement {
                 <Loader2 className="mx-auto mb-3 h-5 w-5 animate-spin text-gray-400" />
                 {t('orders:detail.loading')}
               </div>
-            ) : orderDetailQuery.error || !view ? (
+            ) : orderDetailQuery.error || !effectiveView ? (
               <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {orderDetailQuery.error instanceof Error
                   ? orderDetailQuery.error.message
                   : t('orders:detail.error')}
               </div>
+            ) : !isOperator ? (
+              /* ── Customer (external) view ── */
+              showPaymentView ? (
+                <CustomerPaymentView
+                  view={effectiveView}
+                  onBack={() => setShowPaymentView(false)}
+                />
+              ) : (
+                <CustomerShipmentDetail
+                  view={effectiveView}
+                  timeline={timelineEvents}
+                  timelineLoading={timelineQuery.isLoading}
+                  onSettleBalance={() => setShowPaymentView(true)}
+                  updatePickupRepPending={updatePickupRep.isPending}
+                  onSubmitPickupRep={handlePickupRep}
+                />
+              )
             ) : (
+              /* ── Operator (internal) view ── */
               <>
-                {/* Header + pipeline stepper */}
-                <OrderDetailHeader view={view} />
+                {/* Always-visible header: tracking row + status card */}
+                <OrderDetailHeader
+                  view={effectiveView}
+                  onAdvance={(s) => void handleStatusAdvance(s)}
+                  onBack={mobileShowDetail ? () => setMobileShowDetail(false) : undefined}
+                  advanceLoading={updateStatus.isPending}
+                />
 
-                {/* Tab bar */}
+                {/* Status advance feedback */}
+                {updateStatus.isSuccess && (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
+                    Status updated to {statusLabel(effectiveView.statusV2)}.
+                  </div>
+                )}
+                {updateStatus.isError && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">
+                    {updateStatus.error instanceof Error
+                      ? updateStatus.error.message
+                      : t('orders:status.errors.failed')}
+                  </div>
+                )}
+
+                {/* Tab strip */}
                 <div className="flex gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1">
                   {visibleTabs.map((tab) => {
                     const Icon = tab.icon;
@@ -319,7 +404,6 @@ export function OrdersPage(): ReactElement {
                     if (tab.key === 'warehouse' && showWarehouse) badge = '!';
                     if (tab.key === 'payment' && showPayment) badge = '$';
                     if (tab.key === 'timeline') badge = String(timelineEvents.length);
-
                     return (
                       <button
                         key={tab.key}
@@ -354,70 +438,72 @@ export function OrdersPage(): ReactElement {
                 </div>
 
                 {/* Tab content */}
-                {activeTab === 'overview' && isOperator && (
-                  <StatusProgression
-                    view={view}
-                    isPending={updateStatus.isPending}
-                    statusNotice={statusNotice}
-                    statusError={statusError}
-                    onAdvance={(s) => void handleStatusAdvance(s)}
+                {activeTab === 'overview' && (
+                  <OverviewPanel
+                    view={effectiveView}
+                    billableWeightKg={billableWeightKg}
                   />
                 )}
 
-                {activeTab === 'warehouse' && isOperator && (
+                {activeTab === 'warehouse' && (
                   showWarehouse ? (
                     <WarehouseVerifyForm
-                      view={view}
+                      view={effectiveView}
                       canApproveOverride={canApproveOverride}
                       isPending={verifyWarehouse.isPending}
-                      packagingTypes={packagingTypes}
-                      restrictedGoods={restrictedGoods}
-                      packagingError={packagingTypesQuery.error instanceof Error ? packagingTypesQuery.error.message : null}
-                      restrictedError={restrictedGoodsQuery.error instanceof Error ? restrictedGoodsQuery.error.message : null}
                       onSubmit={handleWarehouseVerify}
                     />
                   ) : (
                     <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                      <h3 className="text-base font-semibold text-gray-900">{t('orders:warehouse.title')}</h3>
-                      <p className="mt-2 text-sm text-gray-500">{t('orders:warehouse.notApplicable')}</p>
+                      <h3 className="text-base font-semibold text-gray-900">
+                        {t('orders:warehouse.title')}
+                      </h3>
+                      <p className="mt-2 text-sm text-gray-500">
+                        {t('orders:warehouse.notApplicable')}
+                      </p>
                     </div>
                   )
                 )}
 
-                {activeTab === 'payment' && isOperator && (
-                  showPayment ? (
+                {activeTab === 'payment' && (
+                  <div className="space-y-4">
+                    {/* Superadmin: receipt approval for pending receipts */}
+                    {isSuperAdmin &&
+                      pendingReceiptPayments.map((payment) => (
+                        <ReceiptApprovalPanel
+                          key={payment.id}
+                          payment={payment}
+                          isPending={verifyPayment.isPending}
+                          onVerify={handleVerifyPayment}
+                        />
+                      ))}
+
+                    {/* Operator: record offline payment */}
                     <OfflinePaymentForm
-                      view={view}
+                      view={effectiveView}
                       isPending={recordOfflinePayment.isPending}
                       onSubmit={handleRecordOffline}
                     />
-                  ) : (
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                      <h3 className="text-base font-semibold text-gray-900">{t('orders:payment.title')}</h3>
-                      <p className="mt-2 text-sm text-gray-500">{t('orders:payment.alreadyPaid')}</p>
-                    </div>
-                  )
+                  </div>
                 )}
 
-                {activeTab === 'pickup' && (
+                {activeTab === 'images' && (
                   <>
                     <PickupRepForm
-                      view={view}
+                      view={effectiveView}
                       isPending={updatePickupRep.isPending}
                       onSubmit={handlePickupRep}
                     />
-                    {isOperator && (
-                      <ImageGallery
-                        orderId={view.id}
-                        images={orderImages}
-                        isLoading={imagesQuery.isLoading}
-                        error={imagesQuery.error instanceof Error ? imagesQuery.error.message : null}
-                        canDelete={canDeleteImage}
-                        isUploading={uploadImage.isPending}
-                        onUpload={handleUploadImages}
-                        onDelete={handleDeleteImage}
-                      />
-                    )}
+                    <ImageGallery
+                      orderId={effectiveView.id}
+                      images={orderImages}
+                      isLoading={imagesQuery.isLoading}
+                      error={imagesQuery.error instanceof Error ? imagesQuery.error.message : null}
+                      canDelete={canDeleteImage}
+                      isUploading={uploadImage.isPending}
+                      onUpload={handleUploadImages}
+                      onDelete={handleDeleteImage}
+                    />
                   </>
                 )}
 

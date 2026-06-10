@@ -66,21 +66,25 @@ export function Topbar({
 
   return (
     <header className="sticky top-0 z-30 border-b border-gray-200 bg-white">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-3 py-4 lg:px-8">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onOpenMobile}
-            className="flex items-center justify-center rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 lg:hidden"
-            aria-label={t('topbar.openMenuAriaLabel')}
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-        </div>
 
-        <div className="flex items-center justify-center">
-          <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-10 w-auto" />
-        </div>
+      {/* ── Mobile bar — completely separate from desktop, no grid tricks ── */}
+      <div className="flex items-center justify-between px-4 pt-7 pb-3 lg:hidden">
+        <button
+          type="button"
+          onClick={onOpenMobile}
+          className="flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
+          aria-label={t('topbar.openMenuAriaLabel')}
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-8 w-auto" />
+      </div>
+
+      {/* ── Desktop bar ── */}
+      <div className="hidden lg:grid lg:grid-cols-[1fr_auto_1fr] lg:items-center lg:gap-3 lg:px-8 lg:py-4">
+        <div />{/* left spacer */}
+
+        <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-10 w-auto" />
 
         <div className="flex items-center justify-end gap-3">
           {!isDashboardLikeRoute && (
@@ -136,7 +140,6 @@ export function Topbar({
 
             {isDropdownOpen && (
               <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-2xl border border-gray-200 bg-white shadow-xl">
-                {/* User identity */}
                 <div className="flex items-center gap-3 border-b border-gray-100 p-4">
                   <img
                     src={user.avatarUrl}
@@ -152,7 +155,6 @@ export function Topbar({
                   </div>
                 </div>
 
-                {/* Meta info */}
                 <div className="space-y-3 p-4">
                   {roleLabel && (
                     <div className="flex items-center justify-between">
@@ -170,7 +172,6 @@ export function Topbar({
                   )}
                 </div>
 
-                {/* Logout */}
                 <div className="border-t border-gray-100 p-2">
                   <button
                     type="button"
@@ -186,6 +187,7 @@ export function Topbar({
           </div>
         </div>
       </div>
+
     </header>
   );
 }

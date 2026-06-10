@@ -252,6 +252,7 @@ function MeasurementsList({ isLoading, rows }: MeasurementsListProps): ReactElem
   }
   return (
     <div className="mt-6 overflow-hidden rounded-2xl border border-gray-200">
+      <div className="overflow-x-auto">
       <table className="min-w-full text-sm">
         <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
           <tr>
@@ -278,6 +279,7 @@ function MeasurementsList({ isLoading, rows }: MeasurementsListProps): ReactElem
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

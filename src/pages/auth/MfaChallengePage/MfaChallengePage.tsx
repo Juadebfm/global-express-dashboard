@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ShieldCheck, KeyRound } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
@@ -27,6 +27,7 @@ export function MfaChallengePage(): ReactElement {
   const [code, setCode] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  const verifyFormRef = useRef<HTMLFormElement>(null);
 
   // No mfaToken means the user landed here directly. Bounce back to /login.
   useEffect(() => {
@@ -94,11 +95,12 @@ export function MfaChallengePage(): ReactElement {
         </div>
 
         {mode === 'totp' ? (
-          <form onSubmit={handleVerify} className="space-y-5">
+          <form ref={verifyFormRef} onSubmit={handleVerify} className="space-y-5">
             <OtpInput
               length={6}
               value={code}
               onChange={setCode}
+              onComplete={() => verifyFormRef.current?.requestSubmit()}
               error={serverError ?? undefined}
               autoFocus
               disabled={isVerifying}

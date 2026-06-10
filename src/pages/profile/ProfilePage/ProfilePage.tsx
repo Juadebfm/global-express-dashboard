@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Check, Copy, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
@@ -166,6 +167,7 @@ export function ProfilePage(): ReactElement {
   const [shippingMarkError, setShippingMarkError] = useState<string | null>(null);
   const [shippingMarkSuccess, setShippingMarkSuccess] = useState<string | null>(null);
   const [isSavingShippingMark, setIsSavingShippingMark] = useState(false);
+  const [markCopied, setMarkCopied] = useState(false);
 
   const [internalForm, setInternalForm] = useState<StaffProfilePayload>(initialInternalForm);
   const [internalBaseline, setInternalBaseline] = useState<StaffProfilePayload>(initialInternalForm);
@@ -319,6 +321,9 @@ export function ProfilePage(): ReactElement {
 
     return () => {
       isMounted = false;
+      // Reset so a remount (React Strict Mode in dev, or a real unmount/remount)
+      // re-runs the bootstrap rather than being silently skipped by the guard above.
+      lastBootstrapKeyRef.current = null;
     };
   }, [authUser, clerkUser?.id, getToken, isClerkLoaded, isClerkSignedIn, mode]);
 
@@ -488,6 +493,14 @@ export function ProfilePage(): ReactElement {
 
   const canEditShippingMark = externalForm.shippingMarkUserEditedAt === null;
 
+  const handleCopyMark = useCallback((): void => {
+    if (!externalForm.shippingMark) return;
+    void navigator.clipboard.writeText(externalForm.shippingMark).then(() => {
+      setMarkCopied(true);
+      setTimeout(() => setMarkCopied(false), 2000);
+    });
+  }, [externalForm.shippingMark]);
+
   const handleStartEditShippingMark = () => {
     setShippingMarkError(null);
     setShippingMarkSuccess(null);
@@ -629,22 +642,46 @@ export function ProfilePage(): ReactElement {
                 )}
 
                 {!isEditingShippingMark ? (
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="rounded-lg border border-gray-300 bg-white px-3 py-2 font-mono text-sm font-semibold text-gray-900">
-                      {externalForm.shippingMark || t('shippingMark.noneYet')}
-                    </span>
-                    {canEditShippingMark ? (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={handleStartEditShippingMark}
-                        disabled={isBootstrapping}
-                      >
-                        {t('shippingMark.edit')}
-                      </Button>
-                    ) : (
-                      <p className="text-xs text-gray-600">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-3">
+                      <p className="flex-1 min-w-0 text-3xl font-bold tracking-wide text-brand-600 leading-none truncate">
+                        {externalForm.shippingMark || t('shippingMark.noneYet')}
+                      </p>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {externalForm.shippingMark && (
+                          <button
+                            type="button"
+                            onClick={handleCopyMark}
+                            aria-label="Copy shipping mark"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition hover:border-brand-300 hover:text-brand-600"
+                          >
+                            {markCopied
+                              ? <Check className="h-4 w-4 text-green-500" />
+                              : <Copy className="h-4 w-4" />}
+                          </button>
+                        )}
+                        {canEditShippingMark ? (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleStartEditShippingMark}
+                            disabled={isBootstrapping}
+                          >
+                            {t('shippingMark.edit')}
+                          </Button>
+                        ) : (
+                          <div
+                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-gray-100"
+                            aria-label="Locked"
+                          >
+                            <Lock className="h-4 w-4 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {!canEditShippingMark && (
+                      <p className="text-xs text-gray-500">
                         {t('shippingMark.lockedNotice')}{' '}
                         <Link
                           to={ROUTES.SUPPORT}
