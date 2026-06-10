@@ -237,3 +237,6 @@ Manual click-through checklist for the 8 BE-handover verifications. Take this in
 - Anything failing → file an issue in this repo with the test number and the network response.
 - Once 1–7 are all ✓, flip the row in [docs/IMPLEMENTATION_PLAN.md § Phase 6](IMPLEMENTATION_PLAN.md#phase-6--manual-post-deploy-verification-you-not-me) to ✅.
 - That officially closes out the BE handover delta: every item from the original handover doc is shipped + verified end-to-end.
+
+
+
