@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(grep -A 20 \"GET /dashboard\" /Users/macbookpro/Documents/GitHub/global-express-backend/API_ENDPOINTS.md 2>/dev/null | head -40)",
+      "Read(//Users/macbookpro/Documents/GitHub/global-express-backend/**)"
     ]
   }
 }

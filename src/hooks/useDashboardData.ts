@@ -15,7 +15,7 @@ interface DashboardDataState {
   error: string | null;
 }
 
-export function useDashboardData(year = new Date().getFullYear()): DashboardDataState {
+export function useDashboardData(): DashboardDataState {
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
   const { i18n } = useTranslation();
@@ -26,7 +26,7 @@ export function useDashboardData(year = new Date().getFullYear()): DashboardData
 
   // Cache raw API data only — no translations baked in
   const { data: rawData, isLoading, error } = useQuery({
-    queryKey: ['dashboard', 'overview', year, role],
+    queryKey: ['dashboard', 'overview', role],
     queryFn: async (): Promise<ApiDashboardResponse['data']> => {
       const token = isCustomer
         ? await getToken()
@@ -34,7 +34,7 @@ export function useDashboardData(year = new Date().getFullYear()): DashboardData
 
       if (!token) throw new Error('Not authenticated');
 
-      return fetchDashboardRaw(token, year);
+      return fetchDashboardRaw(token);
     },
     enabled,
     staleTime: STALE_TIME.REAL_TIME,

@@ -165,11 +165,8 @@ function mapKpis(stats: ApiDashboardStats, role: User['role']): KpiCard[] {
 
 // ── Exports ───────────────────────────────────────────────────────────────────
 
-export function fetchDashboardRaw(
-  token: string,
-  year: number
-): Promise<ApiDashboardResponse['data']> {
-  return apiGetData<ApiDashboardResponse['data']>(`/dashboard?year=${year}`, token);
+export function fetchDashboardRaw(token: string): Promise<ApiDashboardResponse['data']> {
+  return apiGetData<ApiDashboardResponse['data']>('/dashboard', token);
 }
 
 export function fetchDashboardStats(token: string): Promise<ApiDashboardStats> {

@@ -34,12 +34,12 @@ export function MfaEnrollmentPage(): ReactElement {
   const [result, setResult] = useState<MfaEnrollmentResult | null>(null);
   const [code, setCode] = useState('');
 
-  // Already enrolled — bounce to settings
+  // Already enrolled — bounce to settings (skip if we just finished enrollment and are showing codes)
   useEffect(() => {
-    if (!statusLoading && status?.enabled) {
+    if (!statusLoading && status?.enabled && stage !== 'codes') {
       navigate(ROUTES.SETTINGS, { replace: true });
     }
-  }, [status, statusLoading, navigate]);
+  }, [status, statusLoading, navigate, stage]);
 
   const handleBegin = async (): Promise<void> => {
     try {
