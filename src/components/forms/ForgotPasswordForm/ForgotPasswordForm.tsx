@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
@@ -37,6 +37,7 @@ export function ForgotPasswordForm({
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
+  const otpFormRef = useRef<HTMLFormElement>(null);
 
   // Email step form
   const emailForm = useForm<EmailStepData>({
@@ -151,7 +152,7 @@ export function ForgotPasswordForm({
           </div>
         )}
 
-        <form onSubmit={otpForm.handleSubmit(handleOtpSubmit)} className="space-y-5">
+        <form ref={otpFormRef} onSubmit={otpForm.handleSubmit(handleOtpSubmit)} className="space-y-5">
           <Controller
             name="otp"
             control={otpForm.control}
@@ -160,6 +161,7 @@ export function ForgotPasswordForm({
                 length={4}
                 value={field.value}
                 onChange={field.onChange}
+                onComplete={() => otpFormRef.current?.requestSubmit()}
                 error={otpForm.formState.errors.otp?.message}
               />
             )}

@@ -101,7 +101,9 @@ export function AppLayout({ children, user }: AppLayoutProps): ReactElement {
           user={effectiveUser}
           onOpenMobile={() => setIsMobileSidebarOpen(true)}
         />
-        <main className="flex-1 px-6 py-6 lg:px-10 lg:py-8">{children}</main>
+        <main className="flex-1 px-6 py-6 lg:px-10 lg:py-8">
+          <div className="mx-auto w-full max-w-screen-xl">{children}</div>
+        </main>
       </div>
 
       {/* Customer onboarding */}

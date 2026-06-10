@@ -1,22 +1,28 @@
 import type { ReactElement } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  LayoutDashboard,
-  Truck,
-  Boxes,
-  Users,
-  ClipboardList,
+  ArrowLeft,
   Bell,
-  UsersRound,
-  Settings,
-  LifeBuoy,
+  Boxes,
   CalendarDays,
-  Wallet,
-  Package,
   ChartColumnIncreasing,
+  ClipboardList,
+  LayoutDashboard,
+  LifeBuoy,
+  LogOut,
+  Package,
+  Settings,
+  Truck,
+  Users,
+  UsersRound,
+  Wallet,
+  X,
 } from 'lucide-react';
+import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { SidebarItem } from '@/types';
+import { useAuth, useNotificationCount } from '@/hooks';
+import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
 
 interface SidebarProps {
@@ -50,6 +56,34 @@ export function Sidebar({
 }: SidebarProps): ReactElement {
   const { t } = useTranslation('nav');
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user: authUser, logout } = useAuth();
+  const { isSignedIn: isClerkSignedIn, signOut } = useClerkAuth();
+  const { user: clerkUser } = useClerkUser();
+  const notificationsCount = useNotificationCount();
+
+  const isDashboardLikeRoute =
+    location.pathname === ROUTES.DASHBOARD || location.pathname === ROUTES.ADMIN_DASHBOARD;
+
+  // Derive display info for mobile user header
+  const displayName = authUser
+    ? (authUser.firstName && authUser.lastName
+        ? `${authUser.firstName} ${authUser.lastName}`
+        : authUser.email)
+    : (clerkUser?.fullName ?? clerkUser?.firstName ?? clerkUser?.emailAddresses[0]?.emailAddress ?? 'User');
+  const email = authUser?.email ?? clerkUser?.emailAddresses[0]?.emailAddress ?? '';
+  const avatarUrl = isClerkSignedIn ? (clerkUser?.imageUrl || '/images/favicon.svg') : '/images/favicon.svg';
+
+  const handleLogout = async (): Promise<void> => {
+    onCloseMobile();
+    if (isClerkSignedIn) {
+      await logout();
+      await signOut({ redirectUrl: ROUTES.SIGN_IN });
+    } else {
+      await logout();
+      navigate(ROUTES.LOGIN);
+    }
+  };
 
   const isActive = (href: string): boolean =>
     location.pathname === href || location.pathname.startsWith(`${href}/`);
@@ -66,14 +100,16 @@ export function Sidebar({
         onClick={onCloseMobile}
         data-tour={`nav-${item.id}`}
         className={cn(
-          'group relative flex min-h-24 flex-col items-center justify-center gap-1.5 border-b border-gray-100 px-2 py-3 text-center text-sm font-medium transition-colors',
-          active
-            ? 'bg-[#FFF7F2] text-brand-500'
-            : 'text-gray-700 hover:bg-gray-50'
+          'group relative flex border-b border-gray-100 text-sm font-medium transition-colors',
+          // Mobile: horizontal icon + label
+          'items-center gap-3 px-4 py-3.5',
+          // Desktop: stacked vertical icon + label
+          'lg:min-h-24 lg:flex-col lg:items-center lg:justify-center lg:gap-1.5 lg:px-2 lg:py-3 lg:text-center',
+          active ? 'bg-[#FFF7F2] text-brand-500' : 'text-gray-700 hover:bg-gray-50',
         )}
       >
         {active && (
-          <span className="absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r-full bg-brand-500" />
+          <span className="absolute left-0 top-0 bottom-0 w-1 rounded-r-full bg-brand-500 lg:top-2.5 lg:bottom-2.5" />
         )}
         <span className={cn(active ? 'text-brand-500' : 'text-gray-500 group-hover:text-gray-700')}>
           {icon}
@@ -99,19 +135,91 @@ export function Sidebar({
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-28 flex-col border-r border-gray-200 bg-white text-gray-800 transition-transform',
+          'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-gray-200 bg-white text-gray-800 transition-transform',
+          // Mobile wider, desktop narrow
+          'w-72 lg:w-28',
           'lg:translate-x-0',
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        {/* Navigation */}
+        {/* ── Mobile-only drawer header ── */}
+        <div className="flex flex-col border-b border-gray-100 lg:hidden">
+          {/* User info + close button in one row */}
+          <div className="flex items-center gap-3 px-4 py-4">
+            <img
+              src={avatarUrl}
+              alt={displayName}
+              className="h-10 w-10 rounded-full border-2 border-brand-500 object-cover shrink-0"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-gray-900">{displayName}</p>
+              <p className="truncate text-xs text-gray-400">{email}</p>
+            </div>
+            <button
+              type="button"
+              onClick={onCloseMobile}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+              aria-label="Close menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Back + Notifications row */}
+          <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
+            {!isDashboardLikeRoute ? (
+              <button
+                type="button"
+                onClick={() => { navigate(-1); onCloseMobile(); }}
+                className="flex items-center gap-1.5 text-sm font-medium text-brand-500 hover:text-brand-600 transition"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </button>
+            ) : <span />}
+
+            <button
+              type="button"
+              onClick={() => { navigate(ROUTES.NOTIFICATIONS); onCloseMobile(); }}
+              className="relative flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition"
+              aria-label="Notifications"
+            >
+              <Bell className="h-5 w-5" />
+              {notificationsCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+                  {notificationsCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* ── Navigation ── */}
         <nav className="flex-1 overflow-y-auto">
           <div>{items.map(renderItem)}</div>
         </nav>
 
-        {/* Footer */}
+        {/* ── Footer nav items ── */}
         <div className="border-t border-gray-200">
           {footerItems.map(renderItem)}
+        </div>
+
+        {/* ── Logout ── */}
+        <div className="border-t border-gray-200">
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            className={cn(
+              'group flex w-full border-b border-gray-100 text-sm font-medium transition-colors',
+              'items-center gap-3 px-4 py-3.5',
+              'lg:min-h-24 lg:flex-col lg:items-center lg:justify-center lg:gap-1.5 lg:px-2 lg:py-3 lg:text-center',
+              'text-red-500 hover:bg-red-50 hover:text-red-600',
+            )}
+          >
+            <LogOut className="h-5 w-5" />
+            <span className="leading-tight">Sign out</span>
+          </button>
         </div>
       </aside>
     </>

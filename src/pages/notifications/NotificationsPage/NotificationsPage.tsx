@@ -78,6 +78,7 @@ function CustomerNotificationsView(): ReactElement {
   const {
     notifications: apiNotifications,
     isLoading: notifLoading,
+    error: notifError,
     markRead,
     toggleSave,
     deleteOne,
@@ -229,13 +230,17 @@ function CustomerNotificationsView(): ReactElement {
   return (
     <AppShell
       data={data}
-      // Only block-shell on the dashboard chrome data — the notifications
-      // list renders an inline skeleton while it fetches so the page
-      // header / toolbar stay visible.
       isLoading={isLoading}
       error={error}
+      requireData={false}
       loadingLabel={t('loadingLabel')}
     >
+      {notifError && (
+        <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {notifError}
+        </div>
+      )}
+
       <div className="rounded-3xl border border-gray-200 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 px-6 py-5">
           <h1 className="text-xl font-semibold text-gray-900">{t('pageTitle')}</h1>

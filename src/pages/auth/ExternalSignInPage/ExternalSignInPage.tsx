@@ -68,6 +68,7 @@ export function ExternalSignInPage(): ReactElement {
   const [isSessionReady, setIsSessionReady] = useState(false);
 
   const hasPreparedSessionRef = useRef(false);
+  const verify2faFormRef = useRef<HTMLFormElement>(null);
   const isProvisioningModalOpen =
     isProvisioningActive && dismissedProvisioningTarget !== PROVISIONING_GATE_TARGET_UTC;
   const provisioningModalMessage =
@@ -502,7 +503,7 @@ export function ExternalSignInPage(): ReactElement {
               </div>
             )}
 
-            <form onSubmit={handleVerify2fa} className="space-y-4">
+            <form ref={verify2faFormRef} onSubmit={handleVerify2fa} className="space-y-4">
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
                   {t('externalSignIn.verifyCodeLabel')}
@@ -515,6 +516,7 @@ export function ExternalSignInPage(): ReactElement {
                     setTwoFaCode(value);
                     clearErrors();
                   }}
+                  onComplete={() => verify2faFormRef.current?.requestSubmit()}
                   error={errors.twoFaCode}
                   disabled={isSubmitting || !isLoaded}
                 />

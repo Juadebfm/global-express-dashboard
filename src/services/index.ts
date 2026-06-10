@@ -64,7 +64,7 @@ export {
 } from './suppliersService';
 export { getSupportTickets, getSupportTicketById, createSupportTicket, sendSupportMessage, updateTicketStatus, mapSupportMessage } from './supportService';
 export { createOrder, getOrders, getOrderById, getOrderTimeline, getOrderImages, updateOrderStatus, deleteOrder, updatePickupRep } from './ordersService';
-export type { OrderTimeline, OrderTimelineEvent } from './ordersService';
+export type { OrderTimeline, OrderTimelineEvent, GoodsBreakdownItem } from './ordersService';
 export {
   estimateShipping,
   getPublicShipmentTypes,
@@ -101,6 +101,8 @@ export {
   presignPaymentReceipt,
   submitPaymentReceipt,
   verifyPaymentReceipt,
+  getOrderPayments,
+  verifyOrderPayment,
 } from './paymentsService';
 export { createBulkOrder, getBulkOrders, getBulkOrderById, updateBulkOrderStatus, addBulkOrderItem, removeBulkOrderItem, deleteBulkOrder } from './bulkOrdersService';
 export { getReportSummary, getOrdersByStatus, getRevenueReport, getRevenueAnalytics, getShipmentVolume, getTopCustomers, getDeliveryPerformance, getStatusPipeline, getPaymentBreakdown, getShipmentComparison } from './reportsService';

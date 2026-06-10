@@ -81,8 +81,8 @@ export function getHeroInfo(statusV2: string): HeroInfo {
     subtitle: 'Your shipment has been collected. Thanks for choosing Global Express.',
   };
   if (s === 'READY_FOR_PICKUP') return {
-    headline: 'Arrived — ready to collect in Lagos',
-    subtitle: "It's at our Lagos office in Ajao Estate. Bring ID to collect, or send your pickup rep.",
+    headline: 'Ready to collect in Lagos',
+    subtitle: 'At our Ajao Estate office. Bring ID, or send your pickup rep.',
   };
   if (['FLIGHT_LANDED_LAGOS', 'VESSEL_ARRIVED_LAGOS_PORT', 'CUSTOMS_CLEARED_LAGOS', 'IN_TRANSIT_TO_LAGOS_OFFICE'].includes(s)) return {
     headline: 'Arrived in Lagos — clearing customs',
@@ -112,11 +112,10 @@ export function getHeroInfo(statusV2: string): HeroInfo {
 
 // ── Payment state ───────────────────────────────────────────────────────────
 
-export type PaymentState = 'not_due' | 'due' | 'paid';
+export type PaymentState = 'paid' | 'due' | 'not_priced';
 
 export function getPaymentState(view: OrderView): PaymentState {
-  const status = view.paymentCollectionStatus.toUpperCase();
-  if (status === 'PAID_IN_FULL') return 'paid';
-  if (view.amountDue && view.amountDue > 0) return 'due';
-  return 'not_due';
+  if (view.paymentCollectionStatus.toUpperCase() === 'PAID_IN_FULL') return 'paid';
+  if (view.amountDue !== null) return 'due';
+  return 'not_priced';
 }

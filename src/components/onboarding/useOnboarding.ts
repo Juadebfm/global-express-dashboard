@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 const TOUR_COMPLETE_KEY = 'gx_onboarding_complete';
 const TOUR_STARTED_KEY = 'gx_onboarding_started';
 const WELCOME_DISMISSED_KEY = 'gx_welcome_dismissed';
+const WELCOME_PERMANENT_KEY = 'gx_welcome_done';
 
 interface OnboardingState {
   /** Whether the welcome popup should be visible */
@@ -31,11 +32,10 @@ export function useOnboarding(
 ): OnboardingState {
   const tourComplete = localStorage.getItem(TOUR_COMPLETE_KEY) === 'true';
   const tourPreviouslyStarted = localStorage.getItem(TOUR_STARTED_KEY) === 'true';
+  const permanentlyDismissed = localStorage.getItem(WELCOME_PERMANENT_KEY) === 'true';
 
-  // sessionStorage persists within the tab — survives route changes and re-renders,
-  // but resets on next login (new tab / window close).
   const [dismissed, setDismissed] = useState(
-    () => sessionStorage.getItem(WELCOME_DISMISSED_KEY) === 'true',
+    () => permanentlyDismissed || sessionStorage.getItem(WELCOME_DISMISSED_KEY) === 'true',
   );
   const [runTour, setRunTour] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -44,10 +44,10 @@ export function useOnboarding(
   // Skip the popup and resume the tour directly — only on the dashboard page.
   const tourInterrupted = tourPreviouslyStarted && !tourComplete;
 
-  // Show popup when: customer, on dashboard, no data, not dismissed this session,
-  // and tour wasn't previously interrupted
+  // Show popup when: customer, on dashboard, no data, not dismissed (ever),
+  // tour not complete, and tour wasn't previously interrupted
   const showWelcome =
-    isCustomer && isDashboard && !hasData && !dismissed && !tourInterrupted;
+    isCustomer && isDashboard && !hasData && !dismissed && !tourComplete && !tourInterrupted;
 
   // Auto-resume interrupted tour when customer lands on dashboard
   useEffect(() => {
@@ -68,6 +68,7 @@ export function useOnboarding(
   const dismissWelcome = useCallback((): void => {
     setDismissed(true);
     sessionStorage.setItem(WELCOME_DISMISSED_KEY, 'true');
+    localStorage.setItem(WELCOME_PERMANENT_KEY, 'true');
     // Start tour if it hasn't been completed yet
     if (!tourComplete) {
       localStorage.setItem(TOUR_STARTED_KEY, 'true');

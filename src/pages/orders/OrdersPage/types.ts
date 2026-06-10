@@ -1,24 +1,53 @@
 import type { ApiOrder, WarehousePackage } from '@/types';
 import { resolveLocation } from '@/utils';
 
-// ── Status flow constants ───────────────────────────────────────
+// ── Status labels (authoritative — from BE status-transitions.ts) ───────────
 
-export const OPERATOR_FILTERS = [
-  'all',
+export const STATUS_LABELS: Record<string, string> = {
+  PREORDER_SUBMITTED:                     'Pre-Order Submitted',
+  AWAITING_WAREHOUSE_RECEIPT:             'Awaiting Warehouse Receipt',
+  WAREHOUSE_RECEIVED:                     'Received at Warehouse',
+  CLAIM_APPROVED_PENDING_BULK_PROCESSING: 'Claim Approved — Pending Bulk Processing',
+  WAREHOUSE_VERIFIED_PRICED:              'Verified & Priced',
+  DISPATCHED_TO_ORIGIN_AIRPORT:           'Dispatched to Airport',
+  AT_ORIGIN_AIRPORT:                      'At Origin Airport',
+  BOARDED_ON_FLIGHT:                      'Boarded on Flight',
+  FLIGHT_DEPARTED:                        'Flight Departed',
+  FLIGHT_LANDED_LAGOS:                    'Landed in Lagos',
+  DISPATCHED_TO_ORIGIN_PORT:              'Dispatched to Port',
+  AT_ORIGIN_PORT:                         'At Origin Port',
+  LOADED_ON_VESSEL:                       'Loaded on Vessel',
+  VESSEL_DEPARTED:                        'Vessel Departed',
+  VESSEL_ARRIVED_LAGOS_PORT:              'Arrived at Lagos Port',
+  CUSTOMS_CLEARED_LAGOS:                  'Customs Cleared',
+  IN_TRANSIT_TO_LAGOS_OFFICE:             'In Transit to Office',
+  IN_EXTRA_TRUCK_MOVEMENT_LAGOS:          'In Extra Truck Movement (Lagos)',
+  READY_FOR_PICKUP:                       'Ready for Pickup',
+  PICKED_UP_COMPLETED:                    'Delivered',
+  LOCAL_COURIER_ASSIGNED:                 'Local Courier Assigned',
+  IN_TRANSIT_TO_DESTINATION_CITY:         'In Transit to Destination City',
+  OUT_FOR_DELIVERY_DESTINATION_CITY:      'Out for Delivery',
+  DELIVERED_TO_RECIPIENT:                 'Delivered to Recipient',
+  ON_HOLD:                                'On Hold',
+  CANCELLED:                              'Cancelled',
+  RESTRICTED_ITEM_REJECTED:              'Restricted Item – Rejected',
+  RESTRICTED_ITEM_OVERRIDE_APPROVED:     'Restricted Item – Override Approved',
+};
+
+// ── Status flows (authoritative — from BE status-transitions.ts) ────────────
+
+// Full ordered flows — warehouse stages prepended so nextStatus works from
+// any point in the lifecycle.
+const SHARED_INTAKE: readonly string[] = [
   'PREORDER_SUBMITTED',
   'AWAITING_WAREHOUSE_RECEIPT',
   'WAREHOUSE_RECEIVED',
+  'CLAIM_APPROVED_PENDING_BULK_PROCESSING',
   'WAREHOUSE_VERIFIED_PRICED',
-] as const;
+];
 
-export const EXCEPTION_STATUSES = [
-  'ON_HOLD',
-  'CANCELLED',
-  'RESTRICTED_ITEM_REJECTED',
-  'RESTRICTED_ITEM_OVERRIDE_APPROVED',
-] as const;
-
-export const AIR_FLOW = [
+export const AIR_FLOW: readonly string[] = [
+  ...SHARED_INTAKE,
   'DISPATCHED_TO_ORIGIN_AIRPORT',
   'AT_ORIGIN_AIRPORT',
   'BOARDED_ON_FLIGHT',
@@ -28,9 +57,10 @@ export const AIR_FLOW = [
   'IN_TRANSIT_TO_LAGOS_OFFICE',
   'READY_FOR_PICKUP',
   'PICKED_UP_COMPLETED',
-] as const;
+];
 
-export const SEA_FLOW = [
+export const SEA_FLOW: readonly string[] = [
+  ...SHARED_INTAKE,
   'DISPATCHED_TO_ORIGIN_PORT',
   'AT_ORIGIN_PORT',
   'LOADED_ON_VESSEL',
@@ -40,28 +70,160 @@ export const SEA_FLOW = [
   'IN_TRANSIT_TO_LAGOS_OFFICE',
   'READY_FOR_PICKUP',
   'PICKED_UP_COMPLETED',
-] as const;
+];
 
-export const PIPELINE_PHASES = [
-  { key: 'preorder', statuses: ['PREORDER_SUBMITTED', 'AWAITING_WAREHOUSE_RECEIPT'] },
-  { key: 'warehouse', statuses: ['WAREHOUSE_RECEIVED', 'WAREHOUSE_VERIFIED_PRICED'] },
-  { key: 'transit', statuses: [
-    'DISPATCHED_TO_ORIGIN_AIRPORT', 'AT_ORIGIN_AIRPORT', 'BOARDED_ON_FLIGHT', 'FLIGHT_DEPARTED',
-    'DISPATCHED_TO_ORIGIN_PORT', 'AT_ORIGIN_PORT', 'LOADED_ON_VESSEL', 'VESSEL_DEPARTED',
-  ] },
-  { key: 'arrival', statuses: [
-    'FLIGHT_LANDED_LAGOS', 'VESSEL_ARRIVED_LAGOS_PORT', 'CUSTOMS_CLEARED_LAGOS', 'IN_TRANSIT_TO_LAGOS_OFFICE',
-  ] },
-  { key: 'delivery', statuses: ['READY_FOR_PICKUP', 'PICKED_UP_COMPLETED'] },
-] as const;
+// D2D replaces PICKED_UP_COMPLETED with a door-to-door delivery tail.
+// IN_EXTRA_TRUCK_MOVEMENT_LAGOS is optional (can be skipped by operators).
+export const D2D_AIR_FLOW: readonly string[] = [
+  ...SHARED_INTAKE,
+  'DISPATCHED_TO_ORIGIN_AIRPORT',
+  'AT_ORIGIN_AIRPORT',
+  'BOARDED_ON_FLIGHT',
+  'FLIGHT_DEPARTED',
+  'FLIGHT_LANDED_LAGOS',
+  'CUSTOMS_CLEARED_LAGOS',
+  'IN_TRANSIT_TO_LAGOS_OFFICE',
+  'LOCAL_COURIER_ASSIGNED',
+  'IN_TRANSIT_TO_DESTINATION_CITY',
+  'OUT_FOR_DELIVERY_DESTINATION_CITY',
+  'DELIVERED_TO_RECIPIENT',
+];
 
-export type DetailTab = 'overview' | 'warehouse' | 'payment' | 'pickup' | 'timeline';
+export const D2D_SEA_FLOW: readonly string[] = [
+  ...SHARED_INTAKE,
+  'DISPATCHED_TO_ORIGIN_PORT',
+  'AT_ORIGIN_PORT',
+  'LOADED_ON_VESSEL',
+  'VESSEL_DEPARTED',
+  'VESSEL_ARRIVED_LAGOS_PORT',
+  'CUSTOMS_CLEARED_LAGOS',
+  'IN_TRANSIT_TO_LAGOS_OFFICE',
+  'LOCAL_COURIER_ASSIGNED',
+  'IN_TRANSIT_TO_DESTINATION_CITY',
+  'OUT_FOR_DELIVERY_DESTINATION_CITY',
+  'DELIVERED_TO_RECIPIENT',
+];
 
-export type Mode = 'air' | 'sea' | '';
+export const EXCEPTION_STATUSES = new Set([
+  'ON_HOLD',
+  'CANCELLED',
+  'RESTRICTED_ITEM_REJECTED',
+  'RESTRICTED_ITEM_OVERRIDE_APPROVED',
+]);
 
+// ── 5-stage pipeline model (FE-owned grouping) ──────────────────────────────
+
+export interface PipelineStage {
+  index: number;   // 1-based
+  label: string;
+}
+
+const STAGE_MAP: Array<{ label: string; statuses: string[] }> = [
+  {
+    label: 'Pre-order',
+    statuses: ['PREORDER_SUBMITTED', 'AWAITING_WAREHOUSE_RECEIPT'],
+  },
+  {
+    label: 'Warehouse',
+    statuses: [
+      'WAREHOUSE_RECEIVED',
+      'CLAIM_APPROVED_PENDING_BULK_PROCESSING',
+      'WAREHOUSE_VERIFIED_PRICED',
+    ],
+  },
+  {
+    label: 'In transit',
+    statuses: [
+      'DISPATCHED_TO_ORIGIN_AIRPORT', 'AT_ORIGIN_AIRPORT', 'BOARDED_ON_FLIGHT',
+      'FLIGHT_DEPARTED', 'DISPATCHED_TO_ORIGIN_PORT', 'AT_ORIGIN_PORT',
+      'LOADED_ON_VESSEL', 'VESSEL_DEPARTED',
+    ],
+  },
+  {
+    label: 'Arrival',
+    statuses: [
+      'FLIGHT_LANDED_LAGOS', 'VESSEL_ARRIVED_LAGOS_PORT',
+      'CUSTOMS_CLEARED_LAGOS', 'IN_TRANSIT_TO_LAGOS_OFFICE',
+      'IN_EXTRA_TRUCK_MOVEMENT_LAGOS',
+    ],
+  },
+  {
+    label: 'Delivery',
+    statuses: [
+      'READY_FOR_PICKUP', 'PICKED_UP_COMPLETED',
+      'LOCAL_COURIER_ASSIGNED', 'IN_TRANSIT_TO_DESTINATION_CITY',
+      'OUT_FOR_DELIVERY_DESTINATION_CITY', 'DELIVERED_TO_RECIPIENT',
+    ],
+  },
+];
+
+export const TOTAL_STAGES = STAGE_MAP.length;
+
+export function getStageInfo(statusV2: string): PipelineStage {
+  for (let i = 0; i < STAGE_MAP.length; i++) {
+    if (STAGE_MAP[i].statuses.includes(statusV2)) {
+      return { index: i + 1, label: STAGE_MAP[i].label };
+    }
+  }
+  return { index: 1, label: 'Pre-order' };
+}
+
+// ── Operator filters (queue left panel) ────────────────────────────────────
+
+export const OPERATOR_FILTERS = ['all', 'needs_action'] as const;
 export type OperatorFilter = (typeof OPERATOR_FILTERS)[number];
 
-// ── Order view model ────────────────────────────────────────────
+// ── Needs-action logic ──────────────────────────────────────────────────────
+
+export function needsAction(
+  statusV2: string,
+  paymentCollectionStatus: string,
+  flaggedForAdminReview: boolean,
+): boolean {
+  const s = statusV2.toUpperCase();
+  if (s === 'WAREHOUSE_RECEIVED' || s === 'CLAIM_APPROVED_PENDING_BULK_PROCESSING') return true;
+  if (paymentCollectionStatus.toUpperCase() === 'PAYMENT_IN_PROGRESS') return true;
+  if (flaggedForAdminReview) return true;
+  return false;
+}
+
+// ── Queue badge helpers ─────────────────────────────────────────────────────
+
+export function hasVerifyBadge(statusV2: string): boolean {
+  const s = statusV2.toUpperCase();
+  return s === 'WAREHOUSE_RECEIVED' || s === 'CLAIM_APPROVED_PENDING_BULK_PROCESSING';
+}
+
+export function hasUnpaidBadge(paymentCollectionStatus: string): boolean {
+  const s = paymentCollectionStatus.toUpperCase();
+  return s === 'UNPAID' || s === 'PAYMENT_IN_PROGRESS';
+}
+
+// ── Advance-button block reason ─────────────────────────────────────────────
+
+export type AdvanceBlockReason = 'verify_first' | 'payment_required' | null;
+
+export function getAdvanceBlockReason(
+  statusV2: string,
+  paymentCollectionStatus: string,
+): AdvanceBlockReason {
+  const s = statusV2.toUpperCase();
+  if (s === 'WAREHOUSE_RECEIVED' || s === 'CLAIM_APPROVED_PENDING_BULK_PROCESSING') {
+    return 'verify_first';
+  }
+  if (s === 'READY_FOR_PICKUP' && paymentCollectionStatus.toUpperCase() !== 'PAID_IN_FULL') {
+    return 'payment_required';
+  }
+  return null;
+}
+
+// ── Types ───────────────────────────────────────────────────────────────────
+
+export type DetailTab = 'overview' | 'warehouse' | 'payment' | 'images' | 'timeline';
+
+export type Mode = 'air' | 'sea' | 'd2d' | '';
+
+// ── Order view model ────────────────────────────────────────────────────────
 
 export interface OrderView {
   id: string;
@@ -74,18 +236,23 @@ export interface OrderView {
   recipientAddress: string;
   shipmentType: Mode;
   transportMode: Mode;
+  contentDescription: string;
+  declaredValue: number | null;
   paymentCollectionStatus: string;
   amountDue: number | null;
+  estimatedChargeUsd: string | null;
   finalChargeUsd: number | null;
+  paymentNote: string | null;
   pricingSource: string;
   pickupRepName: string;
   pickupRepPhone: string;
   createdAt: string;
   origin: string;
   destination: string;
+  flaggedForAdminReview: boolean;
 }
 
-// ── Package form ────────────────────────────────────────────────
+// ── Package form ────────────────────────────────────────────────────────────
 
 export interface PackageForm {
   id: number;
@@ -104,7 +271,7 @@ export interface PackageForm {
   restrictedOverrideReason: string;
 }
 
-// ── Helpers ─────────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
 type AnyRecord = Record<string, unknown>;
 
@@ -137,16 +304,22 @@ function readNumber(record: AnyRecord | null, keys: string[]): number | null {
   return null;
 }
 
+function readBoolean(record: AnyRecord | null, keys: string[]): boolean {
+  const value = pick(record, keys);
+  return value === true;
+}
+
 function parseMode(value: unknown): Mode {
   if (typeof value !== 'string') return '';
   const normalized = value.toLowerCase().trim();
   if (normalized === 'air') return 'air';
   if (normalized === 'sea' || normalized === 'ocean') return 'sea';
+  if (normalized === 'd2d') return 'd2d';
   return '';
 }
 
 export function statusLabel(status: string): string {
-  return status
+  return STATUS_LABELS[status] ?? status
     .replace(/[_-]+/g, ' ')
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
@@ -203,30 +376,38 @@ export function toView(order: ApiOrder): OrderView {
     recipientAddress: resolveLocation(pick(record, ['recipientAddress'])),
     shipmentType,
     transportMode,
+    contentDescription: readString(record, ['description', 'contentDescription', 'contents']),
+    declaredValue: readNumber(record, ['declaredValue']),
     paymentCollectionStatus: readString(record, ['paymentCollectionStatus']),
     amountDue: readNumber(record, ['amountDue']),
+    estimatedChargeUsd: readString(record, ['estimatedChargeUsd']) || null,
     finalChargeUsd: readNumber(record, ['finalChargeUsd']),
+    paymentNote: readString(record, ['paymentNote']) || null,
     pricingSource: readString(record, ['pricingSource']),
     pickupRepName: readString(record, ['pickupRepName']),
     pickupRepPhone: readString(record, ['pickupRepPhone']),
     createdAt: readString(record, ['createdAt']),
     origin: resolveLocation(pick(record, ['origin', 'originAddress'])) || 'Unknown',
     destination: resolveLocation(pick(record, ['destination', 'destinationAddress', 'recipientAddress'])) || 'Unknown',
+    flaggedForAdminReview: readBoolean(record, ['flaggedForAdminReview']),
   };
 }
 
-export function nextStatus(current: string, mode: Mode): string | null {
-  if (current === 'PREORDER_SUBMITTED') return 'AWAITING_WAREHOUSE_RECEIPT';
-  if (current === 'AWAITING_WAREHOUSE_RECEIPT') return 'WAREHOUSE_RECEIVED';
-  if (current === 'WAREHOUSE_VERIFIED_PRICED') {
-    if (mode === 'air') return 'DISPATCHED_TO_ORIGIN_AIRPORT';
-    if (mode === 'sea') return 'DISPATCHED_TO_ORIGIN_PORT';
-  }
-  const airIndex = AIR_FLOW.indexOf(current as (typeof AIR_FLOW)[number]);
-  if (airIndex >= 0) return AIR_FLOW[airIndex + 1] ?? null;
-  const seaIndex = SEA_FLOW.indexOf(current as (typeof SEA_FLOW)[number]);
-  if (seaIndex >= 0) return SEA_FLOW[seaIndex + 1] ?? null;
-  return null;
+// ── Flow selection ──────────────────────────────────────────────────────────
+
+export function getFlow(transportMode: Mode, shipmentType: Mode): readonly string[] {
+  const mode = transportMode || shipmentType;
+  if (mode === 'd2d') return D2D_AIR_FLOW; // default D2D to air; refine if BE adds d2d-sea
+  if (mode === 'sea') return SEA_FLOW;
+  return AIR_FLOW;
+}
+
+export function nextStatus(current: string, mode: Mode, shipmentType?: Mode): string | null {
+  if (EXCEPTION_STATUSES.has(current)) return null;
+  const flow = getFlow(mode, shipmentType ?? '');
+  const index = flow.indexOf(current);
+  if (index < 0) return null;
+  return flow[index + 1] ?? null;
 }
 
 export function mapPackageForm(pkg: PackageForm): WarehousePackage {
@@ -265,17 +446,21 @@ export function includesQuery(
   return haystack.includes(query.toLowerCase().trim());
 }
 
-export function getCurrentPhaseIndex(statusV2: string): number {
-  for (let i = 0; i < PIPELINE_PHASES.length; i++) {
-    if ((PIPELINE_PHASES[i].statuses as readonly string[]).includes(statusV2)) return i;
-  }
-  return -1;
-}
-
 export function isWarehouseVerifiable(statusV2: string): boolean {
-  return statusV2 === 'WAREHOUSE_RECEIVED';
+  return statusV2 === 'WAREHOUSE_RECEIVED' || statusV2 === 'CLAIM_APPROVED_PENDING_BULK_PROCESSING';
 }
 
 export function isPaymentRelevant(paymentCollectionStatus: string): boolean {
   return paymentCollectionStatus.toUpperCase() !== 'PAID_IN_FULL';
+}
+
+// Pricing source human label
+const PRICING_SOURCE_LABELS: Record<string, string> = {
+  DEFAULT_RATE:          'Standard rate',
+  CUSTOMER_OVERRIDE:     'Customer override',
+  MIGRATED_UNVERIFIED:   'Migrated (unverified)',
+};
+
+export function pricingSourceLabel(source: string): string {
+  return PRICING_SOURCE_LABELS[source] ?? source;
 }

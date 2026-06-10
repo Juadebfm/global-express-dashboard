@@ -4,7 +4,8 @@ import { ArrowLeft, Building2, Check, Copy, Upload } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { useBankAccounts } from '@/hooks';
 import { useUploadPaymentReceipt } from '@/hooks/usePaymentReceipts';
-import type { ReceiptContentType } from '@/types';
+import type { BankInfo, ReceiptContentType } from '@/types';
+import { cn } from '@/utils';
 import type { OrderView } from '../types';
 
 const ACCEPTED: ReceiptContentType[] = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -38,6 +39,65 @@ function CopyRow({ label, value }: { label: string; value: string }): ReactEleme
   );
 }
 
+interface BankTabsProps {
+  banks: BankInfo[];
+  beneficiaryName: string;
+  trackingNumber: string;
+  amountDisplay: string;
+  isConfirmed: boolean;
+}
+
+function BankTabs({ banks, beneficiaryName, trackingNumber, amountDisplay, isConfirmed }: BankTabsProps): ReactElement {
+  const [active, setActive] = useState(0);
+  const bank = banks[active];
+
+  return (
+    <div>
+      {/* Tab strip */}
+      <div className="overflow-x-auto mb-4">
+        <div className="flex gap-1 rounded-xl bg-gray-100 p-1 min-w-max sm:min-w-0">
+          {banks.map((b, i) => (
+            <button
+              key={b.bankName}
+              type="button"
+              onClick={() => setActive(i)}
+              className={cn(
+                'flex-1 whitespace-nowrap rounded-lg px-4 py-1.5 text-xs font-semibold transition',
+                i === active
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700',
+              )}
+            >
+              {b.bankName}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Selected bank details */}
+      {bank && (
+        <div>
+          <CopyRow label="Account Name" value={beneficiaryName} />
+          {bank.accounts.map((acct) => (
+            <CopyRow
+              key={acct.currency}
+              label={`Account Number (${acct.currency})`}
+              value={acct.accountNumber}
+            />
+          ))}
+          <CopyRow label="Payment Reference (Important)" value={trackingNumber} />
+          <div className="pt-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+              {isConfirmed ? 'Amount to Send' : 'Estimated Amount'}
+            </p>
+            <p className="mt-0.5 text-xl font-bold text-brand-500">{amountDisplay}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface CustomerPaymentViewProps {
   view: OrderView;
   onBack: () => void;
@@ -52,7 +112,8 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
   const [fileError, setFileError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const amountDisplay = view.amountDue
+  const isConfirmed = view.amountDue !== null;
+  const amountDisplay = view.amountDue !== null
     ? `$${view.amountDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
     : view.finalChargeUsd
       ? `$${view.finalChargeUsd.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
@@ -108,20 +169,25 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
         </button>
       </div>
 
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Settle your balance</h2>
+          <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">Settle your balance</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Your shipment has reached Lagos. Transfer the balance, then upload your receipt — we confirm within 2 hours.
+            Transfer the balance to any of our accounts below, then upload your receipt — we'll confirm within 2 hours.
           </p>
         </div>
-        <div className="text-right shrink-0">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Balance Due</p>
+        <div className="sm:text-right shrink-0">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+            {isConfirmed ? 'Balance Due' : 'Estimated Balance'}
+          </p>
           <p className="text-2xl font-bold text-brand-500">{amountDisplay}</p>
+          {view.paymentNote && (
+            <p className="mt-0.5 text-xs text-gray-400">{view.paymentNote}</p>
+          )}
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {/* ── Bank transfer details ── */}
         <div className="rounded-2xl border border-gray-200 bg-white p-5">
           <div className="flex items-center gap-2 mb-4">
@@ -139,28 +205,7 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
             </div>
           )}
 
-          {bankSettings && (
-            <div className="space-y-6">
-              {bankSettings.banks.map((bank) => (
-                <div key={bank.bankName}>
-                  <CopyRow label="Bank Name" value={bank.bankName} />
-                  <CopyRow label="Account Name" value={bankSettings.beneficiaryName} />
-                  {bank.accounts.map((acct) => (
-                    <CopyRow
-                      key={acct.currency}
-                      label={`Account Number (${acct.currency})`}
-                      value={acct.accountNumber}
-                    />
-                  ))}
-                  <CopyRow label="Payment Reference (Important)" value={view.trackingNumber} />
-                  <div className="pt-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Amount to Send</p>
-                    <p className="mt-0.5 text-xl font-bold text-brand-500">{amountDisplay}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          {bankSettings && <BankTabs banks={bankSettings.banks} beneficiaryName={bankSettings.beneficiaryName} trackingNumber={view.trackingNumber} amountDisplay={amountDisplay} isConfirmed={isConfirmed} />}
 
           <div className="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3">
             <span className="mt-0.5 text-amber-500">ⓘ</span>
@@ -250,7 +295,7 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
           )}
 
           <p className="mt-4 text-center text-xs text-gray-400">
-            We confirm your payment within 2 hours and email your receipt — then it's ready to collect.
+            We confirm your payment within 2 hours and send you an email once it's verified.
           </p>
         </div>
       </div>

@@ -15,9 +15,11 @@ export interface ApiPayment {
   id: string;
   orderId: string;
   userId: string;
+  trackingNumber: string;
   amount: string;
   currency: string;
   paystackReference: string;
+  proofReference: string | null;
   status: 'pending' | 'successful' | 'failed' | 'abandoned';
   paymentType: 'online' | 'transfer' | 'cash';
   paidAt: string | null;

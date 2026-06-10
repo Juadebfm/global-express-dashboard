@@ -77,3 +77,18 @@ export function verifyPaymentReceipt(
 ): Promise<ApiPayment> {
   return apiPatchData<ApiPayment>(`/payments/receipts/${receiptId}/verify`, payload, token);
 }
+
+export function getOrderPayments(
+  token: string,
+  orderId: string,
+): Promise<ApiPayment[]> {
+  return apiGetData<ApiPayment[]>(`/payments/orders/${orderId}/payments`, token);
+}
+
+export function verifyOrderPayment(
+  token: string,
+  paymentId: string,
+  payload: ReceiptVerifyPayload,
+): Promise<ApiPayment> {
+  return apiPostData<ApiPayment>(`/payments/${paymentId}/verify`, payload, token);
+}

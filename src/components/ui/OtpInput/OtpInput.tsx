@@ -6,6 +6,7 @@ interface OtpInputProps {
   length?: number;
   value: string;
   onChange: (value: string) => void;
+  onComplete?: () => void;
   error?: string;
   disabled?: boolean;
   autoFocus?: boolean;
@@ -15,6 +16,7 @@ export function OtpInput({
   length = 4,
   value,
   onChange,
+  onComplete,
   error,
   disabled = false,
   autoFocus = false,
@@ -26,6 +28,13 @@ export function OtpInput({
       .fill('')
       .map((_, i) => chars[i] || '');
   }, [value, length]);
+
+  const notifyComplete = useCallback(
+    (joined: string) => {
+      if (joined.length === length) setTimeout(() => onComplete?.(), 0);
+    },
+    [length, onComplete]
+  );
 
   const applyChunkAtIndex = useCallback(
     (startIndex: number, chunk: string) => {
@@ -42,12 +51,14 @@ export function OtpInput({
         }
       });
 
-      onChange(newValues.join(''));
+      const joined = newValues.join('');
+      onChange(joined);
+      notifyComplete(joined);
 
       const nextFocusIndex = Math.min(startIndex + sanitizedChunk.length, length - 1);
       inputRefs.current[nextFocusIndex]?.focus();
     },
-    [digits, length, onChange]
+    [digits, length, onChange, notifyComplete]
   );
 
   const handleChange = useCallback(
@@ -70,13 +81,16 @@ export function OtpInput({
       const digit = sanitizedValue.slice(-1);
       const newValues = [...digits];
       newValues[index] = digit;
-      onChange(newValues.join(''));
+      const joined = newValues.join('');
+      onChange(joined);
 
       if (index < length - 1) {
         inputRefs.current[index + 1]?.focus();
+      } else {
+        notifyComplete(joined);
       }
     },
-    [applyChunkAtIndex, digits, length, onChange]
+    [applyChunkAtIndex, digits, length, onChange, notifyComplete]
   );
 
   const handleKeyDown = useCallback(

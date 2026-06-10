@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useAuth } from './useAuth';
 
@@ -9,8 +10,8 @@ export function useAuthToken(): () => Promise<string | null> {
 
   const isCustomer = isClerkSignedIn && !user;
 
-  return async (): Promise<string | null> => {
+  return useCallback(async (): Promise<string | null> => {
     if (isCustomer) return getToken();
     return localStorage.getItem(TOKEN_KEY);
-  };
+  }, [isCustomer, getToken]);
 }

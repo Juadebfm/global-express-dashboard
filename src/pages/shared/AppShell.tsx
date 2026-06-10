@@ -14,6 +14,8 @@ interface AppShellProps {
   isLoading: boolean;
   error: string | null;
   loadingLabel?: string;
+  /** When false, a null data value is not treated as an error — only an explicit error string blocks the page. Default: true. */
+  requireData?: boolean;
   children: ReactNode;
 }
 
@@ -22,6 +24,7 @@ export function AppShell({
   isLoading,
   error,
   loadingLabel = 'Loading...',
+  requireData = true,
   children,
 }: AppShellProps): ReactElement {
   const { t } = useTranslation('common');
@@ -42,7 +45,7 @@ export function AppShell({
     [authUser, clerkUser, data]
   );
 
-  const shouldShowError = !isLoading && (!data || !!error);
+  const shouldShowError = !isLoading && (requireData ? (!data || !!error) : !!error);
 
   return (
     <AppLayout user={layoutUser}>

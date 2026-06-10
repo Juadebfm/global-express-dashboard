@@ -49,7 +49,7 @@ export function StatusProgression({
         {t('orders:status.exceptions')}
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
-        {EXCEPTION_STATUSES.map((status) => (
+        {[...EXCEPTION_STATUSES].map((status) => (
           <Button
             key={status}
             size="sm"

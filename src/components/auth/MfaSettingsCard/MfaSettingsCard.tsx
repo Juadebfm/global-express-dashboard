@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, ShieldOff, AlertCircle, Loader2, RefreshCcw } from 'lucide-react';
 import { Button, OtpInput } from '@/components/ui';
@@ -23,6 +23,8 @@ export function MfaSettingsCard(): ReactElement {
   const [currentPassword, setCurrentPassword] = useState('');
   const [code, setCode] = useState('');
   const [regenResult, setRegenResult] = useState<MfaRecoveryCodesResult | null>(null);
+  const disableFormRef = useRef<HTMLFormElement>(null);
+  const regenerateFormRef = useRef<HTMLFormElement>(null);
 
   const reset = (): void => {
     setAction('idle');
@@ -143,7 +145,7 @@ export function MfaSettingsCard(): ReactElement {
       )}
 
       {action === 'disable' && (
-        <form onSubmit={handleDisable} className="mt-5 space-y-4">
+        <form ref={disableFormRef} onSubmit={handleDisable} className="mt-5 space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
               Current password
@@ -165,6 +167,7 @@ export function MfaSettingsCard(): ReactElement {
               length={6}
               value={code}
               onChange={setCode}
+              onComplete={() => disableFormRef.current?.requestSubmit()}
               error={disable.error?.message}
               disabled={disable.isPending}
             />
@@ -187,7 +190,7 @@ export function MfaSettingsCard(): ReactElement {
       )}
 
       {action === 'regenerate' && (
-        <form onSubmit={handleRegenerate} className="mt-5 space-y-4">
+        <form ref={regenerateFormRef} onSubmit={handleRegenerate} className="mt-5 space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
               6-digit code from authenticator
@@ -196,6 +199,7 @@ export function MfaSettingsCard(): ReactElement {
               length={6}
               value={code}
               onChange={setCode}
+              onComplete={() => regenerateFormRef.current?.requestSubmit()}
               error={regenerate.error?.message}
               disabled={regenerate.isPending}
             />

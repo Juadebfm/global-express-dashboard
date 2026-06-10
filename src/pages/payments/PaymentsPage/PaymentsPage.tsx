@@ -1,9 +1,11 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Receipt } from 'lucide-react';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { useCan, useDashboardData, usePayments, useSearch } from '@/hooks';
 import type { ApiPayment } from '@/types';
+import { ReceiptModal } from './ReceiptModal';
 
 const PAYMENT_STATUSES = ['all', 'pending', 'successful', 'failed', 'abandoned'] as const;
 
@@ -30,12 +32,8 @@ function matchesQuery(payment: ApiPayment, query: string): boolean {
   const needle = query.trim().toLowerCase();
   if (!needle) return true;
   const haystack = [
-    payment.paystackReference,
-    payment.id,
-    payment.orderId,
-    payment.userId,
-    payment.status,
-    payment.paymentType,
+    payment.trackingNumber,
+    payment.amount,
     payment.currency,
   ]
     .join(' ')
@@ -50,6 +48,7 @@ export function PaymentsPage(): ReactElement {
   const { query, setQuery } = useSearch();
   const [activeStatus, setActiveStatus] = useState<(typeof PAYMENT_STATUSES)[number]>('all');
   const [userIdFilter, setUserIdFilter] = useState('');
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
 
   const paymentsQuery = usePayments({
     status: activeStatus === 'all' ? undefined : activeStatus,
@@ -110,7 +109,7 @@ export function PaymentsPage(): ReactElement {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search reference, order, user..."
+                placeholder="Search tracking number or amount..."
                 className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500"
               />
               {isSuperadmin && (
@@ -127,65 +126,90 @@ export function PaymentsPage(): ReactElement {
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-          <div className="border-b border-gray-100 px-4 py-3 text-sm text-gray-500">
-            {paymentsQuery.isLoading
-              ? 'Loading payment records...'
-              : `Showing ${filteredPayments.length} of ${paymentsQuery.total} payment records`}
+          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+            <p className="text-sm text-gray-500">
+              {paymentsQuery.isLoading
+                ? 'Loading payment records...'
+                : `${filteredPayments.length} of ${paymentsQuery.total} records`}
+            </p>
           </div>
 
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-                <tr>
-                  <th className="px-4 py-3">Reference</th>
-                  <th className="px-4 py-3">Order ID</th>
-                  <th className="px-4 py-3">User ID</th>
-                  <th className="px-4 py-3">Amount</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Paid At</th>
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  <th className="whitespace-nowrap px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Tracking</th>
+                  <th className="whitespace-nowrap px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Amount</th>
+                  <th className="whitespace-nowrap px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Type</th>
+                  <th className="whitespace-nowrap px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Status</th>
+                  <th className="whitespace-nowrap px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Date</th>
+                  <th className="whitespace-nowrap px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Receipt</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {paymentsQuery.isLoading ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-gray-500">
+                    <td colSpan={6} className="px-5 py-10 text-center text-sm text-gray-400">
                       Loading payments...
                     </td>
                   </tr>
                 ) : filteredPayments.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-gray-500">
+                    <td colSpan={6} className="px-5 py-10 text-center text-sm text-gray-400">
                       No payments found.
                     </td>
                   </tr>
                 ) : (
                   filteredPayments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-800">
-                        {payment.paystackReference || payment.id}
+                    <tr key={payment.id} className="transition hover:bg-gray-50">
+                      <td className="whitespace-nowrap px-5 py-4">
+                        <span className="font-mono text-xs font-medium text-gray-700">
+                          {payment.trackingNumber || '—'}
+                        </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{payment.orderId}</td>
-                      <td className="px-4 py-3 text-gray-600">{payment.userId}</td>
-                      <td className="px-4 py-3 text-gray-700">{formatAmount(payment)}</td>
-                      <td className="px-4 py-3 text-gray-700">{payment.paymentType}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={[
-                            'rounded-full px-2.5 py-1 text-xs font-semibold',
-                            payment.status === 'successful'
-                              ? 'bg-emerald-50 text-emerald-700'
-                              : payment.status === 'failed'
-                                ? 'bg-red-50 text-red-700'
-                                : payment.status === 'abandoned'
-                                  ? 'bg-amber-50 text-amber-700'
-                                  : 'bg-blue-50 text-blue-700',
-                          ].join(' ')}
-                        >
+                      <td className="whitespace-nowrap px-5 py-4 font-semibold text-gray-900">
+                        {formatAmount(payment)}
+                      </td>
+                      <td className="whitespace-nowrap px-5 py-4">
+                        <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-600">
+                          {payment.paymentType}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-5 py-4">
+                        <span className={[
+                          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold',
+                          payment.status === 'successful' ? 'bg-emerald-50 text-emerald-700' :
+                          payment.status === 'failed'     ? 'bg-red-50 text-red-700' :
+                          payment.status === 'abandoned'  ? 'bg-amber-50 text-amber-700' :
+                                                            'bg-blue-50 text-blue-700',
+                        ].join(' ')}>
+                          <span className={[
+                            'h-1.5 w-1.5 rounded-full',
+                            payment.status === 'successful' ? 'bg-emerald-500' :
+                            payment.status === 'failed'     ? 'bg-red-500' :
+                            payment.status === 'abandoned'  ? 'bg-amber-500' :
+                                                              'bg-blue-500',
+                          ].join(' ')} />
                           {payment.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{formatDateTime(payment.paidAt ?? payment.createdAt)}</td>
+                      <td className="whitespace-nowrap px-5 py-4 text-xs text-gray-500">
+                        {formatDateTime(payment.paidAt ?? payment.createdAt)}
+                      </td>
+                      <td className="whitespace-nowrap px-5 py-4">
+                        {payment.proofReference ? (
+                          <button
+                            type="button"
+                            onClick={() => setReceiptUrl(payment.proofReference)}
+                            className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600"
+                          >
+                            <Receipt className="h-3.5 w-3.5" />
+                            View
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-300">—</span>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
@@ -194,6 +218,10 @@ export function PaymentsPage(): ReactElement {
           </div>
         </section>
       </div>
+
+      {receiptUrl && (
+        <ReceiptModal url={receiptUrl} onClose={() => setReceiptUrl(null)} />
+      )}
     </AppShell>
   );
 }

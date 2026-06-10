@@ -224,6 +224,7 @@ function ImportResultPanel({ result, isCommitted }: ImportResultPanelProps): Rea
       )}
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200">
+        <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead className="bg-gray-50 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
             <tr>
@@ -248,6 +249,7 @@ function ImportResultPanel({ result, isCommitted }: ImportResultPanelProps): Rea
             ))}
           </tbody>
         </table>
+        </div>
         {result.results.length > 100 && (
           <p className="bg-gray-50 px-3 py-2 text-[11px] text-gray-500">
             Showing first 100 of {result.results.length} rows.
