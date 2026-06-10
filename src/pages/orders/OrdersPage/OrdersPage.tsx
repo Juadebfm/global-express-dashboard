@@ -239,13 +239,13 @@ export function OrdersPage(): ReactElement {
   // ── Derived ───────────────────────────────────────────────────
   const orderImages = Array.isArray(imagesQuery.data) ? imagesQuery.data : [];
   const timelineEvents = timelineQuery.data?.timeline ?? [];
-  const goodsBreakdown = timelineQuery.data?.goodsBreakdown ?? [];
   const billableWeightKg = useMemo(() => {
-    if (!goodsBreakdown.length) return null;
-    const totalWeightKg = goodsBreakdown.reduce((sum, item) => sum + item.weightKg, 0);
-    const totalVolumetricKg = goodsBreakdown.reduce((sum, item) => sum + item.cbm, 0) * 1000;
+    const breakdown = timelineQuery.data?.goodsBreakdown;
+    if (!breakdown?.length) return null;
+    const totalWeightKg = breakdown.reduce((sum, item) => sum + item.weightKg, 0);
+    const totalVolumetricKg = breakdown.reduce((sum, item) => sum + item.cbm, 0) * 1000;
     return Math.max(totalWeightKg, totalVolumetricKg);
-  }, [goodsBreakdown]);
+  }, [timelineQuery.data?.goodsBreakdown]);
 
   const orderPayments = Array.isArray(paymentsQuery.data) ? paymentsQuery.data : [];
   const pendingReceiptPayments = orderPayments.filter(
