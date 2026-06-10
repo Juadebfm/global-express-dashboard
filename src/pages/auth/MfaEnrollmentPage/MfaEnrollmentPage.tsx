@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Smartphone, Loader2 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { AuthLayout } from '@/components/layout';
 import { Button, OtpInput } from '@/components/ui';
 import { RecoveryCodesPanel } from '@/components/auth';
@@ -112,17 +113,35 @@ export function MfaEnrollmentPage(): ReactElement {
                 Add this account to your authenticator
               </h2>
               <p className="mt-2 text-sm text-gray-600">
-                Open your authenticator app (Google Authenticator, 1Password, Authy)
-                and add a new account using the secret below.
+                Scan the QR code with Google Authenticator, 1Password, Authy, or any TOTP app.
               </p>
             </div>
 
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-                Setup secret
-              </p>
-              <p className="break-all font-mono text-sm text-gray-900">{secret.secret}</p>
+            {/* QR code */}
+            <div className="flex justify-center">
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <QRCodeSVG
+                  value={secret.otpauthUri}
+                  size={200}
+                  bgColor="#ffffff"
+                  fgColor="#111827"
+                  level="M"
+                />
+              </div>
             </div>
+
+            {/* Manual fallback */}
+            <details className="group">
+              <summary className="cursor-pointer text-center text-sm text-brand-600 hover:underline list-none">
+                Can't scan? Enter the code manually
+              </summary>
+              <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                  Setup secret
+                </p>
+                <p className="break-all font-mono text-sm text-gray-900">{secret.secret}</p>
+              </div>
+            </details>
 
             <a
               href={secret.otpauthUri}
