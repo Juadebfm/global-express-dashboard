@@ -542,7 +542,23 @@ function RestrictedGoodsEditor({
       { code: '', nameEn: '', nameKo: '', description: '', allowWithOverride: false, isActive: true, _isNew: true },
     ]);
 
+  const [codeErrors, setCodeErrors] = useState<Record<number, string>>({});
+
+  const validateCodes = (): boolean => {
+    const errors: Record<number, string> = {};
+    rows.forEach((r, i) => {
+      if (r._markedForDelete) return;
+      const code = r.code ?? '';
+      if (!/^[a-z0-9_-]+$/.test(code)) {
+        errors[i] = 'lowercase letters, numbers, _ or - only';
+      }
+    });
+    setCodeErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSave = async (): Promise<void> => {
+    if (!validateCodes()) return;
     const toDelete = rows.filter((r) => r._markedForDelete && r.id).map((r) => r.id as string);
     const toKeep = rows
       .filter((r) => !r._markedForDelete)
@@ -572,7 +588,20 @@ function RestrictedGoodsEditor({
             className={cn('rounded-xl border border-gray-200 bg-gray-50 p-4', row._markedForDelete && 'opacity-40')}
           >
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <FieldInput label="Code" value={row.code ?? ''} onChange={(v) => update(i, { code: v })} disabled={!canEdit || row._markedForDelete} placeholder="e.g. FLAMMABLE" />
+              <div>
+                <FieldInput
+                  label="Code"
+                  value={row.code ?? ''}
+                  onChange={(v) => {
+                    const normalized = v.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+                    update(i, { code: normalized });
+                    if (codeErrors[i]) setCodeErrors((p) => { const n = { ...p }; delete n[i]; return n; });
+                  }}
+                  disabled={!canEdit || row._markedForDelete}
+                  placeholder="e.g. flammable"
+                />
+                {codeErrors[i] && <p className="mt-1 text-[11px] text-rose-600">{codeErrors[i]}</p>}
+              </div>
               <FieldInput label="Name (EN)" value={row.nameEn ?? ''} onChange={(v) => update(i, { nameEn: v })} disabled={!canEdit || row._markedForDelete} />
               <FieldInput label="Name (KO)" value={row.nameKo ?? ''} onChange={(v) => update(i, { nameKo: v })} disabled={!canEdit || row._markedForDelete} />
             </div>
