@@ -25,6 +25,7 @@
   "searchPlaceholder": "Search by name, email...",
   "clientDirectory": "Client Directory",
   "customer": "Customer",
+  "shippingMark": "Shipping Mark",
   "emailLabel": "Email",
   "businessLabel": "Business",
   "addressLabel": "Address",
@@ -41,5 +42,13 @@
   "copyFailed": "Copy failed.",
   "noClientsFound": "No clients found.",
   "noClientsMatch": "No clients match your filters.",
-  "more": "More"
+  "more": "More",
+  "deleteAccount": "Delete Account",
+  "deleteConfirmTitle": "Delete this account?",
+  "deleteConfirmBody": "This will soft-delete the account — the record is kept so existing orders and payments stay intact. The user will no longer be able to log in.",
+  "deleteConfirm": "Yes, delete",
+  "deleting": "Deleting…",
+  "cancel": "Cancel",
+  "deleteSuccess": "{{name}} has been deleted.",
+  "deleteFailed": "Failed to delete account. Please try again."
 }

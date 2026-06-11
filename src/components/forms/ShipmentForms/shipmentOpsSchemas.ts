@@ -21,9 +21,8 @@ const optionalInteger = z
 // Goods array must have at least one entry; supplierId required per line.
 // shipmentPayer=SUPPLIER requires billingSupplierId.
 export const shipmentIntakeGoodsSchema = z.object({
-  supplierId: z.string().uuid('Each goods line needs a valid supplier id'),
-  description: z.string().max(500).optional().or(z.literal('')),
   itemType: z.string().max(120).optional().or(z.literal('')),
+  description: z.string().max(500).optional().or(z.literal('')),
   quantity: optionalInteger,
   lengthCm: optionalDecimal,
   widthCm: optionalDecimal,
@@ -32,13 +31,20 @@ export const shipmentIntakeGoodsSchema = z.object({
   cbm: optionalDecimal,
   itemCostUsd: optionalDecimal,
   requiresExtraTruckMovement: z.boolean().optional(),
+  arrivalAt: z.string().optional().or(z.literal('')),
+  specialPackagingType: z.string().max(120).optional().or(z.literal('')),
 });
 
+// serviceType drives both shipmentType and mode sent to the API:
+//   Air Freight  → shipmentType: "air",   mode: "air"
+//   Sea Freight  → shipmentType: "ocean", mode: "sea"
+//   Door to Door → shipmentType: "d2d",   mode: internationalLeg ("air"|"sea")
+// internationalLeg is only shown for D2D and is required in that case.
 export const shipmentIntakeSchema = z
   .object({
     shippingMark: z.string().min(2, 'Enter the shipping mark (e.g. juadeb)').max(64),
-    mode: z.enum(['air', 'sea']),
-    shipmentType: z.enum(['air', 'ocean', 'd2d']).optional().or(z.literal('')),
+    serviceType: z.enum(['air', 'ocean', 'd2d']),
+    internationalLeg: z.enum(['air', 'sea']).optional().or(z.literal('')),
     shipmentPayer: z.enum(['USER', 'SUPPLIER']).optional(),
     billingSupplierId: z
       .string()
@@ -47,6 +53,16 @@ export const shipmentIntakeSchema = z
       .or(z.literal('')),
     goods: z.array(shipmentIntakeGoodsSchema).min(1, 'Add at least one goods line'),
   })
+  .refine(
+    (v) =>
+      v.serviceType !== 'd2d' ||
+      v.internationalLeg === 'air' ||
+      v.internationalLeg === 'sea',
+    {
+      message: 'Select the international leg for Door to Door',
+      path: ['internationalLeg'],
+    },
+  )
   .refine(
     (v) =>
       v.shipmentPayer !== 'SUPPLIER' ||

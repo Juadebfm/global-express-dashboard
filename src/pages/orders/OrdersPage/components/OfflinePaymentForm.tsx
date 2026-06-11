@@ -1,9 +1,10 @@
 import type { FormEvent, ReactElement } from 'react';
 import { useState } from 'react';
-import { CreditCard, Landmark, CalendarDays, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { CreditCard, Landmark, CalendarDays, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { formatCurrency } from '@/utils';
 import type { RecordOfflinePayload } from '@/types';
+import { useFxRate } from '@/hooks';
 import type { OrderView } from '../types';
 import { parsePositive } from '../types';
 
@@ -57,11 +58,13 @@ export function OfflinePaymentForm({
   onCancel,
 }: OfflinePaymentFormProps): ReactElement {
   const todayIso = new Date().toISOString().slice(0, 10);
+  const { data: fxData } = useFxRate();
+  const effectiveRate = fxData?.effectiveRate ?? null;
 
   const [amount, setAmount] = useState(
     view.amountDue != null && view.amountDue > 0 ? String(view.amountDue) : '',
   );
-  const [currency, setCurrency] = useState<'USD' | 'NGN'>('NGN');
+  const [currency, setCurrency] = useState<'USD' | 'NGN'>('USD');
   const [paymentType, setPaymentType] = useState<'transfer' | 'cash'>('transfer');
   const [dateReceived, setDateReceived] = useState(todayIso);
   const [reference, setReference] = useState('');
@@ -70,6 +73,26 @@ export function OfflinePaymentForm({
   const [notice, setNotice] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const parsedAmount = parsePositive(amount);
+
+  const handleCurrencyChange = (next: 'USD' | 'NGN'): void => {
+    if (next === currency || !effectiveRate || !parsedAmount) {
+      setCurrency(next);
+      return;
+    }
+    if (next === 'NGN' && currency === 'USD') {
+      setAmount(String(Math.round(parsedAmount * effectiveRate)));
+    } else if (next === 'USD' && currency === 'NGN') {
+      setAmount((parsedAmount / effectiveRate).toFixed(2));
+    }
+    setCurrency(next);
+  };
+
+  const usdEquivalent =
+    currency === 'NGN' && effectiveRate && parsedAmount
+      ? parsedAmount / effectiveRate
+      : null;
 
   const amountDueLabel =
     view.amountDue != null && view.amountDue > 0
@@ -82,7 +105,6 @@ export function OfflinePaymentForm({
     setWarning(null);
     setError(null);
 
-    const parsedAmount = parsePositive(amount);
     if (!parsedAmount) {
       setError('Enter the payment amount.');
       return;
@@ -151,15 +173,39 @@ export function OfflinePaymentForm({
               <IconInput icon={<CreditCard className="h-4 w-4" />}>
                 <select
                   value={currency}
-                  onChange={(e) => setCurrency(e.target.value as 'USD' | 'NGN')}
+                  onChange={(e) => handleCurrencyChange(e.target.value as 'USD' | 'NGN')}
                   className={iconInputInner}
                 >
-                  <option value="NGN">NGN — Naira</option>
                   <option value="USD">USD — Dollar</option>
+                  <option value="NGN">NGN — Naira</option>
                 </select>
               </IconInput>
             </div>
+          </div>
 
+          {/* FX conversion preview */}
+          {currency === 'NGN' && (
+            <div className="mt-3 flex items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3.5 py-2.5">
+              <Info className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+              <p className="text-xs text-amber-800">
+                {usdEquivalent != null ? (
+                  <>
+                    <span className="font-semibold">≈ {formatCurrency(usdEquivalent, 'USD')}</span>
+                    {' '}at current FX rate
+                    {effectiveRate != null && (
+                      <span className="text-amber-600"> · ₦{effectiveRate.toLocaleString()} per USD</span>
+                    )}
+                  </>
+                ) : effectiveRate != null ? (
+                  <>Current rate: ₦{effectiveRate.toLocaleString()} per USD</>
+                ) : (
+                  <>Enter an amount to see USD equivalent</>
+                )}
+              </p>
+            </div>
+          )}
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {/* Payment method */}
             <div>
               <FieldLabel>Payment method</FieldLabel>

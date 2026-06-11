@@ -70,6 +70,13 @@ export interface CustomerProfile {
   // PATCH /users/me with a new `shippingMark` returns 409.
   shippingMark: string | null;
   shippingMarkUserEditedAt: string | null;
+  // Present on all user types; staff hide shippingMark but use these fields.
+  gender: 'male' | 'female' | 'other' | null;
+  dateOfBirth: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+  emergencyContactRelationship: string | null;
+  nationalId: string | null;
   createdAt: string;
   updatedAt: string;
 }

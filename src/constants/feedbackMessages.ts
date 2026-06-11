@@ -32,7 +32,7 @@ export const FEEDBACK_MESSAGES = {
     goodsIntakeError: 'Unable to record goods intake. Please try again.',
   },
   shipments: {
-    intakeSuccess: 'Intake recorded — goods appended to the customer shipment.',
+    intakeSuccess: 'Intake recorded — shipment is verified and priced.',
     intakeError: 'Unable to record this intake. Please try again.',
     measurementSuccess: 'Measurement saved.',
     measurementError: 'Unable to save the measurement. Please try again.',

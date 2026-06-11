@@ -234,7 +234,7 @@ export async function updateInternalProfile(
   token: string,
   payload: StaffProfilePayload
 ): Promise<void> {
-  await apiPatch('/internal/me/profile', payload, token);
+  await apiPatch('/users/me', payload, token);
 }
 
 export async function getInternalProfileRequirements(

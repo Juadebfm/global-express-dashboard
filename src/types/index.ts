@@ -243,6 +243,7 @@ export type {
   InvoiceAttachmentConfirmPayload,
   InvoiceAttachment,
   DispatchBatch,
+  DispatchBatchListItem,
   DispatchBatchCarrierInfoPayload,
   DispatchBatchStatusPayload,
   DispatchBatchMoveToNextPayload,

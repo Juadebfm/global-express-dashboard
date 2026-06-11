@@ -18,9 +18,8 @@ export type InvoiceAttachmentContentType =
   | 'image/webp';
 
 export interface ShipmentIntakeGoodsLine {
-  supplierId: string;
-  description?: string;
   itemType?: string;
+  description?: string;
   quantity?: number;
   lengthCm?: number;
   widthCm?: number;
@@ -29,6 +28,8 @@ export interface ShipmentIntakeGoodsLine {
   cbm?: number;
   itemCostUsd?: number;
   requiresExtraTruckMovement?: boolean;
+  arrivalAt?: string;
+  specialPackagingType?: string;
 }
 
 export interface ShipmentIntakePayload {
@@ -114,6 +115,19 @@ export interface DispatchBatch {
   createdAt?: string;
   updatedAt?: string;
   [key: string]: unknown;
+}
+
+// Lightweight summary returned by GET /shipments/batches list endpoint.
+export interface DispatchBatchListItem {
+  id: string;
+  masterTrackingNumber: string;
+  transportMode: 'air' | 'sea';
+  status: 'open' | 'cutoff_pending_approval' | 'closed';
+  shipmentCount: number;
+  carrierName: string | null;
+  voyageOrFlightNumber: string | null;
+  estimatedDepartureAt: string | null;
+  createdAt: string;
 }
 
 export interface DispatchBatchCarrierInfoPayload {

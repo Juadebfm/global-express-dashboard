@@ -109,16 +109,16 @@ export function ClientWorkbenchPage(): ReactElement {
                 </span>
               </div>
               <div className="mt-4 grid gap-4 text-sm text-gray-600 sm:grid-cols-2 lg:grid-cols-3">
-                <Stat label="Total orders" value={String(data.client.totalOrders)} />
+                <Stat label="Total orders" value={String(data.client.orderCount)} />
                 <Stat
                   label="Total payments"
-                  value={`₦${Number(data.client.totalPayments || '0').toLocaleString()}`}
+                  value={`₦${Number(data.client.totalSpent || '0').toLocaleString()}`}
                 />
                 <Stat
                   label="Last order"
                   value={
-                    data.client.lastOrderAt
-                      ? new Date(data.client.lastOrderAt).toLocaleDateString()
+                    data.client.lastOrderDate
+                      ? new Date(data.client.lastOrderDate).toLocaleDateString()
                       : '—'
                   }
                 />

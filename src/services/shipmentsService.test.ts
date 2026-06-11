@@ -51,7 +51,7 @@ describe('recordShipmentIntake', () => {
     const result = await recordShipmentIntake('token', {
       shippingMark: 'juadeb',
       mode: 'air',
-      goods: [{ supplierId: '00000000-0000-0000-0000-000000000002' }],
+      goods: [{}],
     });
 
     expect(result.id).toBe('sh1');
@@ -68,7 +68,7 @@ describe('recordShipmentIntake', () => {
       recordShipmentIntake('token', {
         shippingMark: 'testmark',
         mode: 'air',
-        goods: [{ supplierId: 's' }],
+        goods: [{}],
       }),
     ).rejects.toThrow('Forbidden');
   });

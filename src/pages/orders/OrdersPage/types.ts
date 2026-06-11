@@ -258,6 +258,7 @@ export interface OrderView {
   destination: string;
   flaggedForAdminReview: boolean;
   paymentDetailsSentAt: string | null;
+  dispatchBatchId: string | null;
 }
 
 // ── Package form ────────────────────────────────────────────────────────────
@@ -407,6 +408,7 @@ export function toView(order: ApiOrder): OrderView {
     destination: resolveLocation(pick(record, ['destination', 'destinationAddress', 'recipientAddress'])) || 'Unknown',
     flaggedForAdminReview: readBoolean(record, ['flaggedForAdminReview']),
     paymentDetailsSentAt: readString(record, ['paymentDetailsSentAt']) || null,
+    dispatchBatchId: readString(record, ['dispatchBatchId']) || null,
   };
 }
 

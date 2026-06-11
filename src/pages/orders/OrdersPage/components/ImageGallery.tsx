@@ -1,7 +1,8 @@
 import type { FormEvent, ReactElement } from 'react';
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Camera, Image, Maximize2, Trash2, Upload, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Camera, Image as ImageIcon, Maximize2, Trash2, Upload, X, ImageOff } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { cn } from '@/utils';
 import { formatDate } from '@/utils';
@@ -55,12 +56,33 @@ export function ImageGallery({
   onDelete,
 }: ImageGalleryProps): ReactElement {
   const { t } = useTranslation('orders');
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  // Keyed by orderId so the set resets automatically when the order changes —
+  // avoids calling setState inside a useEffect.
+  const [brokenState, setBrokenState] = useState<{ forId: string; ids: Set<string> }>({
+    forId: orderId,
+    ids: new Set(),
+  });
+  const brokenIds = brokenState.forId === orderId ? brokenState.ids : new Set<string>();
+  const refetchedFor = useRef('');
+
+  const handleImageError = useCallback((imageId: string) => {
+    setBrokenState((prev) => {
+      const currentIds = prev.forId === orderId ? new Set(prev.ids) : new Set<string>();
+      currentIds.add(imageId);
+      return { forId: orderId, ids: currentIds };
+    });
+    if (refetchedFor.current !== orderId) {
+      refetchedFor.current = orderId;
+      void queryClient.invalidateQueries({ queryKey: ['order-images', orderId] });
+    }
+  }, [queryClient, orderId]);
 
   const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
   useEffect(() => () => { previews.forEach((u) => URL.revokeObjectURL(u)); }, [previews]);
@@ -191,62 +213,75 @@ export function ImageGallery({
           <p className="py-6 text-center text-sm text-gray-500">{t('images.loading')}</p>
         ) : images.length === 0 ? (
           <div className="flex flex-col items-center rounded-xl border border-dashed border-gray-300 py-8 text-gray-400">
-            <Image className="h-8 w-8" />
+            <ImageIcon className="h-8 w-8" />
             <p className="mt-2 text-sm">{t('images.empty')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {images.map((image) => (
-              <div
-                key={image.id}
-                className="group relative overflow-hidden rounded-xl border border-gray-200"
-              >
-                <button
-                  type="button"
-                  onClick={() => setLightboxSrc(image.url)}
-                  className="block w-full"
-                  aria-label="View full image"
-                >
-                  <img
-                    src={image.url}
-                    alt=""
-                    className="aspect-square w-full object-cover"
-                    loading="lazy"
-                  />
-                </button>
+            {images.map((image) => {
+              const isBroken = brokenIds.has(image.id);
+              return (
                 <div
-                  className={cn(
-                    'absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 pb-2 pt-6',
-                    'opacity-0 transition-opacity group-hover:opacity-100',
-                  )}
+                  key={image.id}
+                  className="group relative overflow-hidden rounded-xl border border-gray-200"
                 >
-                  <div className="flex items-center justify-between gap-1">
-                    <p className="truncate text-[10px] text-white/80">
-                      {image.createdAt
-                        ? formatDate(image.createdAt, { month: 'short', day: 'numeric' })
-                        : ''}
-                    </p>
+                  {isBroken ? (
+                    <div className="flex aspect-square w-full flex-col items-center justify-center gap-1.5 bg-gray-50 text-gray-400">
+                      <ImageOff className="h-6 w-6" />
+                      <span className="text-[10px]">Failed to load</span>
+                    </div>
+                  ) : (
                     <button
                       type="button"
                       onClick={() => setLightboxSrc(image.url)}
-                      className="flex items-center gap-1 text-[11px] font-semibold text-white/80 hover:text-white"
+                      className="block w-full"
+                      aria-label="View full image"
                     >
-                      <Maximize2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                  {canDelete && (
-                    <button
-                      type="button"
-                      onClick={() => void handleDelete(image.id)}
-                      className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-red-300 hover:text-red-200"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      {t('images.delete')}
+                      <img
+                        src={image.url}
+                        alt=""
+                        className="aspect-square w-full object-cover"
+                        loading="lazy"
+                        onError={() => handleImageError(image.id)}
+                      />
                     </button>
                   )}
+                  <div
+                    className={cn(
+                      'absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 pb-2 pt-6',
+                      'opacity-0 transition-opacity group-hover:opacity-100',
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="truncate text-[10px] text-white/80">
+                        {image.createdAt
+                          ? formatDate(image.createdAt, { month: 'short', day: 'numeric' })
+                          : ''}
+                      </p>
+                      {!isBroken && (
+                        <button
+                          type="button"
+                          onClick={() => setLightboxSrc(image.url)}
+                          className="flex items-center gap-1 text-[11px] font-semibold text-white/80 hover:text-white"
+                        >
+                          <Maximize2 className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={() => void handleDelete(image.id)}
+                        className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-red-300 hover:text-red-200"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        {t('images.delete')}
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

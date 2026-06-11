@@ -122,8 +122,9 @@ export {
   updateSpecialPackagingTypes,
   getShipmentTypesCatalog,
   updateShipmentTypesCatalog,
+  getItemTypes,
 } from './settingsService';
-export type { SpecialPackagingUpsertItem } from './settingsService';
+export type { SpecialPackagingUpsertItem, ItemTypeOption } from './settingsService';
 export { presignUpload, confirmUpload, getOrderImages as getUploadedOrderImages, deleteImage } from './uploadsService';
 export { getVapidPublicKey, subscribePush, unsubscribePush } from './pushService';
 export {

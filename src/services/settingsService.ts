@@ -234,3 +234,12 @@ export function updateSpecialPackagingTypes(
     token,
   );
 }
+
+export interface ItemTypeOption {
+  key: string;
+  label: string;
+}
+
+export function getItemTypes(token: string): Promise<{ items: ItemTypeOption[] }> {
+  return apiGetData<{ items: ItemTypeOption[] }>('/settings/item-types', token);
+}

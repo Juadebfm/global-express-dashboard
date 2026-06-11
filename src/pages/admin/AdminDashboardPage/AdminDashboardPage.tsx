@@ -7,7 +7,9 @@ import type { ActiveDelivery, KpiCard, UiAction } from '@/types';
 import {
   ActiveDeliveries,
   DashboardHeader,
+  DashboardShipmentSummary,
   KpiGrid,
+  ShipmentListSection,
 } from '@/pages/dashboard/components';
 import { AppShell } from '@/pages/shared';
 import { ROUTES } from '@/constants';
@@ -64,12 +66,20 @@ export function AdminDashboardPage(): ReactElement {
             </section>
 
             <section>
+              <DashboardShipmentSummary />
+            </section>
+
+            <section>
               <ActiveDeliveries
                 title={data.activeDeliveries.title}
                 subtitle={data.activeDeliveries.subtitle}
                 items={filteredDeliveries}
                 emptyLabel={t('activeDeliveries.emptyLabel')}
               />
+            </section>
+
+            <section>
+              <ShipmentListSection />
             </section>
           </>
         )}

@@ -16,6 +16,7 @@ export { useTeam } from './useTeam';
 export { useClients } from './useClients';
 export { useSupportTickets } from './useSupportTickets';
 export { useOpenSupportTicketCount } from './useOpenSupportTicketCount';
+export { useUndeliveredOrderCount } from './useUndeliveredOrderCount';
 export { useMyNotificationPreferences } from './useMyNotificationPreferences';
 export { useOrders } from './useOrders';
 export { useChangePassword } from './useChangePassword';
@@ -40,6 +41,7 @@ export {
   useUpdateShipmentTypesCatalog,
 } from './useShipmentTypesCatalog';
 export { useFxRate } from './useFxRate';
+export { useItemTypes } from './useItemTypes';
 export { useMeasurements } from './useMeasurements';
 export { useRecordMeasurement } from './useRecordMeasurement';
 export { usePricingRules } from './usePricingRules';
@@ -105,6 +107,7 @@ export {
   useAddClientSupplier,
   useCreateClientGoodsIntake,
 } from './useClientWorkbench';
+export { useClaimForTicket } from './useClaimForTicket';
 export { useR2Upload } from './useR2Upload';
 export type { R2UploadInput } from './useR2Upload';
 export { useRecordShipmentIntake } from './useShipmentIntake';

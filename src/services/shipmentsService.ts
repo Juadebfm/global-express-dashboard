@@ -13,6 +13,7 @@ import type {
   InvoiceAttachmentPresignResult,
   InvoiceAttachmentConfirmPayload,
   DispatchBatch,
+  DispatchBatchListItem,
   DispatchBatchCarrierInfoPayload,
   DispatchBatchStatusPayload,
   DispatchBatchMoveToNextPayload,
@@ -445,6 +446,35 @@ export function getRegDocs(
   invoiceId: string,
 ): Promise<InvoiceAttachment[]> {
   return apiGetData<InvoiceAttachment[]>(`/shipments/invoices/${invoiceId}/reg-docs`, token);
+}
+
+// ── Phase 3: batch list ───────────────────────────────────────────────────────
+
+export interface BatchListParams {
+  status?: 'open' | 'cutoff_pending_approval' | 'closed';
+  transportMode?: 'air' | 'sea';
+  page?: number;
+  limit?: number;
+}
+
+export interface BatchListResult {
+  data: DispatchBatchListItem[];
+  pagination: { total: number; page: number; limit: number; totalPages: number };
+}
+
+export function listDispatchBatches(
+  token: string,
+  params: BatchListParams = {},
+): Promise<BatchListResult> {
+  const qs = new URLSearchParams();
+  if (params.status) qs.set('status', params.status);
+  if (params.transportMode) qs.set('transportMode', params.transportMode);
+  if (params.page !== undefined) qs.set('page', String(params.page));
+  if (params.limit !== undefined) qs.set('limit', String(params.limit));
+  return apiGetData<BatchListResult>(
+    `/shipments/batches${qs.toString() ? `?${qs.toString()}` : ''}`,
+    token,
+  );
 }
 
 // ── Phase 3: internal tracking by master batch tracking number ───────────────

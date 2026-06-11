@@ -3,3 +3,5 @@ export { KpiGrid } from './KpiGrid';
 export { ShipmentTrendsChart } from './ShipmentTrendsChart';
 export { ActiveDeliveries } from './ActiveDeliveries';
 export { DashboardShipmentList } from './DashboardShipmentList';
+export { ShipmentListSection } from './ShipmentListSection';
+export { DashboardShipmentSummary } from './DashboardShipmentSummary';

@@ -171,13 +171,19 @@ export function OrdersPage(): ReactElement {
     [operatorQueueOrders],
   );
 
+  const selectParam = searchParams.get('select');
+
   const selectedOrderId = useMemo(() => {
     if (!visibleOrders.length) return null;
+    // Honor ?select= from dashboard row-click navigation
+    if (selectParam && visibleOrders.some((o) => o.id === selectParam)) {
+      return selectParam;
+    }
     if (selectedOrderIdState && visibleOrders.some((o) => o.id === selectedOrderIdState)) {
       return selectedOrderIdState;
     }
     return visibleOrders[0].id;
-  }, [visibleOrders, selectedOrderIdState]);
+  }, [visibleOrders, selectedOrderIdState, selectParam]);
 
   const orderDetailQuery = useOrderDetail(selectedOrderId ?? undefined);
   const view = useMemo(() => {
@@ -223,6 +229,14 @@ export function OrdersPage(): ReactElement {
     // Clear stale mutation state from the previous order so banners don't bleed across selections.
     updateStatus.reset();
     verifyWarehouse.reset();
+    // Remove ?select= so this explicit click takes over from dashboard-link navigation.
+    if (searchParams.has('select')) {
+      setSearchParams((prev) => {
+        const updated = new URLSearchParams(prev);
+        updated.delete('select');
+        return updated;
+      }, { replace: true });
+    }
   };
 
   const handleStatusAdvance = async (statusV2: string): Promise<void> => {

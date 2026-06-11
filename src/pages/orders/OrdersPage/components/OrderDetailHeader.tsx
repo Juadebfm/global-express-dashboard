@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Copy, MoreHorizontal, Plane, Ship, ChevronLeft, ArrowRight, AlertTriangle, CircleAlert, PackagePlus } from 'lucide-react';
+import { Copy, MoreHorizontal, Plane, Ship, ChevronLeft, ArrowRight, AlertTriangle, CircleAlert, PackagePlus, Layers } from 'lucide-react';
 import { cn } from '@/utils';
 import type { OrderView } from '../types';
 import {
@@ -196,78 +196,93 @@ export function OrderDetailHeader({
         {/* Actions — bottom row, always full width */}
         {!isException && (
           <div className="mt-8 space-y-3">
-            {/* Secondary: add order (only when applicable) */}
-            {onAddToShipment && (
-              <button
-                type="button"
-                onClick={onAddToShipment}
-                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-              >
-                <PackagePlus className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-                Add order to this shipment
-              </button>
-            )}
-
-            {/* Primary row: advance button + ⋯ menu */}
-            {next === null ? (
-              <div className="flex justify-end">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3.5 py-1.5 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  Delivered
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={!canAdvance || advanceLoading}
-                  onClick={() => { if (canAdvance && next) onAdvance(next); }}
-                  className={cn(
-                    'flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition',
-                    canAdvance
-                      ? 'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800'
-                      : 'cursor-not-allowed bg-gray-100 text-gray-400',
-                  )}
-                >
-                  {advanceLoading && (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  )}
-                  {advanceActionLabel(view.statusV2, nextStageLabel)}
-                  {!advanceLoading && <ArrowRight className="h-4 w-4" />}
-                </button>
-
-                <div ref={menuRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => { setMenuOpen((v) => !v); setCancelConfirm(false); }}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50"
-                    aria-label="More actions"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
-                  {menuOpen && (
-                    <div className="absolute right-0 top-full z-20 mt-1 w-52 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          onAdvance('ON_HOLD');
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-gray-600 hover:bg-gray-50"
-                      >
-                        Place on hold
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setMenuOpen(false); setCancelConfirm(true); }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50"
-                      >
-                        Cancel order
-                      </button>
-                    </div>
-                  )}
+            {view.dispatchBatchId ? (
+              /* Batch-managed: all individual status changes are disabled */
+              <div className="flex items-start gap-2.5 rounded-xl border border-brand-100 bg-brand-50 px-4 py-3">
+                <Layers className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
+                <div>
+                  <p className="text-sm font-semibold text-brand-800">Batch managed</p>
+                  <p className="mt-0.5 text-xs text-brand-700">
+                    Status is managed at batch level — update from Batch Operations.
+                  </p>
                 </div>
               </div>
+            ) : (
+              <>
+                {/* Secondary: add order (only when applicable) */}
+                {onAddToShipment && (
+                  <button
+                    type="button"
+                    onClick={onAddToShipment}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                  >
+                    <PackagePlus className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                    Add order to this shipment
+                  </button>
+                )}
+
+                {/* Primary row: advance button + ⋯ menu */}
+                {next === null ? (
+                  <div className="flex justify-end">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3.5 py-1.5 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      Delivered
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={!canAdvance || advanceLoading}
+                      onClick={() => { if (canAdvance && next) onAdvance(next); }}
+                      className={cn(
+                        'flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition',
+                        canAdvance
+                          ? 'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800'
+                          : 'cursor-not-allowed bg-gray-100 text-gray-400',
+                      )}
+                    >
+                      {advanceLoading && (
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      )}
+                      {advanceActionLabel(view.statusV2, nextStageLabel)}
+                      {!advanceLoading && <ArrowRight className="h-4 w-4" />}
+                    </button>
+
+                    <div ref={menuRef} className="relative">
+                      <button
+                        type="button"
+                        onClick={() => { setMenuOpen((v) => !v); setCancelConfirm(false); }}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50"
+                        aria-label="More actions"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
+                      {menuOpen && (
+                        <div className="absolute right-0 top-full z-20 mt-1 w-52 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMenuOpen(false);
+                              onAdvance('ON_HOLD');
+                            }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-600 hover:bg-gray-50"
+                          >
+                            Place on hold
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setMenuOpen(false); setCancelConfirm(true); }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50"
+                          >
+                            Cancel order
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

@@ -89,28 +89,21 @@ function getErrorMessage(error: unknown): string {
   return 'Something went wrong. Please try again.';
 }
 
-// ── Internal profile local cache ─────────────────────────────────────────────
-// auth/me doesn't return profile fields; until the backend adds GET
-// /internal/me/profile, we persist the last-saved payload in localStorage
-// so the form can be hydrated across page loads.
-const INTERNAL_PROFILE_KEY = 'gx_internal_profile';
-
-function loadCachedInternalProfile(userId: string): Partial<StaffProfilePayload> {
-  try {
-    const raw = localStorage.getItem(`${INTERNAL_PROFILE_KEY}:${userId}`);
-    if (!raw) return {};
-    return JSON.parse(raw) as Partial<StaffProfilePayload>;
-  } catch {
-    return {};
-  }
-}
-
-function saveCachedInternalProfile(userId: string, payload: StaffProfilePayload): void {
-  try {
-    localStorage.setItem(`${INTERNAL_PROFILE_KEY}:${userId}`, JSON.stringify(payload));
-  } catch {
-    // localStorage full or blocked — silently ignore
-  }
+function mapInternalToForm(profile: CustomerProfile): StaffProfilePayload {
+  return {
+    gender: (profile.gender as StaffProfilePayload['gender']) ?? 'male',
+    dateOfBirth: profile.dateOfBirth ?? '',
+    phone: profile.phone ?? '',
+    addressStreet: profile.addressStreet ?? '',
+    addressCity: profile.addressCity ?? '',
+    addressState: profile.addressState ?? '',
+    addressCountry: profile.addressCountry ?? '',
+    addressPostalCode: profile.addressPostalCode ?? '',
+    emergencyContactName: profile.emergencyContactName ?? '',
+    emergencyContactPhone: profile.emergencyContactPhone ?? '',
+    emergencyContactRelationship: profile.emergencyContactRelationship ?? '',
+    nationalId: profile.nationalId ?? '',
+  };
 }
 
 function mapCustomerToForm(profile: CustomerProfile): ExternalFormState {
@@ -307,20 +300,20 @@ export function ProfilePage(): ReactElement {
           return;
         }
 
-        const requirementsResponse = await getInternalProfileRequirements(token);
+        const [requirementsResponse, profileResponse] = await Promise.allSettled([
+          getInternalProfileRequirements(token),
+          getMyProfile(token),
+        ]);
         if (!isMounted) return;
 
-        setRequirements(requirementsResponse);
+        if (requirementsResponse.status === 'fulfilled') {
+          setRequirements(requirementsResponse.value);
+        }
 
-        // GET /internal/me/profile doesn't exist in the current API spec —
-        // auth/me only returns base identity fields. We cache the profile
-        // locally after each save and read it back here. Once the backend
-        // adds a GET endpoint this cache read can be replaced with a fetch.
-        const cached = loadCachedInternalProfile(authUser?.id ?? '');
-        const mappedInternal: StaffProfilePayload = {
-          ...initialInternalForm,
-          ...cached,
-        };
+        const mappedInternal: StaffProfilePayload =
+          profileResponse.status === 'fulfilled'
+            ? mapInternalToForm(profileResponse.value)
+            : { ...initialInternalForm };
         setInternalForm(mappedInternal);
         setInternalBaseline(mappedInternal);
         setIsEditing(false);
@@ -496,7 +489,6 @@ export function ProfilePage(): ReactElement {
 
       setInternalForm(sanitizedInternal);
       setInternalBaseline(sanitizedInternal);
-      saveCachedInternalProfile(authUser?.id ?? '', sanitizedInternal);
       await refreshUser();
       setProfileSuccess(t('messages.internalSaved'));
       setIsEditing(false);
