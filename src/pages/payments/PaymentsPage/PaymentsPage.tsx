@@ -80,7 +80,7 @@ export function PaymentsPage(): ReactElement {
         )}
 
         <section className="rounded-2xl border border-gray-200 bg-white p-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
                 Status
@@ -125,7 +125,7 @@ export function PaymentsPage(): ReactElement {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        <section className="rounded-2xl border border-gray-200 bg-white">
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <p className="text-sm text-gray-500">
               {paymentsQuery.isLoading

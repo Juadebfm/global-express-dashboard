@@ -362,9 +362,9 @@ export function OrdersPage(): ReactElement {
           }
         />
 
-        <div className="grid gap-4 lg:gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+        <div className="grid gap-4 md:gap-6 md:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
           {/* Left: Order Queue + Pagination */}
-          <div className={cn('min-w-0 space-y-3', mobileShowDetail ? 'hidden lg:block' : '')}>
+          <div className={cn('min-w-0 space-y-3', mobileShowDetail ? 'hidden md:block' : '')}>
             {queueLoading && queueOrders.length === 0 ? (
               <TableRowsSkeleton columns={3} rows={8} ariaLabel={t('orders:loadingLabel')} />
             ) : (
@@ -402,7 +402,7 @@ export function OrdersPage(): ReactElement {
           </div>
 
           {/* Right: Detail Panel */}
-          <section className={cn('min-w-0 space-y-4', !mobileShowDetail ? 'hidden lg:block' : '')}>
+          <section className={cn('min-w-0 space-y-4', !mobileShowDetail ? 'hidden md:block' : '')}>
             {!selectedOrderId ? (
               <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
                 {t('orders:detail.selectOrder')}

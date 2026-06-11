@@ -148,7 +148,7 @@ function SupportDetailView({ ticketId }: { ticketId: string }): ReactElement {
   const isClosed = ticket.status === 'closed';
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div className="flex h-[calc(100vh-4rem)] flex-col rounded-2xl border border-gray-200 bg-white shadow-sm sm:h-[calc(100vh-8rem)]">
       <SupportTicketHeader ticket={ticket} isStaff={isStaff} />
 
       <SupportChatThread

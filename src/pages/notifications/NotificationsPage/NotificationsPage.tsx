@@ -168,7 +168,7 @@ function NotificationDetailModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl"
+        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -213,7 +213,7 @@ function NotificationDetailModal({
 
         {/* Structured metadata fields */}
         {metaFields.length > 0 && (
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
             {metaFields.map(({ label, value }) => (
               <div key={label} className="rounded-xl bg-gray-50 px-3 py-2">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>

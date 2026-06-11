@@ -164,7 +164,7 @@ export function ShipmentDetailPage(): ReactElement {
           </div>
 
           {activeInvoiceId ? (
-            <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
               <AttachmentPanel
                 title="Task invoices"
                 rows={taskInvoices ?? []}
@@ -441,7 +441,7 @@ function MeasurementModal({
             <p className="mt-1 text-sm text-red-600">{errors.notes.message}</p>
           )}
         </div>
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onClose}

@@ -31,7 +31,7 @@ export function ReviewStep({
       </p>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.3fr_1fr]">
-        <div className="space-y-6">
+        <div className="order-last space-y-6 lg:order-first">
           {/* Shipment Summary */}
           <div>
             <p className="text-sm font-semibold text-gray-700">
@@ -110,8 +110,8 @@ export function ReviewStep({
           )}
         </div>
 
-        {/* Cost Estimate */}
-        <div className="rounded-2xl border border-gray-200 p-5">
+        {/* Cost Estimate — first on mobile so user sees price before details */}
+        <div className="order-first rounded-2xl border border-gray-200 p-5 lg:order-last">
           <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
             <Package className="h-4 w-4 text-brand-500" />
             {t('newShipment.review.costEstimate')}

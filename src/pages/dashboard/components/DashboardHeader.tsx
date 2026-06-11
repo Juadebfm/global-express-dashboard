@@ -52,7 +52,7 @@ export function DashboardHeader({
   };
 
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
         <p className="text-sm text-gray-500 mt-1">{subtitle}</p>

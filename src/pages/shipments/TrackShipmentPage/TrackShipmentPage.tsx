@@ -105,7 +105,7 @@ export function TrackShipmentPage(): ReactElement {
             <label htmlFor="tracking-input" className="text-sm font-semibold text-gray-700">
               {t('internal.inputLabel')}
             </label>
-            <div className="mt-2 flex flex-col gap-3 lg:flex-row">
+            <div className="mt-2 flex flex-col gap-3 md:flex-row">
               <input
                 id="tracking-input"
                 type="text"

@@ -218,7 +218,7 @@ export function SettingsPage(): ReactElement {
 
         {/* ── Operator tab bar (staff see read-only, admin can edit) */}
         {isOperator && (
-          <div className="flex gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1">
+          <div className="flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-gray-50 p-1 scrollbar-none">
             {OPERATOR_TAB_IDS.map((tabId) => (
               <button
                 key={tabId}
@@ -603,7 +603,7 @@ export function SettingsPage(): ReactElement {
             )}
 
             {pricing.data && pricing.data.length > 0 && (
-              <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
+              <div className="mt-4 overflow-x-auto rounded-xl border border-gray-200">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <tr>
@@ -691,7 +691,7 @@ export function SettingsPage(): ReactElement {
             )}
 
             {restrictedGoods.data && restrictedGoods.data.length > 0 && (
-              <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
+              <div className="mt-4 overflow-x-auto rounded-xl border border-gray-200">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <tr>

@@ -48,7 +48,7 @@ function ShareModal({ trackingNumber, onClose }: { trackingNumber: string; onClo
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm rounded-2xl bg-white shadow-xl p-6">
+      <div className="relative mx-4 w-full max-w-sm rounded-2xl bg-white shadow-xl p-6">
         <div className="flex items-center justify-between mb-5">
           <div>
             <h3 className="text-base font-semibold text-gray-900">Share tracking number</h3>

@@ -90,12 +90,12 @@ export function StickyFooter({
           </div>
         </div>
 
-        {/* Cost */}
-        <div className="hidden text-right sm:block">
+        {/* Cost — always visible, scales from mobile to desktop */}
+        <div className="text-right">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
             {t('newShipment.footer.estCost')}
           </p>
-          <p className={cn('text-2xl font-extrabold text-gray-900 leading-tight', !costLine && 'text-gray-400')}>
+          <p className={cn('text-lg font-extrabold leading-tight text-gray-900 sm:text-2xl', !costLine && 'text-gray-400')}>
             {estimateLoading ? '—' : costLine ?? t('newShipment.footer.costPending')}
             <span className="ml-1.5 text-xs font-medium text-gray-500">· {transitLine}</span>
           </p>
@@ -131,7 +131,7 @@ export function StickyFooter({
  */
 function RoutePills(): ReactElement {
   return (
-    <div className="flex items-center gap-1.5 text-3xl">
+    <div className="flex items-center gap-1.5 text-xl sm:text-3xl">
       <span aria-label="Korea" role="img">
         🇰🇷
       </span>

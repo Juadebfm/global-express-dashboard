@@ -143,7 +143,7 @@ export function OtpInput({
               autoComplete={index === 0 ? 'one-time-code' : 'off'}
               onFocus={(e) => e.currentTarget.select()}
               className={cn(
-                'w-14 h-14 text-center text-sm font-semibold rounded-lg border bg-white',
+                'h-10 w-10 text-center text-sm font-semibold rounded-lg border bg-white sm:h-12 sm:w-12 md:h-14 md:w-14',
                 'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500',
                 'transition-colors',
                 error

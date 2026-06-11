@@ -464,8 +464,8 @@ export function BulkOrdersPage(): ReactElement {
                     {t('detail.noItems')}
                   </div>
                 ) : (
-                  <div className="overflow-hidden rounded-2xl border border-gray-200">
-                    <table className="w-full text-left text-sm">
+                  <div className="overflow-x-auto rounded-2xl border border-gray-200">
+                    <table className="w-full min-w-[560px] text-left text-sm">
                       <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                         <tr>
                           <th className="px-6 py-4">{t('detail.itemsTable.trackingNo')}</th>
@@ -951,8 +951,8 @@ export function BulkOrdersPage(): ReactElement {
                   <TableRowsSkeleton columns={6} ariaLabel={t('loadingLabel')} />
                 </div>
               ) : (
-              <div className="mt-4 overflow-hidden rounded-3xl border border-gray-200 bg-white">
-                <table className="w-full text-left text-sm">
+              <div className="mt-4 overflow-x-auto rounded-3xl border border-gray-200 bg-white">
+                <table className="w-full min-w-[640px] text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <tr>
                       <th className="px-6 py-4">{t('table.columns.orderId')}</th>

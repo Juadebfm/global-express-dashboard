@@ -197,7 +197,7 @@ function ImportResultPanel({ result, isCommitted }: ImportResultPanelProps): Rea
         </span>
       </div>
 
-      <div className="mt-4 grid gap-3 text-sm sm:grid-cols-5">
+      <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-5">
         <Stat label="Total rows" value={result.summary.totalRows} />
         <Stat label="Created" value={result.summary.created} tone="success" />
         <Stat label="Updated" value={result.summary.updated} tone="info" />

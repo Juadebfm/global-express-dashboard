@@ -69,7 +69,7 @@ export function OverviewPanel({ view, billableWeightKg }: OverviewPanelProps): R
     : '—';
 
   return (
-    <div className="grid divide-y divide-gray-100 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+    <div className="grid divide-y divide-gray-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-3">
 
         {/* Recipient */}
         <div className="p-5">
@@ -109,7 +109,7 @@ export function OverviewPanel({ view, billableWeightKg }: OverviewPanelProps): R
             </div>
 
             {(view.totalPaidUsd != null || view.amountDue != null || view.finalChargeUsd != null) && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {view.finalChargeUsd != null && (
                   <Field label="Final charge">
                     {formatCurrency(view.finalChargeUsd, 'USD')}

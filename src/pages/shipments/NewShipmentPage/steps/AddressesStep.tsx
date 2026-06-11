@@ -20,7 +20,7 @@ export function AddressesStep(): ReactElement {
           {t('newShipment.originAddress.subtitle')}
         </p>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <div>
             <span className="text-xs font-semibold uppercase text-gray-500">
               {t('newShipment.originAddress.companyName')}
@@ -69,7 +69,7 @@ export function AddressesStep(): ReactElement {
           {t('newShipment.destinationAddress.subtitle')}
         </p>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <div>
             <span className="text-xs font-semibold uppercase text-gray-500">
               {t('newShipment.destinationAddress.companyName')}

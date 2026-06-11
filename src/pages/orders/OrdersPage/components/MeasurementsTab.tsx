@@ -69,7 +69,7 @@ function RecordForm({
 
   return (
     <div className="mt-3 space-y-3 border-t border-gray-100 pt-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">Weight (kg) *</p>
           <input

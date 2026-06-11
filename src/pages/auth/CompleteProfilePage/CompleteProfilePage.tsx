@@ -118,7 +118,7 @@ function CountrySelect({ selected, onSelect, isError = false }: CountrySelectPro
   };
 
   return (
-    <div ref={wrapperRef} className="relative min-w-[170px]">
+    <div ref={wrapperRef} className="relative w-[130px] shrink-0 sm:w-[170px]">
       <button
         type="button"
         onClick={handleToggle}

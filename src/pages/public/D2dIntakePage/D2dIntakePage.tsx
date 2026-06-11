@@ -238,7 +238,7 @@ export default function D2dIntakePage(): ReactElement {
               </div>
             </Fieldset>
 
-            <div className="flex flex-col items-end gap-3">
+            <div className="flex flex-col items-stretch gap-3 sm:items-end">
               <TurnstileGate ref={turnstileRef} onToken={setTurnstileToken} />
               <Button
                 type="submit"

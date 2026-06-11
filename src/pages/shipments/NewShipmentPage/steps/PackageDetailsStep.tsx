@@ -58,7 +58,7 @@ export function PackageDetailsStep({
         </div>
 
         {/* Weight/Volume + Declared Value */}
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {formState.shipmentType === 'air' ? (
             <div>
               <span className="text-xs font-semibold uppercase text-gray-500">
@@ -108,7 +108,7 @@ export function PackageDetailsStep({
           <p className="text-sm font-semibold text-gray-700">
             {t('newShipment.recipientInfo.sectionTitle')}
           </p>
-          <div className="mt-4 grid gap-4 lg:grid-cols-3">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <span className="text-xs font-semibold uppercase text-gray-500">
                 {t('newShipment.recipientInfo.nameLabel')}
@@ -159,7 +159,7 @@ export function PackageDetailsStep({
           </div>
 
           {formState.usePickupRep && (
-            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
                 <span className="text-xs font-semibold uppercase text-gray-500">
                   {t('newShipment.recipientInfo.repNameLabel')}

@@ -397,7 +397,7 @@ function CreateItemModal({ onClose }: CreateItemModalProps): ReactElement {
           Publish immediately
         </label>
 
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onClose}
@@ -478,7 +478,7 @@ function EditItemModal({ item, onClose }: EditItemModalProps): ReactElement {
           />
           Published
         </label>
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onClose}
@@ -782,7 +782,7 @@ function ReviewClaimModal({ claim, onClose }: ReviewClaimModalProps): ReactEleme
           </>
         )}
 
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onClose}

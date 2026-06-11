@@ -660,7 +660,7 @@ export function ProfilePage(): ReactElement {
                 {!isEditingShippingMark ? (
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-3">
-                      <p className="flex-1 min-w-0 text-3xl font-bold tracking-wide text-brand-600 leading-none truncate">
+                      <p className="flex-1 min-w-0 text-xl font-bold tracking-wide text-brand-600 leading-none truncate sm:text-3xl">
                         {externalForm.shippingMark || t('shippingMark.noneYet')}
                       </p>
                       <div className="flex items-center gap-2 shrink-0">

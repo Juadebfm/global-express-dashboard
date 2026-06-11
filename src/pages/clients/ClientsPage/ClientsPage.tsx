@@ -434,8 +434,7 @@ export function ClientsPage(): ReactElement {
                   {actionMessage}
                 </div>
               )}
-              <div className="mt-4 overflow-hidden rounded-3xl border border-gray-200 bg-white">
-                <div className="overflow-x-auto">
+              <div className="mt-4 overflow-x-auto rounded-3xl border border-gray-200 bg-white">
                 <table className="w-full min-w-[1100px] text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <tr>
@@ -563,7 +562,6 @@ export function ClientsPage(): ReactElement {
                     })}
                   </tbody>
                 </table>
-                </div>
 
                 {filteredClients.length === 0 && (
                   <div className="p-6 text-center text-sm text-gray-500">

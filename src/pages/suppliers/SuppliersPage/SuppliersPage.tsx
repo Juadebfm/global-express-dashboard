@@ -445,7 +445,7 @@ function AddSupplierModal({
           error={errors.phone?.message}
           {...register('phone')}
         />
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onClose}
@@ -542,7 +542,7 @@ function UpdateSupplierModal({
             <p className="mt-1 text-sm text-red-600">{errors.note.message}</p>
           )}
         </div>
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onClose}
@@ -580,7 +580,7 @@ function Modal({ title, onClose, children }: ModalProps): ReactElement {
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="px-6 py-5">{children}</div>
+        <div className="max-h-[70vh] overflow-y-auto px-6 py-5">{children}</div>
       </div>
     </div>
   );

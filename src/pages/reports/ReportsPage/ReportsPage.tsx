@@ -184,21 +184,21 @@ export function ReportsPage(): ReactElement {
         {/* Header + date range */}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <PageHeader title={t('pageTitle')} subtitle={t('subtitle')} />
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-gray-400" />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Calendar className="h-4 w-4 shrink-0 text-gray-400" />
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none sm:w-auto"
               />
               <span className="text-sm text-gray-400">{t('dateRange.to')}</span>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none sm:w-auto"
               />
             </div>
           </div>
@@ -321,7 +321,7 @@ export function ReportsPage(): ReactElement {
 
         {/* ── Two-column: Pipeline + Air vs Sea ───────────── */}
         {isAdminPlus && (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
             {/* Status Pipeline */}
             {pipeline && pipeline.pipeline.length > 0 && (
               <div className="rounded-2xl border border-gray-200 bg-white p-6">
@@ -412,13 +412,13 @@ export function ReportsPage(): ReactElement {
 
         {/* ── Two-column: Top Customers + Delivery Perf ──── */}
         {isAdminPlus && (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
             {/* Top Customers */}
             {topCust && topCust.length > 0 && (
               <div className="rounded-2xl border border-gray-200 bg-white p-6">
                 <h3 className="text-sm font-semibold text-gray-900">{t('topCustomers.title')}</h3>
-                <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
-                  <table className="w-full text-left text-xs">
+                <div className="mt-4 overflow-x-auto rounded-xl border border-gray-200">
+                  <table className="w-full min-w-[360px] text-left text-xs">
                     <thead className="bg-gray-50 text-[10px] font-semibold uppercase text-gray-500">
                       <tr>
                         <th className="px-3 py-2">{t('topCustomers.columns.rank')}</th>

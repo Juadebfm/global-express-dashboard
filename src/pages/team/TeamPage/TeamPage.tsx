@@ -349,8 +349,8 @@ export function TeamPage(): ReactElement {
               </div>
             ) : (
               <div className="mt-6 space-y-3">
-                <div className="overflow-hidden rounded-2xl border border-gray-200">
-                <table className="w-full text-left text-sm">
+                <div className="overflow-x-auto rounded-2xl border border-gray-200">
+                <table className="w-full min-w-[640px] text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <tr>
                       <th className="px-6 py-4">{t('table.columns.name')}</th>
@@ -457,7 +457,7 @@ export function TeamPage(): ReactElement {
 
       {activeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-          <div className="relative w-full max-w-lg rounded-3xl bg-white p-8 shadow-xl">
+          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-5 shadow-xl sm:p-8">
             <button
               type="button"
               onClick={closeModal}

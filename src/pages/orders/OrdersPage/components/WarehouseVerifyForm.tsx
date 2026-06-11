@@ -196,10 +196,10 @@ function PackageRowCard({
       </div>
 
       {isD2D ? (
-        /* D2D: direct weight + CBM inputs — no dimension fields */
-        <div className="grid grid-cols-3 gap-2">
-          <div className="col-span-1">
-            <SectionLabel>Weight {isD2D && <span className="text-red-400">*</span>}</SectionLabel>
+        /* D2D: weight + CBM + qty — stack to 2-col on mobile, 3-col on sm+ */
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div>
+            <SectionLabel>Weight <span className="text-red-400">*</span></SectionLabel>
             <UnitInput
               type="number" min="0" step="0.01" placeholder="0.00" unit="kg"
               value={row.weightKg}
@@ -208,7 +208,7 @@ function PackageRowCard({
             />
             {weightError && <p className="mt-1 text-xs text-red-500">Required</p>}
           </div>
-          <div className="col-span-1">
+          <div>
             <SectionLabel>CBM <span className="text-red-400">*</span></SectionLabel>
             <UnitInput
               type="number" min="0" step="0.000001" placeholder="0.000000" unit="m³"
@@ -218,16 +218,16 @@ function PackageRowCard({
             />
             {cbmError && <p className="mt-1 text-xs text-red-500">Required</p>}
           </div>
-          <div>
+          <div className="col-span-2 sm:col-span-1">
             <SectionLabel>Qty</SectionLabel>
             <UnitInput type="number" min="1" step="1" placeholder="1" unit="×"
               value={row.quantity} onChange={(e) => onUpdate({ quantity: e.target.value })} />
           </div>
         </div>
       ) : (
-        /* Air / Sea: dimensions + weight + qty */
-        <div className="grid grid-cols-5 gap-2">
-          <div className="col-span-3">
+        /* Air / Sea: L×W×H + weight + qty — stack on mobile, 5-col on sm+ */
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-5">
+          <div className="sm:col-span-3">
             <SectionLabel>L × W × H (cm)</SectionLabel>
             <div className="grid grid-cols-3 gap-1.5">
               <UnitInput type="number" min="0" step="0.1" placeholder="L" unit="cm"
@@ -238,15 +238,17 @@ function PackageRowCard({
                 value={row.heightCm} onChange={(e) => onUpdate({ heightCm: e.target.value })} />
             </div>
           </div>
-          <div>
-            <SectionLabel>Weight</SectionLabel>
-            <UnitInput type="number" min="0" step="0.01" placeholder="0.00" unit="kg"
-              value={row.weightKg} onChange={(e) => onUpdate({ weightKg: e.target.value })} />
-          </div>
-          <div>
-            <SectionLabel>Qty</SectionLabel>
-            <UnitInput type="number" min="1" step="1" placeholder="1" unit="×"
-              value={row.quantity} onChange={(e) => onUpdate({ quantity: e.target.value })} />
+          <div className="grid grid-cols-2 gap-2 sm:contents">
+            <div>
+              <SectionLabel>Weight</SectionLabel>
+              <UnitInput type="number" min="0" step="0.01" placeholder="0.00" unit="kg"
+                value={row.weightKg} onChange={(e) => onUpdate({ weightKg: e.target.value })} />
+            </div>
+            <div>
+              <SectionLabel>Qty</SectionLabel>
+              <UnitInput type="number" min="1" step="1" placeholder="1" unit="×"
+                value={row.quantity} onChange={(e) => onUpdate({ quantity: e.target.value })} />
+            </div>
           </div>
         </div>
       )}
