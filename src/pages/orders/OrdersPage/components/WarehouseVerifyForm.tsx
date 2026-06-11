@@ -1,14 +1,304 @@
 import type { FormEvent, ReactElement } from 'react';
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { CheckCircle2, Info, AlertTriangle, Plus, X, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { formatCurrency } from '@/utils';
+import { cn } from '@/utils';
+import { usePublicCalculatorRates } from '@/hooks';
+import type { PublicCalculatorRates } from '@/types';
+import type { GoodsBreakdownItem } from '@/services';
 import type { OrderView } from '../types';
 import { mapPackageForm, parsePositive, parsePositiveInt, toIso } from '../types';
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface PackageRow {
+  id: number;
+  description: string;
+  quantity: string;
+  lengthCm: string;
+  widthCm: string;
+  heightCm: string;
+  weightKg: string;
+  cbm: string;
+  arrivalAt: string;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function emptyRow(id: number): PackageRow {
+  return { id, description: '', quantity: '1', lengthCm: '', widthCm: '', heightCm: '', weightKg: '', cbm: '', arrivalAt: '' };
+}
+
+function isoToDatetimeLocal(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number): string => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function rowFromBreakdown(item: GoodsBreakdownItem, id: number): PackageRow {
+  return {
+    id,
+    description: item.description,
+    quantity: String(item.quantity > 0 ? item.quantity : 1),
+    weightKg: item.weightKg > 0 ? String(item.weightKg) : '',
+    cbm: item.cbm > 0 ? String(item.cbm) : '',
+    lengthCm: item.dimensionsCm?.length ? String(item.dimensionsCm.length) : '',
+    widthCm: item.dimensionsCm?.width ? String(item.dimensionsCm.width) : '',
+    heightCm: item.dimensionsCm?.height ? String(item.dimensionsCm.height) : '',
+    arrivalAt: isoToDatetimeLocal(item.arrivalAt),
+  };
+}
+
+function rowVolKg(row: PackageRow): number | null {
+  const l = parsePositive(row.lengthCm);
+  const w = parsePositive(row.widthCm);
+  const h = parsePositive(row.heightCm);
+  if (!l || !w || !h) return null;
+  return (l * w * h) / 5000;
+}
+
+function rowCbmFromDims(row: PackageRow): number | null {
+  const l = parsePositive(row.lengthCm);
+  const w = parsePositive(row.widthCm);
+  const h = parsePositive(row.heightCm);
+  if (!l || !w || !h) return null;
+  return (l * w * h) / 1_000_000;
+}
+
+function computeTotalCharge(
+  rates: PublicCalculatorRates,
+  mode: 'air' | 'sea',
+  rows: PackageRow[],
+  isD2D: boolean,
+): number | null {
+  if (isD2D || mode === 'sea') {
+    const totalCbm = rows.reduce((sum, row) => {
+      const cbm = isD2D
+        ? (parsePositive(row.cbm) ?? 0)
+        : (rowCbmFromDims(row) ?? 0);
+      const qty = parsePositiveInt(row.quantity) ?? 1;
+      return sum + cbm * qty;
+    }, 0);
+    if (totalCbm <= 0) return null;
+    return totalCbm * rates.sea.flatRateUsdPerCbm;
+  }
+  const totalKg = rows.reduce((sum, row) => {
+    const actual = parsePositive(row.weightKg) ?? 0;
+    const vol = rowVolKg(row) ?? 0;
+    const qty = parsePositiveInt(row.quantity) ?? 1;
+    return sum + Math.max(actual, vol) * qty;
+  }, 0);
+  if (totalKg <= 0) return null;
+  const tier =
+    rates.air.tiers.find((t) => totalKg >= t.minKg && totalKg <= t.maxKg) ??
+    rates.air.tiers.at(-1);
+  if (!tier) return null;
+  return totalKg * tier.rateUsdPerKg;
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+const inputCls =
+  'w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-brand-500 transition';
+
+function SectionLabel({ children }: { children: React.ReactNode }): ReactElement {
+  return (
+    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+      {children}
+    </p>
+  );
+}
+
+function UnitInput({
+  value,
+  onChange,
+  unit,
+  readOnly = false,
+  error = false,
+  ...rest
+}: React.InputHTMLAttributes<HTMLInputElement> & { unit: string; readOnly?: boolean; error?: boolean }): ReactElement {
+  return (
+    <div className={cn(
+      'flex items-center overflow-hidden rounded-xl border focus-within:border-brand-500 transition',
+      error ? 'border-red-400' : 'border-gray-200',
+    )}>
+      <input
+        value={value}
+        onChange={onChange}
+        readOnly={readOnly}
+        className={cn(
+          'flex-1 min-w-0 bg-white px-3 py-2.5 text-sm text-gray-800 outline-none',
+          readOnly && 'cursor-default bg-gray-50 text-gray-500',
+        )}
+        {...rest}
+      />
+      <span className="shrink-0 border-l border-gray-200 bg-gray-50 px-3 py-2.5 text-xs font-medium text-gray-400">
+        {unit}
+      </span>
+    </div>
+  );
+}
+
+// ── Package row card ──────────────────────────────────────────────────────────
+
+function PackageRowCard({
+  row,
+  index,
+  canRemove,
+  isD2D,
+  showErrors,
+  onUpdate,
+  onRemove,
+}: {
+  row: PackageRow;
+  index: number;
+  canRemove: boolean;
+  isD2D: boolean;
+  showErrors: boolean;
+  onUpdate: (updates: Partial<PackageRow>) => void;
+  onRemove: () => void;
+}): ReactElement {
+  const hasWeight = (parsePositive(row.weightKg) ?? 0) > 0;
+  const hasCbm = (parsePositive(row.cbm) ?? 0) > 0;
+  const weightError = showErrors && isD2D && !hasWeight;
+  const cbmError = showErrors && isD2D && !hasCbm;
+
+  const volKg = rowVolKg(row);
+  const actualKg = parsePositive(row.weightKg);
+  const chargeableKg = volKg != null || actualKg != null
+    ? Math.max(actualKg ?? 0, volKg ?? 0)
+    : null;
+  const usingVol = chargeableKg != null && (volKg ?? 0) > (actualKg ?? 0);
+
+  return (
+    <div className={cn(
+      'rounded-xl border bg-gray-50/50 p-4',
+      showErrors && isD2D && (!hasWeight || !hasCbm)
+        ? 'border-red-300'
+        : 'border-gray-200',
+    )}>
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+          Package {index + 1}
+        </span>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="flex h-6 w-6 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+
+      {isD2D ? (
+        /* D2D: direct weight + CBM inputs — no dimension fields */
+        <div className="grid grid-cols-3 gap-2">
+          <div className="col-span-1">
+            <SectionLabel>Weight {isD2D && <span className="text-red-400">*</span>}</SectionLabel>
+            <UnitInput
+              type="number" min="0" step="0.01" placeholder="0.00" unit="kg"
+              value={row.weightKg}
+              onChange={(e) => onUpdate({ weightKg: e.target.value })}
+              error={weightError}
+            />
+            {weightError && <p className="mt-1 text-xs text-red-500">Required</p>}
+          </div>
+          <div className="col-span-1">
+            <SectionLabel>CBM <span className="text-red-400">*</span></SectionLabel>
+            <UnitInput
+              type="number" min="0" step="0.000001" placeholder="0.000000" unit="m³"
+              value={row.cbm}
+              onChange={(e) => onUpdate({ cbm: e.target.value })}
+              error={cbmError}
+            />
+            {cbmError && <p className="mt-1 text-xs text-red-500">Required</p>}
+          </div>
+          <div>
+            <SectionLabel>Qty</SectionLabel>
+            <UnitInput type="number" min="1" step="1" placeholder="1" unit="×"
+              value={row.quantity} onChange={(e) => onUpdate({ quantity: e.target.value })} />
+          </div>
+        </div>
+      ) : (
+        /* Air / Sea: dimensions + weight + qty */
+        <div className="grid grid-cols-5 gap-2">
+          <div className="col-span-3">
+            <SectionLabel>L × W × H (cm)</SectionLabel>
+            <div className="grid grid-cols-3 gap-1.5">
+              <UnitInput type="number" min="0" step="0.1" placeholder="L" unit="cm"
+                value={row.lengthCm} onChange={(e) => onUpdate({ lengthCm: e.target.value })} />
+              <UnitInput type="number" min="0" step="0.1" placeholder="W" unit="cm"
+                value={row.widthCm} onChange={(e) => onUpdate({ widthCm: e.target.value })} />
+              <UnitInput type="number" min="0" step="0.1" placeholder="H" unit="cm"
+                value={row.heightCm} onChange={(e) => onUpdate({ heightCm: e.target.value })} />
+            </div>
+          </div>
+          <div>
+            <SectionLabel>Weight</SectionLabel>
+            <UnitInput type="number" min="0" step="0.01" placeholder="0.00" unit="kg"
+              value={row.weightKg} onChange={(e) => onUpdate({ weightKg: e.target.value })} />
+          </div>
+          <div>
+            <SectionLabel>Qty</SectionLabel>
+            <UnitInput type="number" min="1" step="1" placeholder="1" unit="×"
+              value={row.quantity} onChange={(e) => onUpdate({ quantity: e.target.value })} />
+          </div>
+        </div>
+      )}
+
+      {/* Description */}
+      <div className="mt-2.5">
+        <input
+          type="text"
+          placeholder="Description (optional)"
+          value={row.description}
+          onChange={(e) => onUpdate({ description: e.target.value })}
+          className={cn(inputCls, 'text-xs')}
+        />
+      </div>
+
+      {/* Arrival datetime */}
+      <div className="mt-2.5">
+        <SectionLabel>Date arrived at warehouse</SectionLabel>
+        <input
+          type="datetime-local"
+          value={row.arrivalAt}
+          onChange={(e) => onUpdate({ arrivalAt: e.target.value })}
+          className={inputCls}
+        />
+        {!row.arrivalAt && (
+          <p className="mt-1 text-xs text-gray-400">Leave blank to default to today</p>
+        )}
+      </div>
+
+      {/* Computed info — air/sea only */}
+      {!isD2D && chargeableKg != null && (
+        <p className="mt-2 text-xs text-gray-400">
+          Volumetric: {(volKg ?? 0).toFixed(1)} kg
+          {' · '}Chargeable: <span className="font-medium text-gray-600">{chargeableKg.toFixed(2)} kg</span>
+          {usingVol ? ' (vol)' : ' (actual)'}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+
 interface WarehouseVerifyFormProps {
   view: OrderView;
+  isD2D: boolean;
+  imageCount: number;
   canApproveOverride: boolean;
   isPending: boolean;
+  mode?: 'first-verify' | 're-verify';
+  initialPackages?: GoodsBreakdownItem[];
+  onSwitchToImages: () => void;
   onSubmit: (payload: {
     transportMode: 'air' | 'sea';
     departureDate?: string;
@@ -18,68 +308,93 @@ interface WarehouseVerifyFormProps {
   }) => Promise<{ finalChargeUsd: number }>;
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactElement;
-}): ReactElement {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
-        {label}
-      </span>
-      {children}
-    </label>
-  );
-}
-
-const inputCls =
-  'w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500';
-
 export function WarehouseVerifyForm({
   view,
+  isD2D,
+  imageCount,
   canApproveOverride,
   isPending,
+  mode = 'first-verify',
+  initialPackages = [],
+  onSwitchToImages,
   onSubmit,
 }: WarehouseVerifyFormProps): ReactElement {
+  const isReVerify = mode === 're-verify';
   const defaultMode = (view.transportMode || view.shipmentType) === 'sea' ? 'sea' : 'air';
 
   const [transportMode, setTransportMode] = useState<'air' | 'sea'>(defaultMode);
   const [departureDate, setDepartureDate] = useState('');
-  const [packageCount, setPackageCount] = useState('1');
-  const [lengthCm, setLengthCm] = useState('');
-  const [widthCm, setWidthCm] = useState('');
-  const [heightCm, setHeightCm] = useState('');
-  const [weightKg, setWeightKg] = useState('');
+  const [rows, setRows] = useState<PackageRow[]>(() =>
+    initialPackages.length > 0
+      ? initialPackages.map((pkg, i) => rowFromBreakdown(pkg, i + 1))
+      : [emptyRow(1)],
+  );
+  const [nextId, setNextId] = useState(initialPackages.length + 2);
   const [restricted, setRestricted] = useState<'none' | 'flag'>('none');
   const [flagNote, setFlagNote] = useState('');
   const [manualCharge, setManualCharge] = useState('');
   const [manualReason, setManualReason] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showRowErrors, setShowRowErrors] = useState(false);
 
-  const volumetricKg = useMemo(() => {
-    const l = parsePositive(lengthCm);
-    const w = parsePositive(widthCm);
-    const h = parsePositive(heightCm);
-    if (!l || !w || !h) return null;
-    return (l * w * h) / 5000;
-  }, [lengthCm, widthCm, heightCm]);
+  const { data: rates } = usePublicCalculatorRates();
 
-  const cbm = useMemo(() => {
-    const l = parsePositive(lengthCm);
-    const w = parsePositive(widthCm);
-    const h = parsePositive(heightCm);
-    if (!l || !w || !h) return null;
-    return (l * w * h) / 1000000;
-  }, [lengthCm, widthCm, heightCm]);
+  const systemCharge = useMemo(
+    () => (rates ? computeTotalCharge(rates, transportMode, rows, isD2D) : null),
+    [rates, transportMode, rows, isD2D],
+  );
+
+  const totalKgSummary = useMemo(() => rows.reduce((sum, row) => {
+    const actual = parsePositive(row.weightKg) ?? 0;
+    const vol = rowVolKg(row) ?? 0;
+    const qty = parsePositiveInt(row.quantity) ?? 1;
+    return sum + Math.max(actual, vol) * qty;
+  }, 0), [rows]);
+
+  const totalCbmSummary = useMemo(() => rows.reduce((sum, row) => {
+    const cbm = isD2D
+      ? (parsePositive(row.cbm) ?? 0)
+      : (rowCbmFromDims(row) ?? 0);
+    const qty = parsePositiveInt(row.quantity) ?? 1;
+    return sum + cbm * qty;
+  }, 0), [rows, isD2D]);
+
+  // D2D gates
+  const missingMeasurements = isD2D && rows.some(
+    (r) => !(parsePositive(r.weightKg) ?? 0) || !(parsePositive(r.cbm) ?? 0),
+  );
+  const missingImages = isD2D && imageCount === 0;
+  const d2dBlocked = missingMeasurements || missingImages;
+
+  const addRow = (): void => {
+    setRows((prev) => [...prev, emptyRow(nextId)]);
+    setNextId((n) => n + 1);
+  };
+
+  const removeRow = (id: number): void => {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const updateRow = (id: number, updates: Partial<PackageRow>): void => {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...updates } : r)));
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setNotice(null);
     setError(null);
+
+    if (isD2D && missingMeasurements) {
+      setShowRowErrors(true);
+      setError('Every package must have both weight and CBM for D2D orders.');
+      return;
+    }
+
+    if (isD2D && missingImages) {
+      setError('Upload at least one goods image before verifying a D2D order.');
+      return;
+    }
 
     if (restricted === 'flag' && !canApproveOverride && !flagNote.trim()) {
       setError('Add a note describing why this item is flagged.');
@@ -92,61 +407,115 @@ export function WarehouseVerifyForm({
       return;
     }
 
-    const pkg = mapPackageForm({
-      id: 1,
-      description: '',
-      itemType: '',
-      quantity: packageCount,
-      lengthCm,
-      widthCm,
-      heightCm,
-      weightKg,
-      cbm: cbm != null ? String(cbm) : '',
-      specialPackagingType: '',
-      isRestricted: restricted === 'flag',
-      restrictedReason: restricted === 'flag' ? (flagNote.trim() || 'Flagged for review') : '',
-      restrictedOverrideApproved: false,
-      restrictedOverrideReason: '',
-    });
+    const packages = rows.map((row) => ({
+      ...mapPackageForm({
+        id: row.id,
+        description: row.description,
+        itemType: '',
+        quantity: row.quantity,
+        lengthCm: row.lengthCm,
+        widthCm: row.widthCm,
+        heightCm: row.heightCm,
+        weightKg: row.weightKg,
+        cbm: row.cbm,
+        specialPackagingType: '',
+        isRestricted: restricted === 'flag',
+        restrictedReason: restricted === 'flag' ? (flagNote.trim() || 'Flagged for review') : '',
+        restrictedOverrideApproved: false,
+        restrictedOverrideReason: '',
+      }),
+      arrivalAt: toIso(row.arrivalAt),
+    }));
 
     try {
       const result = await onSubmit({
         transportMode,
         departureDate: toIso(departureDate),
-        packages: [pkg],
+        packages,
         manualFinalChargeUsd,
         manualAdjustmentReason: manualReason.trim() || undefined,
       });
-      setNotice(`Verified. Final charge: ${formatCurrency(result.finalChargeUsd, 'USD')}`);
+      if (isReVerify && view.finalChargeUsd != null) {
+        setNotice(
+          `Packages updated. Charge revised from ${formatCurrency(view.finalChargeUsd, 'USD')} → ${formatCurrency(result.finalChargeUsd, 'USD')}.`,
+        );
+      } else {
+        setNotice(`Verified. Final charge: ${formatCurrency(result.finalChargeUsd, 'USD')}`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Verification failed. Please try again.');
     }
   };
 
-  const qty = parsePositiveInt(packageCount);
-
   return (
-    <form
-      className="space-y-5"
-      onSubmit={(e) => void handleSubmit(e)}
-    >
-      <div className="rounded-2xl border border-gray-200 bg-white p-5">
+    <form className="space-y-0" onSubmit={(e) => void handleSubmit(e)}>
+      <div className="p-5 space-y-5">
+
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-900">Warehouse verification</h3>
-          <span
-            className={
-              notice
-                ? 'rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700'
-                : 'rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700'
-            }
-          >
-            {notice ? 'Verified' : 'Pending'}
-          </span>
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">
+              {isReVerify ? 'Update package list' : 'Verify packages'}
+            </h3>
+            <p className="mt-0.5 text-sm text-gray-500">
+              {isReVerify
+                ? 'Pre-filled with existing packages. Add new rows below and submit all together.'
+                : isD2D
+                  ? 'D2D order — weight and CBM are required for every package. At least one goods image must be uploaded.'
+                  : "Record actual measurements for each package. The order can't advance until this is confirmed."}
+            </p>
+          </div>
+          {!isReVerify && (
+            <span className={cn(
+              'shrink-0 rounded-full px-3 py-1 text-xs font-semibold',
+              notice ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700',
+            )}>
+              {notice ? 'Verified' : 'Pending'}
+            </span>
+          )}
         </div>
 
-        {/* Transport mode + departure */}
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <Field label="Transport mode">
+        {/* D2D: missing images gate */}
+        {isD2D && missingImages && (
+          <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+            <ImageIcon className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-red-700">No goods images uploaded</p>
+              <p className="mt-0.5 text-xs text-red-600">
+                D2D orders require at least one image before verification.{' '}
+                <button
+                  type="button"
+                  onClick={onSwitchToImages}
+                  className="font-semibold underline hover:no-underline"
+                >
+                  Go to Images tab →
+                </button>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Re-verify warning */}
+        {isReVerify && (
+          <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div className="text-sm text-amber-800">
+              <p className="font-semibold">Re-verifying will recalculate the final charge.</p>
+              <p className="mt-0.5">
+                All previous packages will be replaced with what you submit below.
+                {view.finalChargeUsd != null && (
+                  <> Current charge: <span className="font-semibold">{formatCurrency(view.finalChargeUsd, 'USD')}</span>.</>
+                )}
+                {' '}If the customer has already paid, their payment status will be reviewed automatically.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Transport + departure */}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <SectionLabel>Transport mode</SectionLabel>
             <select
               value={transportMode}
               onChange={(e) => setTransportMode(e.target.value as 'air' | 'sea')}
@@ -155,120 +524,78 @@ export function WarehouseVerifyForm({
               <option value="air">Air freight</option>
               <option value="sea">Sea freight</option>
             </select>
-          </Field>
-          <Field label="Departure date">
+            {isD2D && (
+              <p className="mt-1 text-xs text-gray-400">Sets the dispatch batch — pricing is always CBM-based for D2D.</p>
+            )}
+          </div>
+          <div>
+            <SectionLabel>Departure date</SectionLabel>
             <input
               type="datetime-local"
               value={departureDate}
               onChange={(e) => setDepartureDate(e.target.value)}
               className={inputCls}
             />
-          </Field>
+          </div>
         </div>
 
-        {/* Dimensions */}
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <Field label="Length (cm)">
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={lengthCm}
-              onChange={(e) => setLengthCm(e.target.value)}
-              placeholder="0"
-              className={inputCls}
+        {/* Package rows */}
+        <div className="space-y-3">
+          <SectionLabel>
+            Packages ({rows.length})
+            {isD2D && <span className="ml-2 text-red-400">Weight + CBM required per package</span>}
+          </SectionLabel>
+          {rows.map((row, i) => (
+            <PackageRowCard
+              key={row.id}
+              row={row}
+              index={i}
+              canRemove={rows.length > 1}
+              isD2D={isD2D}
+              showErrors={showRowErrors}
+              onUpdate={(u) => updateRow(row.id, u)}
+              onRemove={() => removeRow(row.id)}
             />
-          </Field>
-          <Field label="Width (cm)">
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={widthCm}
-              onChange={(e) => setWidthCm(e.target.value)}
-              placeholder="0"
-              className={inputCls}
-            />
-          </Field>
-          <Field label="Height (cm)">
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={heightCm}
-              onChange={(e) => setHeightCm(e.target.value)}
-              placeholder="0"
-              className={inputCls}
-            />
-          </Field>
+          ))}
+          <button
+            type="button"
+            onClick={addRow}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 py-3 text-sm font-medium text-gray-500 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
+          >
+            <Plus className="h-4 w-4" />
+            Add another package
+          </button>
         </div>
-
-        {/* Weight + volumetric + package count */}
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          <Field label="Actual weight (kg)">
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={weightKg}
-              onChange={(e) => setWeightKg(e.target.value)}
-              placeholder="0.00"
-              className={inputCls}
-            />
-          </Field>
-          <Field label="Volumetric weight (kg)">
-            <input
-              readOnly
-              value={volumetricKg != null ? volumetricKg.toFixed(2) : '—'}
-              className={`${inputCls} cursor-default bg-gray-50 text-gray-500`}
-            />
-          </Field>
-          <Field label="Package count">
-            <input
-              type="number"
-              min="1"
-              step="1"
-              value={packageCount}
-              onChange={(e) => setPackageCount(e.target.value)}
-              className={inputCls}
-            />
-          </Field>
-        </div>
-
-        {qty != null && qty > 1 && (
-          <p className="mt-1.5 text-xs text-gray-400">
-            Dimensions and weight apply to each of the {qty} packages.
-          </p>
-        )}
 
         {/* Restricted goods */}
-        <div className="mt-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-            Restricted goods
-          </p>
-          <div className="space-y-2">
-            <label className="flex cursor-pointer items-center gap-2.5 text-sm text-gray-700">
-              <input
-                type="radio"
-                name="restricted"
-                value="none"
-                checked={restricted === 'none'}
-                onChange={() => setRestricted('none')}
-                className="h-4 w-4 accent-brand-500"
-              />
+        <div>
+          <SectionLabel>Restricted goods check</SectionLabel>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setRestricted('none')}
+              className={cn(
+                'flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition',
+                restricted === 'none'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50',
+              )}
+            >
+              {restricted === 'none' && <CheckCircle2 className="h-4 w-4" />}
               No restricted items
-            </label>
-            <label className="flex cursor-pointer items-center gap-2.5 text-sm text-gray-700">
-              <input
-                type="radio"
-                name="restricted"
-                value="flag"
-                checked={restricted === 'flag'}
-                onChange={() => setRestricted('flag')}
-                className="h-4 w-4 accent-brand-500"
-              />
+            </button>
+            <button
+              type="button"
+              onClick={() => setRestricted('flag')}
+              className={cn(
+                'flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition',
+                restricted === 'flag'
+                  ? 'border-amber-200 bg-amber-50 text-amber-700'
+                  : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50',
+              )}
+            >
               Flag for review
-            </label>
+            </button>
           </div>
           {restricted === 'flag' && (
             <textarea
@@ -281,53 +608,115 @@ export function WarehouseVerifyForm({
           )}
         </div>
 
-        {/* Manual charge override (admin only) */}
+        {/* System charge summary */}
         {canApproveOverride && (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <Field label="Override charge (USD)">
+          <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  System calculated charge
+                  {isD2D && <span className="ml-1 normal-case font-normal">(CBM-based)</span>}
+                </p>
+                {systemCharge != null ? (
+                  <p className="mt-0.5 text-xl font-semibold text-gray-900">
+                    {formatCurrency(systemCharge, 'USD')}
+                  </p>
+                ) : (
+                  <p className="mt-0.5 text-sm text-gray-400">
+                    Enter {isD2D ? 'CBM values' : 'measurements'} above to see estimate
+                  </p>
+                )}
+                {systemCharge != null && totalCbmSummary > 0 && (isD2D || transportMode === 'sea') && (
+                  <p className="mt-0.5 text-xs text-gray-400">
+                    {rows.length} package{rows.length > 1 ? 's' : ''} · {totalCbmSummary.toFixed(4)} CBM total
+                  </p>
+                )}
+                {systemCharge != null && transportMode === 'air' && !isD2D && totalKgSummary > 0 && (
+                  <p className="mt-0.5 text-xs text-gray-400">
+                    {rows.length} package{rows.length > 1 ? 's' : ''} · {totalKgSummary.toFixed(2)} kg total chargeable
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-1 text-xs text-gray-400">
+                <Info className="h-3.5 w-3.5 shrink-0" />
+                Auto-applied if no override
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Manual override */}
+        {canApproveOverride && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <SectionLabel>Override charge (USD)</SectionLabel>
               <input
                 type="number"
                 min="0"
                 step="0.01"
                 value={manualCharge}
                 onChange={(e) => setManualCharge(e.target.value)}
-                placeholder="Leave blank for auto"
+                placeholder="Leave blank to use calculated"
                 className={inputCls}
               />
-            </Field>
-            <Field label="Override reason">
+            </div>
+            <div>
+              <SectionLabel>Override reason</SectionLabel>
               <input
                 type="text"
                 value={manualReason}
                 onChange={(e) => setManualReason(e.target.value)}
                 placeholder="Required if overriding"
-                className={inputCls}
+                className={cn(
+                  inputCls,
+                  manualCharge.trim() && !manualReason.trim() && 'border-amber-400 focus:border-amber-500',
+                )}
               />
-            </Field>
+            </div>
           </div>
+        )}
+
+        {/* Feedback */}
+        {notice && (
+          <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+            {notice}
+          </p>
+        )}
+        {error && (
+          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {error}
+          </p>
         )}
       </div>
 
       {/* Actions */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" isLoading={isPending}>
-          Mark verified
-        </Button>
-        <Button type="button" variant="secondary" disabled={isPending}>
-          Save draft
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-5 py-4">
+        <div className="flex items-center gap-3">
+          <Button
+            type="submit"
+            variant="primary"
+            isLoading={isPending}
+            disabled={isPending || d2dBlocked}
+            leftIcon={!isPending ? <CheckCircle2 className="h-4 w-4" /> : undefined}
+          >
+            {isReVerify ? 'Update packages & reprice' : 'Mark verified'}
+          </Button>
+          {!isReVerify && (
+            <Button type="button" variant="secondary" disabled={isPending}>
+              Save draft
+            </Button>
+          )}
+        </div>
+        {!isReVerify && (
+          <p className="text-xs text-gray-400">
+            {d2dBlocked
+              ? isD2D && missingImages
+                ? 'Upload goods images to enable verification.'
+                : 'Fill in weight and CBM for all packages.'
+              : 'Verifying enables "Advance to In transit".'}
+          </p>
+        )}
       </div>
-
-      {notice && (
-        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-          {notice}
-        </p>
-      )}
-      {error && (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-          {error}
-        </p>
-      )}
     </form>
   );
 }

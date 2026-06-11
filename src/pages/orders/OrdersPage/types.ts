@@ -168,6 +168,11 @@ export function getStageInfo(statusV2: string): PipelineStage {
   return { index: 1, label: 'Pre-order' };
 }
 
+export function getNextStageLabel(statusV2: string): string | null {
+  const stage = getStageInfo(statusV2);
+  return STAGE_MAP[stage.index]?.label ?? null; // stage.index is 1-based → next 0-based entry
+}
+
 // ── Operator filters (queue left panel) ────────────────────────────────────
 
 export const OPERATOR_FILTERS = ['all', 'needs_action'] as const;
@@ -219,7 +224,7 @@ export function getAdvanceBlockReason(
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
-export type DetailTab = 'overview' | 'warehouse' | 'payment' | 'images' | 'timeline';
+export type DetailTab = 'overview' | 'warehouse' | 'measurements' | 'payment' | 'images' | 'timeline';
 
 export type Mode = 'air' | 'sea' | 'd2d' | '';
 
@@ -231,6 +236,7 @@ export interface OrderView {
   statusV2: string;
   statusLabel: string;
   senderId: string;
+  senderName: string;
   recipientName: string;
   recipientPhone: string;
   recipientAddress: string;
@@ -239,6 +245,7 @@ export interface OrderView {
   contentDescription: string;
   declaredValue: number | null;
   paymentCollectionStatus: string;
+  totalPaidUsd: number | null;
   amountDue: number | null;
   estimatedChargeUsd: string | null;
   finalChargeUsd: number | null;
@@ -250,6 +257,7 @@ export interface OrderView {
   origin: string;
   destination: string;
   flaggedForAdminReview: boolean;
+  paymentDetailsSentAt: string | null;
 }
 
 // ── Package form ────────────────────────────────────────────────────────────
@@ -362,7 +370,8 @@ export function toIso(value: string): string | undefined {
 
 export function toView(order: ApiOrder): OrderView {
   const record = asRecord(order) ?? {};
-  const sender = asRecord(pick(record, ['sender', 'customer', 'user']));
+  const senderRaw = pick(record, ['sender', 'customer', 'user']);
+  const sender = asRecord(senderRaw);
   const shipmentType = parseMode(pick(record, ['shipmentType']));
   const transportMode = parseMode(pick(record, ['transportMode'])) || shipmentType;
   return {
@@ -371,6 +380,12 @@ export function toView(order: ApiOrder): OrderView {
     statusV2: readString(record, ['statusV2']) || order.statusV2,
     statusLabel: readString(record, ['statusLabel']) || order.statusLabel,
     senderId: readString(record, ['senderId', 'userId', 'customerId']) || readString(sender, ['id']),
+    senderName: (
+      `${readString(sender, ['firstName'])} ${readString(sender, ['lastName'])}`.trim()
+      || readString(sender, ['name', 'fullName'])
+      || readString(record, ['senderName', 'customerName'])
+      || (typeof senderRaw === 'string' ? senderRaw.trim() : '')
+    ),
     recipientName: readString(record, ['recipientName']),
     recipientPhone: readString(record, ['recipientPhone']),
     recipientAddress: resolveLocation(pick(record, ['recipientAddress'])),
@@ -379,6 +394,7 @@ export function toView(order: ApiOrder): OrderView {
     contentDescription: readString(record, ['description', 'contentDescription', 'contents']),
     declaredValue: readNumber(record, ['declaredValue']),
     paymentCollectionStatus: readString(record, ['paymentCollectionStatus']),
+    totalPaidUsd: readNumber(record, ['totalPaidUsd']),
     amountDue: readNumber(record, ['amountDue']),
     estimatedChargeUsd: readString(record, ['estimatedChargeUsd']) || null,
     finalChargeUsd: readNumber(record, ['finalChargeUsd']),
@@ -390,6 +406,7 @@ export function toView(order: ApiOrder): OrderView {
     origin: resolveLocation(pick(record, ['origin', 'originAddress'])) || 'Unknown',
     destination: resolveLocation(pick(record, ['destination', 'destinationAddress', 'recipientAddress'])) || 'Unknown',
     flaggedForAdminReview: readBoolean(record, ['flaggedForAdminReview']),
+    paymentDetailsSentAt: readString(record, ['paymentDetailsSentAt']) || null,
   };
 }
 
@@ -448,6 +465,37 @@ export function includesQuery(
 
 export function isWarehouseVerifiable(statusV2: string): boolean {
   return statusV2 === 'WAREHOUSE_RECEIVED' || statusV2 === 'CLAIM_APPROVED_PENDING_BULK_PROCESSING';
+}
+
+// Statuses after warehouse-verify but still pre-departure — re-verify is
+// allowed to add/replace packages and reprice. Once the batch departs
+// (FLIGHT_DEPARTED / VESSEL_DEPARTED) the window closes.
+const RE_VERIFY_STATUSES = new Set([
+  'WAREHOUSE_VERIFIED_PRICED',
+  'DISPATCHED_TO_ORIGIN_AIRPORT',
+  'AT_ORIGIN_AIRPORT',
+  'BOARDED_ON_FLIGHT',
+  'DISPATCHED_TO_ORIGIN_PORT',
+  'AT_ORIGIN_PORT',
+  'LOADED_ON_VESSEL',
+]);
+
+export function canReVerifyPackages(statusV2: string): boolean {
+  return RE_VERIFY_STATUSES.has(statusV2);
+}
+
+// Statuses where staff can still add packages to this shipment.
+// PREORDER_SUBMITTED / AWAITING_WAREHOUSE_RECEIPT → first warehouse verify.
+// WAREHOUSE_VERIFIED_PRICED → re-verify (last window before batch departs).
+const ADD_TO_SHIPMENT_STATUSES = new Set([
+  'PREORDER_SUBMITTED',
+  'AWAITING_WAREHOUSE_RECEIPT',
+  'WAREHOUSE_RECEIVED',
+  'WAREHOUSE_VERIFIED_PRICED',
+]);
+
+export function canAddToShipment(statusV2: string): boolean {
+  return ADD_TO_SHIPMENT_STATUSES.has(statusV2);
 }
 
 export function isPaymentRelevant(paymentCollectionStatus: string): boolean {

@@ -31,9 +31,18 @@ export interface ApiPayment {
 export interface RecordOfflinePayload {
   userId: string;
   amount: number;
+  currency?: 'USD' | 'NGN';
   paymentType: 'transfer' | 'cash';
   proofReference?: string;
   note?: string;
+}
+
+export interface RecordOfflineResult {
+  warning: string | null;
+}
+
+export interface WaiveBalancePayload {
+  reason: string;
 }
 
 export interface ApiPaymentsResponse {

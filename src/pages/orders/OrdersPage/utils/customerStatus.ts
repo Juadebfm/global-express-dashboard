@@ -112,10 +112,12 @@ export function getHeroInfo(statusV2: string): HeroInfo {
 
 // ── Payment state ───────────────────────────────────────────────────────────
 
-export type PaymentState = 'paid' | 'due' | 'not_priced';
+export type PaymentState = 'paid' | 'in_progress' | 'due' | 'not_priced';
 
 export function getPaymentState(view: OrderView): PaymentState {
-  if (view.paymentCollectionStatus.toUpperCase() === 'PAID_IN_FULL') return 'paid';
+  const status = view.paymentCollectionStatus.toUpperCase();
+  if (status === 'PAID_IN_FULL') return 'paid';
+  if (status === 'PAYMENT_IN_PROGRESS') return 'in_progress';
   if (view.amountDue !== null) return 'due';
   return 'not_priced';
 }

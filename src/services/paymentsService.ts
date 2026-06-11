@@ -4,10 +4,13 @@ import type {
   ApiPayment,
   ApiPaymentsResponse,
   RecordOfflinePayload,
+  RecordOfflineResult,
+  WaiveBalancePayload,
   ReceiptPresignPayload,
   ReceiptPresignResponse,
   ReceiptSubmitPayload,
   ReceiptVerifyPayload,
+  ReceiptVerifyResult,
 } from '@/types';
 import { apiGetData, apiPatchData, apiPostData } from '@/lib/apiClient';
 
@@ -49,9 +52,17 @@ export function getPaymentById(token: string, id: string): Promise<ApiPayment> {
 export function recordOfflinePayment(
   token: string,
   orderId: string,
-  payload: RecordOfflinePayload
-): Promise<ApiPayment> {
-  return apiPostData<ApiPayment>(`/payments/${orderId}/record-offline`, payload, token);
+  payload: RecordOfflinePayload,
+): Promise<ApiPayment & RecordOfflineResult> {
+  return apiPostData<ApiPayment & RecordOfflineResult>(`/payments/${orderId}/record-offline`, payload, token);
+}
+
+export function waiveOrderBalance(
+  token: string,
+  orderId: string,
+  payload: WaiveBalancePayload,
+): Promise<void> {
+  return apiPatchData<void>(`/payments/orders/${orderId}/waive-balance`, payload, token);
 }
 
 // ── Offline receipt flow (presign → submit → superadmin verify) ──────────────
@@ -78,6 +89,24 @@ export function verifyPaymentReceipt(
   return apiPatchData<ApiPayment>(`/payments/receipts/${receiptId}/verify`, payload, token);
 }
 
+export interface SendPaymentRequestResult {
+  trackingNumber: string;
+  amountUsd: string;
+  amountNgn: string;
+  paymentDetailsSentAt: string;
+}
+
+export function sendPaymentRequest(
+  token: string,
+  orderId: string,
+): Promise<SendPaymentRequestResult> {
+  return apiPostData<SendPaymentRequestResult>(
+    `/payments/${orderId}/send-payment-request`,
+    undefined,
+    token,
+  );
+}
+
 export function getOrderPayments(
   token: string,
   orderId: string,
@@ -89,6 +118,6 @@ export function verifyOrderPayment(
   token: string,
   paymentId: string,
   payload: ReceiptVerifyPayload,
-): Promise<ApiPayment> {
-  return apiPostData<ApiPayment>(`/payments/${paymentId}/verify`, payload, token);
+): Promise<ApiPayment & ReceiptVerifyResult> {
+  return apiPatchData<ApiPayment & ReceiptVerifyResult>(`/payments/receipts/${paymentId}/verify`, payload, token);
 }

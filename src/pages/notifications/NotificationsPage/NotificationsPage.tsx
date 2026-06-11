@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bookmark, Info, RotateCcw, Trash2 } from 'lucide-react';
+import { Bookmark, Info, RotateCcw, Trash2, X } from 'lucide-react';
 import {
   useDashboardData,
   useNotifications,
@@ -22,6 +22,9 @@ interface NotificationItem {
   dateTime: string;
   unread: boolean;
   saved: boolean;
+  notifType: string;
+  orderId: string | null;
+  metadata: Record<string, unknown>;
 }
 
 function getLocale(): string {
@@ -56,6 +59,56 @@ function formatDateTime(iso: string): string {
   );
 }
 
+const UUID_RE = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
+const TRACKING_RE = /\bGEX-[A-Z0-9-]+\b/g;
+
+function stripUuids(text: string): string {
+  return text
+    .replace(/\s+for (order|shipment|payment)\s+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '')
+    .replace(UUID_RE, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([.,!?])/g, '$1')
+    .trim();
+}
+
+function extractTrackingNumbers(text: string): string[] {
+  return Array.from(new Set(text.match(TRACKING_RE) ?? []));
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  order_status_update: 'Order Update',
+  payment_event: 'Payment',
+  payment_received: 'Payment',
+  payment_failed: 'Payment',
+  system_announcement: 'Announcement',
+  admin_alert: 'Admin Alert',
+  new_customer: 'New Customer',
+  new_order: 'New Order',
+  new_staff_account: 'New Staff',
+  staff_onboarding_complete: 'Onboarding',
+};
+
+const TYPE_STYLES: Record<string, string> = {
+  order_status_update: 'bg-blue-50 text-blue-700 border-blue-200',
+  payment_event: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  payment_received: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  payment_failed: 'bg-red-50 text-red-700 border-red-200',
+  system_announcement: 'bg-purple-50 text-purple-700 border-purple-200',
+  admin_alert: 'bg-amber-50 text-amber-700 border-amber-200',
+  new_customer: 'bg-teal-50 text-teal-700 border-teal-200',
+  new_order: 'bg-blue-50 text-blue-700 border-blue-200',
+  new_staff_account: 'bg-gray-50 text-gray-700 border-gray-200',
+  staff_onboarding_complete: 'bg-gray-50 text-gray-700 border-gray-200',
+};
+
+function typeLabel(type: string): string {
+  return TYPE_LABELS[type] ?? type.replace(/_/g, ' ');
+}
+
+function typeStyle(type: string): string {
+  return TYPE_STYLES[type] ?? 'bg-gray-50 text-gray-700 border-gray-200';
+}
+
 function mapApiNotification(n: ApiNotification): NotificationItem {
   const content = n.body ?? n.message;
   const truncated = content.length > 80 ? content.slice(0, 80) + '…' : content;
@@ -68,7 +121,134 @@ function mapApiNotification(n: ApiNotification): NotificationItem {
     dateTime: formatDateTime(n.createdAt),
     unread: !n.isRead,
     saved: n.isSaved,
+    notifType: n.type,
+    orderId: n.orderId ?? null,
+    metadata: n.metadata ?? {},
   };
+}
+
+function NotificationDetailModal({
+  item,
+  onClose,
+  onDelete,
+  t,
+}: {
+  item: NotificationItem;
+  onClose: () => void;
+  onDelete: () => void;
+  t: (key: string) => string;
+}): ReactElement {
+  const cleanBody = stripUuids(item.description);
+  const trackingNumbers = extractTrackingNumbers(item.description);
+  const metaTracking = typeof item.metadata.trackingNumber === 'string'
+    ? item.metadata.trackingNumber
+    : null;
+  const allTracking = Array.from(new Set([
+    ...(metaTracking ? [metaTracking] : []),
+    ...trackingNumbers,
+  ]));
+
+  const metaFields: { label: string; value: string }[] = [];
+  if (typeof item.metadata.amount === 'number' || typeof item.metadata.amount === 'string') {
+    metaFields.push({ label: 'Amount', value: String(item.metadata.amount) });
+  }
+  if (typeof item.metadata.currency === 'string') {
+    metaFields.push({ label: 'Currency', value: item.metadata.currency });
+  }
+  if (typeof item.metadata.customerName === 'string') {
+    metaFields.push({ label: 'Customer', value: item.metadata.customerName });
+  }
+  if (typeof item.metadata.email === 'string') {
+    metaFields.push({ label: 'Email', value: item.metadata.email });
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close button */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          aria-label="Close"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        {/* Type chip + date */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={cn('inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold', typeStyle(item.notifType))}>
+            {typeLabel(item.notifType)}
+          </span>
+          {item.saved && (
+            <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+              {t('badges.saved')}
+            </span>
+          )}
+          <span className="ml-auto text-xs text-gray-400">{item.dateTime}</span>
+        </div>
+
+        {/* Title */}
+        <h2 className="mt-3 text-lg font-semibold text-gray-900">{item.title}</h2>
+
+        {/* Tracking numbers */}
+        {allTracking.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {allTracking.map((tn) => (
+              <span
+                key={tn}
+                className="inline-flex items-center rounded-lg bg-brand-50 px-3 py-1.5 text-sm font-semibold tracking-tight text-brand-700 ring-1 ring-brand-200"
+              >
+                {tn}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Structured metadata fields */}
+        {metaFields.length > 0 && (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {metaFields.map(({ label, value }) => (
+              <div key={label} className="rounded-xl bg-gray-50 px-3 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+                <p className="mt-0.5 text-sm font-medium text-gray-800">{value}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Body text — UUIDs stripped */}
+        <div className="mt-3 rounded-2xl bg-gray-50 px-4 py-3 text-sm leading-relaxed text-gray-600">
+          {cleanBody || item.description}
+        </div>
+
+        {/* Actions */}
+        <div className="mt-5 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onDelete}
+            className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600"
+          >
+            <Trash2 className="h-4 w-4" />
+            {t('bulkBar.delete')}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-200"
+          >
+            {t('close')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function CustomerNotificationsView(): ReactElement {
@@ -118,6 +298,8 @@ function CustomerNotificationsView(): ReactElement {
   const newItems = filteredItems.filter((item) => item.unread);
   const oldItems = filteredItems.filter((item) => !item.unread);
   const hasSelection = selectedIds.size > 0;
+  const allSelected = filteredItems.length > 0 && filteredItems.every((item) => selectedIds.has(item.id));
+  const someSelected = hasSelection && !allSelected;
 
   const toggleSelection = (id: string): void => {
     setSelectedIds((prev) => {
@@ -126,6 +308,14 @@ function CustomerNotificationsView(): ReactElement {
       else next.add(id);
       return next;
     });
+  };
+
+  const handleSelectAll = (): void => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredItems.map((item) => item.id)));
+    }
   };
 
   const handleSaveSelected = (): void => {
@@ -311,6 +501,25 @@ function CustomerNotificationsView(): ReactElement {
           </div>
         ) : (
           <div className={cn('divide-y divide-gray-200', hasSelection && 'pb-24')}>
+            {/* Select-all row */}
+            <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50/60 px-6 py-2.5">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                onChange={handleSelectAll}
+                className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                aria-label="Select all notifications"
+              />
+              <span className="text-xs font-medium text-gray-500">
+                {allSelected
+                  ? `All ${filteredItems.length} selected — click to deselect`
+                  : someSelected
+                    ? `${selectedIds.size} of ${filteredItems.length} selected`
+                    : `Select all`}
+              </span>
+            </div>
+
             {newItems.length > 0 && (
               <div className="bg-gray-50/70 px-6 py-2 text-xs font-semibold uppercase text-gray-500">
                 {t('sections.new')}
@@ -373,61 +582,25 @@ function CustomerNotificationsView(): ReactElement {
       </div>
 
       {activeNotification && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-          <div className="relative w-full max-w-2xl rounded-3xl bg-white p-7 shadow-xl">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="space-y-2">
-                <h2 className="text-2xl font-semibold text-gray-900">
-                  {activeNotification.title}
-                </h2>
-                <p className="text-sm text-gray-600">{activeNotification.subtitle}</p>
-                <p className="text-xs font-medium text-gray-500">
-                  {activeNotification.dateTime}
-                </p>
-              </div>
-              {activeNotification.saved && (
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                  {t('badges.saved')}
-                </span>
-              )}
-            </div>
-
-            <div className="mt-6 rounded-2xl bg-gray-50 px-4 py-4 text-sm text-gray-600">
-              {activeNotification.description}
-            </div>
-
-            <div className="mt-8 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  deleteOne(activeNotification.id);
-                  setDeletedIds((prev) => {
-                    const next = new Set(prev);
-                    next.add(activeNotification.id);
-                    return next;
-                  });
-                  setSelectedIds((prev) => {
-                    const next = new Set(prev);
-                    next.delete(activeNotification.id);
-                    return next;
-                  });
-                  setActiveNotification(null);
-                }}
-                className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-600"
-              >
-                <Trash2 className="h-4 w-4" />
-                {t('bulkBar.delete')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveNotification(null)}
-                className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200"
-              >
-                {t('close')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <NotificationDetailModal
+          item={activeNotification}
+          onClose={() => setActiveNotification(null)}
+          onDelete={() => {
+            deleteOne(activeNotification.id);
+            setDeletedIds((prev) => {
+              const next = new Set(prev);
+              next.add(activeNotification.id);
+              return next;
+            });
+            setSelectedIds((prev) => {
+              const next = new Set(prev);
+              next.delete(activeNotification.id);
+              return next;
+            });
+            setActiveNotification(null);
+          }}
+          t={t}
+        />
       )}
     </AppShell>
   );
@@ -438,4 +611,3 @@ function CustomerNotificationsView(): ReactElement {
 export function NotificationsPage(): ReactElement {
   return <CustomerNotificationsView />;
 }
-

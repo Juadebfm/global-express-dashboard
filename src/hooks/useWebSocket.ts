@@ -9,6 +9,17 @@ import { useAuth } from './useAuth';
 
 const TOKEN_KEY = 'globalxpress_token';
 
+const UUID_RE = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
+
+function stripUuids(text: string): string {
+  return text
+    .replace(/\s+for (order|shipment|payment)\s+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '')
+    .replace(UUID_RE, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([.,!?])/g, '$1')
+    .trim();
+}
+
 function buildWsUrl(): string {
   const base = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
   const wsBase = base
@@ -110,8 +121,8 @@ export function useWebSocket(): void {
               if (title || body) {
                 pushMessage({
                   tone: 'info',
-                  title: title || undefined,
-                  message: body,
+                  title: title ? stripUuids(title) : undefined,
+                  message: stripUuids(body),
                 });
               }
               break;
@@ -121,8 +132,8 @@ export function useWebSocket(): void {
               if (title || body) {
                 pushMessage({
                   tone: 'info',
-                  title: title || undefined,
-                  message: body,
+                  title: title ? stripUuids(title) : undefined,
+                  message: stripUuids(body),
                 });
               }
               break;

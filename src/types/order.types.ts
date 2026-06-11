@@ -45,6 +45,7 @@ export interface OrderListItem {
   amount: number | null;
   transportMode: string;
   paymentCollectionStatus: string;
+  paymentDetailsSentAt?: string | null;
   flaggedForAdminReview: boolean;
   raw: Record<string, unknown>;
 }

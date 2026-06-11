@@ -12,6 +12,7 @@ export interface WarehousePackage {
   restrictedReason?: string | null;
   restrictedOverrideApproved?: boolean;
   restrictedOverrideReason?: string | null;
+  arrivalAt?: string;
 }
 
 export interface WarehouseVerifyPayload {

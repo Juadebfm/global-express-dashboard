@@ -3,17 +3,14 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  ClipboardList,
-  CreditCard,
-  Image,
   Loader2,
-  Package,
   Plus,
 } from 'lucide-react';
 import {
   useCan,
   useDashboardData,
   useDeleteOrderImage,
+  useMyPayments,
   useOrderDetail,
   useOrderImages,
   useOrderPayments,
@@ -21,12 +18,16 @@ import {
   useOrderTimeline,
   useRecordOfflinePayment,
   useSearch,
+  useSendPaymentRequest,
   useShipmentsDashboard,
+  useMeasurements,
+  useRecordMeasurement,
   useUpdateOrderStatus,
   useUpdatePickupRep,
   useUpload,
   useVerifyOrderPayment,
   useWarehouseVerify,
+  useCreateOrderForCustomer,
 } from '@/hooks';
 import type { OrderListItem } from '@/types';
 import { Button, Pagination, TableRowsSkeleton } from '@/components/ui';
@@ -39,14 +40,21 @@ import {
   OverviewPanel,
   WarehouseVerifyForm,
   OfflinePaymentForm,
+  OrderPaymentHistory,
   ReceiptApprovalPanel,
+  PaymentReceiptSummary,
+  SendPaymentPanel,
+  MeasurementsTab,
   CustomerShipmentDetail,
   CustomerPaymentView,
   PickupRepForm,
   ImageGallery,
   OrderTimeline,
+  CreateOrderModal,
 } from './components';
 import {
+  canAddToShipment,
+  canReVerifyPackages,
   includesQuery,
   isPaymentRelevant,
   isWarehouseVerifiable,
@@ -56,12 +64,13 @@ import {
 } from './types';
 import type { DetailTab, OperatorFilter } from './types';
 
-const TABS: Array<{ key: DetailTab; icon: typeof ClipboardList }> = [
-  { key: 'overview', icon: ClipboardList },
-  { key: 'warehouse', icon: Package },
-  { key: 'payment', icon: CreditCard },
-  { key: 'images', icon: Image },
-  { key: 'timeline', icon: ClipboardList },
+const TABS: Array<{ key: DetailTab }> = [
+  { key: 'overview' },
+  { key: 'warehouse' },
+  { key: 'measurements' },
+  { key: 'payment' },
+  { key: 'images' },
+  { key: 'timeline' },
 ];
 
 export function OrdersPage(): ReactElement {
@@ -79,6 +88,7 @@ export function OrdersPage(): ReactElement {
   const [activeTab, setActiveTab] = useState<DetailTab>('overview');
   const [showPaymentView, setShowPaymentView] = useState(false);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
+  const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, Number(searchParams.get('page')) || 1);
@@ -98,7 +108,8 @@ export function OrdersPage(): ReactElement {
   };
 
   // ── Data hooks ────────────────────────────────────────────────
-  const statusFilter = isOperator && activeFilter !== 'all' ? activeFilter : undefined;
+  // 'needs_action' is a FE-only composite filter — don't send it as statusV2 to the API.
+  const statusFilter = isOperator && activeFilter !== 'all' && activeFilter !== 'needs_action' ? activeFilter : undefined;
   const { data: appData, isLoading: appLoading, error: appError } = useDashboardData();
   const {
     orders,
@@ -142,10 +153,15 @@ export function OrdersPage(): ReactElement {
   const queueTotal = queuePagination.total;
   const queueError = isOperator ? shipmentsError : ordersError;
   const queueLoading = isOperator ? shipmentsLoading : ordersLoading;
-  const visibleOrders = useMemo(
-    () => queueOrders.filter((o) => includesQuery(o, query)),
-    [queueOrders, query],
-  );
+  const visibleOrders = useMemo(() => {
+    const matched = queueOrders.filter((o) => includesQuery(o, query));
+    if (isOperator && activeFilter === 'needs_action') {
+      return matched.filter((o) =>
+        needsAction(o.statusV2, o.paymentCollectionStatus, o.flaggedForAdminReview),
+      );
+    }
+    return matched;
+  }, [queueOrders, query, isOperator, activeFilter]);
 
   const needsActionCount = useMemo(
     () =>
@@ -164,25 +180,39 @@ export function OrdersPage(): ReactElement {
   }, [visibleOrders, selectedOrderIdState]);
 
   const orderDetailQuery = useOrderDetail(selectedOrderId ?? undefined);
-  const view = useMemo(
-    () => (orderDetailQuery.data ? toView(orderDetailQuery.data) : null),
-    [orderDetailQuery.data],
-  );
+  const view = useMemo(() => {
+    if (!orderDetailQuery.data) return null;
+    const v = toView(orderDetailQuery.data);
+    // Detail endpoint may not include customer name — fall back to queue item which always has it
+    if (!v.senderName && selectedOrderId) {
+      const queueItem = queueOrders.find((o) => o.id === selectedOrderId);
+      if (queueItem?.senderName) return { ...v, senderName: queueItem.senderName };
+    }
+    return v;
+  }, [orderDetailQuery.data, selectedOrderId, queueOrders]);
   const timelineQuery = useOrderTimeline(selectedOrderId ?? undefined, Boolean(selectedOrderId));
   const imagesQuery = useOrderImages(selectedOrderId ?? undefined);
+  const measurementsQuery = useMeasurements(
+    view?.shipmentType === 'd2d' && activeTab === 'measurements' ? (selectedOrderId ?? undefined) : undefined,
+  );
+  const recordMeasurement = useRecordMeasurement();
+  const isPaidInFull = view?.paymentCollectionStatus === 'PAID_IN_FULL';
   const paymentsQuery = useOrderPayments(
     selectedOrderId ?? undefined,
-    isOperator && activeTab === 'payment',
+    isOperator && (activeTab === 'payment' || isPaidInFull),
   );
+  const myPaymentsQuery = useMyPayments(!isOperator);
 
   // ── Mutations ─────────────────────────────────────────────────
   const updateStatus = useUpdateOrderStatus();
   const verifyWarehouse = useWarehouseVerify();
   const recordOfflinePayment = useRecordOfflinePayment();
+  const createOrderForCustomer = useCreateOrderForCustomer();
   const updatePickupRep = useUpdatePickupRep();
   const uploadImage = useUpload();
   const deleteOrderImage = useDeleteOrderImage();
   const verifyPayment = useVerifyOrderPayment(selectedOrderId ?? undefined);
+  const sendPaymentDetails = useSendPaymentRequest();
 
   // ── Handlers ──────────────────────────────────────────────────
   const handleSelectOrder = (id: string): void => {
@@ -190,6 +220,9 @@ export function OrdersPage(): ReactElement {
     setActiveTab('overview');
     setShowPaymentView(false);
     setMobileShowDetail(true);
+    // Clear stale mutation state from the previous order so banners don't bleed across selections.
+    updateStatus.reset();
+    verifyWarehouse.reset();
   };
 
   const handleStatusAdvance = async (statusV2: string): Promise<void> => {
@@ -211,8 +244,26 @@ export function OrdersPage(): ReactElement {
   const handleRecordOffline = async (
     orderId: string,
     payload: Parameters<typeof recordOfflinePayment.mutateAsync>[0]['payload'],
-  ) => {
-    await recordOfflinePayment.mutateAsync({ orderId, payload });
+  ): Promise<{ warning: string | null }> => {
+    const result = await recordOfflinePayment.mutateAsync({ orderId, payload });
+    return { warning: result.warning ?? null };
+  };
+
+  const handleCreateOrderForCustomer = async (submitPayload: {
+    senderId: string;
+    recipientName: string;
+    recipientPhone: string;
+    recipientEmail: string;
+    shipmentType: 'air' | 'sea';
+    weight: string;
+    declaredValue: string;
+    description: string;
+    orderDirection: 'outbound';
+    idempotencyKey: string;
+  }): Promise<{ trackingNumber: string }> => {
+    const { idempotencyKey, ...orderPayload } = submitPayload;
+    const result = await createOrderForCustomer.mutateAsync({ payload: orderPayload, idempotencyKey });
+    return { trackingNumber: result.trackingNumber };
   };
 
   const handlePickupRep = async (orderId: string, name: string, phone: string) => {
@@ -232,8 +283,9 @@ export function OrdersPage(): ReactElement {
     paymentId: string,
     decision: 'approve' | 'reject',
     note?: string,
-  ) => {
-    await verifyPayment.mutateAsync({ paymentId, payload: { decision, note } });
+  ): Promise<{ warning: string | null }> => {
+    const result = await verifyPayment.mutateAsync({ paymentId, payload: { decision, note } });
+    return { warning: result.warning ?? null };
   };
 
   // ── Derived ───────────────────────────────────────────────────
@@ -248,6 +300,10 @@ export function OrdersPage(): ReactElement {
   }, [timelineQuery.data?.goodsBreakdown]);
 
   const orderPayments = Array.isArray(paymentsQuery.data) ? paymentsQuery.data : [];
+  const myOrderPayments = useMemo(
+    () => (myPaymentsQuery.data ?? []).filter((p) => p.orderId === selectedOrderId),
+    [myPaymentsQuery.data, selectedOrderId],
+  );
   const pendingReceiptPayments = orderPayments.filter(
     (p) => p.proofReference && p.status === 'pending',
   );
@@ -263,14 +319,23 @@ export function OrdersPage(): ReactElement {
     };
   }, [view, searchParams]);
 
-  const showWarehouse = isOperator && effectiveView && isWarehouseVerifiable(effectiveView.statusV2);
+  const isFirstVerify = isOperator && !!effectiveView && isWarehouseVerifiable(effectiveView.statusV2);
+  const isReVerify = isOperator && !!effectiveView && canReVerifyPackages(effectiveView.statusV2);
+  const showWarehouse = isFirstVerify || isReVerify;
   const showPayment = effectiveView && isPaymentRelevant(effectiveView.paymentCollectionStatus);
 
+  const isCancelled = effectiveView?.statusV2?.toUpperCase() === 'CANCELLED';
+  const isD2D = effectiveView?.shipmentType === 'd2d';
+
   const visibleTabs = TABS.filter((tab) => {
-    if (tab.key === 'warehouse' && !isOperator) return false;
-    if (tab.key === 'payment' && !showPayment) return false;
+    if (isCancelled && (tab.key === 'warehouse' || tab.key === 'payment' || tab.key === 'measurements')) return false;
+    if ((tab.key === 'warehouse' || tab.key === 'payment' || tab.key === 'measurements') && !isOperator) return false;
+    if (tab.key === 'warehouse' && !showWarehouse) return false;
+    if (tab.key === 'measurements' && !isD2D) return false;
     return true;
   });
+
+  const effectiveTab = visibleTabs.some((t) => t.key === activeTab) ? activeTab : 'overview';
 
   return (
     <AppShell
@@ -299,7 +364,7 @@ export function OrdersPage(): ReactElement {
 
         <div className="grid gap-4 lg:gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
           {/* Left: Order Queue + Pagination */}
-          <div className={cn('space-y-3', mobileShowDetail ? 'hidden lg:block' : '')}>
+          <div className={cn('min-w-0 space-y-3', mobileShowDetail ? 'hidden lg:block' : '')}>
             {queueLoading && queueOrders.length === 0 ? (
               <TableRowsSkeleton columns={3} rows={8} ariaLabel={t('orders:loadingLabel')} />
             ) : (
@@ -337,7 +402,7 @@ export function OrdersPage(): ReactElement {
           </div>
 
           {/* Right: Detail Panel */}
-          <section className={cn('space-y-4', !mobileShowDetail ? 'hidden lg:block' : '')}>
+          <section className={cn('min-w-0 space-y-4', !mobileShowDetail ? 'hidden lg:block' : '')}>
             {!selectedOrderId ? (
               <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
                 {t('orders:detail.selectOrder')}
@@ -365,6 +430,7 @@ export function OrdersPage(): ReactElement {
                   view={effectiveView}
                   timeline={timelineEvents}
                   timelineLoading={timelineQuery.isLoading}
+                  payments={myOrderPayments}
                   onSettleBalance={() => setShowPaymentView(true)}
                   updatePickupRepPending={updatePickupRep.isPending}
                   onSubmitPickupRep={handlePickupRep}
@@ -377,6 +443,16 @@ export function OrdersPage(): ReactElement {
                 <OrderDetailHeader
                   view={effectiveView}
                   onAdvance={(s) => void handleStatusAdvance(s)}
+                  onAddToShipment={
+                    isOperator && !!effectiveView && canAddToShipment(effectiveView.statusV2)
+                      ? () => setActiveTab('warehouse')
+                      : undefined
+                  }
+                  onCreateOrderForCustomer={
+                    effectiveView.senderId
+                      ? () => setShowCreateOrderModal(true)
+                      : undefined
+                  }
                   onBack={mobileShowDetail ? () => setMobileShowDetail(false) : undefined}
                   advanceLoading={updateStatus.isPending}
                 />
@@ -395,42 +471,27 @@ export function OrdersPage(): ReactElement {
                   </div>
                 )}
 
-                {/* Tab strip */}
-                <div className="flex gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1">
+                {/* Tab strip + content */}
+                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                <div className="scrollbar-none flex overflow-x-auto border-b border-gray-200">
                   {visibleTabs.map((tab) => {
-                    const Icon = tab.icon;
-                    const isActive = activeTab === tab.key;
-                    let badge: string | null = null;
-                    if (tab.key === 'warehouse' && showWarehouse) badge = '!';
-                    if (tab.key === 'payment' && showPayment) badge = '$';
-                    if (tab.key === 'timeline') badge = String(timelineEvents.length);
+                    const isActive = effectiveTab === tab.key;
+                    const paymentDot = tab.key === 'payment' && showPayment;
                     return (
                       <button
                         key={tab.key}
                         type="button"
                         onClick={() => setActiveTab(tab.key)}
                         className={cn(
-                          'relative flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition',
+                          'relative flex shrink-0 items-center gap-1.5 px-4 py-3 text-sm font-medium transition border-b-2 -mb-px',
                           isActive
-                            ? 'bg-white text-brand-600 shadow-sm'
-                            : 'text-gray-500 hover:text-gray-700',
+                            ? 'border-brand-500 text-gray-900'
+                            : 'border-transparent text-gray-500 hover:text-gray-700',
                         )}
                       >
-                        <Icon className="h-3.5 w-3.5" />
-                        <span className="hidden sm:inline">{t(`orders:tabs.${tab.key}`)}</span>
-                        {badge && (
-                          <span
-                            className={cn(
-                              'ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold',
-                              tab.key === 'warehouse'
-                                ? 'bg-amber-100 text-amber-700'
-                                : tab.key === 'payment'
-                                  ? 'bg-emerald-100 text-emerald-700'
-                                  : 'bg-gray-200 text-gray-600',
-                            )}
-                          >
-                            {badge}
-                          </span>
+                        {t(`orders:tabs.${tab.key}`)}
+                        {paymentDot && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
                         )}
                       </button>
                     );
@@ -438,87 +499,132 @@ export function OrdersPage(): ReactElement {
                 </div>
 
                 {/* Tab content */}
-                {activeTab === 'overview' && (
+                {effectiveTab === 'overview' && (
                   <OverviewPanel
                     view={effectiveView}
                     billableWeightKg={billableWeightKg}
                   />
                 )}
 
-                {activeTab === 'warehouse' && (
-                  showWarehouse ? (
-                    <WarehouseVerifyForm
-                      view={effectiveView}
-                      canApproveOverride={canApproveOverride}
-                      isPending={verifyWarehouse.isPending}
-                      onSubmit={handleWarehouseVerify}
-                    />
-                  ) : (
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                      <h3 className="text-base font-semibold text-gray-900">
-                        {t('orders:warehouse.title')}
-                      </h3>
-                      <p className="mt-2 text-sm text-gray-500">
-                        {t('orders:warehouse.notApplicable')}
-                      </p>
-                    </div>
-                  )
+                {effectiveTab === 'warehouse' && showWarehouse && (
+                  <WarehouseVerifyForm
+                    key={`${selectedOrderId}-${isReVerify ? 're' : 'first'}`}
+                    view={effectiveView}
+                    isD2D={isD2D}
+                    imageCount={orderImages.length}
+                    canApproveOverride={canApproveOverride}
+                    isPending={verifyWarehouse.isPending}
+                    mode={isReVerify ? 're-verify' : 'first-verify'}
+                    initialPackages={isReVerify ? (timelineQuery.data?.goodsBreakdown ?? []) : []}
+                    onSwitchToImages={() => setActiveTab('images')}
+                    onSubmit={handleWarehouseVerify}
+                  />
                 )}
 
-                {activeTab === 'payment' && (
-                  <div className="space-y-4">
-                    {/* Superadmin: receipt approval for pending receipts */}
-                    {isSuperAdmin &&
-                      pendingReceiptPayments.map((payment) => (
-                        <ReceiptApprovalPanel
-                          key={payment.id}
-                          payment={payment}
-                          isPending={verifyPayment.isPending}
-                          onVerify={handleVerifyPayment}
-                        />
-                      ))}
+                {effectiveTab === 'measurements' && isD2D && (
+                  <MeasurementsTab
+                    orderId={effectiveView.id}
+                    measurements={measurementsQuery.data ?? []}
+                    isLoading={measurementsQuery.isLoading}
+                    canRecord={isOperator}
+                    isPending={recordMeasurement.isPending}
+                    onRecord={(orderId, data) => recordMeasurement.mutate({ orderId, ...data })}
+                  />
+                )}
 
-                    {/* Operator: record offline payment */}
-                    <OfflinePaymentForm
-                      view={effectiveView}
-                      isPending={recordOfflinePayment.isPending}
-                      onSubmit={handleRecordOffline}
+                {effectiveTab === 'payment' && (
+                  <div>
+                    {/* Send / resend payment notification — shown whenever priced and not yet fully paid */}
+                    {!isPaidInFull && effectiveView.finalChargeUsd !== null && (
+                      <SendPaymentPanel
+                        view={effectiveView}
+                        isPending={sendPaymentDetails.isPending}
+                        onSend={() => sendPaymentDetails.mutate(effectiveView.id)}
+                      />
+                    )}
+
+                    {isPaidInFull ? (
+                      <PaymentReceiptSummary
+                        payments={orderPayments}
+                        isLoading={paymentsQuery.isLoading}
+                      />
+                    ) : (
+                      <>
+                        {/* Superadmin: approve / reject uploaded receipts */}
+                        {isSuperAdmin &&
+                          pendingReceiptPayments.map((payment) => (
+                            <ReceiptApprovalPanel
+                              key={payment.id}
+                              payment={payment}
+                              isPending={verifyPayment.isPending}
+                              onVerify={handleVerifyPayment}
+                            />
+                          ))}
+                        <OfflinePaymentForm
+                          view={effectiveView}
+                          isPending={recordOfflinePayment.isPending}
+                          onSubmit={handleRecordOffline}
+                        />
+                      </>
+                    )}
+
+                    <OrderPaymentHistory
+                      payments={orderPayments}
+                      isLoading={paymentsQuery.isLoading}
                     />
                   </div>
                 )}
 
-                {activeTab === 'images' && (
-                  <>
-                    <PickupRepForm
-                      view={effectiveView}
-                      isPending={updatePickupRep.isPending}
-                      onSubmit={handlePickupRep}
-                    />
+                {effectiveTab === 'images' && (
+                  <div className="p-5 space-y-4">
+                    {!['PICKED_UP_COMPLETED', 'DELIVERED_TO_RECIPIENT', 'CANCELLED'].includes(effectiveView.statusV2) && (
+                      <PickupRepForm
+                        view={effectiveView}
+                        isPending={updatePickupRep.isPending}
+                        onSubmit={handlePickupRep}
+                      />
+                    )}
                     <ImageGallery
                       orderId={effectiveView.id}
                       images={orderImages}
                       isLoading={imagesQuery.isLoading}
                       error={imagesQuery.error instanceof Error ? imagesQuery.error.message : null}
                       canDelete={canDeleteImage}
+                      canUpload={!['PICKED_UP_COMPLETED', 'DELIVERED_TO_RECIPIENT', 'CANCELLED'].includes(effectiveView.statusV2)}
                       isUploading={uploadImage.isPending}
                       onUpload={handleUploadImages}
                       onDelete={handleDeleteImage}
                     />
-                  </>
+                  </div>
                 )}
 
-                {activeTab === 'timeline' && (
-                  <OrderTimeline
-                    events={timelineEvents}
-                    isLoading={timelineQuery.isLoading}
-                    error={timelineQuery.error instanceof Error ? timelineQuery.error : null}
-                  />
+                {effectiveTab === 'timeline' && (
+                  <div className="p-5">
+                    <OrderTimeline
+                      events={timelineEvents}
+                      isLoading={timelineQuery.isLoading}
+                      error={timelineQuery.error instanceof Error ? timelineQuery.error : null}
+                    />
+                  </div>
                 )}
+                </div>{/* end tab outer card */}
               </>
             )}
           </section>
         </div>
       </div>
+
+      {showCreateOrderModal && effectiveView && (
+        <CreateOrderModal
+          view={effectiveView}
+          isPending={createOrderForCustomer.isPending}
+          onSubmit={handleCreateOrderForCustomer}
+          onClose={() => {
+            setShowCreateOrderModal(false);
+            createOrderForCustomer.reset();
+          }}
+        />
+      )}
     </AppShell>
   );
 }

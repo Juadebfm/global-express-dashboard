@@ -145,6 +145,8 @@ export type {
   PaystackInitResponse,
   ApiPayment,
   RecordOfflinePayload,
+  RecordOfflineResult,
+  WaiveBalancePayload,
   ApiPaymentsResponse,
 } from './payment.types';
 
@@ -227,6 +229,7 @@ export type {
   ReceiptPresignResponse,
   ReceiptSubmitPayload,
   ReceiptVerifyPayload,
+  ReceiptVerifyResult,
 } from './receipt.types';
 
 export type {

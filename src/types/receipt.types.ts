@@ -36,3 +36,7 @@ export interface ReceiptVerifyPayload {
   decision: 'approve' | 'reject';
   note?: string;
 }
+
+export interface ReceiptVerifyResult {
+  warning: string | null;
+}

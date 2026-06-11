@@ -56,6 +56,7 @@ export function useNewShipmentForm() {
   const [pickupRepName, setPickupRepName] = useState('');
   const [pickupRepPhone, setPickupRepPhone] = useState('');
   const [selectedSenderId, setSelectedSenderId] = useState('');
+
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Submission state

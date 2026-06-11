@@ -3,6 +3,7 @@ import type { ApiPayment } from '@/types';
 import type { ReceiptVerifyPayload } from '@/types';
 import { getOrderPayments, verifyOrderPayment } from '@/services';
 import { STALE_TIME } from '@/lib/queryDefaults';
+import { useFeedbackStore } from '@/store';
 import { useAuthToken } from './useAuthToken';
 
 export function useOrderPayments(orderId: string | undefined, enabled = true) {
@@ -23,6 +24,7 @@ export function useOrderPayments(orderId: string | undefined, enabled = true) {
 export function useVerifyOrderPayment(orderId: string | undefined) {
   const getToken = useAuthToken();
   const queryClient = useQueryClient();
+  const pushMessage = useFeedbackStore((s) => s.pushMessage);
 
   return useMutation({
     mutationFn: async ({
@@ -36,9 +38,23 @@ export function useVerifyOrderPayment(orderId: string | undefined) {
       if (!token) throw new Error('Not authenticated');
       return verifyOrderPayment(token, paymentId, payload);
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['order', 'payments', orderId] });
       queryClient.invalidateQueries({ queryKey: ['order', 'detail', orderId] });
+      // Skip the generic toast on approve when a warning is present — the
+      // warning shown inline is the meaningful feedback in that case.
+      if (variables.payload.decision === 'reject' || !data.warning) {
+        pushMessage({
+          tone: variables.payload.decision === 'approve' ? 'success' : 'info',
+          message: variables.payload.decision === 'approve' ? 'Receipt approved.' : 'Receipt rejected.',
+        });
+      }
+    },
+    onError: () => {
+      pushMessage({
+        tone: 'error',
+        message: 'Could not process receipt. Please try again.',
+      });
     },
   });
 }

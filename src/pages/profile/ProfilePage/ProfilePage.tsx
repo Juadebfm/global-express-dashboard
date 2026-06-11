@@ -23,7 +23,6 @@ import type {
   ProfileRequirements,
   StaffProfilePayload,
   DashboardUser,
-  User,
 } from '@/types';
 
 type ProfileMode = 'external' | 'internal';
@@ -88,6 +87,30 @@ function toText(value: string | null | undefined): string {
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return 'Something went wrong. Please try again.';
+}
+
+// ── Internal profile local cache ─────────────────────────────────────────────
+// auth/me doesn't return profile fields; until the backend adds GET
+// /internal/me/profile, we persist the last-saved payload in localStorage
+// so the form can be hydrated across page loads.
+const INTERNAL_PROFILE_KEY = 'gx_internal_profile';
+
+function loadCachedInternalProfile(userId: string): Partial<StaffProfilePayload> {
+  try {
+    const raw = localStorage.getItem(`${INTERNAL_PROFILE_KEY}:${userId}`);
+    if (!raw) return {};
+    return JSON.parse(raw) as Partial<StaffProfilePayload>;
+  } catch {
+    return {};
+  }
+}
+
+function saveCachedInternalProfile(userId: string, payload: StaffProfilePayload): void {
+  try {
+    localStorage.setItem(`${INTERNAL_PROFILE_KEY}:${userId}`, JSON.stringify(payload));
+  } catch {
+    // localStorage full or blocked — silently ignore
+  }
 }
 
 function mapCustomerToForm(profile: CustomerProfile): ExternalFormState {
@@ -289,22 +312,14 @@ export function ProfilePage(): ReactElement {
 
         setRequirements(requirementsResponse);
 
-        const hydrated = authUser as User & Partial<StaffProfilePayload>;
+        // GET /internal/me/profile doesn't exist in the current API spec —
+        // auth/me only returns base identity fields. We cache the profile
+        // locally after each save and read it back here. Once the backend
+        // adds a GET endpoint this cache read can be replaced with a fetch.
+        const cached = loadCachedInternalProfile(authUser?.id ?? '');
         const mappedInternal: StaffProfilePayload = {
           ...initialInternalForm,
-          gender: hydrated.gender ?? initialInternalForm.gender,
-          dateOfBirth: hydrated.dateOfBirth ?? initialInternalForm.dateOfBirth,
-          phone: hydrated.phone ?? initialInternalForm.phone,
-          addressStreet: hydrated.addressStreet ?? initialInternalForm.addressStreet,
-          addressCity: hydrated.addressCity ?? initialInternalForm.addressCity,
-          addressState: hydrated.addressState ?? initialInternalForm.addressState,
-          addressCountry: hydrated.addressCountry ?? initialInternalForm.addressCountry,
-          addressPostalCode: hydrated.addressPostalCode ?? initialInternalForm.addressPostalCode,
-          emergencyContactName: hydrated.emergencyContactName ?? initialInternalForm.emergencyContactName,
-          emergencyContactPhone: hydrated.emergencyContactPhone ?? initialInternalForm.emergencyContactPhone,
-          emergencyContactRelationship:
-            hydrated.emergencyContactRelationship ?? initialInternalForm.emergencyContactRelationship,
-          nationalId: hydrated.nationalId ?? '',
+          ...cached,
         };
         setInternalForm(mappedInternal);
         setInternalBaseline(mappedInternal);
@@ -481,6 +496,7 @@ export function ProfilePage(): ReactElement {
 
       setInternalForm(sanitizedInternal);
       setInternalBaseline(sanitizedInternal);
+      saveCachedInternalProfile(authUser?.id ?? '', sanitizedInternal);
       await refreshUser();
       setProfileSuccess(t('messages.internalSaved'));
       setIsEditing(false);

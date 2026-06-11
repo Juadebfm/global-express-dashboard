@@ -234,6 +234,10 @@ export interface OrderTimelineEvent {
 export interface GoodsBreakdownItem {
   weightKg: number;
   cbm: number;
+  quantity: number;
+  description: string;
+  dimensionsCm: { length: number; width: number; height: number } | null;
+  arrivalAt: string | null;
 }
 
 export interface OrderTimeline {
@@ -264,10 +268,21 @@ export async function getOrderTimeline(
     timestamp: firstString(item, ['timestamp', 'createdAt', 'updatedAt']) ?? '',
   }));
 
-  const goodsBreakdown = asRecordArray(record.goodsBreakdown).map((item) => ({
-    weightKg: asNumber(item.weightKg) ?? 0,
-    cbm: asNumber(item.cbm) ?? 0,
-  }));
+  const goodsBreakdown = asRecordArray(record.goodsBreakdown).map((item) => {
+    const dims = item.dimensionsCm && typeof item.dimensionsCm === 'object' && !Array.isArray(item.dimensionsCm)
+      ? (item.dimensionsCm as Record<string, unknown>)
+      : null;
+    return {
+      weightKg: asNumber(item.weightKg) ?? 0,
+      cbm: asNumber(item.cbm) ?? 0,
+      quantity: asNumber(item.quantity) ?? 1,
+      description: typeof item.description === 'string' ? item.description : '',
+      dimensionsCm: dims
+        ? { length: asNumber(dims.length) ?? 0, width: asNumber(dims.width) ?? 0, height: asNumber(dims.height) ?? 0 }
+        : null,
+      arrivalAt: typeof item.arrivalAt === 'string' && item.arrivalAt ? item.arrivalAt : null,
+    };
+  });
 
   return {
     orderId: firstString(record, ['orderId', 'id']) ?? id,
@@ -293,7 +308,7 @@ export function getOrderImages(
       id: firstString(item, ['id', '_id']) ?? `image-${index + 1}`,
       orderId: firstString(item, ['orderId', 'order_id']) ?? id,
       r2Key: firstString(item, ['r2Key', 'key']) ?? '',
-      url: firstString(item, ['url', 'imageUrl']) ?? '',
+      url: firstString(item, ['url', 'imageUrl', 'r2Url']) ?? '',
       uploadedBy: firstString(item, ['uploadedBy', 'uploaded_by']) ?? '',
       createdAt: firstString(item, ['createdAt', 'created_at']) ?? '',
     }));

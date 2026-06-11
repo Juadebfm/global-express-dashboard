@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui';
+import type { ApiPayment } from '@/types';
 import type { OrderTimelineEvent } from '@/services/ordersService';
 import { cn, formatDate } from '@/utils';
 import type { OrderView } from '../types';
@@ -275,6 +276,7 @@ interface CustomerShipmentDetailProps {
   view: OrderView;
   timeline: OrderTimelineEvent[];
   timelineLoading: boolean;
+  payments?: ApiPayment[];
   onSettleBalance: () => void;
   updatePickupRepPending: boolean;
   onSubmitPickupRep: (orderId: string, name: string, phone: string) => Promise<void>;
@@ -284,6 +286,7 @@ export function CustomerShipmentDetail({
   view,
   timeline,
   timelineLoading,
+  payments = [],
   onSettleBalance,
   updatePickupRepPending,
   onSubmitPickupRep,
@@ -322,7 +325,7 @@ export function CustomerShipmentDetail({
   const badgeClass =
     paymentState === 'paid' || ARRIVED_SET.has(view.statusV2.toUpperCase())
       ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-      : paymentState === 'due'
+      : paymentState === 'due' || paymentState === 'in_progress'
         ? 'border-amber-200 bg-amber-50 text-amber-700'
         : 'border-gray-200 bg-gray-50 text-gray-600';
 
@@ -416,6 +419,22 @@ export function CustomerShipmentDetail({
             </div>
             <Button size="sm" variant="secondary">Receipt</Button>
           </div>
+        ) : paymentState === 'in_progress' ? (
+          /* Receipt submitted — under review */
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100">
+              <Clock className="h-4 w-4 text-amber-600" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-amber-700">Payment under review</p>
+              <p className="text-xs text-gray-500">
+                {view.paymentNote ?? "We're verifying your payment. You'll get a confirmation shortly."}
+              </p>
+            </div>
+            {amountDisplay !== '—' && (
+              <span className="shrink-0 text-sm font-bold text-amber-600">{amountDisplay}</span>
+            )}
+          </div>
         ) : paymentState === 'due' ? (
           /* Confirmed amount — show exact balance */
           <div className="flex flex-col gap-2">
@@ -448,6 +467,54 @@ export function CustomerShipmentDetail({
           </div>
         )}
       </div>
+
+      {/* ── Payment activity ── */}
+      {payments.length > 0 && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-4">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+            Payment activity
+          </p>
+          <div className="divide-y divide-gray-100">
+            {payments.map((payment) => {
+              const n = parseFloat(payment.amount);
+              const amountStr = Number.isFinite(n)
+                ? `${payment.currency} ${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+                : `${payment.currency} ${payment.amount}`;
+              const dateStr = (() => {
+                const raw = payment.paidAt ?? payment.createdAt;
+                if (!raw) return '—';
+                const d = new Date(raw);
+                return Number.isNaN(d.getTime())
+                  ? raw
+                  : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+              })();
+              const statusCls =
+                payment.status === 'successful'
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : payment.status === 'pending'
+                    ? 'bg-amber-50 text-amber-700'
+                    : 'bg-gray-100 text-gray-500';
+              const statusText =
+                payment.status === 'successful'
+                  ? 'Confirmed'
+                  : payment.status === 'pending'
+                    ? 'Under review'
+                    : payment.status;
+              return (
+                <div key={payment.id} className="flex items-center gap-3 py-2.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-gray-900">{amountStr}</p>
+                    <p className="text-xs text-gray-400">{dateStr}</p>
+                  </div>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${statusCls}`}>
+                    {statusText}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Who's collecting ── */}
       <PickupCard

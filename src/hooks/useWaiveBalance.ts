@@ -1,22 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { RecordOfflinePayload, RecordOfflineResult } from '@/types';
-import type { ApiPayment } from '@/types';
-import { recordOfflinePayment } from '@/services';
+import type { WaiveBalancePayload } from '@/types';
+import { waiveOrderBalance } from '@/services';
 
 const TOKEN_KEY = 'globalxpress_token';
 
-export function useRecordOfflinePayment() {
+export function useWaiveBalance() {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    ApiPayment & RecordOfflineResult,
-    Error,
-    { orderId: string; payload: RecordOfflinePayload }
-  >({
+  return useMutation<void, Error, { orderId: string; payload: WaiveBalancePayload }>({
     mutationFn: async ({ orderId, payload }) => {
       const token = localStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
-      return recordOfflinePayment(token, orderId, payload);
+      return waiveOrderBalance(token, orderId, payload);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['payments'] });

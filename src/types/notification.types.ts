@@ -2,6 +2,7 @@ export type NotificationType = string;
 
 export interface ApiNotification {
   id: string;
+  orderId?: string | null;
   type: NotificationType;
   title: string;
   message: string;
