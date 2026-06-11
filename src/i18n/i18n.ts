@@ -7,7 +7,6 @@ import enAuth from './locales/en/auth.json';
 import enDashboard from './locales/en/dashboard.json';
 import enShipments from './locales/en/shipments.json';
 import enOrders from './locales/en/orders.json';
-import enBulkOrders from './locales/en/bulkOrders.json';
 import enReports from './locales/en/reports.json';
 import enSettings from './locales/en/settings.json';
 import enSupport from './locales/en/support.json';
@@ -26,7 +25,6 @@ import koAuth from './locales/ko/auth.json';
 import koDashboard from './locales/ko/dashboard.json';
 import koShipments from './locales/ko/shipments.json';
 import koOrders from './locales/ko/orders.json';
-import koBulkOrders from './locales/ko/bulkOrders.json';
 import koReports from './locales/ko/reports.json';
 import koSettings from './locales/ko/settings.json';
 import koSupport from './locales/ko/support.json';
@@ -52,7 +50,6 @@ void i18n
         dashboard: enDashboard,
         shipments: enShipments,
         orders: enOrders,
-        bulkOrders: enBulkOrders,
         reports: enReports,
         settings: enSettings,
         support: enSupport,
@@ -72,7 +69,6 @@ void i18n
         dashboard: koDashboard,
         shipments: koShipments,
         orders: koOrders,
-        bulkOrders: koBulkOrders,
         reports: koReports,
         settings: koSettings,
         support: koSupport,

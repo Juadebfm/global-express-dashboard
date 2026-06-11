@@ -3,7 +3,27 @@
     "allow": [
       "Bash(npx tsc --noEmit)",
       "Bash(grep -A 20 \"GET /dashboard\" /Users/macbookpro/Documents/GitHub/global-express-backend/API_ENDPOINTS.md 2>/dev/null | head -40)",
-      "Read(//Users/macbookpro/Documents/GitHub/global-express-backend/**)"
+      "Read(//Users/macbookpro/Documents/GitHub/global-express-backend/**)",
+      "Bash(xargs cat)",
+      "Bash(grep -n -B 2 -A 15 \"^### \\\\`Image\\\\`\\\\|^## Image\\\\|Image type\\\\|r2Key\\\\|signedUrl\\\\|imageUrl\" /Users/macbookpro/Documents/GitHub/global-express-backend/API_ENDPOINTS.md)",
+      "Bash(grep -n \"profile\\\\|/me\\\\|getMe\\\\|current.*user\\\\|staff.*profile\\\\|admin.*profile\" /Users/macbookpro/Documents/GitHub/global-express-dashboard/../global-express-backend/API_ENDPOINTS.md 2>/dev/null | head -40)",
+      "Bash(grep -n \"internal/me\\\\|GET.*internal/me\\\\|internal.*profile\\\\|internal.*user\" /Users/macbookpro/Documents/GitHub/global-express-dashboard/../global-express-backend/API_ENDPOINTS.md | head -30)",
+      "Bash(grep -n -A 30 \"GET /api/v1/internal/me/profile\\\\b\" /Users/macbookpro/Documents/GitHub/global-express-dashboard/../global-express-backend/API_ENDPOINTS.md 2>/dev/null | head -50)",
+      "Bash(grep -n -A 30 \"### \\\\`GET /api/v1/auth/me\\\\`\" /Users/macbookpro/Documents/GitHub/global-express-dashboard/../global-express-backend/API_ENDPOINTS.md 2>/dev/null | head -50)",
+      "Bash(grep -n -A 40 \"### \\\\`GET /api/v1/orders/:id\\\\`\" /Users/macbookpro/Documents/GitHub/global-express-dashboard/../global-express-backend/API_ENDPOINTS.md | head -60)",
+      "Bash(git -C /Users/macbookpro/Documents/GitHub/global-express-dashboard diff HEAD -- src/pages/shipments/NewShipmentPage/types.ts src/pages/shipments/NewShipmentPage/useNewShipmentForm.ts \"src/pages/shipments/NewShipmentPage/steps/BasicsStep.tsx\")",
+      "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); issues=data['result']['issues']; print\\(f'Total issues: {len\\(issues\\)}'\\); [print\\(f\\\\\"{i['severity'].upper\\(\\):6} {i['file'].split\\('/'\\)[-1]:45} L{i.get\\('line','?'\\):4} {i['problem'][:80]}\\\\\"\\) for i in issues]\")",
+      "Bash(sed -i '' 's/className=\"mt-4 grid gap-4 lg:grid-cols-2\"/className=\"mt-4 grid gap-4 sm:grid-cols-2\"/g' src/pages/shipments/NewShipmentPage/steps/PackageDetailsStep.tsx)",
+      "Bash(sed -i '' 's/className=\"mt-4 grid gap-4 lg:grid-cols-3\"/className=\"mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3\"/g' src/pages/shipments/NewShipmentPage/steps/PackageDetailsStep.tsx)",
+      "Bash(sed -n '383,390p' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/pages/clients/ClientWorkbenchPage/ClientWorkbenchPage.tsx)",
+      "Bash(sed -n '513,520p' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/pages/clients/ClientWorkbenchPage/ClientWorkbenchPage.tsx)",
+      "Bash(sed -n '344,350p' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/pages/suppliers/SuppliersPage/SuppliersPage.tsx)",
+      "Bash(sed -n '446,452p' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/pages/suppliers/SuppliersPage/SuppliersPage.tsx)",
+      "Bash(sed -n '393,400p' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/pages/public/GalleryPage/GalleryPage.tsx)",
+      "Bash(sed -i '' -e 's/flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between/flex flex-col gap-4 md:flex-row md:items-center md:justify-between/g' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/pages/shipments/components/ShipmentsHeader.tsx)",
+      "Bash(sed -i '' -e 's/flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between/flex flex-col gap-3 md:flex-row md:items-center md:justify-between/g' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/pages/shared/PageHeader.tsx)",
+      "Bash(sed -i '' -e 's/flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between/flex flex-col gap-3 md:flex-row md:items-end md:justify-between/g' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/pages/payments/PaymentsPage/PaymentsPage.tsx)",
+      "Bash(sed -i '' -e 's/mt-2 flex flex-col gap-3 lg:flex-row/mt-2 flex flex-col gap-3 md:flex-row/g' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/pages/shipments/TrackShipmentPage/TrackShipmentPage.tsx)"
     ]
   }
 }

@@ -79,9 +79,6 @@ const PaymentsPage = lazy(() =>
 const PaymentCallbackPage = lazy(() =>
   import('@/pages/payments/PaymentCallbackPage').then((m) => ({ default: m.PaymentCallbackPage })),
 );
-const BulkOrdersPage = lazy(() =>
-  import('@/pages/bulkOrders/BulkOrdersPage').then((m) => ({ default: m.BulkOrdersPage })),
-);
 // ReportsPage owns the recharts import — keeping it lazy is the single
 // biggest bundle-size win available.
 const ReportsPage = lazy(() =>
@@ -326,14 +323,6 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.PAYMENT_CALLBACK}
         element={<PaymentCallbackPage />}
-      />
-      <Route
-        path={ROUTES.BULK_ORDERS}
-        element={
-          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
-            <BulkOrdersPage />
-          </ProtectedRoute>
-        }
       />
       <Route
         path={ROUTES.REPORTS}

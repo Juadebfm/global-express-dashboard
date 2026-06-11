@@ -32,7 +32,6 @@ export { useRecordOfflinePayment } from './useRecordOfflinePayment';
 export { useCreateOrderForCustomer } from './useCreateOrderForCustomer';
 export { useWaiveBalance } from './useWaiveBalance';
 export { useUpdatePickupRep } from './useUpdatePickupRep';
-export { useBulkOrders } from './useBulkOrders';
 export { useReportSummary, useOrdersByStatus, useRevenueReport } from './useReports';
 export { useLogisticsSettings } from './useLogisticsSettings';
 export {

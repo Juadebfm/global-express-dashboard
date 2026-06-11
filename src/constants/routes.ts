@@ -36,7 +36,6 @@ export const ROUTES = {
   DELIVERY_SCHEDULE: '/delivery-schedule',
   PAYMENTS: '/payments',
   PAYMENT_CALLBACK: '/payments/callback',
-  BULK_ORDERS: '/bulk-orders',
   REPORTS: '/reports',
 } as const;
 

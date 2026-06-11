@@ -151,14 +151,6 @@ export type {
 } from './payment.types';
 
 export type {
-  BulkOrderItem,
-  CreateBulkOrderPayload,
-  ApiBulkOrderItem,
-  ApiBulkOrder,
-  ApiBulkOrdersResponse,
-} from './bulkOrder.types';
-
-export type {
   ReportSummary,
   OrdersByStatusEntry,
   RevenueEntry,

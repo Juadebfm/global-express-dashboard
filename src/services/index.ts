@@ -106,7 +106,6 @@ export {
   waiveOrderBalance,
   sendPaymentRequest,
 } from './paymentsService';
-export { createBulkOrder, getBulkOrders, getBulkOrderById, updateBulkOrderStatus, addBulkOrderItem, removeBulkOrderItem, deleteBulkOrder } from './bulkOrdersService';
 export { getReportSummary, getOrdersByStatus, getRevenueReport, getRevenueAnalytics, getShipmentVolume, getTopCustomers, getDeliveryPerformance, getStatusPipeline, getPaymentBreakdown, getShipmentComparison } from './reportsService';
 export {
   getLogisticsSettings,

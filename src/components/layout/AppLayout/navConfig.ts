@@ -25,7 +25,6 @@ export const STAFF_NAV: SidebarItem[] = [
   { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
   { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
   { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
-  { id: 'bulkOrders', icon: 'package', href: ROUTES.BULK_ORDERS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
 ];
 
@@ -33,7 +32,6 @@ export const ADMIN_NAV: SidebarItem[] = [
   { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
   { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
   { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
-  { id: 'bulkOrders', icon: 'package', href: ROUTES.BULK_ORDERS },
   { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
   { id: 'team', icon: 'team', href: ROUTES.TEAM },
@@ -44,7 +42,6 @@ export const SUPERADMIN_NAV: SidebarItem[] = [
   { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
   { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
   { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
-  { id: 'bulkOrders', icon: 'package', href: ROUTES.BULK_ORDERS },
   { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
   { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
