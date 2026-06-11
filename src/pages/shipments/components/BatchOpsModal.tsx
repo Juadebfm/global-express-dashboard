@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Layers, Search, Wind, Waves, X } from 'lucide-react';
+import { Layers, Lock, Search, Wind, Waves, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Input } from '@/components/ui';
 import {
@@ -191,17 +191,34 @@ function SelectedBatchBar({
   batch: DispatchBatchListItem;
   onClear: () => void;
 }): ReactElement {
+  const isLocked = batch.status === 'closed';
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-brand-100 bg-brand-50 px-4 py-2.5">
-      <Layers className="h-4 w-4 shrink-0 text-brand-500" />
+    <div
+      className={cn(
+        'flex items-center gap-3 rounded-xl border px-4 py-2.5',
+        isLocked ? 'border-gray-200 bg-gray-100' : 'border-brand-100 bg-brand-50',
+      )}
+    >
+      {isLocked ? (
+        <Lock className="h-4 w-4 shrink-0 text-gray-400" />
+      ) : (
+        <Layers className="h-4 w-4 shrink-0 text-brand-500" />
+      )}
       <div className="min-w-0 flex-1">
-        <p className="font-mono text-sm font-semibold text-brand-800">{formatBatch(batch)}</p>
-        <p className="text-[10px] text-brand-500">{batch.id}</p>
+        <p className={cn('font-mono text-sm font-semibold', isLocked ? 'text-gray-500' : 'text-brand-800')}>
+          {formatBatch(batch)}
+        </p>
+        <p className={cn('text-[10px]', isLocked ? 'text-gray-400' : 'text-brand-500')}>{batch.id}</p>
       </div>
+      {isLocked && (
+        <span className="shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
+          Locked
+        </span>
+      )}
       <button
         type="button"
         onClick={onClear}
-        className="shrink-0 text-brand-400 hover:text-brand-700"
+        className={cn('shrink-0', isLocked ? 'text-gray-400 hover:text-gray-600' : 'text-brand-400 hover:text-brand-700')}
         aria-label="Clear selection"
       >
         <X className="h-4 w-4" />
@@ -329,9 +346,12 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
 
           {tab === 'cutoff' && selectedBatch && (
             <ApproveCutoffPanel
-              batchId={batchId}
+              batch={selectedBatch}
               isPending={approve.isPending}
-              onApprove={() => approve.mutate(batchId)}
+              onApprove={async () => {
+                await approve.mutate(batchId);
+                setSelectedBatch((prev) => prev ? { ...prev, status: 'closed' } : prev);
+              }}
             />
           )}
           {tab === 'carrier' && selectedBatch && (
@@ -405,14 +425,23 @@ function BatchLookupResult({
 }
 
 function ApproveCutoffPanel({
-  batchId,
+  batch,
   isPending,
   onApprove,
 }: {
-  batchId: string;
+  batch: DispatchBatchListItem;
   isPending: boolean;
-  onApprove: () => void;
+  onApprove: () => Promise<void>;
 }): ReactElement {
+  if (batch.status === 'closed') {
+    return (
+      <div className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+        <p>This batch is locked. No more shipments can be added to it.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-gray-200 p-4 text-sm text-gray-600">
       <p>This will lock the batch and prevent new shipments from being added. Only do this when the batch is ready to depart.</p>
@@ -421,7 +450,6 @@ function ApproveCutoffPanel({
           type="button"
           variant="primary"
           isLoading={isPending}
-          disabled={!batchId}
           onClick={onApprove}
         >
           Lock &amp; close batch
