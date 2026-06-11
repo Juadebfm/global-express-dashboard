@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Layers, Lock, Search, Wind, Waves, X } from 'lucide-react';
+import { FileDown, Layers, Lock, Search, Wind, Waves, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Input } from '@/components/ui';
 import {
@@ -19,7 +19,7 @@ import {
   type BatchMoveToNextFormData,
   type BatchStatusFormData,
 } from '@/components/forms';
-import { listDispatchBatches } from '@/services/shipmentsService';
+import { downloadBatchManifest, listDispatchBatches } from '@/services/shipmentsService';
 import type {
   DispatchBatchListItem,
   DispatchBatchCarrierInfoPayload,
@@ -238,6 +238,8 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
   const [selectedBatch, setSelectedBatch] = useState<DispatchBatchListItem | null>(null);
   const [masterTracking, setMasterTracking] = useState('');
   const [activeMaster, setActiveMaster] = useState<string | undefined>(undefined);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const lookup = useInternalTrackByMasterTracking(activeMaster);
   const approve = useApproveBatchCutoff();
@@ -246,6 +248,27 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
   const move = useMoveBatchToNext();
 
   const batchId = selectedBatch?.id ?? '';
+
+  const handleDownloadManifest = async (): Promise<void> => {
+    if (!batchId) return;
+    setIsDownloading(true);
+    setDownloadError(null);
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) throw new Error('Not authenticated');
+      const blob = await downloadBatchManifest(token, batchId);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `manifest-${batchId}.pdf`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : 'Download failed');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const tabs: Array<{ id: Tab; label: string }> = [
     { id: 'cutoff', label: 'Lock & close batch' },
@@ -276,6 +299,24 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
             <SelectedBatchBar batch={selectedBatch} onClear={() => setSelectedBatch(null)} />
           ) : (
             <BatchPicker selectedId={batchId} onSelect={setSelectedBatch} />
+          )}
+
+          {/* Manifest download — only when a batch is selected */}
+          {selectedBatch && (
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => void handleDownloadManifest()}
+                disabled={isDownloading}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+              >
+                <FileDown className={cn('h-3.5 w-3.5', isDownloading && 'animate-bounce')} />
+                {isDownloading ? 'Downloading…' : 'Download manifest'}
+              </button>
+              {downloadError && (
+                <p className="text-xs text-red-600">{downloadError}</p>
+              )}
+            </div>
           )}
 
           {/* Operation tabs */}
@@ -584,7 +625,7 @@ function StatusPanel({
         {errors.statusV2?.message && <p className="mt-1 text-sm text-red-600">{errors.statusV2.message}</p>}
       </div>
       <p className="text-xs text-gray-500">
-        This will update the status for all shipments in this group at once.
+        This updates every shipment in the batch at once. Each customer will be notified by app, email, and WhatsApp (if enabled).
       </p>
       <div className="flex justify-end">
         <Button type="submit" variant="primary" isLoading={isPending} disabled={!batchId}>

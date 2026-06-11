@@ -537,3 +537,20 @@ export function moveDispatchBatchToNext(
     token,
   );
 }
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
+
+export async function downloadBatchManifest(
+  token: string,
+  batchId: string,
+): Promise<Blob> {
+  const response = await fetch(
+    `${BASE_URL}/shipments/batches/${batchId}/manifest`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({})) as { message?: string };
+    throw new Error(body.message ?? `Failed to download manifest (${response.status})`);
+  }
+  return response.blob();
+}
