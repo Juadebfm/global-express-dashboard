@@ -169,6 +169,7 @@ export type {
   EtaNotes,
   FxRateSettings,
   PricingRule,
+  PricingRulesResponse,
   CustomerPricingOverride,
   NotificationTemplate,
   RestrictedGood,

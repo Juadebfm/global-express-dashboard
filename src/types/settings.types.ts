@@ -125,6 +125,11 @@ export interface UpdateBankAccountsPayload {
   banks: BankInfo[];
 }
 
+export interface PricingRulesResponse {
+  defaultRules: PricingRule[];
+  customerOverrides: CustomerPricingOverride[];
+}
+
 export interface ShipmentTypesCatalogResult {
   items: ShipmentTypeCatalogItem[];
   updatedAt: string;

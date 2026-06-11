@@ -1,7 +1,7 @@
 import type {
   LogisticsSettings,
   FxRateSettings,
-  PricingRule,
+  PricingRulesResponse,
   NotificationTemplate,
   RestrictedGood,
   ShipmentTypesCatalogResult,
@@ -85,13 +85,13 @@ export function updateFxRate(
 export function getPricingRules(
   token: string,
   params: { mode?: string; customerId?: string; includeInactive?: boolean } = {}
-): Promise<PricingRule[]> {
+): Promise<PricingRulesResponse> {
   const searchParams = new URLSearchParams();
   if (params.mode) searchParams.set('mode', params.mode);
   if (params.customerId) searchParams.set('customerId', params.customerId);
   if (params.includeInactive) searchParams.set('includeInactive', 'true');
   const qs = searchParams.toString();
-  return apiGetData<PricingRule[]>(`/settings/pricing${qs ? `?${qs}` : ''}`, token);
+  return apiGetData<PricingRulesResponse>(`/settings/pricing${qs ? `?${qs}` : ''}`, token);
 }
 
 export async function updatePricingRules(

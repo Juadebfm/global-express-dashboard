@@ -330,10 +330,11 @@ function PricingSection({ canEdit }: { canEdit: boolean }): ReactElement {
     );
   }
 
+  const defaultRules = pricing.data?.defaultRules ?? [];
   return (
     <PricingEditor
-      key={(pricing.data ?? []).map((r) => r.id).join(',')}
-      initialRules={pricing.data ?? []}
+      key={defaultRules.map((r) => r.id).join(',')}
+      initialRules={defaultRules}
       canEdit={canEdit}
       onSave={async (payload) => {
         setSuccess(false);

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { PricingRule } from '@/types';
+import type { PricingRule, PricingRulesResponse } from '@/types';
 import { getPricingRules, updatePricingRules } from '@/services';
 import { STALE_TIME } from '@/lib/queryDefaults';
 
@@ -21,7 +21,7 @@ export function usePricingRules(
 ) {
   const queryClient = useQueryClient();
 
-  const query = useQuery<PricingRule[]>({
+  const query = useQuery<PricingRulesResponse>({
     queryKey: ['settings', 'pricing', params],
     queryFn: () => getPricingRules(getToken(), params),
     staleTime: STALE_TIME.SLOW_MOVING,
