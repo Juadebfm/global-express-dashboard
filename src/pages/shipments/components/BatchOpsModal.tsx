@@ -124,7 +124,7 @@ function BatchPicker({ selectedId, onSelect }: BatchPickerProps): ReactElement {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <p className="text-sm font-semibold text-gray-800">Pick a group</p>
+        <p className="text-sm font-semibold text-gray-800">Pick a batch</p>
         <div className="ml-auto flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 text-xs font-semibold">
           {(['all', 'air', 'sea'] as ModeFilter[]).map((m) => (
             <button
@@ -150,7 +150,7 @@ function BatchPicker({ selectedId, onSelect }: BatchPickerProps): ReactElement {
         )}
         {!isLoading && filtered.length === 0 && (
           <p className="px-4 py-6 text-center text-sm text-gray-400">
-            No open groups found{modeFilter !== 'all' ? ` for ${modeFilter}` : ''}.
+            No open batches found{modeFilter !== 'all' ? ` for ${modeFilter}` : ''}.
           </p>
         )}
         {filtered.map((batch) => (
@@ -231,18 +231,18 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
   const batchId = selectedBatch?.id ?? '';
 
   const tabs: Array<{ id: Tab; label: string }> = [
-    { id: 'cutoff', label: 'Close group' },
+    { id: 'cutoff', label: 'Lock & close batch' },
     { id: 'carrier', label: 'Shipping details' },
     { id: 'status', label: 'Change status' },
     { id: 'move', label: 'Move packages' },
-    { id: 'lookup', label: 'Find group' },
+    { id: 'lookup', label: 'Find batch' },
   ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
       <div className="max-h-full w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
         <div className="sticky top-0 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">Manage shipment group</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Batch actions</h2>
           <button
             type="button"
             onClick={onClose}
@@ -280,14 +280,14 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
 
           {!selectedBatch && tab !== 'lookup' && (
             <p className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
-              Please pick a group above first.
+              Please pick a batch above first.
             </p>
           )}
 
           {tab === 'lookup' && (
             <div className="space-y-3">
               <Input
-                label="Group tracking number"
+                label="Batch tracking number"
                 placeholder="GEX-BATCH-…"
                 value={masterTracking}
                 onChange={(e) => setMasterTracking(e.target.value)}
@@ -380,11 +380,11 @@ function BatchLookupResult({
       <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error.message}</p>
     );
   }
-  if (!data) return <p className="text-sm text-gray-500">No group found.</p>;
+  if (!data) return <p className="text-sm text-gray-500">No batch found.</p>;
   return (
     <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
       <p>
-        <span className="text-gray-500">Group ID:</span>{' '}
+        <span className="text-gray-500">Batch ID:</span>{' '}
         <span className="font-mono text-gray-800">{data.id ?? '—'}</span>
       </p>
       <p>
@@ -397,7 +397,7 @@ function BatchLookupResult({
           onClick={() => onUse(data.id as string, data.masterTrackingNumber)}
           className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50"
         >
-          Use this group
+          Use this batch
         </button>
       )}
     </div>
@@ -415,7 +415,7 @@ function ApproveCutoffPanel({
 }): ReactElement {
   return (
     <div className="rounded-2xl border border-gray-200 p-4 text-sm text-gray-600">
-      <p>Only for admins. This will close the group and lock all shipments inside it. This cannot be undone.</p>
+      <p>This will lock the batch and prevent new shipments from being added. Only do this when the batch is ready to depart.</p>
       <div className="mt-3 flex justify-end">
         <Button
           type="button"
@@ -424,7 +424,7 @@ function ApproveCutoffPanel({
           disabled={!batchId}
           onClick={onApprove}
         >
-          Close this group
+          Lock &amp; close batch
         </Button>
       </div>
     </div>
@@ -621,7 +621,7 @@ function MoveToNextPanel({
       </div>
       <div className="flex justify-end">
         <Button type="submit" variant="primary" isLoading={isPending} disabled={!batchId}>
-          Move to next group
+          Move to next batch
         </Button>
       </div>
     </form>
