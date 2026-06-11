@@ -103,18 +103,18 @@ export function Sidebar({
           'group relative flex border-b border-gray-100 text-sm font-medium transition-colors',
           // Mobile: horizontal icon + label
           'items-center gap-3 px-4 py-3.5',
-          // Desktop: stacked vertical icon + label
-          'lg:min-h-24 lg:flex-col lg:items-center lg:justify-center lg:gap-1.5 lg:px-2 lg:py-3 lg:text-center',
+          // Desktop: stacked vertical icon + label — no min-h so all items fit without scrolling
+          'lg:flex-col lg:items-center lg:justify-center lg:gap-1 lg:px-2 lg:py-3 lg:text-center',
           active ? 'bg-[#FFF7F2] text-brand-500' : 'text-gray-700 hover:bg-gray-50',
         )}
       >
         {active && (
-          <span className="absolute left-0 top-0 bottom-0 w-1 rounded-r-full bg-brand-500 lg:top-2.5 lg:bottom-2.5" />
+          <span className="absolute left-0 top-0 bottom-0 w-1 rounded-r-full bg-brand-500 lg:top-2 lg:bottom-2" />
         )}
         <span className={cn(active ? 'text-brand-500' : 'text-gray-500 group-hover:text-gray-700')}>
           {icon}
         </span>
-        <span className={cn('leading-tight', active ? 'text-brand-500' : 'text-gray-700')}>
+        <span className={cn('leading-tight lg:text-xs', active ? 'text-brand-500' : 'text-gray-700')}>
           {label}
         </span>
       </Link>
@@ -213,12 +213,12 @@ export function Sidebar({
             className={cn(
               'group flex w-full border-b border-gray-100 text-sm font-medium transition-colors',
               'items-center gap-3 px-4 py-3.5',
-              'lg:min-h-24 lg:flex-col lg:items-center lg:justify-center lg:gap-1.5 lg:px-2 lg:py-3 lg:text-center',
+              'lg:flex-col lg:items-center lg:justify-center lg:gap-1 lg:px-2 lg:py-3 lg:text-center',
               'text-red-500 hover:bg-red-50 hover:text-red-600',
             )}
           >
             <LogOut className="h-5 w-5" />
-            <span className="leading-tight">Sign out</span>
+            <span className="leading-tight lg:text-xs">Sign out</span>
           </button>
         </div>
       </aside>
