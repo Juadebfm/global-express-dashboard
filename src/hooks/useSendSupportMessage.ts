@@ -1,7 +1,8 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FEEDBACK_MESSAGES } from '@/constants';
 import { useFeedbackStore } from '@/store';
 import { sendSupportMessage } from '@/services';
+import type { SupportMessage, SupportTicket } from '@/types';
 import { useAuthToken } from './useAuthToken';
 
 interface UseSendSupportMessageOptions {
@@ -10,6 +11,7 @@ interface UseSendSupportMessageOptions {
 
 export function useSendSupportMessage({ ticketId }: UseSendSupportMessageOptions) {
   const getToken = useAuthToken();
+  const queryClient = useQueryClient();
   const pushMessage = useFeedbackStore((s) => s.pushMessage);
 
   return useMutation({
@@ -18,8 +20,14 @@ export function useSendSupportMessage({ ticketId }: UseSendSupportMessageOptions
       if (!token) throw new Error('Not authenticated');
       return sendSupportMessage(ticketId, payload, token);
     },
+    onSuccess: (newMessage: SupportMessage) => {
+      queryClient.setQueryData(
+        ['support', 'ticket', ticketId],
+        (old: { ticket: SupportTicket; messages: SupportMessage[] } | undefined) =>
+          old ? { ...old, messages: [...old.messages, newMessage] } : old,
+      );
+    },
     onError: (err) => {
-      // Detect 422 → ticket is closed
       const is422 = err instanceof Error && err.message.includes('invalid');
       pushMessage({
         tone: 'error',
@@ -28,6 +36,5 @@ export function useSendSupportMessage({ ticketId }: UseSendSupportMessageOptions
           : FEEDBACK_MESSAGES.support.messageSendError,
       });
     },
-    // No onSuccess — the WS `support:message` event appends to the cache
   });
 }

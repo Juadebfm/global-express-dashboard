@@ -90,8 +90,12 @@ export interface ApiSupportMessage {
   ticket_id?: string;
   senderId?: string;
   sender_id?: string;
+  authorId?: string;
+  author_id?: string;
   senderName?: string;
   sender_name?: string;
+  authorName?: string;
+  author_name?: string;
   senderRole?: string;
   sender_role?: string;
   body?: string;

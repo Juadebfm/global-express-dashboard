@@ -35,8 +35,8 @@ export function mapSupportMessage(msg: ApiSupportMessage): SupportMessage {
   return {
     id: msg.id,
     ticketId: msg.ticketId ?? msg.ticket_id ?? '',
-    senderId: msg.senderId ?? msg.sender_id ?? '',
-    senderName: msg.senderName ?? msg.sender_name ?? 'Unknown',
+    senderId: msg.senderId ?? msg.sender_id ?? msg.authorId ?? msg.author_id ?? '',
+    senderName: msg.senderName ?? msg.sender_name ?? msg.authorName ?? msg.author_name ?? 'Unknown',
     senderRole: (msg.senderRole ?? msg.sender_role ?? 'customer') as SupportMessage['senderRole'],
     body: msg.body ?? msg.message ?? msg.content ?? '',
     isInternal: msg.isInternal ?? msg.is_internal ?? false,

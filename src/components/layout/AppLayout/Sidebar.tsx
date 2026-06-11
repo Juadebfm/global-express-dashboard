@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { SidebarItem } from '@/types';
-import { useAuth, useNotificationCount } from '@/hooks';
+import { useAuth, useNotificationCount, useOpenSupportTicketCount } from '@/hooks';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
 
@@ -61,6 +61,8 @@ export function Sidebar({
   const { isSignedIn: isClerkSignedIn, signOut } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
   const notificationsCount = useNotificationCount();
+  const openSupportCount = useOpenSupportTicketCount();
+  const isOperator = !!authUser && authUser.role !== undefined;
 
   const isDashboardLikeRoute =
     location.pathname === ROUTES.DASHBOARD || location.pathname === ROUTES.ADMIN_DASHBOARD;
@@ -92,6 +94,7 @@ export function Sidebar({
     const active = isActive(item.href);
     const icon = iconMap[item.icon] ?? <LayoutDashboard className="h-5 w-5" />;
     const label = t(`items.${item.id}`, item.id);
+    const showSupportBadge = item.id === 'support' && isOperator && openSupportCount > 0;
 
     return (
       <Link
@@ -111,11 +114,21 @@ export function Sidebar({
         {active && (
           <span className="absolute left-0 top-0 bottom-0 w-1 rounded-r-full bg-brand-500 lg:top-2 lg:bottom-2" />
         )}
-        <span className={cn(active ? 'text-brand-500' : 'text-gray-500 group-hover:text-gray-700')}>
+        <span className={cn('relative', active ? 'text-brand-500' : 'text-gray-500 group-hover:text-gray-700')}>
           {icon}
+          {showSupportBadge && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold text-white leading-none">
+              {openSupportCount > 99 ? '99+' : openSupportCount}
+            </span>
+          )}
         </span>
         <span className={cn('leading-tight lg:text-xs', active ? 'text-brand-500' : 'text-gray-700')}>
           {label}
+          {showSupportBadge && (
+            <span className="ml-2 inline-flex items-center rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-semibold text-white lg:hidden">
+              {openSupportCount > 99 ? '99+' : openSupportCount}
+            </span>
+          )}
         </span>
       </Link>
     );
