@@ -67,7 +67,7 @@ export function ShipmentIntakeModal({
   } = useForm<ShipmentIntakeFormData>({
     resolver: zodResolver(shipmentIntakeSchema),
     defaultValues: {
-      customerId: '',
+      shippingMark: '',
       mode: 'air',
       shipmentPayer: 'USER',
       billingSupplierId: '',
@@ -84,7 +84,7 @@ export function ShipmentIntakeModal({
       <form
         onSubmit={handleSubmit(async (values) => {
           const payload: ShipmentIntakePayload = {
-            customerId: values.customerId,
+            shippingMark: values.shippingMark.trim().toLowerCase(),
             mode: values.mode,
             goods: values.goods.map(cleanLine),
           };
@@ -111,10 +111,10 @@ export function ShipmentIntakeModal({
         </p>
 
         <Input
-          label="Customer id"
-          placeholder="UUID"
-          error={errors.customerId?.message}
-          {...register('customerId')}
+          label="Shipping mark"
+          placeholder="e.g. juadeb"
+          error={errors.shippingMark?.message}
+          {...register('shippingMark')}
         />
 
         <div className="grid gap-3 sm:grid-cols-2">

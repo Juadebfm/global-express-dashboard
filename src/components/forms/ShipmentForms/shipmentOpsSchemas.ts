@@ -36,7 +36,7 @@ export const shipmentIntakeGoodsSchema = z.object({
 
 export const shipmentIntakeSchema = z
   .object({
-    customerId: z.string().uuid('Enter a valid customer id'),
+    shippingMark: z.string().min(2, 'Enter the shipping mark (e.g. juadeb)').max(64),
     mode: z.enum(['air', 'sea']),
     shipmentType: z.enum(['air', 'ocean', 'd2d']).optional().or(z.literal('')),
     shipmentPayer: z.enum(['USER', 'SUPPLIER']).optional(),

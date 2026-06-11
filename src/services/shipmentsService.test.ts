@@ -49,7 +49,7 @@ describe('recordShipmentIntake', () => {
     });
 
     const result = await recordShipmentIntake('token', {
-      customerId: '00000000-0000-0000-0000-000000000001',
+      shippingMark: 'juadeb',
       mode: 'air',
       goods: [{ supplierId: '00000000-0000-0000-0000-000000000002' }],
     });
@@ -66,7 +66,7 @@ describe('recordShipmentIntake', () => {
     mockFetch({ message: 'Forbidden' }, 403);
     await expect(
       recordShipmentIntake('token', {
-        customerId: 'c',
+        shippingMark: 'testmark',
         mode: 'air',
         goods: [{ supplierId: 's' }],
       }),

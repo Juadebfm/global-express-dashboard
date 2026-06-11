@@ -32,7 +32,7 @@ export interface ShipmentIntakeGoodsLine {
 }
 
 export interface ShipmentIntakePayload {
-  customerId: string;
+  shippingMark: string;
   mode: ShipmentTransportMode;
   shipmentType?: IntakeShipmentType;
   shipmentPayer?: ShipmentPayer;
