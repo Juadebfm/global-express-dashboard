@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FEEDBACK_MESSAGES } from '@/constants';
+import { ApiError } from '@/lib/apiClient';
 import { STALE_TIME } from '@/lib/queryDefaults';
 import { useFeedbackStore } from '@/store';
 import {
@@ -89,10 +90,14 @@ export function useApproveBatchCutoff(): {
       });
     },
     onError: (err) => {
-      pushMessage({
-        tone: 'error',
-        message: err.message || FEEDBACK_MESSAGES.shipments.batchApproveCutoffError,
-      });
+      if (err instanceof ApiError && err.status === 409) {
+        pushMessage({ tone: 'info', message: err.message });
+      } else {
+        pushMessage({
+          tone: 'error',
+          message: err.message || FEEDBACK_MESSAGES.shipments.batchApproveCutoffError,
+        });
+      }
     },
   });
 
