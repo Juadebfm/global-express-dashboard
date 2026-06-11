@@ -53,6 +53,30 @@ const STATUS_OPTIONS = [
   'CANCELLED',
 ] as const;
 
+const STATUS_LABELS: Record<typeof STATUS_OPTIONS[number], string> = {
+  AWAITING_WAREHOUSE_RECEIPT: 'Waiting to arrive at warehouse',
+  WAREHOUSE_RECEIVED: 'Received at warehouse',
+  CLAIM_APPROVED_PENDING_BULK_PROCESSING: 'Claim approved — waiting to process',
+  WAREHOUSE_VERIFIED_PRICED: 'Checked and priced',
+  DISPATCHED_TO_ORIGIN_AIRPORT: 'Sent to origin airport',
+  AT_ORIGIN_AIRPORT: 'At origin airport',
+  BOARDED_ON_FLIGHT: 'Loaded onto flight',
+  FLIGHT_DEPARTED: 'Flight has departed',
+  FLIGHT_LANDED_LAGOS: 'Flight has landed in Lagos',
+  DISPATCHED_TO_ORIGIN_PORT: 'Sent to origin port',
+  AT_ORIGIN_PORT: 'At origin port',
+  LOADED_ON_VESSEL: 'Loaded onto ship',
+  VESSEL_DEPARTED: 'Ship has departed',
+  VESSEL_ARRIVED_LAGOS_PORT: 'Ship has arrived at Lagos port',
+  CUSTOMS_CLEARED_LAGOS: 'Cleared customs in Lagos',
+  IN_TRANSIT_TO_LAGOS_OFFICE: 'On the way to Lagos office',
+  READY_FOR_PICKUP: 'Ready for pickup',
+  PICKED_UP_COMPLETED: 'Picked up',
+  DELIVERED_TO_RECIPIENT: 'Delivered',
+  ON_HOLD: 'On hold',
+  CANCELLED: 'Cancelled',
+};
+
 type Tab = 'cutoff' | 'carrier' | 'status' | 'move' | 'lookup';
 type ModeFilter = 'all' | 'air' | 'sea';
 
@@ -71,7 +95,7 @@ function statusBadgeClass(status: DispatchBatchListItem['status']): string {
 
 function statusLabel(status: DispatchBatchListItem['status']): string {
   if (status === 'open') return 'Open';
-  if (status === 'cutoff_pending_approval') return 'Cutoff pending';
+  if (status === 'cutoff_pending_approval') return 'Waiting to close';
   return 'Closed';
 }
 
@@ -100,7 +124,7 @@ function BatchPicker({ selectedId, onSelect }: BatchPickerProps): ReactElement {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <p className="text-sm font-semibold text-gray-800">Active batch</p>
+        <p className="text-sm font-semibold text-gray-800">Pick a group</p>
         <div className="ml-auto flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 text-xs font-semibold">
           {(['all', 'air', 'sea'] as ModeFilter[]).map((m) => (
             <button
@@ -122,11 +146,11 @@ function BatchPicker({ selectedId, onSelect }: BatchPickerProps): ReactElement {
 
       <div className="max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-white">
         {isLoading && (
-          <p className="px-4 py-6 text-center text-sm text-gray-400">Loading batches…</p>
+          <p className="px-4 py-6 text-center text-sm text-gray-400">Loading…</p>
         )}
         {!isLoading && filtered.length === 0 && (
           <p className="px-4 py-6 text-center text-sm text-gray-400">
-            No open batches{modeFilter !== 'all' ? ` for ${modeFilter}` : ''}.
+            No open groups found{modeFilter !== 'all' ? ` for ${modeFilter}` : ''}.
           </p>
         )}
         {filtered.map((batch) => (
@@ -207,18 +231,18 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
   const batchId = selectedBatch?.id ?? '';
 
   const tabs: Array<{ id: Tab; label: string }> = [
-    { id: 'cutoff', label: 'Approve cutoff' },
-    { id: 'carrier', label: 'Carrier info' },
-    { id: 'status', label: 'Update status' },
-    { id: 'move', label: 'Move to next' },
-    { id: 'lookup', label: 'Internal track' },
+    { id: 'cutoff', label: 'Close group' },
+    { id: 'carrier', label: 'Shipping details' },
+    { id: 'status', label: 'Change status' },
+    { id: 'move', label: 'Move packages' },
+    { id: 'lookup', label: 'Find group' },
   ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
       <div className="max-h-full w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
         <div className="sticky top-0 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">Batch operations</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Manage shipment group</h2>
           <button
             type="button"
             onClick={onClose}
@@ -256,14 +280,14 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
 
           {!selectedBatch && tab !== 'lookup' && (
             <p className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
-              Select a batch above to continue.
+              Please pick a group above first.
             </p>
           )}
 
           {tab === 'lookup' && (
             <div className="space-y-3">
               <Input
-                label="Master tracking number"
+                label="Group tracking number"
                 placeholder="GEX-BATCH-…"
                 value={masterTracking}
                 onChange={(e) => setMasterTracking(e.target.value)}
@@ -276,7 +300,7 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
                 className="inline-flex items-center gap-2"
               >
                 <Search className="h-4 w-4" />
-                Look up batch
+                Find group
               </Button>
               {activeMaster && (
                 <BatchLookupResult
@@ -356,11 +380,11 @@ function BatchLookupResult({
       <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error.message}</p>
     );
   }
-  if (!data) return <p className="text-sm text-gray-500">No batch found.</p>;
+  if (!data) return <p className="text-sm text-gray-500">No group found.</p>;
   return (
     <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
       <p>
-        <span className="text-gray-500">Batch id:</span>{' '}
+        <span className="text-gray-500">Group ID:</span>{' '}
         <span className="font-mono text-gray-800">{data.id ?? '—'}</span>
       </p>
       <p>
@@ -373,7 +397,7 @@ function BatchLookupResult({
           onClick={() => onUse(data.id as string, data.masterTrackingNumber)}
           className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50"
         >
-          Use this batch
+          Use this group
         </button>
       )}
     </div>
@@ -391,7 +415,7 @@ function ApproveCutoffPanel({
 }): ReactElement {
   return (
     <div className="rounded-2xl border border-gray-200 p-4 text-sm text-gray-600">
-      <p>Superadmin only. Closes the batch and locks members in once cutoff is approved.</p>
+      <p>Only for admins. This will close the group and lock all shipments inside it. This cannot be undone.</p>
       <div className="mt-3 flex justify-end">
         <Button
           type="button"
@@ -400,7 +424,7 @@ function ApproveCutoffPanel({
           disabled={!batchId}
           onClick={onApprove}
         >
-          Approve cutoff
+          Close this group
         </Button>
       </div>
     </div>
@@ -448,15 +472,15 @@ function CarrierInfoPanel({
       className="space-y-3"
     >
       <div className="grid gap-3 sm:grid-cols-2">
-        <Input label="Carrier name" error={errors.carrierName?.message} {...register('carrierName')} />
-        <Input label="Voyage / flight no" error={errors.voyageOrFlightNumber?.message} {...register('voyageOrFlightNumber')} />
-        <Input label="Airline tracking" error={errors.airlineTrackingNumber?.message} {...register('airlineTrackingNumber')} />
-        <Input label="Ocean tracking" error={errors.oceanTrackingNumber?.message} {...register('oceanTrackingNumber')} />
-        <Input label="D2D tracking" error={errors.d2dTrackingNumber?.message} {...register('d2dTrackingNumber')} />
+        <Input label="Shipping company name" error={errors.carrierName?.message} {...register('carrierName')} />
+        <Input label="Flight or vessel number" error={errors.voyageOrFlightNumber?.message} {...register('voyageOrFlightNumber')} />
+        <Input label="Airline tracking number" error={errors.airlineTrackingNumber?.message} {...register('airlineTrackingNumber')} />
+        <Input label="Sea freight tracking number" error={errors.oceanTrackingNumber?.message} {...register('oceanTrackingNumber')} />
+        <Input label="Door-to-door tracking number" error={errors.d2dTrackingNumber?.message} {...register('d2dTrackingNumber')} />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Est. departure</label>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700">Departure date &amp; time</label>
           <input
             type="datetime-local"
             className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -467,7 +491,7 @@ function CarrierInfoPanel({
           )}
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Est. arrival</label>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700">Arrival date &amp; time</label>
           <input
             type="datetime-local"
             className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -489,7 +513,7 @@ function CarrierInfoPanel({
       </div>
       <div className="flex justify-end pt-1">
         <Button type="submit" variant="primary" isLoading={isPending} disabled={!batchId}>
-          Save carrier info
+          Save shipping details
         </Button>
       </div>
     </form>
@@ -526,18 +550,17 @@ function StatusPanel({
           {...register('statusV2')}
         >
           {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s}</option>
+            <option key={s} value={s}>{STATUS_LABELS[s]}</option>
           ))}
         </select>
         {errors.statusV2?.message && <p className="mt-1 text-sm text-red-600">{errors.statusV2.message}</p>}
       </div>
       <p className="text-xs text-gray-500">
-        Status cascades to every member order. On departure transitions, staff submissions
-        request cutoff approval; superadmins close the batch directly.
+        This will update the status for all shipments in this group at once.
       </p>
       <div className="flex justify-end">
         <Button type="submit" variant="primary" isLoading={isPending} disabled={!batchId}>
-          Update status
+          Save new status
         </Button>
       </div>
     </form>
@@ -577,16 +600,16 @@ function MoveToNextPanel({
       })}
       className="space-y-3"
     >
-      <Input label="Order id" placeholder="UUID" error={errors.orderId?.message} {...register('orderId')} />
+      <Input label="Order ID" placeholder="UUID" error={errors.orderId?.message} {...register('orderId')} />
       <Input
-        label="Supplier id (move all that supplier's lines)"
-        placeholder="UUID — leave blank to use package ids"
+        label="Supplier ID (moves all packages from this supplier)"
+        placeholder="Leave empty to use package IDs instead"
         error={errors.supplierId?.message}
         {...register('supplierId')}
       />
       <div>
         <label className="mb-1.5 block text-sm font-medium text-gray-700" htmlFor="packageIdsText">
-          Package ids (comma or whitespace separated)
+          Package IDs (separate each one with a comma)
         </label>
         <textarea
           id="packageIdsText"
@@ -598,7 +621,7 @@ function MoveToNextPanel({
       </div>
       <div className="flex justify-end">
         <Button type="submit" variant="primary" isLoading={isPending} disabled={!batchId}>
-          Move to next batch
+          Move to next group
         </Button>
       </div>
     </form>
