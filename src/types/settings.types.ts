@@ -6,17 +6,32 @@ export interface ShippingLane {
   isLocked: boolean;
 }
 
+export interface OfficeInfo {
+  nameEn: string;
+  nameKo: string;
+  addressEn: string;
+  addressKo: string;
+  phone: string;
+}
+
+export interface EtaNotes {
+  airLeadTimeNote: string;
+  seaLeadTimeNote: string;
+}
+
 export interface LogisticsSettings {
-  lane: string | ShippingLane;
-  koreaOffice: string;
-  lagosOffice: string;
-  etaNotes: string;
+  lane: ShippingLane;
+  koreaOffice: OfficeInfo;
+  lagosOffice: OfficeInfo;
+  etaNotes: EtaNotes;
+  updatedAt: string;
 }
 
 export interface FxRateSettings {
   mode: 'live' | 'manual';
-  manualRate: number;
+  manualRate: number | null;
   effectiveRate: number | null;
+  updatedAt?: string;
 }
 
 export interface PricingRule {

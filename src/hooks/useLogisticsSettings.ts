@@ -28,5 +28,10 @@ export function useLogisticsSettings() {
     },
   });
 
-  return { ...query, update: mutation.mutateAsync };
+  return {
+    ...query,
+    update: mutation.mutateAsync,
+    isUpdating: mutation.isPending,
+    updateError: mutation.error,
+  };
 }

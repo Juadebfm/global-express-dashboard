@@ -165,6 +165,8 @@ export type {
 
 export type {
   LogisticsSettings,
+  OfficeInfo,
+  EtaNotes,
   FxRateSettings,
   PricingRule,
   CustomerPricingOverride,
