@@ -1,10 +1,20 @@
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ShieldCheck, KeyRound } from 'lucide-react';
+import { ShieldCheck, KeyRound, Clock, RefreshCw } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
 import { Button, OtpInput } from '@/components/ui';
 import { useAuth, useMfaChallenge } from '@/hooks';
 import { ROUTES } from '@/constants';
+import { cn } from '@/utils';
+
+const CHALLENGE_TTL_SECONDS = 5 * 60; // 5 minutes — matches MFA_CHALLENGE_EXPIRES_IN_SECONDS
+const TOTP_STEP_SECONDS = 30;         // RFC 6238 standard step
+
+function formatCountdown(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
 
 interface ChallengeState {
   mfaToken: string;
@@ -29,12 +39,32 @@ export function MfaChallengePage(): ReactElement {
   const [formError, setFormError] = useState<string | null>(null);
   const verifyFormRef = useRef<HTMLFormElement>(null);
 
+  const [challengeSecondsLeft, setChallengeSecondsLeft] = useState(CHALLENGE_TTL_SECONDS);
+  const [totpSecondsLeft, setTotpSecondsLeft] = useState(TOTP_STEP_SECONDS);
+
   // No mfaToken means the user landed here directly. Bounce back to /login.
   useEffect(() => {
     if (!mfaToken) {
       navigate(ROUTES.LOGIN, { replace: true });
     }
   }, [mfaToken, navigate]);
+
+  // Tick both countdowns every second.
+  useEffect(() => {
+    if (!mfaToken) return;
+    const id = window.setInterval(() => {
+      setChallengeSecondsLeft((prev) => Math.max(0, prev - 1));
+      setTotpSecondsLeft(TOTP_STEP_SECONDS - (Math.floor(Date.now() / 1000) % TOTP_STEP_SECONDS));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [mfaToken]);
+
+  // Redirect to login when the challenge JWT expires.
+  useEffect(() => {
+    if (challengeSecondsLeft === 0) {
+      navigate(ROUTES.LOGIN, { replace: true, state: { expiredMfa: true } });
+    }
+  }, [challengeSecondsLeft, navigate]);
 
   if (!mfaToken) return <AuthLayout><div /></AuthLayout>;
 
@@ -96,6 +126,45 @@ export function MfaChallengePage(): ReactElement {
 
         {mode === 'totp' ? (
           <form ref={verifyFormRef} onSubmit={handleVerify} className="space-y-5">
+            {/* Timing indicators */}
+            <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+              {/* Challenge expiry countdown */}
+              <div className="flex items-center gap-2">
+                <Clock className={cn(
+                  'h-4 w-4',
+                  challengeSecondsLeft <= 30 ? 'text-red-500' : challengeSecondsLeft <= 60 ? 'text-amber-500' : 'text-gray-400',
+                )} />
+                <div>
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Session expires</p>
+                  <p className={cn(
+                    'text-sm font-semibold tabular-nums',
+                    challengeSecondsLeft <= 30 ? 'text-red-600' : challengeSecondsLeft <= 60 ? 'text-amber-600' : 'text-gray-700',
+                  )}>
+                    {formatCountdown(challengeSecondsLeft)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="h-8 w-px bg-gray-200" />
+
+              {/* TOTP rotation countdown */}
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 text-gray-400" />
+                <div>
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Code changes in</p>
+                  <p className="text-sm font-semibold tabular-nums text-gray-700">{totpSecondsLeft}s</p>
+                </div>
+                {/* 30-second arc progress */}
+                <div className="h-1.5 w-16 overflow-hidden rounded-full bg-gray-200">
+                  <div
+                    className="h-full rounded-full bg-brand-500 transition-all duration-1000"
+                    style={{ width: `${(totpSecondsLeft / TOTP_STEP_SECONDS) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
             <OtpInput
               length={6}
               value={code}
