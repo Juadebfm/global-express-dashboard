@@ -404,7 +404,7 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
           )}
           {tab === 'status' && selectedBatch && (
             <StatusPanel
-              batchId={batchId}
+              batch={selectedBatch}
               isPending={status.isPending}
               onSubmit={(statusV2) => status.mutate({ batchId, payload: { statusV2 } })}
             />
@@ -590,25 +590,34 @@ function CarrierInfoPanel({
 }
 
 function StatusPanel({
-  batchId,
+  batch,
   isPending,
   onSubmit,
 }: {
-  batchId: string;
+  batch: DispatchBatchListItem;
   isPending: boolean;
   onSubmit: (statusV2: string) => Promise<unknown>;
 }): ReactElement {
+  const isLocked = batch.status === 'closed';
+  const defaultStatus = isLocked ? 'WAREHOUSE_VERIFIED_PRICED' : STATUS_OPTIONS[0];
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<BatchStatusFormData>({
     resolver: zodResolver(batchStatusSchema),
-    defaultValues: { statusV2: STATUS_OPTIONS[0] },
+    defaultValues: { statusV2: defaultStatus },
   });
 
   return (
     <form onSubmit={handleSubmit(async (values) => { await onSubmit(values.statusV2); })} className="space-y-3">
+      {isLocked && (
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">
+          <Lock className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+          Batch is locked — checked &amp; priced. Select the next milestone to advance all shipments.
+        </div>
+      )}
       <div>
         <label className="mb-1.5 block text-sm font-medium text-gray-700" htmlFor="statusV2">
           New status
@@ -628,7 +637,7 @@ function StatusPanel({
         This updates every shipment in the batch at once. Each customer will be notified by app, email, and WhatsApp (if enabled).
       </p>
       <div className="flex justify-end">
-        <Button type="submit" variant="primary" isLoading={isPending} disabled={!batchId}>
+        <Button type="submit" variant="primary" isLoading={isPending}>
           Save new status
         </Button>
       </div>
