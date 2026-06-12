@@ -93,7 +93,9 @@ function LogRow({ log }: { log: AuditLog }): ReactElement {
       </td>
       <td className="px-5 py-4 align-top">
         <p className="text-xs font-medium text-gray-700">{log.resourceType}</p>
-        <p className="mt-0.5 font-mono text-[10px] text-gray-400">{log.resourceId.slice(0, 8)}…</p>
+        {log.resourceId && (
+          <p className="mt-0.5 font-mono text-[10px] text-gray-400">{log.resourceId.slice(0, 8)}…</p>
+        )}
       </td>
       <td className="px-5 py-4 align-top">
         <p className="text-xs font-semibold text-gray-800">

@@ -9,7 +9,7 @@ export interface AuditLog {
   id: string;
   action: string;
   resourceType: string;
-  resourceId: string;
+  resourceId: string | null;
   ipAddress: string;
   userAgent: string;
   metadata: Record<string, unknown>;
