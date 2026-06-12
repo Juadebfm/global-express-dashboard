@@ -37,6 +37,7 @@ export const ROUTES = {
   PAYMENTS: '/payments',
   PAYMENT_CALLBACK: '/payments/callback',
   REPORTS: '/reports',
+  AUDIT_LOGS: '/reports/audit-logs',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

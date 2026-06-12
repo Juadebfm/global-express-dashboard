@@ -42,6 +42,7 @@ export {
 } from './useShipmentTypesCatalog';
 export { useFxRate } from './useFxRate';
 export { useItemTypes } from './useItemTypes';
+export { useAuditLogs } from './useAuditLogs';
 export { useMeasurements } from './useMeasurements';
 export { useRecordMeasurement } from './useRecordMeasurement';
 export { usePricingRules } from './usePricingRules';

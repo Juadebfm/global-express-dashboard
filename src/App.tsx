@@ -84,6 +84,9 @@ const PaymentCallbackPage = lazy(() =>
 const ReportsPage = lazy(() =>
   import('@/pages/reports/ReportsPage').then((m) => ({ default: m.ReportsPage })),
 );
+const AuditLogsPage = lazy(() =>
+  import('@/pages/reports/AuditLogsPage').then((m) => ({ default: m.AuditLogsPage })),
+);
 const ProfilePage = lazy(() =>
   import('@/pages/profile/ProfilePage').then((m) => ({ default: m.ProfilePage })),
 );
@@ -329,6 +332,14 @@ function AppRoutes(): ReactElement {
         element={
           <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
             <ReportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.AUDIT_LOGS}
+        element={
+          <ProtectedRoute allowedRoles={['superadmin']}>
+            <AuditLogsPage />
           </ProtectedRoute>
         }
       />

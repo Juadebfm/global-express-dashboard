@@ -298,3 +298,11 @@ export {
   SAFE_FILE_SCAN_STATUSES,
   TERMINAL_FILE_SCAN_STATUSES,
 } from './fileScan.types';
+
+export type {
+  AuditLog,
+  AuditLogActor,
+  AuditLogFilters,
+  AuditLogPagination,
+  AuditLogsResponse,
+} from './audit.types';

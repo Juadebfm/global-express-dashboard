@@ -43,6 +43,7 @@ export const SUPERADMIN_NAV: SidebarItem[] = [
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
   { id: 'team', icon: 'team', href: ROUTES.TEAM },
   { id: 'reports', icon: 'chart', href: ROUTES.REPORTS },
+  { id: 'auditLogs', icon: 'shield', href: ROUTES.AUDIT_LOGS },
 ];
 
 export const CUSTOMER_FOOTER: SidebarItem[] = [

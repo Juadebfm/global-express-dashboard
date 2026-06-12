@@ -13,6 +13,7 @@ import {
   LogOut,
   Package,
   Settings,
+  Shield,
   Truck,
   Users,
   UsersRound,
@@ -46,6 +47,7 @@ const iconMap: Record<string, ReactElement> = {
   wallet: <Wallet className="h-5 w-5" />,
   package: <Package className="h-5 w-5" />,
   chart: <ChartColumnIncreasing className="h-5 w-5" />,
+  shield: <Shield className="h-5 w-5" />,
 };
 
 export function Sidebar({

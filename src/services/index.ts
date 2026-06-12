@@ -106,7 +106,7 @@ export {
   waiveOrderBalance,
   sendPaymentRequest,
 } from './paymentsService';
-export { getReportSummary, getOrdersByStatus, getRevenueReport, getRevenueAnalytics, getShipmentVolume, getTopCustomers, getDeliveryPerformance, getStatusPipeline, getPaymentBreakdown, getShipmentComparison } from './reportsService';
+export { getReportSummary, getOrdersByStatus, getRevenueReport, getRevenueAnalytics, getShipmentVolume, getTopCustomers, getDeliveryPerformance, getStatusPipeline, getPaymentBreakdown, getShipmentComparison, getAuditLogs } from './reportsService';
 export {
   getLogisticsSettings,
   updateLogisticsSettings,

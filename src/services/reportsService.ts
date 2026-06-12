@@ -9,6 +9,8 @@ import type {
   StatusPipeline,
   PaymentBreakdown,
   ShipmentComparison,
+  AuditLogFilters,
+  AuditLogsResponse,
 } from '@/types';
 import { apiGetData } from '@/lib/apiClient';
 
@@ -89,4 +91,11 @@ export function getShipmentComparison(
   params: { from?: string; to?: string } = {},
 ): Promise<ShipmentComparison> {
   return apiGetData<ShipmentComparison>(`/reports/shipment-comparison${buildQs(params)}`, token);
+}
+
+export function getAuditLogs(
+  token: string,
+  params: AuditLogFilters = {},
+): Promise<AuditLogsResponse> {
+  return apiGetData<AuditLogsResponse>(`/reports/audit-logs${buildQs(params as Record<string, string | number | boolean | undefined>)}`, token);
 }
