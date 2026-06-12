@@ -6,3 +6,4 @@ export { SupportChatBubble } from './SupportChatBubble';
 export { SupportChatInput } from './SupportChatInput';
 export { SupportStatusActions } from './SupportStatusActions';
 export { CreateTicketModal } from './CreateTicketModal';
+export { ClaimReviewPanel } from './ClaimReviewPanel';

@@ -14,7 +14,6 @@ type Role = User['role'];
 
 export const CUSTOMER_NAV: SidebarItem[] = [
   { id: 'dashboard', icon: 'dashboard', href: ROUTES.DASHBOARD },
-  { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
   { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
   { id: 'deliverySchedule', icon: 'calendar', href: ROUTES.DELIVERY_SCHEDULE },
   { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
@@ -23,14 +22,12 @@ export const CUSTOMER_NAV: SidebarItem[] = [
 
 export const STAFF_NAV: SidebarItem[] = [
   { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
-  { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
   { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
 ];
 
 export const ADMIN_NAV: SidebarItem[] = [
   { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
-  { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
   { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
   { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
@@ -40,7 +37,6 @@ export const ADMIN_NAV: SidebarItem[] = [
 
 export const SUPERADMIN_NAV: SidebarItem[] = [
   { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
-  { id: 'shipments', icon: 'truck', href: ROUTES.SHIPMENTS },
   { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
   { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
   { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },

@@ -69,9 +69,9 @@ const TAB_FALLBACK_LABEL: Record<SettingsTab, string> = {
 
 function SettingsField({ label, value }: { label: string; value: string }): ReactElement {
   return (
-    <div className="flex items-start justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-      <span className="text-sm font-medium text-gray-700">{label}</span>
-      <span className="text-sm text-gray-500">{value || '—'}</span>
+    <div className="flex flex-wrap items-start justify-between gap-2 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+      <span className="min-w-0 flex-1 text-sm font-medium text-gray-700">{label}</span>
+      <span className="shrink-0 text-sm text-gray-500">{value || '—'}</span>
     </div>
   );
 }
@@ -86,7 +86,7 @@ function SectionShell({
   children: ReactNode;
 }): ReactElement {
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+    <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
       <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
       <p className="mt-1 text-xs text-gray-500">{subtitle}</p>
       {children}
@@ -891,17 +891,17 @@ function TemplateRow({
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        className="flex w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left"
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-gray-800">{template.templateKey}</span>
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          <span className="min-w-0 truncate text-sm font-medium text-gray-800">{template.templateKey}</span>
           <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-600">{template.channel}</span>
           <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-600">{template.locale.toUpperCase()}</span>
           <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-semibold', template.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500')}>
             {template.isActive ? 'Active' : 'Inactive'}
           </span>
         </div>
-        <span className="text-xs text-gray-400">{expanded ? 'Collapse ▲' : 'Edit ▼'}</span>
+        <span className="shrink-0 text-xs text-gray-400">{expanded ? 'Collapse ▲' : 'Edit ▼'}</span>
       </button>
 
       {/* Edit panel */}
@@ -1168,7 +1168,7 @@ export function SettingsPage(): ReactElement {
         {activeTab === 'general' && (
           <>
             {isOperator && (
-              <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
                 <h3 className="text-sm font-semibold text-gray-900">{t('changePassword.title')}</h3>
                 <p className="mt-1 text-xs text-gray-500">{t('changePassword.subtitle')}</p>
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -1194,19 +1194,19 @@ export function SettingsPage(): ReactElement {
             {isOperator && <MfaSettingsCard />}
 
             {isOperator && isSuperadmin && (
-              <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
                 <h3 className="text-sm font-semibold text-gray-900">{t('onboarding.title')}</h3>
                 <p className="mt-1 text-xs text-gray-500">{t('onboarding.subtitle')}</p>
                 {onboardingLoading && <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">{t('onboarding.loadingText')}</div>}
                 {onboardingError && <div className="mt-4"><AlertBanner tone="error" message={onboardingError} /></div>}
                 {!onboardingLoading && !onboardingError && onboardingReqs && (
                   <div className="mt-4">
-                    <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                      <div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                      <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-gray-900">{t('onboarding.requireNationalId')}</p>
                         <p className="mt-0.5 text-xs text-gray-500">{t('onboarding.requireNationalIdDescription')}</p>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex shrink-0 items-center gap-3">
                         <span className={cn('rounded-full px-3 py-1 text-[11px] font-semibold', onboardingReqs.requireNationalId ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500')}>
                           {onboardingReqs.requireNationalId ? t('onboarding.enabled') : t('onboarding.disabled')}
                         </span>
@@ -1222,13 +1222,13 @@ export function SettingsPage(): ReactElement {
             {isCustomer && (
               <section className="space-y-6">
                 {/* Data export */}
-                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <h3 className="text-sm font-semibold text-gray-900">{t('accountDataExport.title')}</h3>
                       <p className="mt-1 text-xs text-gray-500">{t('accountDataExport.subtitle')}</p>
                     </div>
-                    <button type="button" onClick={() => void handleExport()} disabled={isExporting || isDeleting} className={cn('rounded-xl px-4 py-2 text-sm font-semibold text-white transition', isExporting ? 'cursor-not-allowed bg-gray-400' : 'bg-brand-500 hover:bg-brand-600')}>
+                    <button type="button" onClick={() => void handleExport()} disabled={isExporting || isDeleting} className={cn('shrink-0 rounded-xl px-4 py-2 text-sm font-semibold text-white transition', isExporting ? 'cursor-not-allowed bg-gray-400' : 'bg-brand-500 hover:bg-brand-600')}>
                       {isExporting ? t('accountDataExport.exportingButton') : t('accountDataExport.exportButton')}
                     </button>
                   </div>
@@ -1236,13 +1236,13 @@ export function SettingsPage(): ReactElement {
                 </div>
 
                 {/* Delete account */}
-                <div className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
+                <div className="rounded-2xl border border-red-200 bg-white p-4 shadow-sm sm:p-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <h3 className="text-sm font-semibold text-red-700">{t('deleteAccount.title')}</h3>
                       <p className="mt-1 text-xs text-gray-500">{t('deleteAccount.subtitle')}</p>
                     </div>
-                    <button type="button" onClick={() => setShowDeleteConfirm(true)} disabled={isDeleting || isExporting} className={cn('rounded-xl px-4 py-2 text-sm font-semibold text-white transition', isDeleting ? 'cursor-not-allowed bg-gray-400' : 'bg-red-600 hover:bg-red-700')}>
+                    <button type="button" onClick={() => setShowDeleteConfirm(true)} disabled={isDeleting || isExporting} className={cn('shrink-0 rounded-xl px-4 py-2 text-sm font-semibold text-white transition', isDeleting ? 'cursor-not-allowed bg-gray-400' : 'bg-red-600 hover:bg-red-700')}>
                       {t('deleteAccount.deleteButton')}
                     </button>
                   </div>
@@ -1251,7 +1251,7 @@ export function SettingsPage(): ReactElement {
                 </div>
 
                 {/* Notification preferences */}
-                <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
                   <h3 className="text-sm font-semibold text-gray-900">{t('notificationPreferences.title')}</h3>
                   <p className="mt-1 text-xs text-gray-500">{t('notificationPreferences.subtitle')}</p>
                   <div className="mt-5">
@@ -1264,12 +1264,12 @@ export function SettingsPage(): ReactElement {
                           const currentValue = preferences.channels[row.key];
                           const isEnabled = currentValue === true;
                           return (
-                            <div key={row.key} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                              <div>
+                            <div key={row.key} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium text-gray-900">{row.label}</p>
                                 <p className="mt-1 text-xs text-gray-500">{isEnabled ? t('notificationPreferences.status.enabled') : t('notificationPreferences.status.disabled')}</p>
                               </div>
-                              <div className="flex items-center gap-3">
+                              <div className="flex shrink-0 items-center gap-3">
                                 <span className={cn('rounded-full px-3 py-1 text-[11px] font-semibold', isEnabled ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600')}>
                                   {isEnabled ? t('notificationPreferences.status.enabled') : t('notificationPreferences.status.disabled')}
                                 </span>

@@ -23,7 +23,20 @@
       "Bash(sed -i '' -e 's/flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between/flex flex-col gap-4 md:flex-row md:items-center md:justify-between/g' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/pages/shipments/components/ShipmentsHeader.tsx)",
       "Bash(sed -i '' -e 's/flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between/flex flex-col gap-3 md:flex-row md:items-center md:justify-between/g' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/pages/shared/PageHeader.tsx)",
       "Bash(sed -i '' -e 's/flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between/flex flex-col gap-3 md:flex-row md:items-end md:justify-between/g' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/pages/payments/PaymentsPage/PaymentsPage.tsx)",
-      "Bash(sed -i '' -e 's/mt-2 flex flex-col gap-3 lg:flex-row/mt-2 flex flex-col gap-3 md:flex-row/g' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/pages/shipments/TrackShipmentPage/TrackShipmentPage.tsx)"
+      "Bash(sed -i '' -e 's/mt-2 flex flex-col gap-3 lg:flex-row/mt-2 flex flex-col gap-3 md:flex-row/g' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/pages/shipments/TrackShipmentPage/TrackShipmentPage.tsx)",
+      "Bash(grep -n \"ShipmentIntakeModal\\\\|showIntake\\\\|intake\" /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/pages/shipments/ShipmentsPage/ShipmentsPage.tsx | head -15 && echo \"---\" && grep -n \"POST.*intake\\\\|intake\" /Users/macbookpro/Documents/GitHub/global-express-dashboard/../global-express-backend/API_ENDPOINTS.md 2>/dev/null | head -10)",
+      "Bash(sed -n '1298,1340p' /Users/macbookpro/Documents/GitHub/global-express-dashboard/../global-express-backend/API_ENDPOINTS.md)",
+      "Bash(grep -n \"customerId\\\\|shippingMark\\\\|shipping_mark\\\\|email\\\\|name\\\\|search\\\\|lookup\" /Users/macbookpro/Documents/GitHub/global-express-dashboard/../global-express-backend/API_ENDPOINTS.md | grep -i \"intake\\\\|shipment\\\\|customer\\\\|search\\\\|mark\" | head -20)",
+      "Bash(grep -n \"batch\\\\|Batch\\\\|BATCH\\\\|cutoff\\\\|carrier\\\\|master\" /Users/macbookpro/Documents/GitHub/global-express-dashboard/../global-express-backend/API_ENDPOINTS.md | grep -i \"POST\\\\|PUT\\\\|PATCH\\\\|GET\\\\|batch\\\\|cutoff\\\\|carrier\\\\|master.track\" | head -30)",
+      "Bash(grep -n \"settings\\\\|Settings\\\\|fxRate\\\\|FxRate\\\\|pricing\\\\|restricted\\\\|shipment.type\\\\|logistics\" /Users/macbookpro/Documents/GitHub/global-express-dashboard/../global-express-backend/API_ENDPOINTS.md | grep -i \"GET\\\\|POST\\\\|PUT\\\\|PATCH\\\\|DELETE\\\\|###\" | head -40)",
+      "Bash(sed -n '1520,1600p' /Users/macbookpro/Documents/GitHub/global-express-dashboard/../global-express-backend/API_ENDPOINTS.md)",
+      "Read(//Users/global-express-backend/**)",
+      "Bash(sed -n '18,30p' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/services/uploadsService.ts)",
+      "Bash(sed -n '295,315p' /Users/macbookpro/Documents/GitHub/global-express-dashboard/src/services/ordersService.ts)",
+      "Bash(grep -n \"transportMode\\\\|shipmentType\\\\|transport_mode\\\\|shipment_type\" /Users/macbookpro/Documents/GitHub/global-express-dashboard/../global-express-backend/API_ENDPOINTS.md 2>/dev/null | head -30)",
+      "Bash(grep -n -A5 -B2 \"transportMode\\\\|transport_mode\" /Users/macbookpro/Documents/GitHub/global-express-dashboard/../global-express-backend/API_ENDPOINTS.md 2>/dev/null | grep -A8 \"goods-intake\\\\|intake\" | head -40)",
+      "Bash(grep -n \"goods-intake\\\\|goodsIntake\" /Users/macbookpro/Documents/GitHub/global-express-dashboard/../global-express-backend/API_ENDPOINTS.md 2>/dev/null | head -10)",
+      "Bash(sed -n '1490,1530p' /Users/macbookpro/Documents/GitHub/global-express-dashboard/../global-express-backend/API_ENDPOINTS.md)"
     ]
   }
 }

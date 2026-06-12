@@ -7,6 +7,7 @@ import { AlertBanner, Button } from '@/components/ui';
 import {
   useAuth,
   useCan,
+  useClaimForTicket,
   useDashboardData,
   useSearch,
   useSupportTickets,
@@ -25,6 +26,7 @@ import {
   SupportChatInput,
   SupportStatusActions,
   CreateTicketModal,
+  ClaimReviewPanel,
 } from '../components';
 
 // ── List View ────────────────────────────────────────────────────
@@ -112,6 +114,16 @@ function SupportDetailView({ ticketId }: { ticketId: string }): ReactElement {
   const sendMessage = useSendSupportMessage({ ticketId });
   const updateStatus = useUpdateTicketStatus({ ticketId });
 
+  // Extract tracking number from "Anonymous goods claim - {trackingNumber}" for a targeted claim lookup
+  const claimTrackingNumber = useMemo(() => {
+    const PREFIX = 'Anonymous goods claim - ';
+    return ticket?.subject.startsWith(PREFIX)
+      ? ticket.subject.slice(PREFIX.length).trim()
+      : undefined;
+  }, [ticket]);
+
+  const { claim } = useClaimForTicket({ ticketId, trackingNumber: claimTrackingNumber });
+
   const handleSend = useCallback(
     (body: string, isInternal: boolean) => {
       sendMessage.mutate({ body, isInternal });
@@ -156,6 +168,10 @@ function SupportDetailView({ ticketId }: { ticketId: string }): ReactElement {
         currentUserId={currentUserId}
         isStaff={isStaff}
       />
+
+      {isStaff && claim?.status === 'pending' && (
+        <ClaimReviewPanel claim={claim} ticketStatus={ticket.status} />
+      )}
 
       {isStaff && (
         <SupportStatusActions

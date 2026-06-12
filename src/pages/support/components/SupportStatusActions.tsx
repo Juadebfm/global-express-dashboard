@@ -68,7 +68,7 @@ export function SupportStatusActions({
 
   return (
     <div className={`border-t px-4 py-3 ${primary.bannerClass}`}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
         {primary.hint && (
           <p className="text-xs text-gray-600 sm:flex-1">{primary.hint}</p>
         )}
