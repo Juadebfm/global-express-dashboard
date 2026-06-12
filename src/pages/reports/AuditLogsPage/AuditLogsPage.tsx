@@ -61,8 +61,8 @@ function ActionBadge({ action }: { action: string }): ReactElement {
   );
 }
 
-function MetadataCell({ metadata }: { metadata: Record<string, unknown> }): ReactElement {
-  const entries = Object.entries(metadata).filter(([, v]) => v !== null && v !== undefined && v !== '');
+function MetadataCell({ metadata }: { metadata: Record<string, unknown> | null }): ReactElement {
+  const entries = Object.entries(metadata ?? {}).filter(([, v]) => v !== null && v !== undefined && v !== '');
   if (entries.length === 0) return <span className="text-gray-400">—</span>;
   return (
     <span className="group relative cursor-default">

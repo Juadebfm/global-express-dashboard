@@ -12,7 +12,7 @@ export interface AuditLog {
   resourceId: string | null;
   ipAddress: string;
   userAgent: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, unknown> | null;
   createdAt: string;
   actor: AuditLogActor;
 }
