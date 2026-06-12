@@ -129,7 +129,7 @@ export function TeamPage(): ReactElement {
     if (!user || user.role !== 'superadmin') return members;
     const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || 'Super Admin';
     return members.map((member) =>
-      member.role === 'superadmin'
+      member.id === user.id
         ? { ...member, fullName, email: user.email }
         : member
     );
