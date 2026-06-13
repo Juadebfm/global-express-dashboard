@@ -15,3 +15,10 @@ export {
   isProvisioningGateActive,
 } from './provisioningGate';
 export { buildPublicAppUrl, getPublicAppOrigin } from './publicAppUrl';
+export {
+  LOCATION_DATA,
+  STAFF_COUNTRIES,
+  RELATIONSHIP_OPTIONS,
+  getStates,
+  getCities,
+} from './locationData';

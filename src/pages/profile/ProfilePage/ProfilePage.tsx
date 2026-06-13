@@ -8,7 +8,7 @@ import { AppLayout } from '@/components/layout';
 import { AlertBanner, Button, Card, Input } from '@/components/ui';
 import { useAuth, useAuthToken } from '@/hooks';
 import { PageHeader } from '@/pages/shared';
-import { ROUTES } from '@/constants';
+import { ROUTES, STAFF_COUNTRIES, RELATIONSHIP_OPTIONS, getStates, getCities } from '@/constants';
 import { ApiError } from '@/lib/apiClient';
 import {
   getInternalProfileRequirements,
@@ -138,6 +138,8 @@ interface DetailRowProps {
   label: string;
   value: string;
 }
+
+const SELECT_CLASS = 'auth-form-control w-full rounded-lg border border-[#DDE5E9] bg-white px-4 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed';
 
 function DetailRow({ label, value }: DetailRowProps): ReactElement {
   return (
@@ -348,7 +350,16 @@ export function ProfilePage(): ReactElement {
     key: K,
     value: StaffProfilePayload[K]
   ) => {
-    setInternalForm((prev) => ({ ...prev, [key]: value }));
+    setInternalForm((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key === 'addressCountry') {
+        next.addressState = '';
+        next.addressCity = '';
+      } else if (key === 'addressState') {
+        next.addressCity = '';
+      }
+      return next;
+    });
     setValidationError(null);
     setProfileSuccess(null);
   };
@@ -957,30 +968,20 @@ export function ProfilePage(): ReactElement {
                     />
 
                     <div className="grid gap-4 md:grid-cols-2">
-                      <Input
-                        label={t('fields.city')}
-                        value={internalForm.addressCity}
-                        onChange={(event) => handleInternalChange('addressCity', event.target.value)}
-                        className="auth-form-control text-sm"
-                        disabled={isBootstrapping}
-                      />
-                      <Input
-                        label={t('fields.state')}
-                        value={internalForm.addressState}
-                        onChange={(event) => handleInternalChange('addressState', event.target.value)}
-                        className="auth-form-control text-sm"
-                        disabled={isBootstrapping}
-                      />
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <Input
-                        label={t('fields.country')}
-                        value={internalForm.addressCountry}
-                        onChange={(event) => handleInternalChange('addressCountry', event.target.value)}
-                        className="auth-form-control text-sm"
-                        disabled={isBootstrapping}
-                      />
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.country')}</label>
+                        <select
+                          value={internalForm.addressCountry}
+                          onChange={(e) => handleInternalChange('addressCountry', e.target.value)}
+                          className={SELECT_CLASS}
+                          disabled={isBootstrapping}
+                        >
+                          <option value="">Select country</option>
+                          {STAFF_COUNTRIES.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
                       <Input
                         label={t('fields.postalCode')}
                         value={internalForm.addressPostalCode}
@@ -988,6 +989,37 @@ export function ProfilePage(): ReactElement {
                         className="auth-form-control text-sm"
                         disabled={isBootstrapping}
                       />
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.state')}</label>
+                        <select
+                          value={internalForm.addressState}
+                          onChange={(e) => handleInternalChange('addressState', e.target.value)}
+                          className={SELECT_CLASS}
+                          disabled={isBootstrapping || !internalForm.addressCountry}
+                        >
+                          <option value="">Select state / province</option>
+                          {getStates(internalForm.addressCountry).map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.city')}</label>
+                        <select
+                          value={internalForm.addressCity}
+                          onChange={(e) => handleInternalChange('addressCity', e.target.value)}
+                          className={SELECT_CLASS}
+                          disabled={isBootstrapping || !internalForm.addressState}
+                        >
+                          <option value="">Select city</option>
+                          {getCities(internalForm.addressCountry, internalForm.addressState).map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
                     <h3 className="pt-2 text-sm font-semibold text-gray-900">{t('internal.emergencyTitle')}</h3>
@@ -1008,13 +1040,20 @@ export function ProfilePage(): ReactElement {
                         className="auth-form-control text-sm"
                         disabled={isBootstrapping}
                       />
-                      <Input
-                        label={t('fields.emergencyRelationship')}
-                        value={internalForm.emergencyContactRelationship}
-                        onChange={(event) => handleInternalChange('emergencyContactRelationship', event.target.value)}
-                        className="auth-form-control text-sm"
-                        disabled={isBootstrapping}
-                      />
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.emergencyRelationship')}</label>
+                        <select
+                          value={internalForm.emergencyContactRelationship}
+                          onChange={(e) => handleInternalChange('emergencyContactRelationship', e.target.value)}
+                          className={SELECT_CLASS}
+                          disabled={isBootstrapping}
+                        >
+                          <option value="">Select relationship</option>
+                          {RELATIONSHIP_OPTIONS.map((r) => (
+                            <option key={r} value={r}>{r}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
                     {requirements.requireNationalId && (
