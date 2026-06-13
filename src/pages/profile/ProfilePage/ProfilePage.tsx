@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import { AppLayout } from '@/components/layout';
 import { AlertBanner, Button, Card, Input } from '@/components/ui';
-import { useAuth, useAuthToken } from '@/hooks';
+import { useAuth, useAuthToken, useCountries, useCountryStates, useStateCities } from '@/hooks';
 import { PageHeader } from '@/pages/shared';
 import { ROUTES, STAFF_COUNTRIES, RELATIONSHIP_OPTIONS, getStates, getCities } from '@/constants';
 import { ApiError } from '@/lib/apiClient';
@@ -194,6 +194,10 @@ export function ProfilePage(): ReactElement {
   });
   const lastBootstrapKeyRef = useRef<string | null>(null);
 
+  const extCountries = useCountries();
+  const extStates = useCountryStates(externalForm.addressCountry);
+  const extCities = useStateCities(externalForm.addressCountry, externalForm.addressState);
+
   useEffect(() => {
     setIsEditing(false);
   }, [mode]);
@@ -341,7 +345,16 @@ export function ProfilePage(): ReactElement {
     key: K,
     value: ExternalFormState[K]
   ) => {
-    setExternalForm((prev) => ({ ...prev, [key]: value }));
+    setExternalForm((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key === 'addressCountry') {
+        next.addressState = '';
+        next.addressCity = '';
+      } else if (key === 'addressState') {
+        next.addressCity = '';
+      }
+      return next;
+    });
     setValidationError(null);
     setProfileSuccess(null);
   };
@@ -825,30 +838,22 @@ export function ProfilePage(): ReactElement {
                     />
 
                     <div className="grid gap-4 md:grid-cols-2">
-                      <Input
-                        label={t('fields.city')}
-                        value={externalForm.addressCity}
-                        onChange={(event) => handleExternalChange('addressCity', event.target.value)}
-                        className="auth-form-control text-sm"
-                        disabled={isBootstrapping}
-                      />
-                      <Input
-                        label={t('fields.state')}
-                        value={externalForm.addressState}
-                        onChange={(event) => handleExternalChange('addressState', event.target.value)}
-                        className="auth-form-control text-sm"
-                        disabled={isBootstrapping}
-                      />
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <Input
-                        label={t('fields.country')}
-                        value={externalForm.addressCountry}
-                        onChange={(event) => handleExternalChange('addressCountry', event.target.value)}
-                        className="auth-form-control text-sm"
-                        disabled={isBootstrapping}
-                      />
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.country')}</label>
+                        <input
+                          type="text"
+                          list="ext-countries"
+                          value={externalForm.addressCountry}
+                          onChange={(e) => handleExternalChange('addressCountry', e.target.value)}
+                          placeholder="Type or select"
+                          className={SELECT_CLASS}
+                          disabled={isBootstrapping}
+                          autoComplete="off"
+                        />
+                        <datalist id="ext-countries">
+                          {extCountries.map((c) => <option key={c} value={c} />)}
+                        </datalist>
+                      </div>
                       <Input
                         label={t('fields.postalCode')}
                         value={externalForm.addressPostalCode}
@@ -856,6 +861,41 @@ export function ProfilePage(): ReactElement {
                         className="auth-form-control text-sm"
                         disabled={isBootstrapping}
                       />
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.state')}</label>
+                        <input
+                          type="text"
+                          list="ext-states"
+                          value={externalForm.addressState}
+                          onChange={(e) => handleExternalChange('addressState', e.target.value)}
+                          placeholder="Type or select"
+                          className={SELECT_CLASS}
+                          disabled={isBootstrapping}
+                          autoComplete="off"
+                        />
+                        <datalist id="ext-states">
+                          {extStates.map((s) => <option key={s} value={s} />)}
+                        </datalist>
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.city')}</label>
+                        <input
+                          type="text"
+                          list="ext-cities"
+                          value={externalForm.addressCity}
+                          onChange={(e) => handleExternalChange('addressCity', e.target.value)}
+                          placeholder="Type or select"
+                          className={SELECT_CLASS}
+                          disabled={isBootstrapping}
+                          autoComplete="off"
+                        />
+                        <datalist id="ext-cities">
+                          {extCities.map((c) => <option key={c} value={c} />)}
+                        </datalist>
+                      </div>
                     </div>
 
                     <div className="mt-2 flex flex-wrap gap-3">

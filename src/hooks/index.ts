@@ -157,3 +157,4 @@ export type {
   AnonymousClaimSubmissionInput,
   UploadGalleryMediaInput,
 } from './useGallery';
+export { useCountries, useCountryStates, useStateCities } from './useLocationApi';
