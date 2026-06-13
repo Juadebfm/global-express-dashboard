@@ -1145,8 +1145,8 @@ export function SettingsPage(): ReactElement {
       <div className="space-y-6">
         <PageHeader title={t('pageTitle')} subtitle={t('subtitle')} />
 
-        {/* Operator tab bar */}
-        {isOperator && (
+        {/* Admin/superadmin tab bar — staff only see General (change password + MFA) */}
+        {isAdmin && (
           <div className="flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-gray-50 p-1 scrollbar-none">
             {OPERATOR_TAB_IDS.map((tabId) => (
               <button
@@ -1289,22 +1289,22 @@ export function SettingsPage(): ReactElement {
         )}
 
         {/* ── FX Rate ─────────────────────────────────────── */}
-        {isOperator && activeTab === 'fx' && <FxRateSection canEdit={isSuperadmin} />}
+        {isAdmin && activeTab === 'fx' && <FxRateSection canEdit={isSuperadmin} />}
 
         {/* ── Pricing ─────────────────────────────────────── */}
-        {isOperator && activeTab === 'pricing' && <PricingSection canEdit={isSuperadmin} />}
+        {isAdmin && activeTab === 'pricing' && <PricingSection canEdit={isSuperadmin} />}
 
         {/* ── Restricted Goods ────────────────────────────── */}
-        {isOperator && activeTab === 'restricted-goods' && <RestrictedGoodsSection canEdit={isAdmin} />}
+        {isAdmin && activeTab === 'restricted-goods' && <RestrictedGoodsSection canEdit={isAdmin} />}
 
         {/* ── Shipment Types ───────────────────────────────── */}
-        {isOperator && activeTab === 'shipment-types' && <ShipmentTypesSection canEdit={isSuperadmin} />}
+        {isAdmin && activeTab === 'shipment-types' && <ShipmentTypesSection canEdit={isSuperadmin} />}
 
         {/* ── Logistics ───────────────────────────────────── */}
-        {isOperator && activeTab === 'logistics' && <LogisticsSection canEdit={isAdmin} canEditOffices={isSuperadmin} />}
+        {isAdmin && activeTab === 'logistics' && <LogisticsSection canEdit={isAdmin} canEditOffices={isSuperadmin} />}
 
         {/* ── Notification Templates ───────────────────────── */}
-        {isOperator && activeTab === 'notification-templates' && <NotificationTemplatesSection canEdit={isAdmin} />}
+        {isAdmin && activeTab === 'notification-templates' && <NotificationTemplatesSection canEdit={isAdmin} />}
       </div>
     </AppShell>
   );
