@@ -35,16 +35,11 @@ export function DashboardHeader({
       <Button
         key={action.id}
         type="button"
-        size="lg"
+        size="sm"
         variant={isPrimary ? 'primary' : 'secondary'}
         leftIcon={icon}
         onClick={() => onAction?.(action)}
         {...(isPrimary ? { 'data-tour': 'preorder-btn' } : {})}
-        className={
-          isPrimary
-            ? 'bg-brand-500 text-white hover:bg-brand-600'
-            : 'text-gray-700'
-        }
       >
         {action.label}
       </Button>
