@@ -6,11 +6,18 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
 import { Button, Card, Input, StepIndicator } from '@/components/ui';
 import { ROUTES, STAFF_COUNTRIES, RELATIONSHIP_OPTIONS, getStates, getCities } from '@/constants';
+
+function normaliseCountry(raw: string | null | undefined): string {
+  if (!raw) return '';
+  if (raw === 'South Korea') return 'SK';
+  return raw;
+}
 import { useAuth } from '@/hooks';
 import {
   changeMyPassword,
   updateInternalProfile,
   getInternalProfileRequirements,
+  getMyProfile,
 } from '@/services';
 import type { StaffProfilePayload, ProfileRequirements } from '@/types';
 
@@ -79,14 +86,35 @@ export function StaffOnboardingPage(): ReactElement {
     }
   }, [user?.mustChangePassword, user?.mustCompleteProfile]);
 
-  // Fetch profile requirements when entering profile step
+  // Fetch profile requirements + pre-populate from existing data when entering profile step
   useEffect(() => {
     if (step !== 'complete-profile') return;
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
+
     getInternalProfileRequirements(token)
       .then(setRequirements)
       .catch(() => {/* use defaults */});
+
+    getMyProfile(token)
+      .then((existing) => {
+        setProfile((prev) => ({
+          ...prev,
+          gender: (existing.gender as StaffProfilePayload['gender']) || prev.gender,
+          dateOfBirth: existing.dateOfBirth || prev.dateOfBirth,
+          phone: existing.phone || prev.phone,
+          addressStreet: existing.addressStreet || prev.addressStreet,
+          addressCity: existing.addressCity || prev.addressCity,
+          addressState: existing.addressState || prev.addressState,
+          addressCountry: normaliseCountry(existing.addressCountry) || prev.addressCountry,
+          addressPostalCode: existing.addressPostalCode || prev.addressPostalCode,
+          emergencyContactName: existing.emergencyContactName || prev.emergencyContactName,
+          emergencyContactPhone: existing.emergencyContactPhone || prev.emergencyContactPhone,
+          emergencyContactRelationship: existing.emergencyContactRelationship || prev.emergencyContactRelationship,
+          nationalId: existing.nationalId || prev.nationalId,
+        }));
+      })
+      .catch(() => {/* leave form empty */});
   }, [step]);
 
   // ── Change Password Handler ────────────────────────────────────────────────
