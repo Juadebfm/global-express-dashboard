@@ -177,8 +177,14 @@ function buildApiError(
   const headerRequestId = response.headers.get('x-request-id');
 
   if (isProblem(payload)) {
+    // For validation errors, surface the first field-level message rather
+    // than the generic detail string ("One or more request fields failed…").
+    const fieldMessage =
+      payload.type === PROBLEM_TYPE.VALIDATION && payload.errors?.[0]?.message
+        ? payload.errors[0].message
+        : undefined;
     const message = sanitizeMessage(
-      payload.detail || payload.title,
+      fieldMessage || payload.detail || payload.title,
       fallback,
     );
     return new ApiError(
