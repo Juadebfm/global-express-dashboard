@@ -8,11 +8,22 @@ import {
   type ReactNode,
 } from 'react';
 import type { LoginCredentials, User } from '@/types';
-import { login as apiLogin, getMe, logout as apiLogout } from '@/services/authService';
+import { login as apiLogin, getMe, getInternalMe, logout as apiLogout } from '@/services/authService';
 import { useLanguageStore } from '@/store/language';
 import { queryClient } from '@/lib/queryClient';
 import type { AuthContextValue, AuthState, LoginResult } from './auth.types';
 import { AuthContext } from './auth.context';
+
+const INTERNAL_ROLES = new Set(['staff', 'admin', 'superadmin']);
+function isInternalRole(role: string | undefined): boolean {
+  return role !== undefined && INTERNAL_ROLES.has(role);
+}
+
+// Pick the authoritative endpoint based on role. Internal staff must use
+// /internal/me — it returns isActive/mustChangePassword/mustCompleteProfile.
+async function fetchUser(token: string, role: string | undefined): Promise<User> {
+  return isInternalRole(role) ? getInternalMe(token) : getMe(token);
+}
 
 const TOKEN_KEY = 'globalxpress_token';
 
@@ -43,11 +54,17 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const [state, setState] = useState<AuthState>(initialState);
 
-  // Timestamp of the last successful /auth/me call. The
-  // visibilitychange effect uses this to decide whether a tab refocus
-  // should re-sync (idle long enough to bother) or skip (user is just
-  // tab-flicking between two open windows of the app).
+  // Timestamp of the last successful me-probe. The visibilitychange effect
+  // uses this to decide whether a tab refocus should re-sync or skip.
   const lastSyncedAtRef = useRef<number>(0);
+
+  // Tracks the current user's role without stale closure issues so that the
+  // visibilitychange / 403 handlers (registered once) can pick the right
+  // endpoint for each refresh.
+  const currentRoleRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    currentRoleRef.current = state.user?.role;
+  }, [state.user?.role]);
 
   const checkAuth = useCallback(async () => {
     const token = localStorage.getItem(TOKEN_KEY);
@@ -57,6 +74,10 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     }
 
     try {
+      // /auth/me is the boot-time probe for ALL users — it returns isActive,
+      // mustChangePassword, and mustCompleteProfile. /internal/me is only
+      // called via refreshUser (after login / profile save) where we already
+      // know the role and want the latest flags without a double round-trip.
       const user = await getMe(token);
 
       // If the session returned no usable role, treat it as invalid
@@ -100,7 +121,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       const elapsed = Date.now() - lastSyncedAtRef.current;
       if (elapsed < REFRESH_ON_FOCUS_IDLE_MS) return;
       try {
-        const user = await getMe(token);
+        const user = await fetchUser(token, currentRoleRef.current);
         if (!user?.role) return;
         syncLanguageFromUser(user);
         lastSyncedAtRef.current = Date.now();
@@ -137,7 +158,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       // races into the 401 handler below.
       if (!token) return;
       try {
-        const user = await getMe(token);
+        const user = await fetchUser(token, currentRoleRef.current);
         if (!user?.role) return;
         syncLanguageFromUser(user);
         lastSyncedAtRef.current = Date.now();
@@ -149,7 +170,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
           error: null,
         }));
       } catch {
-        /* If /auth/me fails too, the 401 handler will pick it up. */
+        /* If the me probe fails too, the 401 handler will pick it up. */
       }
     };
     const wrapper = (): void => { void handler(); };
@@ -195,9 +216,19 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       }
 
       localStorage.setItem(TOKEN_KEY, outcome.token);
-      syncLanguageFromUser(outcome.user);
+      // For internal staff, enrich the login-response user with
+      // /internal/me so we get isActive/mustCompleteProfile immediately.
+      let user = outcome.user;
+      if (isInternalRole(user.role)) {
+        try {
+          user = await getInternalMe(outcome.token);
+        } catch {
+          // fall back to login-response user if /internal/me is unavailable
+        }
+      }
+      syncLanguageFromUser(user);
       setState({
-        user: outcome.user,
+        user,
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -215,15 +246,25 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   }, []);
 
   const completeMfaChallenge = useCallback(
-    ({ user, token }: { user: User; token: string }) => {
+    ({ user: loginUser, token }: { user: User; token: string }) => {
       localStorage.setItem(TOKEN_KEY, token);
-      syncLanguageFromUser(user);
+      syncLanguageFromUser(loginUser);
       setState({
-        user,
+        user: loginUser,
         isAuthenticated: true,
         isLoading: false,
         error: null,
       });
+      // Fire-and-forget enrichment for internal staff — sets isActive/flags
+      // as soon as /internal/me responds without blocking the login transition.
+      if (isInternalRole(loginUser.role)) {
+        void getInternalMe(token)
+          .then((fullUser) => {
+            syncLanguageFromUser(fullUser);
+            setState({ user: fullUser, isAuthenticated: true, isLoading: false, error: null });
+          })
+          .catch(() => { /* loginUser is a usable fallback */ });
+      }
     },
     [],
   );
@@ -257,7 +298,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
     try {
-      const user = await getMe(token);
+      const user = await fetchUser(token, currentRoleRef.current);
       if (!user?.role) return;
       syncLanguageFromUser(user);
       lastSyncedAtRef.current = Date.now();

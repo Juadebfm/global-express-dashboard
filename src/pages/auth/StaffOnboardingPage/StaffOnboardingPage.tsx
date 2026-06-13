@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { CheckCircle, Eye, EyeOff, Loader2, RefreshCw } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
 import { Button, Card, Input, StepIndicator } from '@/components/ui';
 import { ROUTES, STAFF_COUNTRIES, RELATIONSHIP_OPTIONS, getStates, getCities } from '@/constants';
@@ -51,6 +51,7 @@ export function StaffOnboardingPage(): ReactElement {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
+  const [statusRefreshing, setStatusRefreshing] = useState(false);
   const [profile, setProfile] = useState<StaffProfilePayload>({
     gender: 'male',
     dateOfBirth: '',
@@ -73,7 +74,10 @@ export function StaffOnboardingPage(): ReactElement {
       navigate(ROUTES.LOGIN, { replace: true });
       return;
     }
-    if (!user.mustChangePassword && !user.mustCompleteProfile) {
+    // Only navigate away when fully cleared AND account is active.
+    // isActive: false means profile is complete but admin hasn't approved yet —
+    // stay here so the pending approval screen can show.
+    if (!user.mustChangePassword && !user.mustCompleteProfile && user.isActive !== false) {
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
     }
   }, [authLoading, isAuthenticated, user, navigate]);
@@ -136,12 +140,13 @@ export function StaffOnboardingPage(): ReactElement {
     try {
       await changeMyPassword(token, { currentPassword, newPassword });
       await refreshUser();
-      // After success, move to profile step or dashboard
+      // After password change: move to profile step, pending screen, or dashboard
       if (user?.mustCompleteProfile) {
         setStep('complete-profile');
-      } else {
+      } else if (user?.isActive !== false) {
         navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
       }
+      // isActive: false → redirect effect / pending screen will handle it
     } catch (err) {
       setPwError(err instanceof Error ? err.message : 'Failed to change password');
     } finally {
@@ -186,9 +191,10 @@ export function StaffOnboardingPage(): ReactElement {
     }
   }, [profile, requirements, t, refreshUser]);
 
-  // Navigate once the backend actually clears the flag
+  // Navigate to dashboard once onboarding flags are clear AND account is active.
+  // If isActive is false, the pending approval screen renders instead.
   useEffect(() => {
-    if (profileSaved && user && !user.mustCompleteProfile) {
+    if (profileSaved && user && !user.mustCompleteProfile && user.isActive !== false) {
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
     }
   }, [profileSaved, user, navigate]);
@@ -318,8 +324,10 @@ export function StaffOnboardingPage(): ReactElement {
     );
   }
 
-  // ── Profile Saved Confirmation View ───────────────────────────────────────
-  if (profileSaved && user?.mustCompleteProfile) {
+  // ── Pending Approval View ─────────────────────────────────────────────────
+  // Shown when: profile complete, no password change needed, but account not
+  // yet activated by an admin. Covers both "just submitted" and return visits.
+  if (user && !user.mustChangePassword && !user.mustCompleteProfile && user.isActive === false) {
     return (
       <AuthLayout>
         <Card className="auth-panel-card p-8 sm:p-10">
@@ -343,6 +351,20 @@ export function StaffOnboardingPage(): ReactElement {
               <p className="font-semibold">What happens next?</p>
               <p className="mt-1">An administrator will review and activate your account. Once activated, this page will automatically redirect you to the dashboard when you log in again.</p>
             </div>
+            <Button
+              variant="secondary"
+              className="mt-2 w-full"
+              disabled={statusRefreshing}
+              onClick={async () => {
+                setStatusRefreshing(true);
+                try { await refreshUser(); } finally { setStatusRefreshing(false); }
+              }}
+            >
+              {statusRefreshing
+                ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Checking…</>
+                : <><RefreshCw className="mr-2 h-4 w-4" />Refresh my account status</>
+              }
+            </Button>
           </div>
         </Card>
       </AuthLayout>

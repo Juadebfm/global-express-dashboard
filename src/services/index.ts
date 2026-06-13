@@ -10,6 +10,7 @@ export {
   login,
   register,
   getMe,
+  getInternalMe,
   logout,
   syncClerkAccount,
   getMyProfile,

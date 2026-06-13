@@ -72,6 +72,12 @@ export function getMe(token: string): Promise<User> {
   return apiGetData<User>('/auth/me', token);
 }
 
+// For staff/admin/superadmin only. Returns isActive, mustChangePassword,
+// mustCompleteProfile in addition to base user fields.
+export function getInternalMe(token: string): Promise<User> {
+  return apiGetData<User>('/internal/me', token);
+}
+
 export function logout(token: string): Promise<void> {
   return apiPost<void>('/auth/logout', {}, token);
 }
