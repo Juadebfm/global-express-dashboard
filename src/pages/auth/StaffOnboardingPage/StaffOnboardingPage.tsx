@@ -50,6 +50,7 @@ export function StaffOnboardingPage(): ReactElement {
   const [requirements, setRequirements] = useState<ProfileRequirements>({ requireNationalId: false });
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
   const [profile, setProfile] = useState<StaffProfilePayload>({
     gender: 'male',
     dateOfBirth: '',
@@ -177,13 +178,20 @@ export function StaffOnboardingPage(): ReactElement {
       }
       await updateInternalProfile(token, payload);
       await refreshUser();
-      navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+      setProfileSaved(true);
     } catch (err) {
       setProfileError(err instanceof Error ? err.message : 'Failed to save profile');
     } finally {
       setProfileLoading(false);
     }
-  }, [profile, requirements, t, navigate, refreshUser]);
+  }, [profile, requirements, t, refreshUser]);
+
+  // Navigate once the backend actually clears the flag
+  useEffect(() => {
+    if (profileSaved && user && !user.mustCompleteProfile) {
+      navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+    }
+  }, [profileSaved, user, navigate]);
 
   const updateField = <K extends keyof StaffProfilePayload>(key: K, value: StaffProfilePayload[K]) => {
     setProfile((prev) => {
@@ -335,6 +343,12 @@ export function StaffOnboardingPage(): ReactElement {
 
           {profileError && (
             <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{profileError}</div>
+          )}
+          {profileSaved && user?.mustCompleteProfile && (
+            <div className="mt-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+              <p className="font-semibold">Profile saved successfully.</p>
+              <p className="mt-1">Your account is pending activation by an administrator. You will be redirected automatically once your account is activated.</p>
+            </div>
           )}
 
           <div className="mt-6 space-y-4">
