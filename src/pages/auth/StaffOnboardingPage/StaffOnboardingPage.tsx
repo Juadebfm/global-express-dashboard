@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
 import { Button, Card, Input, StepIndicator } from '@/components/ui';
-import { ROUTES } from '@/constants';
+import { ROUTES, STAFF_COUNTRIES, RELATIONSHIP_OPTIONS, getStates, getCities } from '@/constants';
 import { useAuth } from '@/hooks';
 import {
   changeMyPassword,
@@ -158,7 +158,16 @@ export function StaffOnboardingPage(): ReactElement {
   }, [profile, requirements, t, navigate, refreshUser]);
 
   const updateField = <K extends keyof StaffProfilePayload>(key: K, value: StaffProfilePayload[K]) => {
-    setProfile((prev) => ({ ...prev, [key]: value }));
+    setProfile((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key === 'addressCountry') {
+        next.addressState = '';
+        next.addressCity = '';
+      } else if (key === 'addressState') {
+        next.addressCity = '';
+      }
+      return next;
+    });
   };
 
   const currentStepIndex = ONBOARDING_STEP_ORDER.indexOf(step);
@@ -349,32 +358,55 @@ export function StaffOnboardingPage(): ReactElement {
             onChange={(e) => updateField('addressStreet', e.target.value)}
           />
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              label={t(`${pp}.city`)}
-              placeholder={t(`${pp}.cityPlaceholder`)}
-              value={profile.addressCity}
-              onChange={(e) => updateField('addressCity', e.target.value)}
-            />
-            <Input
-              label={t(`${pp}.state`)}
-              placeholder={t(`${pp}.statePlaceholder`)}
-              value={profile.addressState}
-              onChange={(e) => updateField('addressState', e.target.value)}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label={t(`${pp}.country`)}
-              placeholder={t(`${pp}.countryPlaceholder`)}
-              value={profile.addressCountry}
-              onChange={(e) => updateField('addressCountry', e.target.value)}
-            />
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">{t(`${pp}.country`)}</label>
+              <select
+                value={profile.addressCountry}
+                onChange={(e) => updateField('addressCountry', e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-brand-500 disabled:opacity-50"
+              >
+                <option value="">Select country</option>
+                {STAFF_COUNTRIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
             <Input
               label={t(`${pp}.postalCode`)}
               placeholder={t(`${pp}.postalCodePlaceholder`)}
               value={profile.addressPostalCode}
               onChange={(e) => updateField('addressPostalCode', e.target.value)}
             />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">{t(`${pp}.state`)}</label>
+              <select
+                value={profile.addressState}
+                onChange={(e) => updateField('addressState', e.target.value)}
+                disabled={!profile.addressCountry}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-brand-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="">Select state / province</option>
+                {getStates(profile.addressCountry).map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">{t(`${pp}.city`)}</label>
+              <select
+                value={profile.addressCity}
+                onChange={(e) => updateField('addressCity', e.target.value)}
+                disabled={!profile.addressState}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-brand-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="">Select city</option>
+                {getCities(profile.addressCountry, profile.addressState).map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Emergency Contact */}
@@ -392,12 +424,19 @@ export function StaffOnboardingPage(): ReactElement {
               value={profile.emergencyContactPhone}
               onChange={(e) => updateField('emergencyContactPhone', e.target.value)}
             />
-            <Input
-              label={t(`${pp}.emergencyRelationship`)}
-              placeholder={t(`${pp}.emergencyRelationshipPlaceholder`)}
-              value={profile.emergencyContactRelationship}
-              onChange={(e) => updateField('emergencyContactRelationship', e.target.value)}
-            />
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">{t(`${pp}.emergencyRelationship`)}</label>
+              <select
+                value={profile.emergencyContactRelationship}
+                onChange={(e) => updateField('emergencyContactRelationship', e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-brand-500"
+              >
+                <option value="">Select relationship</option>
+                {RELATIONSHIP_OPTIONS.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* National ID (conditional) */}
