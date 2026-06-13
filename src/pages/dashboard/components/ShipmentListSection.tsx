@@ -3,22 +3,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { Layers, PackagePlus } from 'lucide-react';
 import {
   useAuth,
   useCan,
-  useRecordShipmentIntake,
   useSearch,
   useShipmentsDashboard,
 } from '@/hooks';
 import type { ShipmentFilterTab, ShipmentRecord } from '@/types';
 import {
-  BatchOpsModal,
-  ShipmentIntakeModal,
   ShipmentsFilters,
   ShipmentsTable,
 } from '@/pages/shipments/components';
-import { Button, Pagination, TableRowsSkeleton } from '@/components/ui';
+import { Pagination, TableRowsSkeleton } from '@/components/ui';
 import { ROUTES } from '@/constants';
 
 const matchesQuery = (shipment: ShipmentRecord, query: string): boolean => {
@@ -83,8 +79,6 @@ export function ShipmentListSection(): ReactElement {
 
   const [activeFilter, setActiveFilter] = useState<ShipmentFilterTab['value']>('all');
   const [page, setPage] = useState(1);
-  const [showIntake, setShowIntake] = useState(false);
-  const [showBatchOps, setShowBatchOps] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const operatorStatusV2 = isOperator && activeFilter !== 'all' ? activeFilter : undefined;
@@ -93,7 +87,7 @@ export function ShipmentListSection(): ReactElement {
     useShipmentsDashboard({ statusV2: operatorStatusV2, page });
 
   const { query, setQuery } = useSearch();
-  const recordIntake = useRecordShipmentIntake();
+
 
   useEffect(() => {
     if (!actionMessage) return;
@@ -213,29 +207,6 @@ export function ShipmentListSection(): ReactElement {
 
   return (
     <div className="space-y-6">
-      {isOperator && (
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="primary"
-            onClick={() => setShowIntake(true)}
-            className="inline-flex items-center gap-2"
-          >
-            <PackagePlus className="h-4 w-4" />
-            Record intake
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setShowBatchOps(true)}
-            className="inline-flex items-center gap-2"
-          >
-            <Layers className="h-4 w-4" />
-            Batch operations
-          </Button>
-        </div>
-      )}
-
       <ShipmentsFilters
         filters={translatedFilters}
         active={activeFilter}
@@ -272,18 +243,6 @@ export function ShipmentListSection(): ReactElement {
         />
       )}
 
-      {showIntake && (
-        <ShipmentIntakeModal
-          isPending={recordIntake.isPending}
-          onClose={() => setShowIntake(false)}
-          onSubmit={async (payload) => {
-            await recordIntake.mutate(payload);
-            setShowIntake(false);
-          }}
-        />
-      )}
-
-      {showBatchOps && <BatchOpsModal onClose={() => setShowBatchOps(false)} />}
     </div>
   );
 }
