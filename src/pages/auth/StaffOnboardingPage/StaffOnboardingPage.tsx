@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
 import { Button, Card, Input, StepIndicator } from '@/components/ui';
 import { ROUTES, STAFF_COUNTRIES, RELATIONSHIP_OPTIONS, getStates, getCities } from '@/constants';
@@ -318,6 +318,37 @@ export function StaffOnboardingPage(): ReactElement {
     );
   }
 
+  // ── Profile Saved Confirmation View ───────────────────────────────────────
+  if (profileSaved && user?.mustCompleteProfile) {
+    return (
+      <AuthLayout>
+        <Card className="auth-panel-card p-8 sm:p-10">
+          <div className="flex justify-center mb-6">
+            <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
+          </div>
+          <div className="flex flex-col items-center text-center gap-4 py-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Profile saved successfully</h2>
+              <p className="mt-2 text-sm text-gray-500 max-w-sm">
+                Your information has been saved. Your account is currently pending approval from an administrator.
+              </p>
+              <p className="mt-3 text-sm text-gray-500 max-w-sm">
+                You can close this page and come back once your admin has approved your account. You will be able to log in and access the dashboard at that point.
+              </p>
+            </div>
+            <div className="mt-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 text-left w-full">
+              <p className="font-semibold">What happens next?</p>
+              <p className="mt-1">An administrator will review and activate your account. Once activated, this page will automatically redirect you to the dashboard when you log in again.</p>
+            </div>
+          </div>
+        </Card>
+      </AuthLayout>
+    );
+  }
+
   // ── Complete Profile View ──────────────────────────────────────────────────
   const pp = 'staffOnboarding.completeProfile';
   return (
@@ -343,12 +374,6 @@ export function StaffOnboardingPage(): ReactElement {
 
           {profileError && (
             <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{profileError}</div>
-          )}
-          {profileSaved && user?.mustCompleteProfile && (
-            <div className="mt-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-              <p className="font-semibold">Profile saved successfully.</p>
-              <p className="mt-1">Your account is pending activation by an administrator. You will be redirected automatically once your account is activated.</p>
-            </div>
           )}
 
           <div className="mt-6 space-y-4">
