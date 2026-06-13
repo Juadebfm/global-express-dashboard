@@ -8,7 +8,7 @@ import { AppLayout } from '@/components/layout';
 import { AlertBanner, Button, Card, Input } from '@/components/ui';
 import { useAuth, useAuthToken, useCountries, useCountryStates, useStateCities } from '@/hooks';
 import { PageHeader } from '@/pages/shared';
-import { ROUTES, STAFF_COUNTRIES, RELATIONSHIP_OPTIONS, getStates, getCities } from '@/constants';
+import { ROUTES, STAFF_COUNTRIES, RELATIONSHIP_OPTIONS, COUNTRY_LABELS, getStates, getCities } from '@/constants';
 import { ApiError } from '@/lib/apiClient';
 import {
   getInternalProfileRequirements,
@@ -89,6 +89,13 @@ function getErrorMessage(error: unknown): string {
   return 'Something went wrong. Please try again.';
 }
 
+function normaliseCountry(raw: string | null | undefined): string {
+  if (!raw) return '';
+  // Backend may have stored 'South Korea' before we switched to 'SK'
+  if (raw === 'South Korea') return 'SK';
+  return raw;
+}
+
 function mapInternalToForm(profile: CustomerProfile): StaffProfilePayload {
   return {
     gender: (profile.gender as StaffProfilePayload['gender']) ?? 'male',
@@ -97,7 +104,7 @@ function mapInternalToForm(profile: CustomerProfile): StaffProfilePayload {
     addressStreet: profile.addressStreet ?? '',
     addressCity: profile.addressCity ?? '',
     addressState: profile.addressState ?? '',
-    addressCountry: profile.addressCountry ?? '',
+    addressCountry: normaliseCountry(profile.addressCountry),
     addressPostalCode: profile.addressPostalCode ?? '',
     emergencyContactName: profile.emergencyContactName ?? '',
     emergencyContactPhone: profile.emergencyContactPhone ?? '',
@@ -937,7 +944,7 @@ export function ProfilePage(): ReactElement {
                       <DetailRow label={t('fields.streetAddress')} value={displayValue(internalForm.addressStreet)} />
                       <DetailRow label={t('fields.city')} value={displayValue(internalForm.addressCity)} />
                       <DetailRow label={t('fields.state')} value={displayValue(internalForm.addressState)} />
-                      <DetailRow label={t('fields.country')} value={displayValue(internalForm.addressCountry)} />
+                      <DetailRow label={t('fields.country')} value={displayValue(COUNTRY_LABELS[internalForm.addressCountry] ?? internalForm.addressCountry)} />
                       <DetailRow label={t('fields.postalCode')} value={displayValue(internalForm.addressPostalCode)} />
                       <DetailRow label={t('fields.emergencyName')} value={displayValue(internalForm.emergencyContactName)} />
                       <DetailRow label={t('fields.emergencyPhone')} value={displayValue(internalForm.emergencyContactPhone)} />
@@ -1018,7 +1025,7 @@ export function ProfilePage(): ReactElement {
                         >
                           <option value="">Select country</option>
                           {STAFF_COUNTRIES.map((c) => (
-                            <option key={c} value={c}>{c}</option>
+                            <option key={c.value} value={c.value}>{c.label}</option>
                           ))}
                         </select>
                       </div>

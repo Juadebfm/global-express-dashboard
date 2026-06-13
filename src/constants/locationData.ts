@@ -83,10 +83,20 @@ const SOUTH_KOREA: LocationData = {
 
 export const LOCATION_DATA: Record<string, LocationData> = {
   Nigeria: NIGERIA,
-  'South Korea': SOUTH_KOREA,
+  SK: SOUTH_KOREA,
 };
 
-export const STAFF_COUNTRIES = ['Nigeria', 'South Korea'] as const;
+// value = what the backend expects; label = what users see
+export const STAFF_COUNTRIES = [
+  { value: 'Nigeria', label: 'Nigeria' },
+  { value: 'SK', label: 'South Korea' },
+] as const;
+
+// Maps API country codes back to human-readable names for display
+export const COUNTRY_LABELS: Record<string, string> = {
+  SK: 'South Korea',
+  Nigeria: 'Nigeria',
+};
 
 export const RELATIONSHIP_OPTIONS = [
   'Spouse',

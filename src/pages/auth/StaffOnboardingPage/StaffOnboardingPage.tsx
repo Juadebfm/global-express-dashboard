@@ -367,7 +367,7 @@ export function StaffOnboardingPage(): ReactElement {
               >
                 <option value="">Select country</option>
                 {STAFF_COUNTRIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
               </select>
             </div>
