@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { Layers, PackagePlus } from 'lucide-react';
 import { AppShell } from '@/pages/shared';
 import {
   useAuth,
@@ -15,14 +14,13 @@ import {
 } from '@/hooks';
 import type { ShipmentFilterTab, ShipmentRecord, StatusCategory } from '@/types';
 import {
-  BatchOpsModal,
   ShipmentIntakeModal,
   ShipmentsFilters,
   ShipmentsHeader,
   ShipmentsSummary,
   ShipmentsTable,
 } from '../components';
-import { Button, Pagination, TableRowsSkeleton } from '@/components/ui';
+import { Pagination, TableRowsSkeleton } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import i18n from '@/i18n/i18n';
 
@@ -116,7 +114,6 @@ export function ShipmentsPage(): ReactElement {
   const navigate = useNavigate();
   const recordIntake = useRecordShipmentIntake();
   const [showIntake, setShowIntake] = useState(false);
-  const [showBatchOps, setShowBatchOps] = useState(false);
 
   const statusLabels: Record<StatusCategory, string> = useMemo(() => ({
     pending: t('statusLabels.pending'),
@@ -370,29 +367,6 @@ export function ShipmentsPage(): ReactElement {
               onTrackShipment={handleTrackShipment}
             />
 
-            {isOperator && (
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="primary"
-                  onClick={() => setShowIntake(true)}
-                  className="inline-flex items-center gap-2"
-                >
-                  <PackagePlus className="h-4 w-4" />
-                  Record intake
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setShowBatchOps(true)}
-                  className="inline-flex items-center gap-2"
-                >
-                  <Layers className="h-4 w-4" />
-                  Batch operations
-                </Button>
-              </div>
-            )}
-
             {summaryData && (
               <ShipmentsSummary
                 overview={summaryData.overview}
@@ -463,7 +437,6 @@ export function ShipmentsPage(): ReactElement {
         />
       )}
 
-      {showBatchOps && <BatchOpsModal onClose={() => setShowBatchOps(false)} />}
     </AppShell>
   );
 }

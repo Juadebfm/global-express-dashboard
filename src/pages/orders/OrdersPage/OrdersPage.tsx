@@ -3,13 +3,16 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
+  Layers,
   Loader2,
+  PackagePlus,
   Plus,
 } from 'lucide-react';
 import {
   useCan,
   useDashboardData,
   useDeleteOrderImage,
+  useRecordShipmentIntake,
   useMyPayments,
   useOrderDetail,
   useOrderImages,
@@ -34,6 +37,10 @@ import { Button, Pagination, TableRowsSkeleton } from '@/components/ui';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
+import {
+  BatchOpsModal,
+  ShipmentIntakeModal,
+} from '@/pages/shipments/components';
 import {
   OrderQueue,
   OrderDetailHeader,
@@ -89,6 +96,9 @@ export function OrdersPage(): ReactElement {
   const [showPaymentView, setShowPaymentView] = useState(false);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
   const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
+  const [showIntake, setShowIntake] = useState(false);
+  const [showBatchOps, setShowBatchOps] = useState(false);
+  const recordIntake = useRecordShipmentIntake();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, Number(searchParams.get('page')) || 1);
@@ -364,14 +374,32 @@ export function OrdersPage(): ReactElement {
           subtitle={t('orders:subtitle')}
           actions={
             isOperator ? (
-              <Button
-                size="sm"
-                variant="primary"
-                leftIcon={<Plus className="h-4 w-4" />}
-                onClick={() => navigate(ROUTES.NEW_SHIPMENT)}
-              >
-                {t('orders:createClientOrder')}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  leftIcon={<PackagePlus className="h-4 w-4" />}
+                  onClick={() => setShowIntake(true)}
+                >
+                  Record intake
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  leftIcon={<Layers className="h-4 w-4" />}
+                  onClick={() => setShowBatchOps(true)}
+                >
+                  Batch operations
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  leftIcon={<Plus className="h-4 w-4" />}
+                  onClick={() => navigate(ROUTES.NEW_SHIPMENT)}
+                >
+                  {t('orders:createClientOrder')}
+                </Button>
+              </div>
             ) : undefined
           }
         />
@@ -639,6 +667,18 @@ export function OrdersPage(): ReactElement {
           }}
         />
       )}
+      {showIntake && (
+        <ShipmentIntakeModal
+          isPending={recordIntake.isPending}
+          onClose={() => setShowIntake(false)}
+          onSubmit={async (payload) => {
+            await recordIntake.mutate(payload);
+            setShowIntake(false);
+          }}
+        />
+      )}
+
+      {showBatchOps && <BatchOpsModal onClose={() => setShowBatchOps(false)} />}
     </AppShell>
   );
 }
