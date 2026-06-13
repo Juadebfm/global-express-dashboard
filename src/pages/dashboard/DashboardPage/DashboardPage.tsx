@@ -1,8 +1,9 @@
 import type { ReactElement } from 'react';
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useSearch, useDashboardData } from '@/hooks';
+import { UserCircle } from 'lucide-react';
+import { useSearch, useDashboardData, useAuth } from '@/hooks';
 import type { ActiveDelivery, KpiCard, UiAction } from '@/types';
 import {
   ActiveDeliveries,
@@ -18,6 +19,7 @@ export function DashboardPage(): ReactElement {
   const { t } = useTranslation('dashboard');
   const { query } = useSearch();
   const { data, isLoading, error } = useDashboardData();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const normalizedQuery = query.trim().toLowerCase();
@@ -52,6 +54,20 @@ export function DashboardPage(): ReactElement {
   return (
     <AppShell data={data} isLoading={isLoading} error={error} loadingLabel={t('loadingLabel')}>
       <div className="space-y-8">
+        {user?.mustCompleteProfile && (
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <div className="flex items-center gap-3 text-sm text-amber-800">
+              <UserCircle className="h-5 w-5 shrink-0" />
+              <span>Your profile is incomplete. Add your details to unlock all features.</span>
+            </div>
+            <Link
+              to={ROUTES.PROFILE}
+              className="shrink-0 text-sm font-semibold text-amber-800 underline-offset-2 hover:underline"
+            >
+              Complete profile
+            </Link>
+          </div>
+        )}
         {data && (
           <>
             <DashboardHeader

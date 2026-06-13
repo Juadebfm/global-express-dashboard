@@ -47,8 +47,10 @@ export function ProtectedRoute({
     return <Navigate to={ROUTES.LOGIN} replace />;
   }
 
-  // Internal staff that still need onboarding must complete it first
-  if (isAuthenticated && user && (user.mustChangePassword || user.mustCompleteProfile)) {
+  // Internal staff with a forced password change must complete it first.
+  // mustCompleteProfile is no longer a hard gate — the dashboard shows a soft
+  // banner for accounts where an admin has manually set that flag.
+  if (isAuthenticated && user && user.mustChangePassword) {
     return <Navigate to={ROUTES.STAFF_ONBOARDING} replace />;
   }
 

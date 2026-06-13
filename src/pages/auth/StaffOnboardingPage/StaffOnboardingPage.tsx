@@ -4,39 +4,18 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle, Eye, EyeOff, Loader2, RefreshCw } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
-import { Button, Card, Input, StepIndicator } from '@/components/ui';
-import { ROUTES, STAFF_COUNTRIES, RELATIONSHIP_OPTIONS, getStates, getCities } from '@/constants';
-
-function normaliseCountry(raw: string | null | undefined): string {
-  if (!raw) return '';
-  if (raw === 'South Korea') return 'SK';
-  return raw;
-}
+import { Button, Card, Input } from '@/components/ui';
+import { ROUTES } from '@/constants';
 import { useAuth } from '@/hooks';
-import {
-  changeMyPassword,
-  updateInternalProfile,
-  getInternalProfileRequirements,
-  getMyProfile,
-} from '@/services';
-import type { StaffProfilePayload, ProfileRequirements } from '@/types';
-
-type Step = 'change-password' | 'complete-profile';
+import { changeMyPassword } from '@/services';
 
 const TOKEN_KEY = 'globalxpress_token';
-const ONBOARDING_STEP_ORDER: Step[] = ['change-password', 'complete-profile'];
 
 export function StaffOnboardingPage(): ReactElement {
   const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading: authLoading, refreshUser } = useAuth();
 
-  // Determine initial step
-  const [step, setStep] = useState<Step>(() =>
-    user?.mustChangePassword ? 'change-password' : 'complete-profile'
-  );
-
-  // ── Change Password State ──────────────────────────────────────────────────
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -45,27 +24,7 @@ export function StaffOnboardingPage(): ReactElement {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwLoading, setPwLoading] = useState(false);
-
-  // ── Profile State ──────────────────────────────────────────────────────────
-  const [requirements, setRequirements] = useState<ProfileRequirements>({ requireNationalId: false });
-  const [profileError, setProfileError] = useState<string | null>(null);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [profileSaved, setProfileSaved] = useState(false);
   const [statusRefreshing, setStatusRefreshing] = useState(false);
-  const [profile, setProfile] = useState<StaffProfilePayload>({
-    gender: 'male',
-    dateOfBirth: '',
-    phone: '',
-    addressStreet: '',
-    addressCity: '',
-    addressState: '',
-    addressCountry: '',
-    addressPostalCode: '',
-    emergencyContactName: '',
-    emergencyContactPhone: '',
-    emergencyContactRelationship: '',
-    nationalId: '',
-  });
 
   // Redirect if user shouldn't be here
   useEffect(() => {
@@ -74,55 +33,13 @@ export function StaffOnboardingPage(): ReactElement {
       navigate(ROUTES.LOGIN, { replace: true });
       return;
     }
-    // Only navigate away when fully cleared AND account is active.
-    // isActive: false means profile is complete but admin hasn't approved yet —
-    // stay here so the pending approval screen can show.
-    if (!user.mustChangePassword && !user.mustCompleteProfile && user.isActive !== false) {
+    // Password change done and account active → dashboard
+    if (!user.mustChangePassword && user.isActive !== false) {
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
     }
+    // isActive: false → pending approval screen (handled in render)
   }, [authLoading, isAuthenticated, user, navigate]);
 
-  // Sync step when user flags change (e.g. after password change)
-  useEffect(() => {
-    if (user?.mustChangePassword) {
-      setStep('change-password');
-    } else if (user?.mustCompleteProfile) {
-      setStep('complete-profile');
-    }
-  }, [user?.mustChangePassword, user?.mustCompleteProfile]);
-
-  // Fetch profile requirements + pre-populate from existing data when entering profile step
-  useEffect(() => {
-    if (step !== 'complete-profile') return;
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) return;
-
-    getInternalProfileRequirements(token)
-      .then(setRequirements)
-      .catch(() => {/* use defaults */});
-
-    getMyProfile(token)
-      .then((existing) => {
-        setProfile((prev) => ({
-          ...prev,
-          gender: (existing.gender as StaffProfilePayload['gender']) || prev.gender,
-          dateOfBirth: existing.dateOfBirth || prev.dateOfBirth,
-          phone: existing.phone || prev.phone,
-          addressStreet: existing.addressStreet || prev.addressStreet,
-          addressCity: existing.addressCity || prev.addressCity,
-          addressState: existing.addressState || prev.addressState,
-          addressCountry: normaliseCountry(existing.addressCountry) || prev.addressCountry,
-          addressPostalCode: existing.addressPostalCode || prev.addressPostalCode,
-          emergencyContactName: existing.emergencyContactName || prev.emergencyContactName,
-          emergencyContactPhone: existing.emergencyContactPhone || prev.emergencyContactPhone,
-          emergencyContactRelationship: existing.emergencyContactRelationship || prev.emergencyContactRelationship,
-          nationalId: existing.nationalId || prev.nationalId,
-        }));
-      })
-      .catch(() => {/* leave form empty */});
-  }, [step]);
-
-  // ── Change Password Handler ────────────────────────────────────────────────
   const handleChangePassword = useCallback(async () => {
     setPwError(null);
     const tv = t('staffOnboarding.changePassword.validation', { returnObjects: true }) as Record<string, string>;
@@ -140,194 +57,18 @@ export function StaffOnboardingPage(): ReactElement {
     try {
       await changeMyPassword(token, { currentPassword, newPassword });
       await refreshUser();
-      // After password change: move to profile step, pending screen, or dashboard
-      if (user?.mustCompleteProfile) {
-        setStep('complete-profile');
-      } else if (user?.isActive !== false) {
-        navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
-      }
-      // isActive: false → redirect effect / pending screen will handle it
+      // Redirect is handled by the effect above once user state updates
     } catch (err) {
       setPwError(err instanceof Error ? err.message : 'Failed to change password');
     } finally {
       setPwLoading(false);
     }
-  }, [currentPassword, newPassword, confirmPassword, t, user, navigate, refreshUser]);
-
-  // ── Profile Update Handler ─────────────────────────────────────────────────
-  const handleProfileSubmit = useCallback(async () => {
-    setProfileError(null);
-    const tv = t('staffOnboarding.completeProfile.validation', { returnObjects: true }) as Record<string, string>;
-
-    if (!profile.gender) { setProfileError(tv.genderRequired); return; }
-    if (!profile.dateOfBirth) { setProfileError(tv.dobRequired); return; }
-    if (!profile.phone) { setProfileError(tv.phoneRequired); return; }
-    if (!profile.addressStreet) { setProfileError(tv.streetRequired); return; }
-    if (!profile.addressCity) { setProfileError(tv.cityRequired); return; }
-    if (!profile.addressState) { setProfileError(tv.stateRequired); return; }
-    if (!profile.addressCountry) { setProfileError(tv.countryRequired); return; }
-    if (!profile.addressPostalCode) { setProfileError(tv.postalCodeRequired); return; }
-    if (!profile.emergencyContactName) { setProfileError(tv.emergencyNameRequired); return; }
-    if (!profile.emergencyContactPhone) { setProfileError(tv.emergencyPhoneRequired); return; }
-    if (!profile.emergencyContactRelationship) { setProfileError(tv.emergencyRelationshipRequired); return; }
-    if (requirements.requireNationalId && !profile.nationalId) { setProfileError(tv.nationalIdRequired); return; }
-
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) return;
-
-    setProfileLoading(true);
-    try {
-      const payload: StaffProfilePayload = { ...profile };
-      if (!requirements.requireNationalId && !payload.nationalId) {
-        delete payload.nationalId;
-      }
-      await updateInternalProfile(token, payload);
-      await refreshUser();
-      setProfileSaved(true);
-    } catch (err) {
-      setProfileError(err instanceof Error ? err.message : 'Failed to save profile');
-    } finally {
-      setProfileLoading(false);
-    }
-  }, [profile, requirements, t, refreshUser]);
-
-  // Navigate to dashboard once onboarding flags are clear AND account is active.
-  // If isActive is false, the pending approval screen renders instead.
-  useEffect(() => {
-    if (profileSaved && user && !user.mustCompleteProfile && user.isActive !== false) {
-      navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
-    }
-  }, [profileSaved, user, navigate]);
-
-  const updateField = <K extends keyof StaffProfilePayload>(key: K, value: StaffProfilePayload[K]) => {
-    setProfile((prev) => {
-      const next = { ...prev, [key]: value };
-      if (key === 'addressCountry') {
-        next.addressState = '';
-        next.addressCity = '';
-      } else if (key === 'addressState') {
-        next.addressCity = '';
-      }
-      return next;
-    });
-  };
-
-  const currentStepIndex = ONBOARDING_STEP_ORDER.indexOf(step);
-
-  const handleStepSelect = (targetIndex: number) => {
-    if (targetIndex < 0 || targetIndex >= ONBOARDING_STEP_ORDER.length) return;
-    if (targetIndex > currentStepIndex) return;
-    const targetStep = ONBOARDING_STEP_ORDER[targetIndex];
-    if (targetStep === 'complete-profile' && user?.mustChangePassword) return;
-    setPwError(null);
-    setProfileError(null);
-    setStep(targetStep);
-  };
+  }, [currentPassword, newPassword, confirmPassword, t, refreshUser]);
 
   if (authLoading) return <AuthLayout><div /></AuthLayout>;
 
-  // ── Change Password View ───────────────────────────────────────────────────
-  if (step === 'change-password') {
-    const cp = 'staffOnboarding.changePassword';
-    return (
-      <AuthLayout>
-        <div className="space-y-4">
-          <StepIndicator
-            className="mx-1"
-            steps={[
-              { id: 'change-password', label: t('staffOnboarding.changePassword.title') },
-              { id: 'complete-profile', label: t('staffOnboarding.completeProfile.title') },
-            ]}
-            currentIndex={currentStepIndex}
-            onStepSelect={handleStepSelect}
-            isStepEnabled={(index, indexCurrent) => index <= indexCurrent}
-          />
-
-          <Card className="auth-panel-card p-8 sm:p-10">
-            <div className="flex justify-center mb-6">
-              <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900">{t(`${cp}.title`)}</h2>
-            <p className="mt-1 text-sm text-gray-500">{t(`${cp}.subtitle`)}</p>
-
-            {pwError && (
-              <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{pwError}</div>
-            )}
-
-            <div className="mt-6 space-y-4">
-            <div className="relative">
-              <Input
-                type={showCurrent ? 'text' : 'password'}
-                label={t(`${cp}.currentPasswordLabel`)}
-                placeholder={t(`${cp}.currentPasswordPlaceholder`)}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => setShowCurrent(!showCurrent)}
-                className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
-                tabIndex={-1}
-              >
-                {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-
-            <div className="relative">
-              <Input
-                type={showNew ? 'text' : 'password'}
-                label={t(`${cp}.newPasswordLabel`)}
-                placeholder={t(`${cp}.newPasswordPlaceholder`)}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => setShowNew(!showNew)}
-                className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
-                tabIndex={-1}
-              >
-                {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-
-            <div className="relative">
-              <Input
-                type={showConfirm ? 'text' : 'password'}
-                label={t(`${cp}.confirmPasswordLabel`)}
-                placeholder={t(`${cp}.confirmPasswordPlaceholder`)}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirm(!showConfirm)}
-                className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
-                tabIndex={-1}
-              >
-                {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
-
-          <Button
-            className="auth-cta-btn mt-6 w-full"
-            onClick={handleChangePassword}
-            disabled={pwLoading}
-          >
-            {pwLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t(`${cp}.submitButton`)}
-          </Button>
-          </Card>
-        </div>
-      </AuthLayout>
-    );
-  }
-
   // ── Pending Approval View ─────────────────────────────────────────────────
-  // Shown when: profile complete, no password change needed, but account not
-  // yet activated by an admin. Covers both "just submitted" and return visits.
-  if (user && !user.mustChangePassword && !user.mustCompleteProfile && user.isActive === false) {
+  if (user && !user.mustChangePassword && user.isActive === false) {
     return (
       <AuthLayout>
         <Card className="auth-panel-card p-8 sm:p-10">
@@ -339,17 +80,17 @@ export function StaffOnboardingPage(): ReactElement {
               <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Profile saved successfully</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Account pending activation</h2>
               <p className="mt-2 text-sm text-gray-500 max-w-sm">
-                Your information has been saved. Your account is currently pending approval from an administrator.
+                Your account is currently pending approval from an administrator.
               </p>
               <p className="mt-3 text-sm text-gray-500 max-w-sm">
-                You can close this page and come back once your admin has approved your account. You will be able to log in and access the dashboard at that point.
+                You can close this page and come back once your admin has approved your account.
               </p>
             </div>
             <div className="mt-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 text-left w-full">
               <p className="font-semibold">What happens next?</p>
-              <p className="mt-1">An administrator will review and activate your account. Once activated, this page will automatically redirect you to the dashboard when you log in again.</p>
+              <p className="mt-1">An administrator will activate your account. Once activated, this page will automatically redirect you to the dashboard when you log in again.</p>
             </div>
             <Button
               variant="secondary"
@@ -371,184 +112,86 @@ export function StaffOnboardingPage(): ReactElement {
     );
   }
 
-  // ── Complete Profile View ──────────────────────────────────────────────────
-  const pp = 'staffOnboarding.completeProfile';
+  // ── Change Password View ──────────────────────────────────────────────────
+  const cp = 'staffOnboarding.changePassword';
   return (
     <AuthLayout>
-      <div className="space-y-4">
-        <StepIndicator
-          className="mx-1"
-          steps={[
-            { id: 'change-password', label: t('staffOnboarding.changePassword.title') },
-            { id: 'complete-profile', label: t('staffOnboarding.completeProfile.title') },
-          ]}
-          currentIndex={currentStepIndex}
-          onStepSelect={handleStepSelect}
-          isStepEnabled={(index, indexCurrent) => index <= indexCurrent}
-        />
+      <Card className="auth-panel-card p-8 sm:p-10">
+        <div className="flex justify-center mb-6">
+          <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
+        </div>
+        <h2 className="text-xl font-semibold text-gray-900">{t(`${cp}.title`)}</h2>
+        <p className="mt-1 text-sm text-gray-500">{t(`${cp}.subtitle`)}</p>
 
-        <Card className="auth-panel-card max-h-[85vh] overflow-y-auto p-8 sm:p-10">
-          <div className="flex justify-center mb-6">
-            <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-12" />
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900">{t(`${pp}.title`)}</h2>
-          <p className="mt-1 text-sm text-gray-500">{t(`${pp}.subtitle`)}</p>
+        {pwError && (
+          <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{pwError}</div>
+        )}
 
-          {profileError && (
-            <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{profileError}</div>
-          )}
-
-          <div className="mt-6 space-y-4">
-          {/* Gender */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">{t(`${pp}.genderLabel`)}</label>
-            <div className="flex gap-3">
-              {(['male', 'female', 'other'] as const).map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => updateField('gender', g)}
-                  className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
-                    profile.gender === g
-                      ? 'border-brand-500 bg-brand-50 text-brand-600'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                  }`}
-                >
-                  {t(`${pp}.gender${g.charAt(0).toUpperCase() + g.slice(1)}`)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* DOB */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">{t(`${pp}.dobLabel`)}</label>
-            <input
-              type="date"
-              value={profile.dateOfBirth}
-              onChange={(e) => updateField('dateOfBirth', e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-brand-500"
-            />
-          </div>
-
-          {/* Phone */}
-          <Input
-            label={t(`${pp}.phoneLabel`)}
-            placeholder={t(`${pp}.phonePlaceholder`)}
-            value={profile.phone}
-            onChange={(e) => updateField('phone', e.target.value)}
-          />
-
-          {/* Address */}
-          <Input
-            label={t(`${pp}.addressStreet`)}
-            placeholder={t(`${pp}.streetPlaceholder`)}
-            value={profile.addressStreet}
-            onChange={(e) => updateField('addressStreet', e.target.value)}
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">{t(`${pp}.country`)}</label>
-              <select
-                value={profile.addressCountry}
-                onChange={(e) => updateField('addressCountry', e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-brand-500 disabled:opacity-50"
-              >
-                <option value="">Select country</option>
-                {STAFF_COUNTRIES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
-            </div>
+        <div className="mt-6 space-y-4">
+          <div className="relative">
             <Input
-              label={t(`${pp}.postalCode`)}
-              placeholder={t(`${pp}.postalCodePlaceholder`)}
-              value={profile.addressPostalCode}
-              onChange={(e) => updateField('addressPostalCode', e.target.value)}
+              type={showCurrent ? 'text' : 'password'}
+              label={t(`${cp}.currentPasswordLabel`)}
+              placeholder={t(`${cp}.currentPasswordPlaceholder`)}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
             />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">{t(`${pp}.state`)}</label>
-              <select
-                value={profile.addressState}
-                onChange={(e) => updateField('addressState', e.target.value)}
-                disabled={!profile.addressCountry}
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-brand-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option value="">Select state / province</option>
-                {getStates(profile.addressCountry).map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">{t(`${pp}.city`)}</label>
-              <select
-                value={profile.addressCity}
-                onChange={(e) => updateField('addressCity', e.target.value)}
-                disabled={!profile.addressState}
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-brand-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option value="">Select city</option>
-                {getCities(profile.addressCountry, profile.addressState).map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowCurrent(!showCurrent)}
+              className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
+              tabIndex={-1}
+            >
+              {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
 
-          {/* Emergency Contact */}
-          <h3 className="pt-2 text-base font-semibold text-gray-900">{t(`${pp}.emergencyTitle`)}</h3>
-          <Input
-            label={t(`${pp}.emergencyName`)}
-            placeholder={t(`${pp}.emergencyNamePlaceholder`)}
-            value={profile.emergencyContactName}
-            onChange={(e) => updateField('emergencyContactName', e.target.value)}
-          />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="relative">
             <Input
-              label={t(`${pp}.emergencyPhone`)}
-              placeholder={t(`${pp}.emergencyPhonePlaceholder`)}
-              value={profile.emergencyContactPhone}
-              onChange={(e) => updateField('emergencyContactPhone', e.target.value)}
+              type={showNew ? 'text' : 'password'}
+              label={t(`${cp}.newPasswordLabel`)}
+              placeholder={t(`${cp}.newPasswordPlaceholder`)}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
             />
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">{t(`${pp}.emergencyRelationship`)}</label>
-              <select
-                value={profile.emergencyContactRelationship}
-                onChange={(e) => updateField('emergencyContactRelationship', e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-brand-500"
-              >
-                <option value="">Select relationship</option>
-                {RELATIONSHIP_OPTIONS.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowNew(!showNew)}
+              className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
+              tabIndex={-1}
+            >
+              {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
 
-          {/* National ID (conditional) */}
-          {requirements.requireNationalId && (
+          <div className="relative">
             <Input
-              label={t(`${pp}.nationalIdLabel`)}
-              placeholder={t(`${pp}.nationalIdPlaceholder`)}
-              value={profile.nationalId ?? ''}
-              onChange={(e) => updateField('nationalId', e.target.value)}
+              type={showConfirm ? 'text' : 'password'}
+              label={t(`${cp}.confirmPasswordLabel`)}
+              placeholder={t(`${cp}.confirmPasswordPlaceholder`)}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
             />
-          )}
+            <button
+              type="button"
+              onClick={() => setShowConfirm(!showConfirm)}
+              className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
+              tabIndex={-1}
+            >
+              {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
 
-          <Button
-            className="auth-cta-btn mt-6 w-full"
-            onClick={handleProfileSubmit}
-            disabled={profileLoading}
-          >
-            {profileLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t(`${pp}.submitButton`)}
-          </Button>
-        </Card>
-      </div>
+        <Button
+          className="auth-cta-btn mt-6 w-full"
+          onClick={handleChangePassword}
+          disabled={pwLoading}
+        >
+          {pwLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {t(`${cp}.submitButton`)}
+        </Button>
+      </Card>
     </AuthLayout>
   );
 }
