@@ -104,6 +104,12 @@ const AdminGalleryPage = lazy(() =>
 const AdminImportsPage = lazy(() =>
   import('@/pages/admin/AdminImportsPage').then((m) => ({ default: m.AdminImportsPage })),
 );
+const BatchesPage = lazy(() =>
+  import('@/pages/batches/BatchesPage').then((m) => ({ default: m.BatchesPage })),
+);
+const BatchDetailPage = lazy(() =>
+  import('@/pages/batches/BatchDetailPage').then((m) => ({ default: m.BatchDetailPage })),
+);
 
 function AppRoutes(): ReactElement {
   const [launchGateActive, setLaunchGateActive] = useState<boolean>(() => isLaunchGateActive());
@@ -356,6 +362,22 @@ function AppRoutes(): ReactElement {
         element={
           <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
             <AdminImportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.BATCHES}
+        element={
+          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
+            <BatchesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.BATCH_DETAIL}
+        element={
+          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
+            <BatchDetailPage />
           </ProtectedRoute>
         }
       />

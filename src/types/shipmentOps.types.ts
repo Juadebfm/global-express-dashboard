@@ -150,3 +150,119 @@ export interface DispatchBatchMoveToNextPayload {
   supplierId?: string;
   packageIds?: string[];
 }
+
+// ── New /api/v1/batches types ────────────────────────────────────────────────
+
+export interface Batch {
+  id: string;
+  masterTrackingNumber: string;
+  transportMode: 'air' | 'sea';
+  transportLabel: string;
+  status: 'open' | 'closed';
+  statusLabel: string;
+  carrierName: string | null;
+  airlineTrackingNumber: string | null;
+  oceanTrackingNumber: string | null;
+  d2dTrackingNumber: string | null;
+  voyageOrFlightNumber: string | null;
+  estimatedDepartureAt: string | null;
+  estimatedArrivalAt: string | null;
+  closedAt: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BatchListItem {
+  id: string;
+  masterTrackingNumber: string;
+  transportMode: 'air' | 'sea';
+  transportLabel: string;
+  status: 'open' | 'closed';
+  statusLabel: string;
+  customerCount: number;
+  orderCount: number;
+  totalWeightKg: string;
+}
+
+export interface BatchListResult {
+  batches: BatchListItem[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export interface BatchRosterOrder {
+  id: string;
+  trackingNumber: string;
+  status: string;
+  statusLabel: string;
+  description: string;
+  weightKg: string;
+  shipmentType: 'air' | 'd2d';
+  shipmentTypeLabel: string;
+  declaredValueUsd: string;
+  createdAt: string;
+}
+
+export interface BatchRosterCustomer {
+  slotId: string;
+  customerId: string;
+  customerName: string;
+  shippingMark: string;
+  batchTrackingNumber: string;
+  orderCount: number;
+  totalWeightKg: string;
+  allVerified: boolean;
+  orders: BatchRosterOrder[];
+}
+
+export interface BatchRosterSummary {
+  totalCustomers: number;
+  totalOrders: number;
+  totalWeightKg: string;
+  unverifiedOrders: number;
+  canClose: boolean;
+  shipmentTypeBreakdown: Record<string, number>;
+  goodsTypeBreakdown: Record<string, number>;
+}
+
+export interface BatchRosterResult {
+  batch: Batch;
+  customers: BatchRosterCustomer[];
+  summary: BatchRosterSummary;
+}
+
+export interface BatchStatusLabel {
+  status: string;
+  label: string;
+  description: string;
+}
+
+export interface BatchAddOrderPayload {
+  orderId: string;
+}
+
+export interface BatchAddOrderResult {
+  ok: boolean;
+  batchId: string;
+  masterTrackingNumber: string;
+  batchTrackingNumber: string;
+  isNewSlot: boolean;
+}
+
+export interface BatchUpdateStatusPayload {
+  status: string;
+}
+
+export interface BatchUpdateStatusResult {
+  ok: boolean;
+  updatedOrderCount: number;
+  newStatus: string;
+  statusLabel: string;
+}
+
+export interface BatchCloseResult {
+  ok: boolean;
+  closedBatch: Batch;
+  nextBatch: Batch;
+  customersNotified: number;
+}

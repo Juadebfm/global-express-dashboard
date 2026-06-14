@@ -158,3 +158,14 @@ export type {
   UploadGalleryMediaInput,
 } from './useGallery';
 export { useCountries, useCountryStates, useStateCities } from './useLocationApi';
+export {
+  useBatches,
+  useBatch,
+  useBatchRoster,
+  useBatchStatusLabels,
+  useCreateBatch,
+  useAddOrderToBatch,
+  useRemoveOrderFromBatch,
+  useSetBatchMovementStatus,
+  useCloseBatch,
+} from './useBatches';

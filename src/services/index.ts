@@ -140,3 +140,15 @@ export {
 export { importUsersSuppliers } from './adminImportsService';
 export type { ImportUsersSuppliersInput } from './adminImportsService';
 export { getFileScanStatus } from './fileScansService';
+export {
+  getBatches,
+  getBatch,
+  getBatchRoster,
+  createBatch,
+  addOrderToBatch,
+  removeOrderFromBatch,
+  updateBatchStatus,
+  closeBatch,
+  getBatchStatusLabels,
+} from './batchesService';
+export type { BatchListParams } from './batchesService';

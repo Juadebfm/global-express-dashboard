@@ -31,3 +31,4 @@ export { DeliverySchedulePage } from './deliverySchedule';
 export { PaymentsPage, PaymentCallbackPage } from './payments';
 export { ReportsPage } from './reports';
 export { ProfilePage } from './profile';
+export { BatchesPage, BatchDetailPage } from './batches';

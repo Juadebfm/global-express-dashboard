@@ -38,6 +38,8 @@ export const ROUTES = {
   PAYMENT_CALLBACK: '/payments/callback',
   REPORTS: '/reports',
   AUDIT_LOGS: '/reports/audit-logs',
+  BATCHES: '/batches',
+  BATCH_DETAIL: '/batches/:batchId',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

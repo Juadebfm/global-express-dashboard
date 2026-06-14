@@ -1,0 +1,1 @@
+export { BatchDetailPage } from './BatchDetailPage';

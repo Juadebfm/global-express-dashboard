@@ -247,6 +247,19 @@ export type {
   DispatchBatchCarrierInfoPayload,
   DispatchBatchStatusPayload,
   DispatchBatchMoveToNextPayload,
+  Batch,
+  BatchListItem,
+  BatchListResult,
+  BatchRosterOrder,
+  BatchRosterCustomer,
+  BatchRosterSummary,
+  BatchRosterResult,
+  BatchStatusLabel,
+  BatchAddOrderPayload,
+  BatchAddOrderResult,
+  BatchUpdateStatusPayload,
+  BatchUpdateStatusResult,
+  BatchCloseResult,
 } from './shipmentOps.types';
 
 export type {
