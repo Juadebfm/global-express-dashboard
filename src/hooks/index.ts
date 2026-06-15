@@ -163,7 +163,7 @@ export {
   useBatch,
   useBatchRoster,
   useBatchStatusLabels,
-  useCreateBatch,
+  useAvailableOrdersForBatch,
   useAddOrderToBatch,
   useRemoveOrderFromBatch,
   useSetBatchMovementStatus,

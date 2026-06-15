@@ -1,4 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 import { formatDate, formatCurrency } from '@/utils';
 import type { OrderView } from '../types';
 import { pricingSourceLabel } from '../types';
@@ -21,6 +23,62 @@ function Field({ label, children }: { label: string; children: ReactNode }): Rea
     <div>
       <p className="text-xs text-gray-400">{label}</p>
       <p className="mt-0.5 text-sm font-medium text-gray-800">{children || '—'}</p>
+    </div>
+  );
+}
+
+function DescriptionModal({ text, onClose }: { text: string; onClose: () => void }): ReactElement {
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
+  return (
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+    >
+      <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Contents</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{text}</p>
+      </div>
+    </div>
+  );
+}
+
+function ContentsField({ value }: { value: string | null | undefined }): ReactElement {
+  const [open, setOpen] = useState(false);
+  const THRESHOLD = 120;
+  const text = value || '—';
+  const needsModal = !!value && value.length > THRESHOLD;
+
+  return (
+    <div>
+      <p className="text-xs text-gray-400">Contents</p>
+      <p className="mt-0.5 text-sm font-medium text-gray-800 line-clamp-2">{text}</p>
+      {needsModal && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="mt-1 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
+        >
+          Read more
+        </button>
+      )}
+      {open && <DescriptionModal text={value!} onClose={() => setOpen(false)} />}
     </div>
   );
 }
@@ -86,7 +144,7 @@ export function OverviewPanel({ view, billableWeightKg }: OverviewPanelProps): R
           <ColHeader>Shipment</ColHeader>
           <div className="space-y-3.5">
             <Field label="Transport">{modeLabel}</Field>
-            <Field label="Contents">{view.contentDescription || '—'}</Field>
+            <ContentsField value={view.contentDescription} />
             {billableWeightKg != null && (
               <Field label="Billable weight">{billableLabel}</Field>
             )}

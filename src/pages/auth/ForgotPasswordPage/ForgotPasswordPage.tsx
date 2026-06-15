@@ -47,8 +47,7 @@ export function ForgotPasswordPage(): ReactElement {
     try {
       await resetPassword(email, password);
     } catch (err) {
-      const message = err instanceof Error ? err.message : t('forgotPassword.somethingWentWrong');
-      setError(message);
+      setError(t('forgotPassword.resetFailed'));
       throw err;
     } finally {
       setIsLoading(false);

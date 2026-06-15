@@ -24,6 +24,7 @@ export const STAFF_NAV: SidebarItem[] = [
   { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
   { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
   { id: 'batches', icon: 'boxes', href: ROUTES.BATCHES },
+  { id: 'supplierNotices', icon: 'package', href: ROUTES.SUPPLIER_NOTICES },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
 ];
 
@@ -31,6 +32,7 @@ export const ADMIN_NAV: SidebarItem[] = [
   { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
   { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
   { id: 'batches', icon: 'boxes', href: ROUTES.BATCHES },
+  { id: 'supplierNotices', icon: 'package', href: ROUTES.SUPPLIER_NOTICES },
   { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
   { id: 'team', icon: 'team', href: ROUTES.TEAM },
@@ -41,6 +43,7 @@ export const SUPERADMIN_NAV: SidebarItem[] = [
   { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
   { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
   { id: 'batches', icon: 'boxes', href: ROUTES.BATCHES },
+  { id: 'supplierNotices', icon: 'package', href: ROUTES.SUPPLIER_NOTICES },
   { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
   { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },

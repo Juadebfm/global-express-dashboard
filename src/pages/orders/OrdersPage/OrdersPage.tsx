@@ -3,7 +3,6 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Layers,
   Loader2,
   PackagePlus,
   Plus,
@@ -38,7 +37,6 @@ import { AppShell, PageHeader } from '@/pages/shared';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
 import {
-  BatchOpsModal,
   ShipmentIntakeModal,
 } from '@/pages/shipments/components';
 import {
@@ -97,7 +95,6 @@ export function OrdersPage(): ReactElement {
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
   const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
   const [showIntake, setShowIntake] = useState(false);
-  const [showBatchOps, setShowBatchOps] = useState(false);
   const recordIntake = useRecordShipmentIntake();
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -383,15 +380,7 @@ export function OrdersPage(): ReactElement {
                 >
                   Record intake
                 </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  leftIcon={<Layers className="h-4 w-4" />}
-                  onClick={() => setShowBatchOps(true)}
-                >
-                  Batch operations
-                </Button>
-                <Button
+<Button
                   size="sm"
                   variant="ghost"
                   leftIcon={<Plus className="h-4 w-4" />}
@@ -678,7 +667,6 @@ export function OrdersPage(): ReactElement {
         />
       )}
 
-      {showBatchOps && <BatchOpsModal onClose={() => setShowBatchOps(false)} />}
     </AppShell>
   );
 }

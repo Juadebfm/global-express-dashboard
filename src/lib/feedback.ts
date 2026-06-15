@@ -12,6 +12,10 @@ const SENSITIVE_PATTERNS = [
   /\bsyntax error\b/i,
   /\binternal\b/i,
   /\bundefined\b/i,
+  // UUIDs and raw identifiers — never expose to users
+  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+  /\b[0-9a-f]{16,}\b/i,
+  /[0-9a-f]{8,}:[0-9a-f]{8,}/i,
 ];
 
 function isSensitiveMessage(message: string): boolean {

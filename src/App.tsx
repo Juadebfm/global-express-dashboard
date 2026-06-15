@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/store';
 import { ProtectedRoute } from '@/components/auth';
+import { SupplierRoute } from '@/components/supplier/SupplierRoute';
 import { RouteErrorBoundary } from '@/components/errors';
 import { FeedbackCenter, PageLoader } from '@/components/ui';
 // Static imports — auth + landing + error pages + public tracking. These are
@@ -109,6 +110,24 @@ const BatchesPage = lazy(() =>
 );
 const BatchDetailPage = lazy(() =>
   import('@/pages/batches/BatchDetailPage').then((m) => ({ default: m.BatchDetailPage })),
+);
+const SupplierNoticesPage = lazy(() =>
+  import('@/pages/supplierNotices/SupplierNoticesPage/SupplierNoticesPage').then((m) => ({ default: m.SupplierNoticesPage })),
+);
+const SupplierNoticeReviewPage = lazy(() =>
+  import('@/pages/supplierNotices/SupplierNoticeReviewPage/SupplierNoticeReviewPage').then((m) => ({ default: m.SupplierNoticeReviewPage })),
+);
+const SupplierLoginPage = lazy(() =>
+  import('@/pages/supplier/SupplierLoginPage/SupplierLoginPage').then((m) => ({ default: m.SupplierLoginPage })),
+);
+const SupplierDashboardPage = lazy(() =>
+  import('@/pages/supplier/SupplierDashboardPage/SupplierDashboardPage').then((m) => ({ default: m.SupplierDashboardPage })),
+);
+const SupplierNewDeclarationPage = lazy(() =>
+  import('@/pages/supplier/SupplierNewDeclarationPage/SupplierNewDeclarationPage').then((m) => ({ default: m.SupplierNewDeclarationPage })),
+);
+const SupplierDeclarationDetailPage = lazy(() =>
+  import('@/pages/supplier/SupplierDeclarationDetailPage/SupplierDeclarationDetailPage').then((m) => ({ default: m.SupplierDeclarationDetailPage })),
 );
 
 function AppRoutes(): ReactElement {
@@ -379,6 +398,51 @@ function AppRoutes(): ReactElement {
           <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
             <BatchDetailPage />
           </ProtectedRoute>
+        }
+      />
+
+      {/* Supplier notices (staff-side) */}
+      <Route
+        path={ROUTES.SUPPLIER_NOTICES}
+        element={
+          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
+            <SupplierNoticesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.SUPPLIER_NOTICE_REVIEW}
+        element={
+          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
+            <SupplierNoticeReviewPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Supplier portal */}
+      <Route path={ROUTES.SUPPLIER_LOGIN} element={<SupplierLoginPage />} />
+      <Route
+        path={ROUTES.SUPPLIER_DASHBOARD}
+        element={
+          <SupplierRoute>
+            <SupplierDashboardPage />
+          </SupplierRoute>
+        }
+      />
+      <Route
+        path={ROUTES.SUPPLIER_NEW_GOODS_NOTICE}
+        element={
+          <SupplierRoute>
+            <SupplierNewDeclarationPage />
+          </SupplierRoute>
+        }
+      />
+      <Route
+        path={ROUTES.SUPPLIER_GOODS_NOTICE_DETAIL}
+        element={
+          <SupplierRoute>
+            <SupplierDeclarationDetailPage />
+          </SupplierRoute>
         }
       />
 

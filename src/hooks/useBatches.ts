@@ -3,12 +3,12 @@ import {
   getBatches,
   getBatch,
   getBatchRoster,
-  createBatch,
   addOrderToBatch,
   removeOrderFromBatch,
   updateBatchStatus,
   closeBatch,
   getBatchStatusLabels,
+  getAvailableOrdersForBatch,
 } from '@/services';
 import type {
   BatchListParams,
@@ -57,14 +57,12 @@ export function useBatchStatusLabels() {
   });
 }
 
-export function useCreateBatch() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: { transportMode: 'air' | 'sea' }) =>
-      createBatch(getToken(), payload),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['batches'] });
-    },
+export function useAvailableOrdersForBatch(batchId: string | undefined) {
+  return useQuery({
+    queryKey: ['batches', 'available-orders', batchId],
+    queryFn: () => getAvailableOrdersForBatch(getToken(), batchId!),
+    enabled: !!batchId,
+    staleTime: STALE_TIME.REAL_TIME,
   });
 }
 
@@ -76,6 +74,7 @@ export function useAddOrderToBatch() {
     onSuccess: (_data, { batchId }) => {
       void queryClient.invalidateQueries({ queryKey: ['batches', 'roster', batchId] });
       void queryClient.invalidateQueries({ queryKey: ['batches', 'detail', batchId] });
+      void queryClient.invalidateQueries({ queryKey: ['batches', 'available-orders', batchId] });
       void queryClient.invalidateQueries({ queryKey: ['batches', 'list'] });
     },
   });
@@ -89,6 +88,7 @@ export function useRemoveOrderFromBatch() {
     onSuccess: (_data, { batchId }) => {
       void queryClient.invalidateQueries({ queryKey: ['batches', 'roster', batchId] });
       void queryClient.invalidateQueries({ queryKey: ['batches', 'detail', batchId] });
+      void queryClient.invalidateQueries({ queryKey: ['batches', 'available-orders', batchId] });
       void queryClient.invalidateQueries({ queryKey: ['batches', 'list'] });
     },
   });

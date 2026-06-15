@@ -195,7 +195,6 @@ export function ShipmentIntakeModal({
   const { fields, append, remove } = useFieldArray({ control, name: 'goods' });
   // eslint-disable-next-line react-hooks/incompatible-library
   const serviceType = watch('serviceType');
-  // eslint-disable-next-line react-hooks/incompatible-library
   const shipmentPayer = watch('shipmentPayer');
   const isD2D = serviceType === 'd2d';
   const { items: itemTypeOptions } = useItemTypes();

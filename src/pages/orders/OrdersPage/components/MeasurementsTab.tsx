@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
-import { useState } from 'react';
-import { CheckCircle2, Clock, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { CheckCircle2, Clock, Edit2, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { cn } from '@/utils';
 import type { Measurement, MeasurementCheckpoint } from '@/services/measurementsService';
@@ -75,7 +75,8 @@ function RecordForm({
           <input
             type="number" min="0" step="0.001" placeholder="0.000"
             value={weightKg} onChange={(e) => setWeightKg(e.target.value)}
-            className={inputCls}
+            disabled={isPending}
+            className={cn(inputCls, isPending && 'opacity-50 cursor-not-allowed')}
           />
         </div>
         <div>
@@ -83,7 +84,8 @@ function RecordForm({
           <input
             type="number" min="0" step="0.000001" placeholder="0.000000"
             value={cbm} onChange={(e) => setCbm(e.target.value)}
-            className={inputCls}
+            disabled={isPending}
+            className={cn(inputCls, isPending && 'opacity-50 cursor-not-allowed')}
           />
         </div>
       </div>
@@ -92,7 +94,8 @@ function RecordForm({
         <textarea
           rows={2} placeholder="Any notes about this measurement…"
           value={notes} onChange={(e) => setNotes(e.target.value)}
-          className={`${inputCls} resize-none`}
+          disabled={isPending}
+          className={cn(`${inputCls} resize-none`, isPending && 'opacity-50 cursor-not-allowed')}
         />
       </div>
       {error && <p className="text-xs font-medium text-red-600">{error}</p>}
@@ -115,6 +118,7 @@ function CheckpointCard({
   label,
   measurement,
   isBaseline,
+  isAutoFilled,
   orderId,
   canRecord,
   isPending,
@@ -124,12 +128,25 @@ function CheckpointCard({
   label: string;
   measurement?: Measurement;
   isBaseline: boolean;
+  isAutoFilled: boolean;
   orderId: string;
   canRecord: boolean;
   isPending: boolean;
   onRecord: (orderId: string, data: { checkpoint: MeasurementCheckpoint; measuredWeightKg: number; measuredCbm: number; notes?: string }) => void;
 }): ReactElement {
-  const [editing, setEditing] = useState(false);
+  // 'idle' | 'editing' | 'submitting' — one state drives both the form
+  // visibility and the loading indicator, avoiding two setState calls in the
+  // effect below (which the linter flags as cascading-render risk).
+  const [editState, setEditState] = useState<'idle' | 'editing' | 'submitting'>('idle');
+  const wasPending = useRef(false);
+
+  useEffect(() => {
+    if (wasPending.current && !isPending && editState === 'submitting') {
+      setEditState('idle'); // eslint-disable-line react-hooks/set-state-in-effect
+    }
+    wasPending.current = isPending;
+  }, [isPending, editState]);
+
   const recorded = !!measurement;
 
   const fmtDate = (iso: string): string =>
@@ -154,14 +171,20 @@ function CheckpointCard({
               Baseline
             </span>
           )}
+          {isAutoFilled && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+              <Lock className="h-2.5 w-2.5" />
+              Auto-filled
+            </span>
+          )}
         </div>
         {canRecord && (
           <button
             type="button"
-            onClick={() => setEditing((v) => !v)}
+            onClick={() => setEditState((s) => s === 'idle' ? 'editing' : 'idle')}
             className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-900"
           >
-            {editing ? (
+            {editState !== 'idle' ? (
               <><ChevronUp className="h-3.5 w-3.5" /> Cancel</>
             ) : recorded ? (
               <><Edit2 className="h-3.5 w-3.5" /> Edit</>
@@ -200,22 +223,28 @@ function CheckpointCard({
       )}
 
       {/* Not yet recorded */}
-      {!recorded && !editing && (
-        <p className="mt-2 text-xs text-gray-400">Not yet recorded.</p>
+      {!recorded && editState === 'idle' && (
+        <p className="mt-2 text-xs text-gray-400">
+          {isAutoFilled
+            ? 'Filled automatically when the order is received at the warehouse.'
+            : 'Not yet recorded.'}
+        </p>
       )}
 
       {/* Inline record / edit form */}
-      {editing && (
+      {editState !== 'idle' && (
         <RecordForm
           checkpoint={checkpoint}
           existing={measurement}
           orderId={orderId}
-          isPending={isPending}
+          isPending={editState === 'submitting' && isPending}
           onSubmit={(id, data) => {
+            setEditState('submitting');
             onRecord(id, data);
-            setEditing(false);
           }}
-          onCancel={() => setEditing(false)}
+          onCancel={() => {
+            if (editState !== 'submitting') setEditState('idle');
+          }}
         />
       )}
     </div>
@@ -259,19 +288,23 @@ export function MeasurementsTab({
           Record weights and CBM at each stage. The Korea warehouse reading is the baseline — deltas are calculated from it.
         </p>
       </div>
-      {CHECKPOINTS.map((cp) => (
-        <CheckpointCard
-          key={cp.key}
-          checkpoint={cp.key}
-          label={cp.label}
-          measurement={byCheckpoint[cp.key]}
-          isBaseline={cp.key === 'SK_WAREHOUSE'}
-          orderId={orderId}
-          canRecord={canRecord}
-          isPending={isPending}
-          onRecord={onRecord}
-        />
-      ))}
+      {CHECKPOINTS.map((cp) => {
+        const isAutoFilled = cp.key === 'SK_WAREHOUSE';
+        return (
+          <CheckpointCard
+            key={cp.key}
+            checkpoint={cp.key}
+            label={cp.label}
+            measurement={byCheckpoint[cp.key]}
+            isBaseline={isAutoFilled}
+            isAutoFilled={isAutoFilled}
+            orderId={orderId}
+            canRecord={canRecord && !isAutoFilled}
+            isPending={isPending}
+            onRecord={onRecord}
+          />
+        );
+      })}
     </div>
   );
 }

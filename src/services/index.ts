@@ -144,11 +144,11 @@ export {
   getBatches,
   getBatch,
   getBatchRoster,
-  createBatch,
   addOrderToBatch,
   removeOrderFromBatch,
   updateBatchStatus,
   closeBatch,
   getBatchStatusLabels,
+  getAvailableOrdersForBatch,
 } from './batchesService';
-export type { BatchListParams } from './batchesService';
+export type { BatchListParams, AvailableOrder } from './batchesService';

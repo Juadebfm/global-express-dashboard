@@ -16,6 +16,18 @@ import type {
   BatchCloseResult,
 } from '@/types';
 
+export interface AvailableOrder {
+  orderId: string;
+  trackingNumber: string;
+  shipmentType: string;
+  weight: string;
+  description: string | null;
+  customerId: string;
+  customerName: string;
+  customerLastName: string;
+  shippingMark: string;
+}
+
 export interface BatchListParams {
   status?: 'open' | 'closed';
   transportMode?: 'air' | 'sea';
@@ -42,13 +54,6 @@ export function getBatch(token: string, batchId: string): Promise<Batch> {
 
 export function getBatchRoster(token: string, batchId: string): Promise<BatchRosterResult> {
   return apiGetData<BatchRosterResult>(`/batches/${batchId}/roster`, token);
-}
-
-export function createBatch(
-  token: string,
-  payload: { transportMode: 'air' | 'sea' },
-): Promise<Batch> {
-  return apiPostData<Batch>('/batches', payload, token);
 }
 
 export function addOrderToBatch(
@@ -81,4 +86,11 @@ export function closeBatch(token: string, batchId: string): Promise<BatchCloseRe
 
 export function getBatchStatusLabels(token: string): Promise<BatchStatusLabel[]> {
   return apiGetData<BatchStatusLabel[]>('/batches/status-labels', token);
+}
+
+export function getAvailableOrdersForBatch(
+  token: string,
+  batchId: string,
+): Promise<AvailableOrder[]> {
+  return apiGetData<AvailableOrder[]>(`/batches/${batchId}/available-orders`, token);
 }

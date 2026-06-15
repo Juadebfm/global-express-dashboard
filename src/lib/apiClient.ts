@@ -126,8 +126,17 @@ function showRateLimitToast(retryAfterSeconds: number | null): void {
 // itself, because that caller already treats 401 as "no session" and handles
 // its own cleanup. Without this skip, the very first checkAuth() on app load
 // would loop through the global handler.
+// Login endpoints returning 401 mean "wrong credentials" — not "session expired".
+// Dispatching auth:unauthorized for these would incorrectly clear the staff session
+// in a parallel tab.
+const SKIP_UNAUTHORIZED_DISPATCH = new Set([
+  '/auth/me',
+  '/users/me',
+  '/supplier/auth/login',
+]);
+
 function isAuthBootProbe(path: string): boolean {
-  return path === '/auth/me' || path === '/users/me';
+  return SKIP_UNAUTHORIZED_DISPATCH.has(path);
 }
 
 function dispatchUnauthorized(path: string): void {
@@ -177,6 +186,18 @@ function buildApiError(
   const headerRequestId = response.headers.get('x-request-id');
 
   if (isProblem(payload)) {
+    // 5xx → the detail is an internal implementation note (stack info, encryption
+    // errors, DB messages, etc.). Always use the HTTP fallback for server errors
+    // so nothing internal leaks to the UI.
+    if (response.status >= 500) {
+      return new ApiError(
+        fallback,
+        response.status,
+        retryAfterSeconds,
+        payload.requestId || headerRequestId,
+        payload,
+      );
+    }
     // For validation errors, surface the first field-level message rather
     // than the generic detail string ("One or more request fields failed…").
     const fieldMessage =

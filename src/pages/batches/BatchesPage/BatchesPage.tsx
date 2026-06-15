@@ -1,12 +1,11 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Boxes, ChevronRight, Plus, Plane, Ship } from 'lucide-react';
-import { useAuth, useBatches, useCreateBatch, useCan } from '@/hooks';
+import { Link } from 'react-router-dom';
+import { Boxes, ChevronRight, Plane, Ship } from 'lucide-react';
+import { useAuth, useBatches } from '@/hooks';
 import { AppLayout } from '@/components/layout';
 import { PageHeader } from '@/pages/shared';
-import { Button, Card, Pagination } from '@/components/ui';
-import { useFeedbackStore } from '@/store';
+import { Card, Pagination } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
 import type { BatchListItem } from '@/types';
@@ -36,47 +35,35 @@ function modeBadgeClass(mode: BatchListItem['transportMode']): string {
   return 'bg-indigo-50 text-indigo-700';
 }
 
-function BatchCard({ batch }: { batch: BatchListItem }): ReactElement {
+function BatchRow({ batch }: { batch: BatchListItem }): ReactElement {
   const detailPath = ROUTES.BATCH_DETAIL.replace(':batchId', batch.id);
 
   return (
-    <Link to={detailPath} className="block group">
-      <Card className="p-5 hover:shadow-md transition-shadow">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium', modeBadgeClass(batch.transportMode))}>
-                {batch.transportMode === 'air' ? <Plane className="h-3 w-3" /> : <Ship className="h-3 w-3" />}
-                {batch.transportLabel}
-              </span>
-              <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', statusBadgeClass(batch.status))}>
-                {batch.statusLabel}
-              </span>
-            </div>
-            <p className="font-mono text-sm font-semibold text-gray-900 truncate">{batch.masterTrackingNumber}</p>
-            <div className="mt-3 flex flex-wrap gap-4 text-sm text-gray-500">
-              <span><span className="font-medium text-gray-700">{batch.customerCount}</span> customers</span>
-              <span><span className="font-medium text-gray-700">{batch.orderCount}</span> orders</span>
-              <span><span className="font-medium text-gray-700">{batch.totalWeightKg}</span> kg</span>
-            </div>
-          </div>
-          <ChevronRight className="h-5 w-5 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors mt-1" />
-        </div>
-      </Card>
+    <Link
+      to={detailPath}
+      className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors group"
+    >
+      <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium shrink-0', modeBadgeClass(batch.transportMode))}>
+        {batch.transportMode === 'air' ? <Plane className="h-3 w-3" /> : <Ship className="h-3 w-3" />}
+        {batch.transportLabel}
+      </span>
+      <p className="font-mono text-sm font-semibold text-gray-900 truncate flex-1 min-w-0">
+        {batch.masterTrackingNumber}
+      </p>
+      <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium shrink-0', statusBadgeClass(batch.status))}>
+        {batch.statusLabel}
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
     </Link>
   );
 }
 
 export function BatchesPage(): ReactElement {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const isAdmin = useCan('app.admin');
-  const pushMessage = useFeedbackStore((s) => s.pushMessage);
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [modeFilter, setModeFilter] = useState<ModeFilter>('all');
   const [page, setPage] = useState(1);
-  const [showNewBatchModal, setShowNewBatchModal] = useState(false);
 
   const { data, isLoading, error } = useBatches({
     status: statusFilter !== 'all' ? statusFilter : undefined,
@@ -84,19 +71,6 @@ export function BatchesPage(): ReactElement {
     page,
     limit: 20,
   });
-
-  const createBatch = useCreateBatch();
-
-  const handleCreateBatch = async (transportMode: 'air' | 'sea'): Promise<void> => {
-    try {
-      const newBatch = await createBatch.mutateAsync({ transportMode });
-      pushMessage({ tone: 'success', message: `New ${transportMode} batch created.` });
-      navigate(ROUTES.BATCH_DETAIL.replace(':batchId', newBatch.id));
-    } catch (err) {
-      pushMessage({ tone: 'error', message: err instanceof Error ? err.message : 'Failed to create batch' });
-    }
-    setShowNewBatchModal(false);
-  };
 
   const layoutUser = {
     displayName: user
@@ -111,15 +85,7 @@ export function BatchesPage(): ReactElement {
       <div className="space-y-6">
         <PageHeader
           title="Batches"
-          subtitle="Manage shipment batches and track goods movement"
-          actions={
-            isAdmin ? (
-              <Button onClick={() => setShowNewBatchModal(true)} disabled={createBatch.isPending}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Batch
-              </Button>
-            ) : undefined
-          }
+          subtitle="Batches are created automatically when orders are verified and priced"
         />
 
         {/* Filters */}
@@ -166,11 +132,16 @@ export function BatchesPage(): ReactElement {
 
         {/* List */}
         {isLoading && (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-32 rounded-2xl bg-gray-100 animate-pulse" />
+          <Card className="divide-y divide-gray-100 overflow-hidden p-0">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+                <div className="h-5 w-24 rounded-full bg-gray-100 animate-pulse" />
+                <div className="h-4 w-56 rounded bg-gray-100 animate-pulse flex-1" />
+                <div className="h-5 w-28 rounded-full bg-gray-100 animate-pulse" />
+                <div className="h-4 w-4 rounded bg-gray-100 animate-pulse" />
+              </div>
             ))}
-          </div>
+          </Card>
         )}
 
         {!isLoading && error && (
@@ -190,15 +161,15 @@ export function BatchesPage(): ReactElement {
                 <p className="text-sm text-gray-400">
                   {statusFilter !== 'all' || modeFilter !== 'all'
                     ? 'Try adjusting the filters above.'
-                    : 'Batches appear here once orders are ready for shipping.'}
+                    : 'Batches are created automatically once orders are verified and priced.'}
                 </p>
               </Card>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <Card className="divide-y divide-gray-100 overflow-hidden p-0">
                 {data.batches.map((batch) => (
-                  <BatchCard key={batch.id} batch={batch} />
+                  <BatchRow key={batch.id} batch={batch} />
                 ))}
-              </div>
+              </Card>
             )}
 
             {data && (
@@ -215,42 +186,6 @@ export function BatchesPage(): ReactElement {
         )}
       </div>
 
-      {/* New Batch Modal */}
-      {showNewBatchModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <Card className="w-full max-w-sm p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">New batch</h2>
-            <p className="text-sm text-gray-500">Select the transport mode for the new batch.</p>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => void handleCreateBatch('air')}
-                disabled={createBatch.isPending}
-                className="flex flex-col items-center gap-2 rounded-xl border-2 border-gray-200 p-4 text-sm font-medium text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors disabled:opacity-50"
-              >
-                <Plane className="h-6 w-6" />
-                Air
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleCreateBatch('sea')}
-                disabled={createBatch.isPending}
-                className="flex flex-col items-center gap-2 rounded-xl border-2 border-gray-200 p-4 text-sm font-medium text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors disabled:opacity-50"
-              >
-                <Ship className="h-6 w-6" />
-                Sea
-              </button>
-            </div>
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={() => setShowNewBatchModal(false)}
-            >
-              Cancel
-            </Button>
-          </Card>
-        </div>
-      )}
     </AppLayout>
   );
 }
