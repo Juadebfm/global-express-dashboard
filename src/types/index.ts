@@ -121,6 +121,7 @@ export type {
 
 export type {
   OrderDirection,
+  SourcingSupplier,
   CreateOrderPayload,
   ApiOrder,
   ApiCreateOrderResponse,
@@ -247,6 +248,9 @@ export type {
   DispatchBatchCarrierInfoPayload,
   DispatchBatchStatusPayload,
   DispatchBatchMoveToNextPayload,
+  BatchDocumentType,
+  BatchDocument,
+  BatchDocumentPresignResult,
   Batch,
   BatchListItem,
   BatchListResult,
@@ -305,6 +309,16 @@ export type {
   PublicD2dIntakeContact,
   PublicD2dIntakeResult,
 } from './public.types';
+
+export type {
+  SupplierPortalUser,
+  DeclarationStatus,
+  DeclarationShipmentType,
+  Declaration,
+  NewDeclarationPayload,
+  DeclarationListParams,
+  SupplierOrderRequest,
+} from './supplierPortal.types';
 
 export type { FileScanStatus, FileScanStatusResult } from './fileScan.types';
 export {

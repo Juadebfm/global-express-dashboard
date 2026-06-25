@@ -20,8 +20,6 @@ export function createOrder(
     ...payload,
     shipmentType: normalizeShipmentType(payload.shipmentType),
   };
-  // Idempotency-Key prevents the order wizard's double-submit from creating
-  // duplicate orders. Hook generates the key per submit click.
   return apiPostData<ApiOrder>('/orders', normalizedPayload, token, {
     idempotencyKey,
   });

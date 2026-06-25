@@ -1,19 +1,25 @@
 export type OrderDirection = 'outbound' | 'inbound';
 
+export interface SourcingSupplier {
+  supplierId?: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+}
+
 export interface CreateOrderPayload {
   recipientName: string;
-  // recipientAddress omitted — hardcoded to Lagos office on the backend
   recipientPhone: string;
   recipientEmail: string;
   orderDirection: OrderDirection;
-  weight: string;        // format: "10kg" (air) or "0.5cbm" (sea)
-  declaredValue: string; // string, not number
+  weight: string;
+  declaredValue: string;
   description: string;
   shipmentType: 'air' | 'sea' | 'ocean';
-  // departureDate/eta omitted — set by warehouse staff only, not customers
-  senderId?: string;     // required when staff creates on behalf of a customer
+  senderId?: string;
   pickupRepName?: string;
   pickupRepPhone?: string;
+  sourcingSupplier?: SourcingSupplier;
 }
 
 export interface ApiOrder {
@@ -22,7 +28,10 @@ export interface ApiOrder {
   status?: string;
   statusV2: string;
   statusLabel: string;
-  isPreorder: boolean;
+  sourcingSupplierId: string | null;
+  sourcingSupplierName: string | null;
+  sourcingSupplierPhone: string | null;
+  sourcingSupplierEmail: string | null;
   [key: string]: unknown;
 }
 

@@ -139,6 +139,8 @@ export interface DispatchBatchCarrierInfoPayload {
   estimatedDepartureAt?: string | null;
   estimatedArrivalAt?: string | null;
   notes?: string | null;
+  billOfLadingNumber?: string | null;
+  vesselName?: string | null;
 }
 
 export interface DispatchBatchStatusPayload {
@@ -149,6 +151,30 @@ export interface DispatchBatchMoveToNextPayload {
   orderId: string;
   supplierId?: string;
   packageIds?: string[];
+}
+
+// ── Batch document types ────────────────────────────────────────────────────
+
+export type BatchDocumentType =
+  | 'mawb'
+  | 'bill_of_lading'
+  | 'container_photo'
+  | 'vessel_photo'
+  | 'other';
+
+export interface BatchDocument {
+  id: string;
+  batchId: string;
+  documentType: BatchDocumentType;
+  fileUrl: string;
+  fileName: string | null;
+  uploadedBy: string;
+  createdAt: string;
+}
+
+export interface BatchDocumentPresignResult {
+  uploadUrl: string;
+  r2Key: string;
 }
 
 // ── New /api/v1/batches types ────────────────────────────────────────────────
@@ -169,6 +195,8 @@ export interface Batch {
   estimatedArrivalAt: string | null;
   closedAt: string | null;
   notes: string | null;
+  billOfLadingNumber: string | null;
+  vesselName: string | null;
   createdAt: string;
   updatedAt: string;
 }

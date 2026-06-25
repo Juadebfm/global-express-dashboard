@@ -4,6 +4,7 @@ import type {
   DeclarationListParams,
   NewDeclarationPayload,
   SupplierPortalUser,
+  SupplierOrderRequest,
 } from '@/types/supplierPortal.types';
 
 interface SupplierLoginResponse {
@@ -71,4 +72,10 @@ export function getOrderTrackingNumber(
     `/orders/${orderId}`,
     token,
   ).then((r) => r.data);
+}
+
+export function getSupplierOrderRequests(
+  token: string,
+): Promise<SupplierOrderRequest[]> {
+  return apiGetData<SupplierOrderRequest[]>('/supplier/orders/requests', token);
 }

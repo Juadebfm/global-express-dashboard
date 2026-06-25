@@ -60,3 +60,17 @@ export interface DeclarationListParams {
   page?: number;
   limit?: number;
 }
+
+export interface SupplierOrderRequest {
+  id: string;
+  description: string | null;
+  weight: string | null;
+  declaredValue: string | null;
+  shipmentType: 'air' | 'ocean' | 'd2d' | null;
+  statusV2: string | null;
+  sourcingSupplierName: string | null;
+  sourcingSupplierPhone: string | null;
+  sourcingSupplierEmail: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
