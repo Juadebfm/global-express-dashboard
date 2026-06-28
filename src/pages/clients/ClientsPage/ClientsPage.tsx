@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import React, { type ReactElement } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -7,9 +7,11 @@ import {
   AlertTriangle,
   ChevronDown,
   MoreVertical,
+  Plus,
   Search,
   Trash2,
   UserCheck,
+  UserPlus,
   Users,
   Wallet,
   X,
@@ -23,9 +25,9 @@ import {
 import { AppShell } from '@/pages/shared';
 import { useCan, useAuthToken, useActivateClient, useClients, useDashboardData, useSearch } from '@/hooks';
 import { ApiError } from '@/lib/apiClient';
-import { deleteUser } from '@/services';
+import { createDormantClient, deleteUser } from '@/services';
 import i18n from '@/i18n/i18n';
-import type { ApiClient } from '@/types';
+import type { ApiClient, CreateDormantClientPayload } from '@/types';
 import { cn } from '@/utils';
 import { CopyButton, Pagination } from '@/components/ui';
 
@@ -81,14 +83,15 @@ interface ClientModalProps {
   dateLocale: string;
   statusLabels: Record<ClientStatus, string>;
   onClose: () => void;
+  onActivate: (client: ApiClient) => Promise<void>;
+  isActivating: boolean;
+  activateError: { id: string; message: string } | null;
 }
 
-function ClientModal({ client, dateLocale, statusLabels, onClose }: ClientModalProps): ReactElement {
+function ClientModal({ client, dateLocale, statusLabels, onClose, onActivate, isActivating, activateError }: ClientModalProps): ReactElement {
   const { t } = useTranslation('clients');
   const name = getClientName(client);
   const address = buildAddress(client);
-  const clientStatus: ClientStatus = client.isActive ? 'active' : 'inactive';
-
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handler);
@@ -115,15 +118,15 @@ function ClientModal({ client, dateLocale, statusLabels, onClose }: ClientModalP
             </div>
             <div className="min-w-0">
               <p className="truncate text-base font-semibold text-gray-900">{name}</p>
-              <p className="truncate text-sm text-gray-500">{client.email}</p>
+              <p className="truncate text-sm text-gray-500">{client.email || <span className="italic text-gray-400">No email</span>}</p>
               <span
                 className={cn(
                   'mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold',
-                  statusStyles[clientStatus],
+                  client.isActive ? statusStyles.active : dormantBadgeStyle,
                 )}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                {statusLabels[clientStatus]}
+                {client.isActive ? statusLabels.active : 'Dormant'}
               </span>
             </div>
           </div>
@@ -137,16 +140,50 @@ function ClientModal({ client, dateLocale, statusLabels, onClose }: ClientModalP
           </button>
         </div>
 
+        {/* Dormant banner */}
+        {!client.isActive && (
+          <div className="mx-4 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 sm:mx-6">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-amber-800">
+                  Dormant account — no portal access.
+                </p>
+                {client.email ? (
+                  <div className="mt-2 flex items-center gap-2 flex-wrap">
+                    <p className="text-xs text-amber-700">Activate to give portal access.</p>
+                    <button
+                      type="button"
+                      disabled={isActivating}
+                      onClick={() => { void onActivate(client); }}
+                      className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
+                    >
+                      {isActivating ? 'Activating…' : 'Activate'}
+                    </button>
+                    {activateError?.id === client.id && (
+                      <p className="text-xs text-red-700">{activateError.message}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-xs text-amber-700">
+                    Email required to activate. Add email and activate to give them access.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Body */}
         <div className="space-y-5 px-4 py-4 sm:px-6 sm:py-5">
           {/* Shipping mark — prominent */}
           {client.shippingMark && (
             <div className="flex items-center justify-between rounded-xl border border-brand-100 bg-brand-50 px-4 py-3">
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
                   {t('shippingMark')}
                 </p>
-                <p className="mt-0.5 font-mono text-lg font-bold tracking-widest text-brand-700">
+                <p className="mt-0.5 max-w-[260px] truncate font-mono text-lg font-bold tracking-widest text-brand-700" title={client.shippingMark}>
                   {client.shippingMark}
                 </p>
               </div>
@@ -307,6 +344,7 @@ export function ClientsPage(): ReactElement {
   const [openClientMenuId, setOpenClientMenuId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [activateError, setActivateError] = useState<{ id: string; message: string } | null>(null);
+  const [showAddDormant, setShowAddDormant] = useState(false);
 
   const statusMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -457,6 +495,9 @@ export function ClientsPage(): ReactElement {
           dateLocale={dateLocale}
           statusLabels={statusLabels}
           onClose={() => setActiveClient(null)}
+          onActivate={handleActivate}
+          isActivating={activateClient.isPending}
+          activateError={activateError}
         />
       )}
 
@@ -505,9 +546,19 @@ export function ClientsPage(): ReactElement {
 
         {/* Filters */}
         <div className="rounded-3xl border border-gray-200 bg-white p-4 sm:p-6">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-semibold text-gray-900">{t('clientsList')}</h2>
-            <p className="text-sm text-gray-500">{t('clientsListDesc')}</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-semibold text-gray-900">{t('clientsList')}</h2>
+              <p className="text-sm text-gray-500">{t('clientsListDesc')}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAddDormant(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
+            >
+              <UserPlus className="h-4 w-4" />
+              Add dormant client
+            </button>
           </div>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <div className="relative min-w-0 flex-1 sm:max-w-xs">
@@ -604,8 +655,8 @@ export function ClientsPage(): ReactElement {
                       {/* Shipping mark */}
                       <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                         {client.shippingMark ? (
-                          <span className="inline-flex items-center gap-1.5">
-                            <span className="font-mono text-xs font-semibold tracking-wide text-brand-600">
+                          <span className="inline-flex max-w-[160px] items-center gap-1.5">
+                            <span className="block max-w-[130px] truncate font-mono text-xs font-semibold tracking-wide text-brand-600" title={client.shippingMark}>
                               {client.shippingMark}
                             </span>
                             <CopyButton value={client.shippingMark} />
@@ -731,6 +782,171 @@ export function ClientsPage(): ReactElement {
           )}
         </div>
       </div>
+
+      {showAddDormant && (
+        <AddDormantClientModal
+          onClose={() => setShowAddDormant(false)}
+          onSuccess={(msg) => {
+            setShowAddDormant(false);
+            setActionMessage(msg);
+            void queryClient.invalidateQueries({ queryKey: ['clients'] });
+          }}
+        />
+      )}
     </AppShell>
+  );
+}
+
+// ── Add dormant client modal ──────────────────────────────────────────────────
+
+interface AddDormantClientModalProps {
+  onClose: () => void;
+  onSuccess: (message: string) => void;
+}
+
+interface DormantClientFormShape {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  shippingMark: string;
+  whatsappNumber: string;
+  email: string;
+  addressCity: string;
+}
+
+function AddDormantClientModal({ onClose, onSuccess }: AddDormantClientModalProps): ReactElement {
+  const getAuthToken = useAuthToken();
+  const [form, setForm] = useState<DormantClientFormShape>({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    shippingMark: '',
+    whatsappNumber: '',
+    email: '',
+    addressCity: '',
+  });
+  const [isPending, setIsPending] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    setErrorMsg(null);
+
+    const trim = (v: string): string => v.trim();
+
+    if (!trim(form.phone)) {
+      setErrorMsg('Phone is required.');
+      return;
+    }
+    if (!trim(form.shippingMark)) {
+      setErrorMsg('Shipping mark is required.');
+      return;
+    }
+    const mark = trim(form.shippingMark);
+    if (mark.length < 1 || mark.length > 100) {
+      setErrorMsg('Shipping mark must be between 1 and 100 characters.');
+      return;
+    }
+
+    const payload: CreateDormantClientPayload = {
+      phone: trim(form.phone),
+      shippingMark: mark,
+    };
+    if (trim(form.firstName)) payload.firstName = trim(form.firstName);
+    if (trim(form.lastName)) payload.lastName = trim(form.lastName);
+    if (trim(form.whatsappNumber)) payload.whatsappNumber = trim(form.whatsappNumber);
+    if (trim(form.email)) payload.email = trim(form.email);
+    if (trim(form.addressCity)) payload.addressCity = trim(form.addressCity);
+
+    setIsPending(true);
+    try {
+      const token = await getAuthToken();
+      if (!token) throw new Error('Not authenticated');
+      await createDormantClient(token, payload);
+      const displayName = [trim(form.firstName), trim(form.lastName)].filter(Boolean).join(' ') || mark;
+      onSuccess(`Dormant client "${displayName}" created.`);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to create dormant client.');
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  const field = (
+    label: string,
+    key: keyof DormantClientFormShape,
+    type: 'text' | 'email' | 'tel' = 'text',
+    placeholder?: string,
+  ): ReactElement => (
+    <div>
+      <label className="mb-1.5 block text-sm font-medium text-gray-700">{label}</label>
+      <input
+        type={type}
+        placeholder={placeholder}
+        value={form[key]}
+        onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
+        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-brand-500"
+      />
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+          <div className="flex items-center gap-2">
+            <Plus className="h-4 w-4 text-amber-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Add dormant client</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="max-h-[70vh] overflow-y-auto px-6 py-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <p className="text-sm text-gray-500">
+              Creates a ledger client without portal access. Phone and shipping mark are required.
+            </p>
+
+            {errorMsg && (
+              <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{errorMsg}</p>
+            )}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {field('First name', 'firstName')}
+              {field('Last name', 'lastName')}
+            </div>
+            {field('Phone', 'phone', 'tel')}
+            {field('Shipping mark', 'shippingMark', 'text', 'e.g. BeautyByDaz')}
+            <p className="text-xs text-gray-500">1–100 characters, any format.</p>
+            {field('WhatsApp number', 'whatsappNumber', 'tel')}
+            {field('Email (optional)', 'email', 'email', 'client@example.com')}
+            {field('City', 'addressCity')}
+
+            <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-50"
+              >
+                {isPending ? 'Creating…' : 'Create dormant client'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 }

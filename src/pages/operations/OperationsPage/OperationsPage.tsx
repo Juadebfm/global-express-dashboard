@@ -75,7 +75,7 @@ function OperationRow({ order, action }: { order: OrderListItem; action?: ReactE
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
+            <p className="max-w-[180px] truncate text-sm font-medium text-gray-900" title={shippingMark ?? undefined}>
               {shippingMark ?? (raw['description'] as string) ?? 'No description'}
             </p>
             <p className="text-xs text-gray-500 truncate">
@@ -171,7 +171,9 @@ function BatchGroup({
                 return (
                   <tr key={o.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                      {shippingMark ?? description ?? 'No description'}
+                      <span className="block max-w-[150px] truncate" title={shippingMark ?? description ?? undefined}>
+                        {shippingMark ?? description ?? 'No description'}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">
                       {o.senderName ?? 'Unknown'}

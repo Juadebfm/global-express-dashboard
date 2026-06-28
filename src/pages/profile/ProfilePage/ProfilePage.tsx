@@ -60,10 +60,8 @@ const initialExternalForm: ExternalFormState = {
   shippingMarkUserEditedAt: null,
 };
 
-// Mirror of the server's validation. The BE also lowercases input, so we do
-// the same on submit — but we still surface format errors client-side to skip
-// the round-trip when the user mistypes.
-const SHIPPING_MARK_REGEX = /^[a-z][a-z0-9]{2,19}$/;
+// Shipping mark is freeform: 1–100 characters, any case, spaces, hyphens etc.
+// Client-side validation only checks length to avoid a round-trip.
 
 const initialInternalForm: StaffProfilePayload = {
   gender: 'male',
@@ -554,8 +552,8 @@ export function ProfilePage(): ReactElement {
   };
 
   const handleSaveShippingMark = async (): Promise<void> => {
-    const normalised = shippingMarkInput.trim().toLowerCase();
-    if (!SHIPPING_MARK_REGEX.test(normalised)) {
+    const normalised = shippingMarkInput.trim();
+    if (normalised.length < 1 || normalised.length > 100) {
       setShippingMarkError(t('shippingMark.formatError'));
       return;
     }
@@ -738,11 +736,11 @@ export function ProfilePage(): ReactElement {
                       label={t('shippingMark.currentLabel')}
                       value={shippingMarkInput}
                       onChange={(event) =>
-                        setShippingMarkInput(event.target.value.toLowerCase())
+                        setShippingMarkInput(event.target.value)
                       }
                       placeholder={t('shippingMark.placeholder')}
                       className="auth-form-control text-sm font-mono"
-                      maxLength={20}
+                      maxLength={100}
                       autoComplete="off"
                       disabled={isSavingShippingMark}
                     />

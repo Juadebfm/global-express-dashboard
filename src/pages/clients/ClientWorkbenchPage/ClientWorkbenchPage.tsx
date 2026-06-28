@@ -1,16 +1,18 @@
-import { useState, type ReactElement } from 'react';
+import React, { useState, type ReactElement } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, Package, Plus, Users, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Copy, Check, Package, Pencil, Plus, Users, X } from 'lucide-react';
 import { AppShell } from '@/pages/shared';
 import { Button, Input } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import {
+  useActivateClient,
   useAddClientSupplier,
   useClientWorkbench,
   useCreateClientGoodsIntake,
   useDashboardData,
+  useUpdateClient,
 } from '@/hooks';
 import {
   addSupplierSchema,
@@ -22,6 +24,7 @@ import type {
   ApiSupplier,
   CreateGoodsIntakePayload,
   GoodsIntakeShipmentType,
+  UpdateClientPayload,
 } from '@/types';
 
 function pickFilled(values: Record<string, unknown>): Record<string, string> {
@@ -51,9 +54,23 @@ export function ClientWorkbenchPage(): ReactElement {
   const { data, isLoading, error } = useClientWorkbench(clientId);
   const addSupplier = useAddClientSupplier(clientId);
   const createIntake = useCreateClientGoodsIntake(clientId);
+  const updateClient = useUpdateClient(clientId);
+  const activateClient = useActivateClient();
 
   const [showAddSupplier, setShowAddSupplier] = useState(false);
   const [showIntake, setShowIntake] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [activateError, setActivateError] = useState<string | null>(null);
+
+  const handleActivate = async (): Promise<void> => {
+    if (!clientId) return;
+    setActivateError(null);
+    try {
+      await activateClient.mutateAsync(clientId);
+    } catch (err) {
+      setActivateError(err instanceof Error ? err.message : 'Failed to activate client.');
+    }
+  };
 
   return (
     <AppShell
@@ -72,6 +89,62 @@ export function ClientWorkbenchPage(): ReactElement {
           Back to clients
         </button>
 
+        {/* Dormant state card — only shown when client is inactive */}
+        {data?.client.isActive === false && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-amber-800">Dormant account</p>
+                <p className="mt-0.5 text-xs text-amber-700">
+                  This client has no portal access.
+                </p>
+
+                {/* Shipping mark — prominent */}
+                {data.client.shippingMark && (
+                  <div className="mt-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+                      Shipping mark
+                    </p>
+                    <ShippingMarkDisplay value={data.client.shippingMark} />
+                  </div>
+                )}
+
+                {/* Email / activate */}
+                <div className="mt-3">
+                  {!data.client.email ? (
+                    <p className="text-xs text-amber-700">
+                      No email on file —{' '}
+                      <button
+                        type="button"
+                        onClick={() => setShowEdit(true)}
+                        className="font-semibold underline underline-offset-2 hover:text-amber-900"
+                      >
+                        add an email address
+                      </button>{' '}
+                      before activating.
+                    </p>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      isLoading={activateClient.isPending}
+                      onClick={() => { void handleActivate(); }}
+                      className="mt-1"
+                    >
+                      Activate client
+                    </Button>
+                  )}
+                </div>
+
+                {activateError && (
+                  <p className="mt-2 text-xs text-red-700">{activateError}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {isLoading && (
           <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center text-sm text-gray-500">
             Loading workbench...
@@ -88,25 +161,46 @@ export function ClientWorkbenchPage(): ReactElement {
           <>
             <div className="rounded-3xl border border-gray-200 bg-white p-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
+                <div className="min-w-0 flex-1">
                   <h1 className="text-2xl font-semibold text-gray-900">
                     {data.client.businessName ||
                       `${data.client.firstName ?? ''} ${data.client.lastName ?? ''}`.trim() ||
                       data.client.email}
                   </h1>
                   <p className="mt-1 text-sm text-gray-500">
-                    {data.client.email} · {data.client.phone}
+                    {data.client.email || <span className="italic text-gray-400">No email</span>}
+                    {data.client.phone ? ` · ${data.client.phone}` : ''}
                   </p>
+                  {/* Shipping mark pill */}
+                  {data.client.shippingMark && (
+                    <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-brand-50 px-3 py-1">
+                      <span className="text-xs text-brand-500">Shipping mark:</span>
+                      <span className="max-w-[180px] truncate font-mono text-xs font-semibold tracking-wide text-brand-700" title={data.client.shippingMark}>
+                        {data.client.shippingMark}
+                      </span>
+                      <ShippingMarkCopyButton value={data.client.shippingMark} />
+                    </div>
+                  )}
                 </div>
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    data.client.isActive
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'bg-rose-50 text-rose-700'
-                  }`}
-                >
-                  {data.client.isActive ? 'Active' : 'Inactive'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      data.client.isActive
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : 'bg-amber-50 text-amber-700'
+                    }`}
+                  >
+                    {data.client.isActive ? 'Active' : 'Dormant'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowEdit(true)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition hover:bg-gray-50"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </button>
+                </div>
               </div>
               <div className="mt-4 grid gap-4 text-sm text-gray-600 sm:grid-cols-2 lg:grid-cols-3">
                 <Stat label="Total orders" value={String(data.client.orderCount)} />
@@ -137,6 +231,18 @@ export function ClientWorkbenchPage(): ReactElement {
         )}
       </div>
 
+      {showEdit && data && (
+        <EditClientModal
+          client={data.client}
+          isPending={updateClient.isPending}
+          onClose={() => setShowEdit(false)}
+          onSubmit={async (payload) => {
+            await updateClient.mutateAsync(payload);
+            setShowEdit(false);
+          }}
+        />
+      )}
+
       {showAddSupplier && (
         <AddSupplierModal
           isPending={addSupplier.isPending}
@@ -161,6 +267,187 @@ export function ClientWorkbenchPage(): ReactElement {
     </AppShell>
   );
 }
+
+// ── Shipping mark helpers ─────────────────────────────────────────────────────
+
+function ShippingMarkCopyButton({ value }: { value: string }): ReactElement {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = (): void => {
+    void navigator.clipboard.writeText(value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="text-brand-400 transition hover:text-brand-600"
+      aria-label="Copy shipping mark"
+    >
+      {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+    </button>
+  );
+}
+
+function ShippingMarkDisplay({ value }: { value: string }): ReactElement {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = (): void => {
+    void navigator.clipboard.writeText(value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <div className="mt-1 flex items-center gap-2">
+      <span className="max-w-[220px] truncate font-mono text-base font-bold tracking-widest text-amber-800" title={value}>
+        {value}
+      </span>
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="text-amber-500 transition hover:text-amber-700"
+        aria-label="Copy shipping mark"
+      >
+        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+}
+
+// ── Edit client modal ─────────────────────────────────────────────────────────
+
+interface EditClientFormShape {
+  firstName: string;
+  lastName: string;
+  businessName: string;
+  email: string;
+  phone: string;
+  whatsappNumber: string;
+  shippingMark: string;
+  addressCity: string;
+}
+
+interface EditClientModalProps {
+  client: {
+    firstName: string;
+    lastName: string;
+    businessName?: string;
+    email: string;
+    phone: string;
+    whatsappNumber?: string;
+    shippingMark: string | null;
+    addressCity?: string;
+  };
+  isPending: boolean;
+  onClose: () => void;
+  onSubmit: (payload: UpdateClientPayload) => Promise<void>;
+}
+
+function EditClientModal({ client, isPending, onClose, onSubmit }: EditClientModalProps): ReactElement {
+  const [form, setForm] = useState<EditClientFormShape>({
+    firstName: client.firstName ?? '',
+    lastName: client.lastName ?? '',
+    businessName: client.businessName ?? '',
+    email: client.email ?? '',
+    phone: client.phone ?? '',
+    whatsappNumber: client.whatsappNumber ?? '',
+    shippingMark: client.shippingMark ?? '',
+    addressCity: client.addressCity ?? '',
+  });
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    setErrorMsg(null);
+
+    const payload: UpdateClientPayload = {};
+    const trim = (v: string): string => v.trim();
+
+    if (trim(form.firstName)) payload.firstName = trim(form.firstName);
+    if (trim(form.lastName)) payload.lastName = trim(form.lastName);
+    if (trim(form.businessName)) payload.businessName = trim(form.businessName);
+    if (trim(form.email)) payload.email = trim(form.email);
+    if (trim(form.phone)) payload.phone = trim(form.phone);
+    if (trim(form.whatsappNumber)) payload.whatsappNumber = trim(form.whatsappNumber);
+    if (trim(form.shippingMark)) {
+      const mark = trim(form.shippingMark);
+      if (mark.length < 1 || mark.length > 100) {
+        setErrorMsg('Shipping mark must be between 1 and 100 characters.');
+        return;
+      }
+      payload.shippingMark = mark;
+    }
+    if (trim(form.addressCity)) payload.addressCity = trim(form.addressCity);
+
+    if (Object.keys(payload).length === 0) {
+      setErrorMsg('Please fill in at least one field to update.');
+      return;
+    }
+
+    try {
+      await onSubmit(payload);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to update client.');
+    }
+  };
+
+  const field = (
+    label: string,
+    key: keyof EditClientFormShape,
+    type: 'text' | 'email' | 'tel' = 'text',
+    placeholder?: string,
+  ): ReactElement => (
+    <Input
+      label={label}
+      type={type}
+      placeholder={placeholder}
+      value={form[key]}
+      onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
+    />
+  );
+
+  return (
+    <Modal title="Edit client details" onClose={onClose}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <p className="text-sm text-gray-500">
+          All fields are optional — only filled fields will be updated.
+        </p>
+
+        {errorMsg && (
+          <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{errorMsg}</p>
+        )}
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {field('First name', 'firstName')}
+          {field('Last name', 'lastName')}
+        </div>
+        {field('Business name', 'businessName')}
+        {field('Email', 'email', 'email', 'client@example.com')}
+        {field('Phone', 'phone', 'tel')}
+        {field('WhatsApp number', 'whatsappNumber', 'tel')}
+        {field('Shipping mark', 'shippingMark', 'text', 'e.g. BeautyByDaz')}
+        <p className="text-xs text-gray-500">1–100 characters, any format.</p>
+        {field('City', 'addressCity')}
+
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <Button type="submit" variant="primary" isLoading={isPending}>
+            Save changes
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// ── Suppliers section ─────────────────────────────────────────────────────────
 
 interface SuppliersSectionProps {
   suppliers: ApiSupplier[];
@@ -429,7 +716,7 @@ function GoodsIntakeModal({
   });
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setErrorMsg(null);
     if (form.quantity < 1) {

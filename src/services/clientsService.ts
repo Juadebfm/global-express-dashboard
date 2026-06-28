@@ -7,13 +7,14 @@ import type {
   CreateClientPayload,
   CreateDormantClientPayload,
   CreateDormantClientResult,
+  UpdateClientPayload,
   CreateGoodsIntakePayload,
   AddSupplierPayload,
   AddSupplierResult,
   PaginatedSuppliers,
   SupplierListParams,
 } from '@/types';
-import { apiGet, apiGetData, apiPost, apiPostData } from '@/lib/apiClient';
+import { apiGet, apiGetData, apiPatchData, apiPost, apiPostData } from '@/lib/apiClient';
 
 export function getClients(
   token: string,
@@ -79,6 +80,14 @@ export function activateClient(
   id: string,
 ): Promise<ApiClient> {
   return apiPostData<ApiClient>(`/admin/clients/${id}/activate`, undefined, token);
+}
+
+export function updateClientDetails(
+  token: string,
+  id: string,
+  payload: UpdateClientPayload,
+): Promise<ApiClient> {
+  return apiPatchData<ApiClient>(`/admin/clients/${id}`, payload, token);
 }
 
 // ── Admin client workbench ──────────────────────────────────────────────────

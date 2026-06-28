@@ -58,6 +58,17 @@ export interface CreateDormantClientResult {
   createdAt: string;
 }
 
+export interface UpdateClientPayload {
+  firstName?: string;
+  lastName?: string;
+  businessName?: string;
+  email?: string;
+  phone?: string;
+  whatsappNumber?: string;
+  shippingMark?: string;
+  addressCity?: string;
+}
+
 export interface ApiClientsResponse {
   success: boolean;
   message: string;

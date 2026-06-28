@@ -132,7 +132,7 @@ function CustomerRow({
                   </span>
                 )}
               </div>
-              <p className="mt-0.5 font-mono text-xs text-gray-400 truncate">Mark: {customer.shippingMark}</p>
+              <p className="mt-0.5 max-w-[180px] truncate font-mono text-xs text-gray-400" title={customer.shippingMark ?? undefined}>Mark: {customer.shippingMark}</p>
             </div>
           </div>
         </td>
@@ -578,7 +578,7 @@ export function BatchDetailPage(): ReactElement {
                         <span className="font-mono text-brand-700 font-medium">{selectedOrder.trackingNumber}</span>
                         <span className="text-gray-500">·</span>
                         <span className="text-gray-700">{selectedOrder.customerName} {selectedOrder.customerLastName}</span>
-                        <span className="text-gray-400 text-xs ml-1">{selectedOrder.shippingMark}</span>
+                        <span className="ml-1 max-w-[120px] truncate text-xs text-gray-400" title={selectedOrder.shippingMark ?? undefined}>{selectedOrder.shippingMark}</span>
                         <button
                           type="button"
                           onClick={() => { setSelectedOrder(null); setQuery(''); setAddOrderError(null); }}
@@ -663,7 +663,7 @@ export function BatchDetailPage(): ReactElement {
                                 <div className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-500">
                                   <span>{order.customerName} {order.customerLastName}</span>
                                   <span className="text-gray-300">·</span>
-                                  <span className="font-mono">{order.shippingMark}</span>
+                                  <span className="max-w-[120px] truncate font-mono" title={order.shippingMark ?? undefined}>{order.shippingMark}</span>
                                   {order.description && (
                                     <>
                                       <span className="text-gray-300">·</span>

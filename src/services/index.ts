@@ -50,6 +50,7 @@ export {
   createClient,
   createDormantClient,
   activateClient,
+  updateClientDetails,
   sendClientInvite,
   getClientWorkbench,
   getClientSuppliers,

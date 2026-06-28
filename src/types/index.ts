@@ -75,6 +75,7 @@ export type {
   CreateClientPayload,
   CreateDormantClientPayload,
   CreateDormantClientResult,
+  UpdateClientPayload,
   ApiClientsResponse,
   ClientWorkbenchData,
   WorkbenchPagination,
