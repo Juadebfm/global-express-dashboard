@@ -127,15 +127,15 @@ function BatchGroup({
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+        className="flex w-full items-center gap-3 px-4 py-4 hover:bg-gray-50 transition-colors"
       >
         {expanded
           ? <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
           : <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" />
         }
         <span className="shrink-0 text-gray-400">{modeIcon(firstMode)}</span>
-        <span className="text-sm font-semibold text-gray-900 font-mono">{shortId}</span>
-        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-600">
+        <span className="text-base font-semibold text-gray-900 font-mono">{shortId}</span>
+        <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-600">
           {orders.length} order{orders.length !== 1 ? 's' : ''}
         </span>
         <Link
@@ -147,10 +147,63 @@ function BatchGroup({
         </Link>
       </button>
       {expanded && (
-        <div className="divide-y divide-gray-100 border-t border-gray-100">
-          {orders.map((o) => (
-            <OperationRow key={o.id} order={o} />
-          ))}
+        <div className="border-t border-gray-100">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 bg-gray-50">Description</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 bg-gray-50">Customer</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 bg-gray-50">Tracking No.</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 bg-gray-50">Status</th>
+                <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-400 bg-gray-50">Weight</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {orders.map((o) => {
+                const style = getStatusStyle(o.statusV2);
+                const raw = o.raw as Record<string, unknown>;
+                const shippingMark = typeof raw['shippingMark'] === 'string' ? raw['shippingMark'] : null;
+                const description = typeof raw['description'] === 'string' ? raw['description'] : null;
+                const weight = typeof raw['weight'] === 'number' || typeof raw['weight'] === 'string'
+                  ? raw['weight']
+                  : null;
+
+                return (
+                  <tr key={o.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                      {shippingMark ?? description ?? 'No description'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500">
+                      {o.senderName ?? 'Unknown'}
+                    </td>
+                    <td className="px-4 py-3">
+                      {isInternalTracking(o.trackingNumber) ? (
+                        <span className="text-xs italic text-gray-400">
+                          {formatTrackingDisplay(o.trackingNumber)}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-mono text-gray-400">
+                          {o.trackingNumber}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={cn(
+                        'rounded-full px-2 py-0.5 text-xs font-semibold',
+                        style.bgClass,
+                        style.textClass,
+                      )}>
+                        {o.statusLabel || o.statusV2}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm text-gray-500">
+                      {weight != null ? `${weight} kg` : '—'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

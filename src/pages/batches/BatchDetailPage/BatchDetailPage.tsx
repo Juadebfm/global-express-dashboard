@@ -76,8 +76,6 @@ const SEA_STATUSES = new Set([
   'ON_HOLD',
 ]);
 
-const ROW_GRID = 'grid-cols-[1fr_220px_90px_70px]';
-
 function ShipmentTypeBadge({ type, label }: { type: string; label: string }): ReactElement {
   if (type === 'd2d') {
     return (
@@ -111,99 +109,115 @@ function CustomerRow({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div>
+    <>
       {/* Summary row */}
-      <button
-        type="button"
+      <tr
         onClick={() => setExpanded((v) => !v)}
-        className={cn('w-full grid items-center gap-4 px-4 py-4 text-left hover:bg-gray-50 transition-colors', ROW_GRID)}
+        className="cursor-pointer hover:bg-gray-50 transition-colors"
       >
         {/* Customer name + mark */}
-        <div className="flex items-start gap-2 min-w-0">
-          {expanded
-            ? <ChevronDown className="h-4 w-4 mt-0.5 shrink-0 text-gray-400" />
-            : <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 text-gray-400" />
-          }
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-medium text-gray-900">{customer.customerName}</span>
-              {!customer.allVerified && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                  <AlertTriangle className="h-3 w-3" />
-                  Unverified orders
-                </span>
-              )}
+        <td className="px-4 py-4">
+          <div className="flex items-start gap-2 min-w-0">
+            {expanded
+              ? <ChevronDown className="h-4 w-4 mt-0.5 shrink-0 text-gray-400" />
+              : <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 text-gray-400" />
+            }
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-medium text-gray-900">{customer.customerName}</span>
+                {!customer.allVerified && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                    <AlertTriangle className="h-3 w-3" />
+                    Unverified orders
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 font-mono text-xs text-gray-400 truncate">Mark: {customer.shippingMark}</p>
             </div>
-            <p className="mt-0.5 font-mono text-xs text-gray-400 truncate">Mark: {customer.shippingMark}</p>
           </div>
-        </div>
+        </td>
 
         {/* Tracking number */}
-        <div className="text-right">
+        <td className="px-4 py-4 text-left">
           <p className="font-mono text-sm font-semibold text-gray-800">{customer.batchTrackingNumber}</p>
           <p className="text-xs text-gray-400">customer tracking no.</p>
-        </div>
+        </td>
 
         {/* Orders */}
-        <div className="text-right">
+        <td className="px-4 py-4 text-right">
           <span className="text-sm text-gray-700">{customer.orderCount} orders</span>
-        </div>
+        </td>
 
         {/* Weight */}
-        <div className="text-right">
+        <td className="px-4 py-4 text-right">
           <span className="text-sm text-gray-700">{customer.totalWeightKg} kg</span>
-        </div>
-      </button>
+        </td>
+
+        {/* Actions placeholder */}
+        <td className="px-4 py-4" />
+      </tr>
 
       {/* Expanded order rows */}
-      {expanded && (
-        <div className="divide-y divide-gray-50 border-t border-gray-100">
-          {customer.orders.map((order: BatchRosterOrder) => {
-            const isVerified = order.status.toLowerCase().includes('verified');
-            return (
-              <div key={order.id} className="flex items-center gap-3 bg-gray-50/60 px-4 py-3 pl-10">
-                {/* Tracking + description */}
-                <div className="flex flex-1 items-center gap-3 min-w-0">
-                  <span className="font-mono text-sm font-semibold text-brand-500 shrink-0">
-                    {order.trackingNumber}
-                  </span>
-                  {order.description && (
-                    <span className="text-sm text-gray-500 truncate">{order.description}</span>
-                  )}
-                </div>
-
-                {/* Right-side: badges + weight + remove */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <ShipmentTypeBadge type={order.shipmentType} label={order.shipmentTypeLabel} />
-                  <span className={cn(
-                    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-                    isVerified ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700',
-                  )}>
-                    <span className={cn('h-1.5 w-1.5 rounded-full', isVerified ? 'bg-emerald-500' : 'bg-amber-500')} />
-                    {isVerified ? 'Verified' : order.statusLabel}
-                  </span>
-                  <span className="w-14 text-right text-sm text-gray-500">{order.weightKg} kg</span>
-                  {canManage && batchOpen && (
-                    <button
-                      type="button"
-                      onClick={() => onRemoveOrder(order.id, customer.customerName)}
-                      disabled={removingOrderId === order.id}
-                      className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
-                    >
-                      {removingOrderId === order.id
-                        ? <Loader2 className="h-3 w-3 animate-spin" />
-                        : <X className="h-3 w-3" />
-                      }
-                      Remove
-                    </button>
-                  )}
-                </div>
+      {expanded && customer.orders.map((order: BatchRosterOrder) => {
+        const isVerified = order.status.toLowerCase().includes('verified');
+        return (
+          <tr key={order.id} className="bg-gray-50/60">
+            {/* Tracking + description — indented */}
+            <td className="py-3 pl-12 pr-4" colSpan={2}>
+              <div className="flex items-center gap-3 min-w-0">
+                <Link
+                  to={`/orders?id=${order.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="font-mono text-sm font-semibold text-brand-500 shrink-0 hover:text-brand-600"
+                >
+                  {order.trackingNumber}
+                </Link>
+                {order.description && (
+                  <span className="text-sm text-gray-500 truncate">{order.description}</span>
+                )}
               </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+            </td>
+
+            {/* Badges (mode + status) */}
+            <td className="px-4 py-3 text-right">
+              <div className="flex items-center justify-end gap-2">
+                <ShipmentTypeBadge type={order.shipmentType} label={order.shipmentTypeLabel} />
+                <span className={cn(
+                  'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+                  isVerified ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700',
+                )}>
+                  <span className={cn('h-1.5 w-1.5 rounded-full', isVerified ? 'bg-emerald-500' : 'bg-amber-500')} />
+                  {isVerified ? 'Verified' : order.statusLabel}
+                </span>
+              </div>
+            </td>
+
+            {/* Weight */}
+            <td className="px-4 py-3 text-right">
+              <span className="text-sm text-gray-500">{order.weightKg} kg</span>
+            </td>
+
+            {/* Remove action */}
+            <td className="px-4 py-3 text-right">
+              {canManage && batchOpen && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onRemoveOrder(order.id, customer.customerName); }}
+                  disabled={removingOrderId === order.id}
+                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
+                >
+                  {removingOrderId === order.id
+                    ? <Loader2 className="h-3 w-3 animate-spin" />
+                    : <X className="h-3 w-3" />
+                  }
+                  Remove
+                </button>
+              )}
+            </td>
+          </tr>
+        );
+      })}
+    </>
   );
 }
 
@@ -688,17 +702,19 @@ export function BatchDetailPage(): ReactElement {
                   </p>
                 </div>
               ) : (
-                <>
-                  {/* Column headers */}
-                  <div className={cn('grid items-center gap-4 border-t border-gray-100 bg-gray-50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-gray-400', ROW_GRID)}>
-                    <span className="pl-6">Customer</span>
-                    <span className="text-right">Customer Tracking No.</span>
-                    <span className="text-right">Orders</span>
-                    <span className="text-right">Weight</span>
-                  </div>
-
-                  {/* Rows */}
-                  <div className="divide-y divide-gray-100">
+                <table className="w-full text-sm border-t border-gray-100">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                        <span className="pl-6">Customer</span>
+                      </th>
+                      <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Customer Tracking No.</th>
+                      <th className="px-4 pb-3 pt-2.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Orders</th>
+                      <th className="px-4 pb-3 pt-2.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Weight</th>
+                      <th className="px-4 pb-3 pt-2.5" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
                     {customers.map((customer) => (
                       <CustomerRow
                         key={customer.slotId}
@@ -709,8 +725,8 @@ export function BatchDetailPage(): ReactElement {
                         removingOrderId={removingOrderId}
                       />
                     ))}
-                  </div>
-                </>
+                  </tbody>
+                </table>
               )}
             </div>
 
