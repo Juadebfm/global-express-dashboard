@@ -1,6 +1,6 @@
 // All 22 V2 status values from the backend
 export type StatusV2 =
-  // Pre-order / awaiting
+  // Booking / awaiting
   | 'PREORDER_SUBMITTED'
   | 'AWAITING_WAREHOUSE_RECEIPT'
   // Warehouse

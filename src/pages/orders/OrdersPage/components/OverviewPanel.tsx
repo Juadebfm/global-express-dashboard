@@ -155,6 +155,24 @@ export function OverviewPanel({ view, billableWeightKg }: OverviewPanelProps): R
           </div>
         </div>
 
+        {/* Sourcing Supplier (conditional) */}
+        {(view.sourcingSupplierId || view.sourcingSupplierName) && (
+          <div className="p-5 col-span-full sm:col-span-1">
+            <ColHeader>Sourcing Supplier</ColHeader>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <p className="text-sm font-medium text-gray-900">
+                {view.sourcingSupplierName ?? 'GEX Registered Supplier'}
+              </p>
+              {view.sourcingSupplierPhone && (
+                <p className="text-sm text-gray-500">{view.sourcingSupplierPhone}</p>
+              )}
+              {view.sourcingSupplierEmail && (
+                <p className="text-sm text-gray-500">{view.sourcingSupplierEmail}</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Billing */}
         <div className="p-5">
           <ColHeader>Billing</ColHeader>

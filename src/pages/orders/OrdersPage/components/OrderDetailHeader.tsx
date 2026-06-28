@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Copy, MoreHorizontal, Plane, Ship, ChevronLeft, ArrowRight, AlertTriangle, CircleAlert, PackagePlus, Layers } from 'lucide-react';
+import { isInternalTracking } from '@/lib/trackingUtils';
 import { cn } from '@/utils';
 import type { OrderView } from '../types';
 import {
@@ -99,9 +100,13 @@ export function OrderDetailHeader({
           <div className="min-w-0 flex-1">
             {/* Tracking number + status badge — single line */}
             <div className="flex min-w-0 items-center gap-2">
-              <span className="truncate text-sm font-semibold text-gray-900">
-                {view.trackingNumber}
-              </span>
+              {isInternalTracking(view.trackingNumber) ? (
+                <span className="text-sm italic text-gray-400">Awaiting batch assignment</span>
+              ) : (
+                <span className="truncate text-sm font-semibold text-gray-900 font-mono">
+                  {view.trackingNumber}
+                </span>
+              )}
               <span
                 className={cn(
                   'shrink-0 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold',
@@ -132,14 +137,16 @@ export function OrderDetailHeader({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
-          >
-            <Copy className="h-3.5 w-3.5" />
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
+          {!isInternalTracking(view.trackingNumber) && (
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+            >
+              <Copy className="h-3.5 w-3.5" />
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          )}
         </div>
       </div>
 

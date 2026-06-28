@@ -30,7 +30,7 @@
     "timeline": "Timeline"
   },
   "phases": {
-    "preorder": "Pre-order",
+    "preorder": "Booking",
     "warehouse": "Warehouse",
     "transit": "In Transit",
     "arrival": "Arrival",

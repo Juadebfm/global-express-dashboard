@@ -103,6 +103,8 @@ export const batchCarrierInfoSchema = z
     estimatedDepartureAt: z.string().optional().or(z.literal('')),
     estimatedArrivalAt: z.string().optional().or(z.literal('')),
     notes: z.string().max(1000).optional().or(z.literal('')),
+    billOfLadingNumber: z.string().max(120).nullable().optional().or(z.literal('')),
+    vesselName: z.string().max(160).nullable().optional().or(z.literal('')),
   })
   .refine(
     (v) => Object.values(v).some((x) => typeof x === 'string' && x.trim().length > 0),

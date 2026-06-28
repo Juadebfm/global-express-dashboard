@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plane, Ship, Package2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plane, Ship, Package2 } from 'lucide-react';
 import { AppLayout } from '@/components/layout';
 import { Card, AlertBanner } from '@/components/ui';
 import { useAuth, useOrders, useRecordShipmentIntake } from '@/hooks';
@@ -96,10 +96,50 @@ function OperationRow({ order, action }: { order: OrderListItem; action?: ReactE
   );
 }
 
+function BatchGroup({ batchId, orders }: { batchId: string; orders: OrderListItem[] }): ReactElement {
+  const [expanded, setExpanded] = useState(false);
+  const shortId = batchId.slice(0, 8);
+  const firstMode = orders[0]?.transportMode ?? 'air';
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+      >
+        {expanded
+          ? <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
+          : <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" />
+        }
+        <span className="shrink-0 text-gray-400">{modeIcon(firstMode)}</span>
+        <span className="text-sm font-semibold text-gray-900 font-mono">{shortId}</span>
+        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-600">
+          {orders.length} order{orders.length !== 1 ? 's' : ''}
+        </span>
+        <Link
+          to={ROUTES.BATCH_DETAIL.replace(':batchId', batchId)}
+          onClick={(e) => e.stopPropagation()}
+          className="ml-auto shrink-0 text-xs font-medium text-brand-600 hover:text-brand-700"
+        >
+          Manage batch →
+        </Link>
+      </button>
+      {expanded && (
+        <div className="divide-y divide-gray-100 border-t border-gray-100">
+          {orders.map((o) => (
+            <OperationRow key={o.id} order={o} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function OperationsPage(): ReactElement {
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('arrivals');
-  const [showIntake, setShowIntake] = useState(false);
+  const [intakeOrder, setIntakeOrder] = useState<{ id: string; shippingMark: string | null } | null>(null);
   const recordIntake = useRecordShipmentIntake();
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -107,7 +147,7 @@ export function OperationsPage(): ReactElement {
   const { orders: allArrivals, isLoading: arrivalsLoading, error: arrivalsError } = useOrders(
     1, 50, 'AWAITING_WAREHOUSE_RECEIPT'
   );
-  const { orders: allOrders, isLoading: allLoading, error: allError } = useOrders(
+  const { orders: allOrders, total: allTotal, isLoading: allLoading, error: allError } = useOrders(
     1, 100
   );
 
@@ -132,7 +172,17 @@ export function OperationsPage(): ReactElement {
 
   const inBatchOrders = allOrders.filter(
     (o) => !!(o.raw as Record<string, unknown>)['dispatchBatchId']
+      && !DISPATCHED_STATUSES.has(o.statusV2)
   );
+
+  // Group inBatchOrders by dispatchBatchId
+  const batchGroups = inBatchOrders.reduce<Map<string, OrderListItem[]>>((map, o) => {
+    const batchId = (o.raw as Record<string, unknown>)['dispatchBatchId'] as string;
+    const existing = map.get(batchId) ?? [];
+    existing.push(o);
+    map.set(batchId, existing);
+    return map;
+  }, new Map());
 
   const dispatchedOrders = allOrders.filter((o) => DISPATCHED_STATUSES.has(o.statusV2));
 
@@ -201,21 +251,25 @@ export function OperationsPage(): ReactElement {
           todayArrivals,
           arrivalsLoading,
           arrivalsError,
-          (o) => (
-            <OperationRow
-              key={o.id}
-              order={o}
-              action={
-                <button
-                  type="button"
-                  onClick={() => setShowIntake(true)}
-                  className="shrink-0 text-xs font-medium text-brand-600 hover:text-brand-700"
-                >
-                  Mark as received →
-                </button>
-              }
-            />
-          ),
+          (o) => {
+            const raw = o.raw as Record<string, unknown>;
+            const shippingMark = typeof raw['shippingMark'] === 'string' ? raw['shippingMark'] : null;
+            return (
+              <OperationRow
+                key={o.id}
+                order={o}
+                action={
+                  <button
+                    type="button"
+                    onClick={() => setIntakeOrder({ id: o.id, shippingMark })}
+                    className="shrink-0 text-xs font-medium text-brand-600 hover:text-brand-700"
+                  >
+                    Mark as received →
+                  </button>
+                }
+              />
+            );
+          },
         )}
 
         {/* Tab: Needs Action */}
@@ -236,30 +290,33 @@ export function OperationsPage(): ReactElement {
           ),
         )}
 
-        {/* Tab: In Batch */}
-        {tab === 'in-batch' && renderList(
-          inBatchOrders,
-          allLoading,
-          allError,
-          (o) => {
-            const batchId = (o.raw as Record<string, unknown>)['dispatchBatchId'] as string | undefined;
-            return (
-              <OperationRow
-                key={o.id}
-                order={o}
-                action={
-                  batchId ? (
-                    <Link
-                      to={ROUTES.BATCH_DETAIL.replace(':batchId', batchId)}
-                      className="shrink-0 text-xs font-medium text-brand-600 hover:text-brand-700"
-                    >
-                      Manage batch →
-                    </Link>
-                  ) : undefined
-                }
-              />
-            );
-          },
+        {/* Tab: In Batch — grouped by dispatchBatchId */}
+        {tab === 'in-batch' && (
+          allLoading ? (
+            <Card className="p-0 divide-y divide-gray-100">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-3.5 animate-pulse">
+                  <div className="h-4 w-4 rounded bg-gray-200 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 w-2/3 rounded bg-gray-200" />
+                    <div className="h-3 w-1/3 rounded bg-gray-100" />
+                  </div>
+                </div>
+              ))}
+            </Card>
+          ) : allError ? (
+            <AlertBanner tone="error" message="Failed to load orders. Please refresh." />
+          ) : batchGroups.size === 0 ? (
+            <Card className="p-8 text-center">
+              <p className="text-sm text-gray-500">No orders in this stage.</p>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {Array.from(batchGroups.entries()).map(([batchId, orders]) => (
+                <BatchGroup key={batchId} batchId={batchId} orders={orders} />
+              ))}
+            </div>
+          )
         )}
 
         {/* Tab: Dispatched */}
@@ -269,15 +326,23 @@ export function OperationsPage(): ReactElement {
           allError,
           (o) => <OperationRow key={o.id} order={o} />,
         )}
+
+        {/* Pagination gap notice */}
+        {allTotal > 100 && (
+          <p className="text-xs text-amber-600 text-center py-2">
+            Showing first 100 orders. Use Batches page to manage older entries.
+          </p>
+        )}
       </div>
 
-      {showIntake && (
+      {intakeOrder && (
         <ShipmentIntakeModal
           isPending={recordIntake.isPending}
-          onClose={() => setShowIntake(false)}
+          initialShippingMark={intakeOrder.shippingMark ?? undefined}
+          onClose={() => setIntakeOrder(null)}
           onSubmit={async (payload) => {
             await recordIntake.mutate(payload);
-            setShowIntake(false);
+            setIntakeOrder(null);
           }}
         />
       )}

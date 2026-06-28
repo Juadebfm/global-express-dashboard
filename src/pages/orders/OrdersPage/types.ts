@@ -4,7 +4,7 @@ import { resolveLocation } from '@/utils';
 // ── Status labels (authoritative — from BE status-transitions.ts) ───────────
 
 export const STATUS_LABELS: Record<string, string> = {
-  PREORDER_SUBMITTED:                     'Pre-Order Submitted',
+  PREORDER_SUBMITTED:                     'Booking Submitted',
   AWAITING_WAREHOUSE_RECEIPT:             'Awaiting Warehouse Receipt',
   WAREHOUSE_RECEIVED:                     'Received at Warehouse',
   CLAIM_APPROVED_PENDING_BULK_PROCESSING: 'Claim Approved — Pending Bulk Processing',
@@ -120,7 +120,7 @@ export interface PipelineStage {
 
 const STAGE_MAP: Array<{ label: string; statuses: string[] }> = [
   {
-    label: 'Pre-order',
+    label: 'Booking',
     statuses: ['PREORDER_SUBMITTED', 'AWAITING_WAREHOUSE_RECEIPT'],
   },
   {
@@ -165,7 +165,7 @@ export function getStageInfo(statusV2: string): PipelineStage {
       return { index: i + 1, label: STAGE_MAP[i].label };
     }
   }
-  return { index: 1, label: 'Pre-order' };
+  return { index: 1, label: 'Booking' };
 }
 
 export function getNextStageLabel(statusV2: string): string | null {
@@ -259,6 +259,10 @@ export interface OrderView {
   flaggedForAdminReview: boolean;
   paymentDetailsSentAt: string | null;
   dispatchBatchId: string | null;
+  sourcingSupplierId: string | null;
+  sourcingSupplierName: string | null;
+  sourcingSupplierPhone: string | null;
+  sourcingSupplierEmail: string | null;
 }
 
 // ── Package form ────────────────────────────────────────────────────────────
@@ -409,6 +413,10 @@ export function toView(order: ApiOrder): OrderView {
     flaggedForAdminReview: readBoolean(record, ['flaggedForAdminReview']),
     paymentDetailsSentAt: readString(record, ['paymentDetailsSentAt']) || null,
     dispatchBatchId: readString(record, ['dispatchBatchId']) || null,
+    sourcingSupplierId: readString(record, ['sourcingSupplierId']) || null,
+    sourcingSupplierName: readString(record, ['sourcingSupplierName']) || null,
+    sourcingSupplierPhone: readString(record, ['sourcingSupplierPhone']) || null,
+    sourcingSupplierEmail: readString(record, ['sourcingSupplierEmail']) || null,
   };
 }
 

@@ -39,7 +39,7 @@ export function DashboardHeader({
         variant={isPrimary ? 'primary' : 'secondary'}
         leftIcon={icon}
         onClick={() => onAction?.(action)}
-        {...(isPrimary ? { 'data-tour': 'preorder-btn' } : {})}
+        {...(isPrimary ? { 'data-tour': 'booking-btn' } : {})}
       >
         {action.label}
       </Button>

@@ -23,7 +23,7 @@ const defaultValues: SupportTicketFormData = {
 };
 
 const fieldClassName =
-  'w-full rounded-lg border border-[#DDE5E9] bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500';
+  'w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500';
 
 const CATEGORY_KEYS: Record<(typeof supportTicketCategories)[number], string> = {
   shipment_inquiry: 'ticketForm.categories.shipmentInquiry',

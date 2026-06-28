@@ -1,9 +1,9 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Plus, ChevronRight, Plane, Ship, Package2, ClipboardList } from 'lucide-react';
 import { SupplierLayout } from '@/components/supplier/SupplierLayout';
-import { Card, Button } from '@/components/ui';
+import { AlertBanner, Card, Button } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import { useSupplierDeclarations } from '@/hooks/useSupplierPortal';
 import { useSupplierAuthStore } from '@/store/supplierAuth';
@@ -71,8 +71,14 @@ function DeclarationRow({ decl }: { decl: Declaration }): ReactElement {
   );
 }
 
+const SUPPLIER_TABS = [
+  { id: 'declarations', label: 'My Goods Notices', href: ROUTES.SUPPLIER_DASHBOARD },
+  { id: 'requests', label: 'Customer Requests', href: ROUTES.SUPPLIER_REQUESTS },
+];
+
 export function SupplierDashboardPage(): ReactElement {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useSupplierAuthStore((s) => s.user);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
@@ -101,6 +107,24 @@ export function SupplierDashboardPage(): ReactElement {
           >
             New goods notice
           </Button>
+        </div>
+
+        {/* Page nav tabs */}
+        <div className="flex gap-1 rounded-xl border border-gray-200 bg-white p-1 w-fit">
+          {SUPPLIER_TABS.map((tab) => (
+            <Link
+              key={tab.id}
+              to={tab.href}
+              className={cn(
+                'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+                location.pathname === tab.href
+                  ? 'bg-brand-500 text-white shadow-sm'
+                  : 'text-gray-600 hover:bg-gray-50',
+              )}
+            >
+              {tab.label}
+            </Link>
+          ))}
         </div>
 
         {/* Status tabs */}
@@ -141,9 +165,7 @@ export function SupplierDashboardPage(): ReactElement {
         )}
 
         {!isLoading && error && (
-          <Card className="p-8 text-center">
-            <p className="text-sm text-red-500">Failed to load goods notices. Please refresh.</p>
-          </Card>
+          <AlertBanner tone="error" message="Failed to load goods notices. Please refresh." />
         )}
 
         {!isLoading && !error && (

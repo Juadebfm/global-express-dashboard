@@ -41,10 +41,14 @@ export const ROUTES = {
   BATCHES: '/batches',
   BATCH_DETAIL: '/batches/:batchId',
 
+  BOOKINGS_NEW: '/bookings/new',
+  OPERATIONS: '/operations',
+
   SUPPLIER_LOGIN: '/supplier/login',
   SUPPLIER_DASHBOARD: '/supplier/dashboard',
   SUPPLIER_NEW_GOODS_NOTICE: '/supplier/goods-notices/new',
   SUPPLIER_GOODS_NOTICE_DETAIL: '/supplier/goods-notices/:id',
+  SUPPLIER_REQUESTS: '/supplier/requests',
 
   SUPPLIER_NOTICES: '/supplier-notices',
   SUPPLIER_NOTICE_REVIEW: '/supplier-notices/:id',

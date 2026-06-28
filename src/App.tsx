@@ -105,6 +105,12 @@ const AdminGalleryPage = lazy(() =>
 const AdminImportsPage = lazy(() =>
   import('@/pages/admin/AdminImportsPage').then((m) => ({ default: m.AdminImportsPage })),
 );
+const NewBookingPage = lazy(() =>
+  import('@/pages/bookings/NewBookingPage/NewBookingPage').then((m) => ({ default: m.NewBookingPage })),
+);
+const OperationsPage = lazy(() =>
+  import('@/pages/operations/OperationsPage/OperationsPage').then((m) => ({ default: m.OperationsPage })),
+);
 const BatchesPage = lazy(() =>
   import('@/pages/batches/BatchesPage').then((m) => ({ default: m.BatchesPage })),
 );
@@ -128,6 +134,9 @@ const SupplierNewDeclarationPage = lazy(() =>
 );
 const SupplierDeclarationDetailPage = lazy(() =>
   import('@/pages/supplier/SupplierDeclarationDetailPage/SupplierDeclarationDetailPage').then((m) => ({ default: m.SupplierDeclarationDetailPage })),
+);
+const SupplierRequestsPage = lazy(() =>
+  import('@/pages/supplier/SupplierRequestsPage/SupplierRequestsPage').then((m) => ({ default: m.SupplierRequestsPage })),
 );
 
 function AppRoutes(): ReactElement {
@@ -193,6 +202,22 @@ function AppRoutes(): ReactElement {
             redirectTo={ROUTES.ADMIN_DASHBOARD}
           >
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.BOOKINGS_NEW}
+        element={
+          <ProtectedRoute allowedRoles={['user']}>
+            <NewBookingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.OPERATIONS}
+        element={
+          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
+            <OperationsPage />
           </ProtectedRoute>
         }
       />
@@ -442,6 +467,14 @@ function AppRoutes(): ReactElement {
         element={
           <SupplierRoute>
             <SupplierDeclarationDetailPage />
+          </SupplierRoute>
+        }
+      />
+      <Route
+        path={ROUTES.SUPPLIER_REQUESTS}
+        element={
+          <SupplierRoute>
+            <SupplierRequestsPage />
           </SupplierRoute>
         }
       />

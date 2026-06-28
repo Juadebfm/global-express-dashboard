@@ -146,7 +146,7 @@ interface DetailRowProps {
   value: string;
 }
 
-const SELECT_CLASS = 'auth-form-control w-full rounded-lg border border-[#DDE5E9] bg-white px-4 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed';
+const SELECT_CLASS = 'auth-form-control w-full rounded-lg border border-gray-200 bg-white px-4 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed';
 
 function DetailRow({ label, value }: DetailRowProps): ReactElement {
   return (
@@ -978,7 +978,7 @@ export function ProfilePage(): ReactElement {
                       <select
                         value={internalForm.gender}
                         onChange={(event) => handleInternalChange('gender', event.target.value as StaffProfilePayload['gender'])}
-                        className="auth-form-control w-full rounded-lg border border-[#DDE5E9] bg-white px-4 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400"
+                        className="auth-form-control w-full rounded-lg border border-gray-200 bg-white px-4 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400"
                         disabled={isBootstrapping}
                       >
                         <option value="male">{t('internal.genders.male')}</option>
@@ -993,7 +993,7 @@ export function ProfilePage(): ReactElement {
                         type="date"
                         value={internalForm.dateOfBirth}
                         onChange={(event) => handleInternalChange('dateOfBirth', event.target.value)}
-                        className="auth-form-control w-full rounded-lg border border-[#DDE5E9] bg-white px-4 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400"
+                        className="auth-form-control w-full rounded-lg border border-gray-200 bg-white px-4 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400"
                         disabled={isBootstrapping}
                       />
                     </div>

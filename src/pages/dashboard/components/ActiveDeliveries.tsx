@@ -17,9 +17,9 @@ const statusStyles: Record<
   ActiveDelivery['status'],
   { bg: string; text: string }
 > = {
-  on_time: { bg: 'bg-[#0000FF]', text: 'text-white' },
-  delayed: { bg: 'bg-[#FF0000]', text: 'text-white' },
-  completed: { bg: 'bg-[#008000]', text: 'text-white' },
+  on_time: { bg: 'bg-blue-600', text: 'text-white' },
+  delayed: { bg: 'bg-red-500', text: 'text-white' },
+  completed: { bg: 'bg-emerald-600', text: 'text-white' },
   unknown: { bg: 'bg-gray-400', text: 'text-white' },
 };
 
@@ -68,7 +68,7 @@ export function ActiveDeliveries({
                 aria-label={`View deliveries for ${item.location.city}, ${item.location.state}`}
               >
                 <div className="flex items-start gap-3">
-                  <span className="mt-1 flex h-7 w-7 items-center justify-center rounded-full bg-[#F4EBFF] text-gray-600">
+                  <span className="mt-1 flex h-7 w-7 items-center justify-center rounded-full bg-purple-50 text-gray-600">
                     {modeIcons[item.mode]}
                   </span>
                   <div>

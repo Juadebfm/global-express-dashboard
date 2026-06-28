@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import type { ReactElement, ChangeEvent } from 'react';
 import { useRef, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronRight,
+  FileText,
   Loader2,
   Lock,
   Package,
@@ -14,6 +15,7 @@ import {
   Scale,
   Search,
   Ship,
+  Upload,
   User,
   X,
 } from 'lucide-react';
@@ -28,6 +30,7 @@ import {
   useCloseBatch,
   useCan,
 } from '@/hooks';
+import { useBatchDocuments, useUploadBatchDocument } from '@/hooks/useBatchDocuments';
 import type { AvailableOrder } from '@/services';
 import { getDisplayErrorMessage } from '@/lib/feedback';
 import { AppLayout } from '@/components/layout';
@@ -35,7 +38,7 @@ import { Button, Card } from '@/components/ui';
 import { useFeedbackStore } from '@/store';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
-import type { BatchRosterCustomer, BatchRosterOrder } from '@/types';
+import type { BatchRosterCustomer, BatchRosterOrder, BatchDocumentType } from '@/types';
 
 // Air-specific statuses (post-close movement)
 const AIR_STATUSES = new Set([
@@ -200,6 +203,124 @@ function CustomerRow({
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+const AIR_DOCUMENT_TYPES: { value: BatchDocumentType; label: string }[] = [
+  { value: 'mawb', label: 'MAWB (Master Airway Bill)' },
+  { value: 'other', label: 'Other' },
+];
+
+const SEA_DOCUMENT_TYPES: { value: BatchDocumentType; label: string }[] = [
+  { value: 'bill_of_lading', label: 'Bill of Lading' },
+  { value: 'container_photo', label: 'Container Photo' },
+  { value: 'vessel_photo', label: 'Vessel Photo' },
+  { value: 'other', label: 'Other' },
+];
+
+function BatchDocumentsSection({
+  batchId,
+  transportMode,
+  canManage,
+  pushMessage,
+}: {
+  batchId: string;
+  transportMode: string;
+  canManage: boolean;
+  pushMessage: (msg: { tone: 'success' | 'error'; message: string }) => void;
+}): ReactElement {
+  const { data: documents, isLoading } = useBatchDocuments(batchId);
+  const upload = useUploadBatchDocument(batchId);
+  const [docType, setDocType] = useState<BatchDocumentType>('other');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const docTypes = transportMode === 'air' ? AIR_DOCUMENT_TYPES : SEA_DOCUMENT_TYPES;
+
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      await upload.mutateAsync({ file, documentType: docType });
+      pushMessage({ tone: 'success', message: 'Document uploaded.' });
+    } catch (err) {
+      pushMessage({ tone: 'error', message: getDisplayErrorMessage(err, 'Upload failed. Please try again.') });
+    } finally {
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <div className="flex items-center justify-between px-5 py-4">
+        <h2 className="font-semibold text-gray-900">Documents</h2>
+        {canManage && (
+          <div className="flex items-center gap-2">
+            <select
+              value={docType}
+              onChange={(e) => setDocType(e.target.value as BatchDocumentType)}
+              className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-700 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+            >
+              {docTypes.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+            <Button
+              variant="secondary"
+              onClick={() => fileRef.current?.click()}
+              disabled={upload.isPending}
+            >
+              {upload.isPending
+                ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                : <Upload className="mr-1.5 h-4 w-4" />
+              }
+              Upload
+            </Button>
+            <input
+              ref={fileRef}
+              type="file"
+              className="hidden"
+              accept="application/pdf,image/*"
+              onChange={(e) => void handleFileChange(e)}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="border-t border-gray-100">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-gray-300" />
+          </div>
+        ) : !documents?.length ? (
+          <div className="flex flex-col items-center gap-1 py-10 text-center">
+            <FileText className="h-8 w-8 text-gray-200" />
+            <p className="text-sm text-gray-400">No documents uploaded yet.</p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-gray-50">
+            {documents.map((doc) => (
+              <li key={doc.id} className="flex items-center gap-3 px-5 py-3">
+                <FileText className="h-4 w-4 shrink-0 text-gray-400" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">
+                    {doc.fileName ?? doc.documentType.replace(/_/g, ' ')}
+                  </p>
+                  <p className="text-xs text-gray-400 capitalize">{doc.documentType.replace(/_/g, ' ')}</p>
+                </div>
+                <a
+                  href={doc.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 rounded-xl border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  View
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
@@ -552,7 +673,7 @@ export function BatchDetailPage(): ReactElement {
             )}
 
             {/* Roster */}
-            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
               {/* Roster header */}
               <div className="flex items-center justify-between px-5 py-4">
                 <h2 className="font-semibold text-gray-900">Roster</h2>
@@ -592,6 +713,16 @@ export function BatchDetailPage(): ReactElement {
                 </>
               )}
             </div>
+
+            {/* Documents section */}
+            {batchId && (
+              <BatchDocumentsSection
+                batchId={batchId}
+                transportMode={batch.transportMode}
+                canManage={canManage}
+                pushMessage={pushMessage}
+              />
+            )}
           </>
         )}
       </div>

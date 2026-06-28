@@ -258,7 +258,7 @@ export function ShipmentsPage(): ReactElement {
         { id: 'all', label: t('filters.all'), value: 'all' },
         {
           id: 'preordersWaiting',
-          label: t('statusV2.PREORDER_SUBMITTED', { defaultValue: 'Pre-orders Waiting' }),
+          label: t('statusV2.PREORDER_SUBMITTED', { defaultValue: 'Bookings Submitted' }),
           value: 'PREORDER_SUBMITTED',
         },
         {

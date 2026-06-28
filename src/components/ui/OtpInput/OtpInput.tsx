@@ -151,7 +151,6 @@ export function OtpInput({
                   : 'border-gray-300',
                 disabled && 'opacity-50 cursor-not-allowed'
               )}
-              style={{ borderColor: error ? undefined : '#DDE5E9' }}
               aria-label={`Digit ${index + 1}`}
             />
           ))}

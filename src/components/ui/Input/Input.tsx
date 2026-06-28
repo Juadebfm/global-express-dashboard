@@ -40,11 +40,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               'transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent',
               error
                 ? 'border-red-500 focus:ring-red-500'
-                : 'hover:border-gray-400',
+                : 'border-gray-200 hover:border-gray-400',
               isPassword && showPasswordToggle && 'pr-12',
               className
             )}
-            style={{ borderColor: error ? undefined : '#DDE5E9' }}
             aria-invalid={error ? 'true' : 'false'}
             aria-describedby={error ? `${inputId}-error` : undefined}
             {...props}

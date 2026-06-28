@@ -9,6 +9,7 @@ import { getDisplayErrorMessage } from "@/lib/feedback";
 import { useFeedbackStore } from "@/store";
 import { trackShipment, type TrackingResult } from "@/services/trackingService";
 import { getStatusStyle } from "@/lib/statusUtils";
+import { formatTrackingDisplay } from "@/lib/trackingUtils";
 import { resolveLocation } from "@/utils";
 
 export function TrackPage(): ReactElement {
@@ -139,7 +140,9 @@ export function TrackPage(): ReactElement {
                         {t('public.trackingNumber')}
                       </p>
                       <p className="mt-1 text-lg font-semibold text-gray-900">
-                        {result.trackingNumber ?? input.trim().toUpperCase()}
+                        {result.trackingNumber
+                          ? formatTrackingDisplay(result.trackingNumber)
+                          : input.trim().toUpperCase()}
                       </p>
                     </div>
                     <span

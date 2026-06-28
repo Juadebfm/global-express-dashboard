@@ -261,7 +261,7 @@ function RecentOrdersSection({ orders }: RecentOrdersSectionProps): ReactElement
                   <td className="px-4 py-3 font-medium">{o.trackingNumber}</td>
                   <td className="px-4 py-3">{o.statusLabel || o.statusV2}</td>
                   <td className="px-4 py-3 text-gray-500">
-                    {o.isPreorder ? 'Pre-order' : 'Standard'}
+                    {o.isPreorder ? 'Booking' : 'Standard'}
                   </td>
                 </tr>
               ))}

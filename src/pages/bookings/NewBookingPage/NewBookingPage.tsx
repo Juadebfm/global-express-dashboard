@@ -1,16 +1,133 @@
-import type { ReactElement } from 'react';
-import { useRef, useState } from 'react';
+import type { ComponentType, ReactElement } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { Country } from 'react-phone-number-input';
+import {
+  getCountries,
+  getCountryCallingCode,
+} from 'react-phone-number-input';
+import flags from 'react-phone-number-input/flags';
+import en from 'react-phone-number-input/locale/en';
 import { AppLayout } from '@/components/layout';
 import { Button, Card, Input, AlertBanner } from '@/components/ui';
 import { useAuth, useAuthToken, useMySuppliers } from '@/hooks';
 import { createOrder } from '@/services';
 import { ROUTES } from '@/constants';
 import { newBookingSchema, type NewBookingFormValues } from './schema';
+
+// ── Country selector ──────────────────────────────────────────────────────────
+
+type CountryOption = {
+  code: Country;
+  name: string;
+  dialCode: string;
+};
+
+const COUNTRY_OPTIONS: CountryOption[] = getCountries()
+  .map((code) => ({
+    code,
+    name: (en as Record<string, string>)[code] || code,
+    dialCode: `+${getCountryCallingCode(code)}`,
+  }))
+  .sort((a, b) => a.name.localeCompare(b.name));
+
+interface CountrySelectProps {
+  selected: CountryOption;
+  onSelect: (code: Country) => void;
+  isError?: boolean;
+}
+
+function CountrySelect({ selected, onSelect, isError = false }: CountrySelectProps): ReactElement {
+  const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClick = (event: MouseEvent): void => {
+      if (!wrapperRef.current?.contains(event.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isOpen]);
+
+  const handleToggle = (): void => {
+    if (!isOpen && wrapperRef.current) {
+      const rect = wrapperRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setOpenUpward(spaceBelow < 256 && rect.top > spaceBelow);
+    }
+    setIsOpen((prev) => !prev);
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative w-[130px] shrink-0 sm:w-[160px]">
+      <button
+        type="button"
+        onClick={handleToggle}
+        className={
+          isError
+            ? 'flex w-full items-center justify-between rounded-lg border border-red-500 bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500'
+            : 'flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400'
+        }
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+      >
+        <span className="flex items-center gap-1.5 min-w-0">
+          {flags[selected.code] ? (
+            (() => {
+              const FlagIcon = flags[selected.code] as ComponentType<{ title?: string; className?: string }>;
+              return <FlagIcon title={selected.name} className="h-4 w-5 shrink-0 rounded-sm" />;
+            })()
+          ) : (
+            <span className="h-4 w-5 shrink-0 rounded-sm bg-gray-200" />
+          )}
+          <span className="text-gray-500 shrink-0">{selected.dialCode}</span>
+        </span>
+        <span className="text-gray-400 shrink-0">▾</span>
+      </button>
+
+      {isOpen && (
+        <div
+          className={
+            openUpward
+              ? 'absolute bottom-full z-20 mb-2 max-h-64 w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg'
+              : 'absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg'
+          }
+          role="listbox"
+        >
+          {COUNTRY_OPTIONS.map((option) => {
+            const FlagIcon = flags[option.code] as ComponentType<{ title?: string; className?: string }>;
+            return (
+              <button
+                key={option.code}
+                type="button"
+                onClick={() => { onSelect(option.code); setIsOpen(false); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                role="option"
+                aria-selected={option.code === selected.code}
+              >
+                {FlagIcon ? (
+                  <FlagIcon title={option.name} className="h-4 w-5 rounded-sm" />
+                ) : (
+                  <span className="h-4 w-5 rounded-sm bg-gray-200" />
+                )}
+                <span className="flex-1 text-left">{option.name}</span>
+                <span className="text-gray-500 shrink-0">{option.dialCode}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 function randomIdempotencyKey(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -23,6 +140,19 @@ export function NewBookingPage(): ReactElement {
   const queryClient = useQueryClient();
   const [submitted, setSubmitted] = useState(false);
   const idempotencyKey = useRef(randomIdempotencyKey());
+
+  // Phone country state
+  const [selectedCountry, setSelectedCountry] = useState<Country>('NG');
+  const [phoneDigits, setPhoneDigits] = useState('');
+
+  const selectedCountryOption =
+    COUNTRY_OPTIONS.find((item) => item.code === selectedCountry) ?? COUNTRY_OPTIONS[0]!;
+
+  const buildE164 = useCallback((digits: string): string => {
+    const cleaned = digits.replace(/\D/g, '').replace(/^0+/, '');
+    if (!cleaned) return '';
+    return `${selectedCountryOption.dialCode}${cleaned}`;
+  }, [selectedCountryOption.dialCode]);
 
   const layoutUser = {
     displayName: user
@@ -41,6 +171,7 @@ export function NewBookingPage(): ReactElement {
     handleSubmit,
     watch,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<NewBookingFormValues>({
     resolver: zodResolver(newBookingSchema),
@@ -108,7 +239,12 @@ export function NewBookingPage(): ReactElement {
               <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.DASHBOARD)}>
                 View my shipments
               </Button>
-              <Button size="sm" onClick={() => { idempotencyKey.current = randomIdempotencyKey(); reset(); setSubmitted(false); }}>
+              <Button size="sm" onClick={() => {
+                idempotencyKey.current = randomIdempotencyKey();
+                reset();
+                setPhoneDigits('');
+                setSubmitted(false);
+              }}>
                 Book another
               </Button>
             </div>
@@ -200,13 +336,37 @@ export function NewBookingPage(): ReactElement {
               {...register('recipientName')}
             />
 
-            <Input
-              label="Recipient phone"
-              type="tel"
-              placeholder="+234 800 000 0000"
-              error={errors.recipientPhone?.message}
-              {...register('recipientPhone')}
-            />
+            {/* Recipient phone with country selector */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-gray-700">
+                Recipient phone
+              </label>
+              <div className="flex gap-2">
+                <CountrySelect
+                  selected={selectedCountryOption}
+                  onSelect={setSelectedCountry}
+                  isError={!!errors.recipientPhone}
+                />
+                <input
+                  type="tel"
+                  value={phoneDigits}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, '');
+                    setPhoneDigits(digits);
+                    setValue('recipientPhone', buildE164(digits), { shouldValidate: true });
+                  }}
+                  placeholder="Phone number"
+                  className={
+                    errors.recipientPhone
+                      ? 'w-full rounded-lg border border-red-500 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500'
+                      : 'w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400'
+                  }
+                />
+              </div>
+              {errors.recipientPhone && (
+                <p className="text-sm text-red-600">{errors.recipientPhone.message}</p>
+              )}
+            </div>
 
             <Input
               label="Recipient email (optional)"

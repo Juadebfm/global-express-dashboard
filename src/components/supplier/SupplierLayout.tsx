@@ -1,8 +1,9 @@
 import type { ReactElement, ReactNode } from 'react';
-import { Link } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { LogOut, Inbox } from 'lucide-react';
 import { useSupplierAuthStore } from '@/store/supplierAuth';
 import { ROUTES } from '@/constants';
+import { cn } from '@/utils';
 
 interface SupplierLayoutProps {
   children: ReactNode;
@@ -10,6 +11,7 @@ interface SupplierLayoutProps {
 
 export function SupplierLayout({ children }: SupplierLayoutProps): ReactElement {
   const { user, clearAuth } = useSupplierAuthStore();
+  const location = useLocation();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -22,6 +24,21 @@ export function SupplierLayout({ children }: SupplierLayoutProps): ReactElement 
             <span className="text-gray-300 select-none">|</span>
             <span className="text-sm font-medium text-gray-500 truncate">Supplier Portal</span>
           </div>
+
+          <nav className="flex flex-wrap items-center gap-1">
+            <Link
+              to={ROUTES.SUPPLIER_REQUESTS}
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+                location.pathname === ROUTES.SUPPLIER_REQUESTS
+                  ? 'bg-brand-50 text-brand-600'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100',
+              )}
+            >
+              <Inbox className="h-4 w-4" />
+              Customer Requests
+            </Link>
+          </nav>
 
           <div className="flex items-center gap-3 shrink-0">
             {user?.businessName && (

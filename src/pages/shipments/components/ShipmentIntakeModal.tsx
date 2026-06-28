@@ -132,6 +132,7 @@ interface ShipmentIntakeModalProps {
   isPending: boolean;
   onClose: () => void;
   onSubmit: (payload: ShipmentIntakePayload) => Promise<void>;
+  initialShippingMark?: string;
 }
 
 function parseNumber(value: unknown): number | undefined {
@@ -172,6 +173,7 @@ export function ShipmentIntakeModal({
   isPending,
   onClose,
   onSubmit,
+  initialShippingMark,
 }: ShipmentIntakeModalProps): ReactElement {
   const {
     register,
@@ -183,7 +185,7 @@ export function ShipmentIntakeModal({
   } = useForm<ShipmentIntakeFormData>({
     resolver: zodResolver(shipmentIntakeSchema),
     defaultValues: {
-      shippingMark: '',
+      shippingMark: initialShippingMark ?? '',
       serviceType: undefined,
       internationalLeg: '',
       shipmentPayer: 'USER',

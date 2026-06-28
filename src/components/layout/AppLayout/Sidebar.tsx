@@ -9,6 +9,7 @@ import {
   ChartColumnIncreasing,
   ClipboardList,
   LayoutDashboard,
+  Layers,
   LifeBuoy,
   LogOut,
   Package,
@@ -48,6 +49,7 @@ const iconMap: Record<string, ReactElement> = {
   package: <Package className="h-5 w-5" />,
   chart: <ChartColumnIncreasing className="h-5 w-5" />,
   shield: <Shield className="h-5 w-5" />,
+  layers: <Layers className="h-5 w-5" />,
 };
 
 export function Sidebar({
@@ -112,7 +114,7 @@ export function Sidebar({
           'items-center gap-3 px-4 py-3.5',
           // Desktop: stacked vertical icon + label — no min-h so all items fit without scrolling
           'lg:flex-col lg:items-center lg:justify-center lg:gap-1 lg:px-2 lg:py-3 lg:text-center',
-          active ? 'bg-[#FFF7F2] text-brand-500' : 'text-gray-700 hover:bg-gray-50',
+          active ? 'bg-brand-50 text-brand-500' : 'text-gray-700 hover:bg-gray-50',
         )}
       >
         {active && (

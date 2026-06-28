@@ -4,7 +4,11 @@ export const newBookingSchema = z.object({
   description: z.string().min(3, 'Please describe what you are shipping'),
   shipmentType: z.enum(['air', 'sea']),
   weight: z.string().min(1, 'Weight is required'),
-  declaredValue: z.string().min(1, 'Declared value is required'),
+  declaredValue: z.string()
+    .min(1, 'Declared value is required')
+    .refine((v) => !isNaN(Number(v)) && Number(v) > 0, {
+      message: 'Declared value must be a positive number',
+    }),
   recipientName: z.string().min(1, 'Recipient name is required'),
   recipientPhone: z.string().min(1, 'Recipient phone is required'),
   recipientEmail: z.string().email().optional().or(z.literal('')),

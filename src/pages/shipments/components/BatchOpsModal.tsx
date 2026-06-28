@@ -365,12 +365,12 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
                   isLoading={lookup.isLoading}
                   error={lookup.error}
                   data={lookup.data}
-                  onUse={(id, mtn) => {
+                  onUse={(id, mtn, transportMode) => {
                     // Minimal synthetic list item so SelectedBatchBar can render
                     setSelectedBatch({
                       id,
                       masterTrackingNumber: mtn ?? id,
-                      transportMode: 'air',
+                      transportMode: (transportMode ?? 'air') as 'air' | 'sea',
                       status: 'open',
                       shipmentCount: 0,
                       carrierName: null,
@@ -398,6 +398,7 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
           {tab === 'carrier' && selectedBatch && (
             <CarrierInfoPanel
               batchId={batchId}
+              transportMode={selectedBatch.transportMode}
               isPending={carrier.isPending}
               onSubmit={(payload) => carrier.mutate({ batchId, payload })}
             />
@@ -432,8 +433,8 @@ function BatchLookupResult({
 }: {
   isLoading: boolean;
   error: Error | null;
-  data: { id?: string; status?: string; masterTrackingNumber?: string | null } | undefined;
-  onUse: (id: string, mtn?: string | null) => void;
+  data: { id?: string; status?: string; masterTrackingNumber?: string | null; transportMode?: string } | undefined;
+  onUse: (id: string, mtn?: string | null, transportMode?: string) => void;
 }): ReactElement {
   if (isLoading) return <p className="text-sm text-gray-500">Searching…</p>;
   if (error) {
@@ -455,7 +456,7 @@ function BatchLookupResult({
       {data.id && (
         <button
           type="button"
-          onClick={() => onUse(data.id as string, data.masterTrackingNumber)}
+          onClick={() => onUse(data.id as string, data.masterTrackingNumber, data.transportMode)}
           className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50"
         >
           Use this batch
@@ -502,13 +503,17 @@ function ApproveCutoffPanel({
 
 function CarrierInfoPanel({
   batchId,
+  transportMode,
   isPending,
   onSubmit,
 }: {
   batchId: string;
+  transportMode: string;
   isPending: boolean;
   onSubmit: (payload: DispatchBatchCarrierInfoPayload) => Promise<unknown>;
 }): ReactElement {
+  const isSea = transportMode === 'sea' || transportMode === 'ocean';
+
   const {
     register,
     handleSubmit,
@@ -524,6 +529,8 @@ function CarrierInfoPanel({
       estimatedDepartureAt: '',
       estimatedArrivalAt: '',
       notes: '',
+      billOfLadingNumber: '',
+      vesselName: '',
     },
   });
 
@@ -542,10 +549,22 @@ function CarrierInfoPanel({
     >
       <div className="grid gap-3 sm:grid-cols-2">
         <Input label="Shipping company name" error={errors.carrierName?.message} {...register('carrierName')} />
-        <Input label="Flight or vessel number" error={errors.voyageOrFlightNumber?.message} {...register('voyageOrFlightNumber')} />
-        <Input label="Airline tracking number" error={errors.airlineTrackingNumber?.message} {...register('airlineTrackingNumber')} />
-        <Input label="Sea freight tracking number" error={errors.oceanTrackingNumber?.message} {...register('oceanTrackingNumber')} />
-        <Input label="Door-to-door tracking number" error={errors.d2dTrackingNumber?.message} {...register('d2dTrackingNumber')} />
+        {isSea ? (
+          <>
+            <Input label="Ocean tracking number" error={errors.oceanTrackingNumber?.message} {...register('oceanTrackingNumber')} />
+            <Input label="Voyage number" error={errors.voyageOrFlightNumber?.message} {...register('voyageOrFlightNumber')} />
+            <Input label="Bill of lading number" error={errors.billOfLadingNumber?.message} {...register('billOfLadingNumber')} />
+            <Input label="Vessel name" error={errors.vesselName?.message} {...register('vesselName')} />
+          </>
+        ) : (
+          <>
+            <Input label="MAWB / airline tracking number" error={errors.airlineTrackingNumber?.message} {...register('airlineTrackingNumber')} />
+            <Input label="Flight number" error={errors.voyageOrFlightNumber?.message} {...register('voyageOrFlightNumber')} />
+            {transportMode === 'd2d' && (
+              <Input label="Door-to-door tracking number" error={errors.d2dTrackingNumber?.message} {...register('d2dTrackingNumber')} />
+            )}
+          </>
+        )}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>

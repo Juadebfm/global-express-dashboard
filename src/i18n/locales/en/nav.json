@@ -1,15 +1,18 @@
 {
   "items": {
     "dashboard": "Dashboard",
+    "myShipments": "My Shipments",
     "shipments": "Shipments",
     "deliverySchedule": "Delivery Schedule",
     "payments": "Payments",
     "notification": "Notification",
     "orders": "Orders",
+    "operations": "Operations",
     "clients": "Clients",
     "team": "Team",
     "reports": "Reports",
     "batches": "Batches",
+    "supplierNotices": "Supplier Notices",
     "auditLogs": "Audit Logs",
     "profile": "Profile",
     "settings": "Settings",

@@ -136,7 +136,7 @@ export function ShipmentListSection(): ReactElement {
     if (!isCustomer) {
       return [
         { id: 'all', label: t('filters.all'), value: 'all' },
-        { id: 'preordersWaiting', label: t('statusV2.PREORDER_SUBMITTED', { defaultValue: 'Pre-orders Waiting' }), value: 'PREORDER_SUBMITTED' },
+        { id: 'preordersWaiting', label: t('statusV2.PREORDER_SUBMITTED', { defaultValue: 'Bookings Submitted' }), value: 'PREORDER_SUBMITTED' },
         { id: 'awaitingWarehouse', label: t('statusV2.AWAITING_WAREHOUSE_RECEIPT', { defaultValue: 'Awaiting Warehouse Receipt' }), value: 'AWAITING_WAREHOUSE_RECEIPT' },
         { id: 'needsVerification', label: t('statusV2.WAREHOUSE_RECEIVED', { defaultValue: 'Received - Needs Verification' }), value: 'WAREHOUSE_RECEIVED' },
         { id: 'verifiedPriced', label: t('statusV2.WAREHOUSE_VERIFIED_PRICED', { defaultValue: 'Verified & Priced' }), value: 'WAREHOUSE_VERIFIED_PRICED' },

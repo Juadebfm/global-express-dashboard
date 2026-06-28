@@ -128,7 +128,7 @@ export function OnboardingTour({ run, onComplete }: OnboardingTourProps): ReactE
         placement: 'bottom' as const,
       },
       {
-        target: '[data-tour="preorder-btn"]',
+        target: '[data-tour="booking-btn"]',
         content: t('tour.steps.preorder'),
         placement: 'bottom' as const,
       },
@@ -203,7 +203,7 @@ export function OnboardingTour({ run, onComplete }: OnboardingTourProps): ReactE
   return (
     <>
       {/* Overlay with spotlight cutout */}
-      <div className="fixed inset-0 z-[80]" aria-hidden="true">
+      <div className="fixed inset-0 z-80" aria-hidden="true">
         <svg className="h-full w-full" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <mask id="tour-spotlight">

@@ -13,6 +13,15 @@ const SUPPLIER_TABS = [
   { id: 'requests', label: 'Customer Requests', href: ROUTES.SUPPLIER_REQUESTS },
 ];
 
+const STATUS_LABELS: Record<string, string> = {
+  AWAITING_WAREHOUSE_RECEIPT: 'Awaiting receipt',
+  WAREHOUSE_RECEIVED: 'Received at warehouse',
+  WAREHOUSE_VERIFIED_PRICED: 'Verified & priced',
+  ON_HOLD: 'On hold',
+  DISPATCHED_FROM_ORIGIN: 'In transit',
+  DELIVERED_TO_RECIPIENT: 'Delivered',
+};
+
 function modeIcon(shipmentType: SupplierOrderRequest['shipmentType']): ReactElement {
   if (shipmentType === 'air') return <Plane className="h-3.5 w-3.5" />;
   if (shipmentType === 'ocean') return <Ship className="h-3.5 w-3.5" />;
@@ -38,7 +47,7 @@ function RequestRow({ request }: { request: SupplierOrderRequest }): ReactElemen
             </span>
           )}
           <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-            {request.statusV2 ?? 'Pending'}
+            {STATUS_LABELS[request.statusV2 ?? ''] ?? request.statusV2 ?? 'Pending'}
           </span>
         </div>
         <p className="text-sm font-medium text-gray-900 truncate">

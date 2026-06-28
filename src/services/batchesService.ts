@@ -14,6 +14,9 @@ import type {
   BatchUpdateStatusPayload,
   BatchUpdateStatusResult,
   BatchCloseResult,
+  BatchDocument,
+  BatchDocumentType,
+  DispatchBatchCarrierInfoPayload,
 } from '@/types';
 
 export interface AvailableOrder {
@@ -93,4 +96,47 @@ export function getAvailableOrdersForBatch(
   batchId: string,
 ): Promise<AvailableOrder[]> {
   return apiGetData<AvailableOrder[]>(`/batches/${batchId}/available-orders`, token);
+}
+
+export function updateBatchCarrierInfo(
+  token: string,
+  batchId: string,
+  payload: DispatchBatchCarrierInfoPayload,
+): Promise<Batch> {
+  return apiPatchData<Batch>(`/batches/${batchId}/carrier-info`, payload, token);
+}
+
+export function presignBatchDocument(
+  token: string,
+  batchId: string,
+  params: { contentType: string; fileName?: string },
+): Promise<{ uploadUrl: string; r2Key: string }> {
+  return apiPostData<{ uploadUrl: string; r2Key: string }>(
+    `/batches/${batchId}/documents/presign`,
+    params,
+    token,
+  );
+}
+
+export function confirmBatchDocument(
+  token: string,
+  batchId: string,
+  params: {
+    r2Key: string;
+    documentType: BatchDocumentType;
+    fileName?: string;
+  },
+): Promise<BatchDocument> {
+  return apiPostData<BatchDocument>(
+    `/batches/${batchId}/documents/confirm`,
+    params,
+    token,
+  );
+}
+
+export function getBatchDocuments(
+  token: string,
+  batchId: string,
+): Promise<BatchDocument[]> {
+  return apiGetData<BatchDocument[]>(`/batches/${batchId}/documents`, token);
 }

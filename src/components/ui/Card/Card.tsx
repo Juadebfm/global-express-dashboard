@@ -9,7 +9,7 @@ export function Card({ children, className, ...props }: CardProps): ReactElement
   return (
     <div
       className={cn(
-        'rounded-xl border border-[#DDE5E9] bg-[#F5F7FA] p-6',
+        'rounded-xl border border-gray-200 bg-gray-50 p-6',
         className
       )}
       {...props}

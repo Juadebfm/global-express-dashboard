@@ -13,38 +13,30 @@ type Role = User['role'];
 // dashboard item href is intentionally different per branch.
 
 export const CUSTOMER_NAV: SidebarItem[] = [
-  { id: 'dashboard', icon: 'dashboard', href: ROUTES.DASHBOARD },
-  { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
-  { id: 'deliverySchedule', icon: 'calendar', href: ROUTES.DELIVERY_SCHEDULE },
+  { id: 'myShipments', icon: 'clipboard', href: ROUTES.DASHBOARD },
   { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
 ];
 
 export const STAFF_NAV: SidebarItem[] = [
-  { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
-  { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
-  { id: 'batches', icon: 'boxes', href: ROUTES.BATCHES },
+  { id: 'operations', icon: 'layers', href: ROUTES.OPERATIONS },
   { id: 'supplierNotices', icon: 'package', href: ROUTES.SUPPLIER_NOTICES },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
 ];
 
 export const ADMIN_NAV: SidebarItem[] = [
-  { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
-  { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
-  { id: 'batches', icon: 'boxes', href: ROUTES.BATCHES },
-  { id: 'supplierNotices', icon: 'package', href: ROUTES.SUPPLIER_NOTICES },
+  { id: 'operations', icon: 'layers', href: ROUTES.OPERATIONS },
   { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
+  { id: 'supplierNotices', icon: 'package', href: ROUTES.SUPPLIER_NOTICES },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
   { id: 'team', icon: 'team', href: ROUTES.TEAM },
   { id: 'reports', icon: 'chart', href: ROUTES.REPORTS },
 ];
 
 export const SUPERADMIN_NAV: SidebarItem[] = [
-  { id: 'dashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
-  { id: 'orders', icon: 'clipboard', href: ROUTES.ORDERS },
-  { id: 'batches', icon: 'boxes', href: ROUTES.BATCHES },
-  { id: 'supplierNotices', icon: 'package', href: ROUTES.SUPPLIER_NOTICES },
+  { id: 'operations', icon: 'layers', href: ROUTES.OPERATIONS },
   { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
+  { id: 'supplierNotices', icon: 'package', href: ROUTES.SUPPLIER_NOTICES },
   { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
   { id: 'team', icon: 'team', href: ROUTES.TEAM },

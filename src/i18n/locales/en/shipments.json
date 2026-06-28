@@ -64,7 +64,7 @@
   },
   "shipmentList": "Shipment List",
   "statusV2": {
-    "PREORDER_SUBMITTED": "Pre-order Submitted",
+    "PREORDER_SUBMITTED": "Booking Submitted",
     "AWAITING_WAREHOUSE_RECEIPT": "Awaiting Warehouse Receipt",
     "WAREHOUSE_RECEIVED": "Warehouse Received",
     "WAREHOUSE_VERIFIED_PRICED": "Verified & Priced",
@@ -307,7 +307,7 @@
       "shipmentSaved": "Your shipment has been saved successfully.",
       "orderSaved": "The client order has been saved successfully.",
       "trackingNumber": "Tracking Number: {{number}}",
-      "customerNote": "Your pre-order has been submitted. Pricing will be confirmed once the warehouse verifies your package.",
+      "customerNote": "Your booking has been received. Pricing will be confirmed once the warehouse verifies your package.",
       "operatorNote": "The client order has been submitted. Pricing will be confirmed after warehouse verification.",
       "shareDetails": "Share Details",
       "copy": "Copy",
