@@ -27,6 +27,19 @@ const NEEDS_ACTION_STATUSES = new Set([
 ]);
 
 const DISPATCHED_STATUSES = new Set([
+  // Air transit pipeline
+  'DISPATCHED_TO_ORIGIN_AIRPORT',
+  'AT_ORIGIN_AIRPORT',
+  'BOARDED_ON_FLIGHT',
+  'FLIGHT_DEPARTED',
+  'FLIGHT_LANDED_LAGOS',
+  // Sea transit pipeline
+  'DISPATCHED_TO_ORIGIN_PORT',
+  'AT_ORIGIN_PORT',
+  'LOADED_ON_VESSEL',
+  'VESSEL_DEPARTED',
+  'VESSEL_ARRIVED_LAGOS_PORT',
+  // Shared final-mile
   'CUSTOMS_CLEARED_LAGOS',
   'IN_TRANSIT_TO_LAGOS_OFFICE',
   'READY_FOR_PICKUP',
@@ -96,7 +109,15 @@ function OperationRow({ order, action }: { order: OrderListItem; action?: ReactE
   );
 }
 
-function BatchGroup({ batchId, orders }: { batchId: string; orders: OrderListItem[] }): ReactElement {
+function BatchGroup({
+  batchId,
+  orders,
+  linkLabel = 'Manage batch →',
+}: {
+  batchId: string;
+  orders: OrderListItem[];
+  linkLabel?: string;
+}): ReactElement {
   const [expanded, setExpanded] = useState(false);
   const shortId = batchId.slice(0, 8);
   const firstMode = orders[0]?.transportMode ?? 'air';
@@ -122,7 +143,7 @@ function BatchGroup({ batchId, orders }: { batchId: string; orders: OrderListIte
           onClick={(e) => e.stopPropagation()}
           className="ml-auto shrink-0 text-xs font-medium text-brand-600 hover:text-brand-700"
         >
-          Manage batch →
+          {linkLabel}
         </Link>
       </button>
       {expanded && (
@@ -185,6 +206,15 @@ export function OperationsPage(): ReactElement {
   }, new Map());
 
   const dispatchedOrders = allOrders.filter((o) => DISPATCHED_STATUSES.has(o.statusV2));
+
+  const dispatchedBatchGroups = dispatchedOrders.reduce<Map<string, OrderListItem[]>>((map, o) => {
+    const batchId = (o.raw as Record<string, unknown>)['dispatchBatchId'] as string | undefined;
+    const key = batchId ?? '__unbatched__';
+    const existing = map.get(key) ?? [];
+    existing.push(o);
+    map.set(key, existing);
+    return map;
+  }, new Map());
 
   function renderList(
     items: OrderListItem[],
@@ -319,12 +349,44 @@ export function OperationsPage(): ReactElement {
           )
         )}
 
-        {/* Tab: Dispatched */}
-        {tab === 'dispatched' && renderList(
-          dispatchedOrders,
-          allLoading,
-          allError,
-          (o) => <OperationRow key={o.id} order={o} />,
+        {/* Tab: Dispatched — grouped by batch so staff can see contents on arrival */}
+        {tab === 'dispatched' && (
+          allLoading ? (
+            <Card className="p-0 divide-y divide-gray-100">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-3.5 animate-pulse">
+                  <div className="h-4 w-4 rounded bg-gray-200 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 w-2/3 rounded bg-gray-200" />
+                    <div className="h-3 w-1/3 rounded bg-gray-100" />
+                  </div>
+                </div>
+              ))}
+            </Card>
+          ) : allError ? (
+            <AlertBanner tone="error" message="Failed to load orders. Please refresh." />
+          ) : dispatchedBatchGroups.size === 0 ? (
+            <Card className="p-8 text-center">
+              <p className="text-sm text-gray-500">No dispatched orders yet.</p>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {Array.from(dispatchedBatchGroups.entries()).map(([key, orders]) =>
+                key === '__unbatched__' ? (
+                  <Card key="unbatched" className="p-0 divide-y divide-gray-100">
+                    {orders.map((o) => <OperationRow key={o.id} order={o} />)}
+                  </Card>
+                ) : (
+                  <BatchGroup
+                    key={key}
+                    batchId={key}
+                    orders={orders}
+                    linkLabel="View batch →"
+                  />
+                )
+              )}
+            </div>
+          )
         )}
 
         {/* Pagination gap notice */}

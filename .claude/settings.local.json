@@ -63,7 +63,12 @@
       "Bash(git -C /Users/macbookpro/Documents/GitHub/global-express-dashboard add src/App.tsx src/components/forms/ForgotPasswordForm/ForgotPasswordForm.schema.ts src/components/layout/AppLayout/navConfig.ts src/components/supplier/ src/constants/routes.ts src/hooks/index.ts src/hooks/useBatches.ts src/hooks/useInternalDeclarations.ts src/hooks/useSupplierPortal.ts src/i18n/locales/en/auth.json src/i18n/locales/ko/auth.json src/lib/apiClient.ts src/lib/feedback.ts src/pages/auth/ForgotPasswordPage/ForgotPasswordPage.tsx src/pages/batches/BatchDetailPage/BatchDetailPage.tsx src/pages/batches/BatchesPage/BatchesPage.tsx src/pages/orders/OrdersPage/OrdersPage.tsx src/pages/orders/OrdersPage/components/MeasurementsTab.tsx src/pages/orders/OrdersPage/components/OverviewPanel.tsx src/pages/supplier/ src/pages/supplierNotices/ src/services/batchesService.ts src/services/index.ts src/services/internalDeclarationsService.ts src/services/supplierPortalService.ts src/store/supplierAuth/ src/types/internalDeclarations.types.ts src/types/supplierPortal.types.ts)",
       "Bash(git -C /Users/macbookpro/Documents/GitHub/global-express-dashboard status --short)",
       "Bash(git -C /Users/macbookpro/Documents/GitHub/global-express-dashboard commit -m ' *)",
-      "Bash(git -C /Users/macbookpro/Documents/GitHub/global-express-dashboard add src/hooks/useSupplierPortal.ts src/pages/supplier/SupplierDeclarationDetailPage/SupplierDeclarationDetailPage.tsx src/pages/supplier/SupplierNewDeclarationPage/SupplierNewDeclarationPage.tsx src/pages/orders/OrdersPage/components/MeasurementsTab.tsx)"
+      "Bash(git -C /Users/macbookpro/Documents/GitHub/global-express-dashboard add src/hooks/useSupplierPortal.ts src/pages/supplier/SupplierDeclarationDetailPage/SupplierDeclarationDetailPage.tsx src/pages/supplier/SupplierNewDeclarationPage/SupplierNewDeclarationPage.tsx src/pages/orders/OrdersPage/components/MeasurementsTab.tsx)",
+      "Skill(code-review)",
+      "Skill(code-review:*)",
+      "Bash(awk '/^## Shipments/,/^## Team/' /Users/macbookpro/Documents/GitHub/global-express-backend/API_ENDPOINTS.md)",
+      "Bash(grep \"^### \\\\`\")",
+      "Bash(grep \"^### \\\\`\" /Users/macbookpro/Documents/GitHub/global-express-backend/API_ENDPOINTS.md)"
     ]
   }
 }
