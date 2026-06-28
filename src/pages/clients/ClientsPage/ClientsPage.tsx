@@ -21,7 +21,8 @@ import {
   Banknote,
 } from 'lucide-react';
 import { AppShell } from '@/pages/shared';
-import { useCan, useAuthToken, useClients, useDashboardData, useSearch } from '@/hooks';
+import { useCan, useAuthToken, useActivateClient, useClients, useDashboardData, useSearch } from '@/hooks';
+import { ApiError } from '@/lib/apiClient';
 import { deleteUser } from '@/services';
 import i18n from '@/i18n/i18n';
 import type { ApiClient } from '@/types';
@@ -34,6 +35,8 @@ const statusStyles: Record<ClientStatus, string> = {
   active: 'bg-emerald-50 text-emerald-700',
   inactive: 'bg-rose-50 text-rose-700',
 };
+
+const dormantBadgeStyle = 'bg-amber-50 text-amber-700';
 
 const nairaFormatter = new Intl.NumberFormat('en-NG');
 const formatNaira = (amount: number): string => `₦${nairaFormatter.format(amount)}`;
@@ -294,6 +297,8 @@ export function ClientsPage(): ReactElement {
 
   const { clients: apiClients, pagination, isLoading: clientsLoading } = useClients({ page });
 
+  const activateClient = useActivateClient();
+
   const [activeClient, setActiveClient] = useState<ApiClient | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ApiClient | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -301,6 +306,7 @@ export function ClientsPage(): ReactElement {
   const [openMenu, setOpenMenu] = useState(false);
   const [openClientMenuId, setOpenClientMenuId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [activateError, setActivateError] = useState<{ id: string; message: string } | null>(null);
 
   const statusMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -355,6 +361,20 @@ export function ClientsPage(): ReactElement {
     const totalRevenue = apiClients.reduce((acc, c) => acc + (parseFloat(c.totalSpent) || 0), 0);
     return { totalClients, activeClients, totalRevenue };
   }, [apiClients]);
+
+  const handleActivate = async (client: ApiClient): Promise<void> => {
+    setActivateError(null);
+    try {
+      await activateClient.mutateAsync(client.id);
+      setActionMessage(`${getClientName(client)} has been activated.`);
+    } catch (err) {
+      if (err instanceof ApiError && (err.status === 422 || err.status === 409)) {
+        setActivateError({ id: client.id, message: err.message });
+      } else {
+        setActivateError({ id: client.id, message: 'Failed to activate client. Please try again.' });
+      }
+    }
+  };
 
   const handleConfirmDelete = async (): Promise<void> => {
     if (!deleteTarget) return;
@@ -610,47 +630,74 @@ export function ClientsPage(): ReactElement {
 
                       {/* Status */}
                       <td className="px-6 py-4">
-                        <span className={cn('inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold', statusStyles[clientStatus])}>
-                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                          {statusLabels[clientStatus]}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={cn('inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold', statusStyles[clientStatus])}>
+                            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                            {statusLabels[clientStatus]}
+                          </span>
+                          {!client.isActive && (
+                            <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold', dormantBadgeStyle)}>
+                              Dormant
+                            </span>
+                          )}
+                        </div>
+                        {activateError?.id === client.id && (
+                          <p className="mt-1 text-xs text-red-600">{activateError.message}</p>
+                        )}
                       </td>
 
                       {/* Actions */}
-                      <td className="px-6 py-4 text-right">
-                        <div className="relative inline-flex" data-client-menu>
-                          <button
-                            type="button"
-                            data-client-menu-button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenClientMenuId((prev) => prev === client.id ? null : client.id);
-                            }}
-                            className="text-gray-400 hover:text-gray-600"
-                            aria-label={t('more')}
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </button>
-                          {openClientMenuId === client.id && (
-                            <div className="absolute right-0 top-6 z-20 w-44 rounded-xl border border-gray-200 bg-white p-1 text-left shadow-lg">
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setActiveClient(client); setOpenClientMenuId(null); }}
-                                className="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-600 transition hover:bg-gray-50"
-                              >
-                                {t('viewDetails')}
-                              </button>
-                              {canDeleteClient && (
+                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-2">
+                          {!client.isActive && (
+                            <button
+                              type="button"
+                              disabled={activateClient.isPending && activateClient.variables === client.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleActivate(client);
+                              }}
+                              className="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {activateClient.isPending && activateClient.variables === client.id
+                                ? 'Activating…'
+                                : 'Activate'}
+                            </button>
+                          )}
+                          <div className="relative inline-flex" data-client-menu>
+                            <button
+                              type="button"
+                              data-client-menu-button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenClientMenuId((prev) => prev === client.id ? null : client.id);
+                              }}
+                              className="text-gray-400 hover:text-gray-600"
+                              aria-label={t('more')}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+                            {openClientMenuId === client.id && (
+                              <div className="absolute right-0 top-6 z-20 w-44 rounded-xl border border-gray-200 bg-white p-1 text-left shadow-lg">
                                 <button
                                   type="button"
-                                  onClick={(e) => { e.stopPropagation(); setDeleteTarget(client); setOpenClientMenuId(null); }}
-                                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50"
+                                  onClick={(e) => { e.stopPropagation(); setActiveClient(client); setOpenClientMenuId(null); }}
+                                  className="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-600 transition hover:bg-gray-50"
                                 >
-                                  {t('deleteAccount')}
+                                  {t('viewDetails')}
                                 </button>
-                              )}
-                            </div>
-                          )}
+                                {canDeleteClient && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(client); setOpenClientMenuId(null); }}
+                                    className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50"
+                                  >
+                                    {t('deleteAccount')}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                     </tr>

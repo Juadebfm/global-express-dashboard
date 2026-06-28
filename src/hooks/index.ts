@@ -25,6 +25,7 @@ export { useOrderDetail } from './useOrderDetail';
 export { useOrderTimeline } from './useOrderTimeline';
 export { useUpdateOrderStatus } from './useUpdateOrderStatus';
 export { useCreateClient } from './useCreateClient';
+export { useActivateClient } from './useActivateClient';
 export { useWarehouseVerify } from './useWarehouseVerify';
 export { usePayments } from './usePayments';
 export { useMyPayments } from './useMyPayments';

@@ -3,15 +3,16 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Plus, Search, Trash2, X } from 'lucide-react';
+import { ChevronDown, Plus, Search, Trash2, UserPlus, X } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
 import {
   shipmentIntakeSchema,
   type ShipmentIntakeFormData,
 } from '@/components/forms';
 import { useAuthToken, useItemTypes } from '@/hooks';
-import { getAllSuppliers } from '@/services';
-import type { ApiSupplier, ShipmentIntakePayload } from '@/types';
+import { getAllSuppliers, createDormantClient } from '@/services';
+import { ApiError } from '@/lib/apiClient';
+import type { ApiSupplier, CreateDormantClientPayload, ShipmentIntakePayload } from '@/types';
 import { cn } from '@/utils';
 
 // ── Supplier combobox ─────────────────────────────────────────────────────────
@@ -126,6 +127,186 @@ function SupplierCombobox({ value, onChange, error }: SupplierComboboxProps): Re
   );
 }
 
+// ── Dormant customer inline form ──────────────────────────────────────────────
+
+interface DormantFormValues {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  shippingMark: string;
+  whatsappNumber: string;
+  email: string;
+  addressCity: string;
+}
+
+interface DormantCustomerSectionProps {
+  searchedMark: string;
+  isSubmitting: boolean;
+  onCreateAndContinue: (data: CreateDormantClientPayload) => Promise<void>;
+  onCancel: () => void;
+}
+
+function DormantCustomerSection({
+  searchedMark,
+  isSubmitting,
+  onCreateAndContinue,
+  onCancel,
+}: DormantCustomerSectionProps): ReactElement {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError,
+  } = useForm<DormantFormValues>({
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      phone: '',
+      shippingMark: searchedMark,
+      whatsappNumber: '',
+      email: '',
+      addressCity: '',
+    },
+  });
+
+  const onSubmit = handleSubmit(async (values) => {
+    const trimmed = (s: string): string => s.trim();
+    const firstName = trimmed(values.firstName);
+    const lastName = trimmed(values.lastName);
+
+    if (!firstName && !lastName) {
+      setError('firstName', { message: 'At least one of first name or last name is required' });
+      return;
+    }
+
+    const payload: CreateDormantClientPayload = {
+      phone: trimmed(values.phone),
+      shippingMark: trimmed(values.shippingMark),
+    };
+    if (firstName) payload.firstName = firstName;
+    if (lastName) payload.lastName = lastName;
+    if (trimmed(values.whatsappNumber)) payload.whatsappNumber = trimmed(values.whatsappNumber);
+    if (trimmed(values.email)) payload.email = trimmed(values.email);
+    if (trimmed(values.addressCity)) payload.addressCity = trimmed(values.addressCity);
+
+    await onCreateAndContinue(payload);
+  });
+
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+      <div className="mb-4 flex items-center gap-2">
+        <UserPlus className="h-4 w-4 shrink-0 text-amber-600" />
+        <p className="text-sm font-semibold text-amber-800">
+          Customer not found for shipping mark &ldquo;{searchedMark}&rdquo;
+        </p>
+      </div>
+      <p className="mb-4 text-xs text-amber-700">
+        Fill in the customer&apos;s details to create a dormant account and continue with the intake.
+      </p>
+
+      <form onSubmit={(e) => { void onSubmit(e); }} className="space-y-3">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+              First name <span className="text-gray-400">(optional)</span>
+            </label>
+            <input
+              className={cn(
+                'w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500',
+                errors.firstName ? 'border-red-400' : 'border-gray-300',
+              )}
+              placeholder="e.g. John"
+              {...register('firstName')}
+            />
+            {errors.firstName?.message && (
+              <p className="mt-1 text-xs text-red-600">{errors.firstName.message}</p>
+            )}
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+              Last name <span className="text-gray-400">(optional)</span>
+            </label>
+            <input
+              className={cn(
+                'w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500',
+                errors.lastName ? 'border-red-400' : 'border-gray-300',
+              )}
+              placeholder="e.g. Doe"
+              {...register('lastName')}
+            />
+            {errors.lastName?.message && (
+              <p className="mt-1 text-xs text-red-600">{errors.lastName.message}</p>
+            )}
+          </div>
+        </div>
+
+        <Input
+          label="Phone (required)"
+          placeholder="e.g. +234 801 234 5678"
+          error={errors.phone?.message}
+          {...register('phone', { required: 'Phone number is required' })}
+        />
+
+        <Input
+          label="Shipping mark (required)"
+          placeholder="e.g. juadeb"
+          error={errors.shippingMark?.message}
+          {...register('shippingMark', { required: 'Shipping mark is required' })}
+        />
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+              WhatsApp <span className="text-gray-400">(optional)</span>
+            </label>
+            <input
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              placeholder="e.g. +234 801 234 5678"
+              {...register('whatsappNumber')}
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+              Email <span className="text-gray-400">(optional)</span>
+            </label>
+            <input
+              type="email"
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              placeholder="e.g. john@example.com"
+              {...register('email')}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            City <span className="text-gray-400">(optional)</span>
+          </label>
+          <input
+            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            placeholder="e.g. Lagos"
+            {...register('addressCity')}
+          />
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isSubmitting}
+            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <Button type="submit" variant="primary" isLoading={isSubmitting}>
+            Create &amp; Continue
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 // ── Modal ─────────────────────────────────────────────────────────────────────
 
 interface ShipmentIntakeModalProps {
@@ -175,6 +356,8 @@ export function ShipmentIntakeModal({
   onSubmit,
   initialShippingMark,
 }: ShipmentIntakeModalProps): ReactElement {
+  const getAuthToken = useAuthToken();
+
   const {
     register,
     control,
@@ -195,41 +378,77 @@ export function ShipmentIntakeModal({
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'goods' });
-  // eslint-disable-next-line react-hooks/incompatible-library
   const serviceType = watch('serviceType');
   const shipmentPayer = watch('shipmentPayer');
   const isD2D = serviceType === 'd2d';
   const { items: itemTypeOptions } = useItemTypes();
 
+  // Customer-not-found inline state
+  const [customerNotFound, setCustomerNotFound] = useState(false);
+  const [searchedMark, setSearchedMark] = useState('');
+  const [dormantPending, setDormantPending] = useState(false);
+  // Retain the intake payload so we can replay it after dormant creation
+  const pendingPayloadRef = useRef<ShipmentIntakePayload | null>(null);
+
+  const buildPayload = (values: ShipmentIntakeFormData): ShipmentIntakePayload => {
+    const mode: 'air' | 'sea' =
+      values.serviceType === 'ocean'
+        ? 'sea'
+        : values.serviceType === 'd2d'
+          ? (values.internationalLeg as 'air' | 'sea')
+          : 'air';
+
+    const payload: ShipmentIntakePayload = {
+      shippingMark: values.shippingMark.trim().toLowerCase(),
+      mode,
+      shipmentType: values.serviceType,
+      goods: values.goods.map(cleanLine),
+    };
+    if (values.shipmentPayer) payload.shipmentPayer = values.shipmentPayer;
+    if (
+      typeof values.billingSupplierId === 'string' &&
+      values.billingSupplierId.trim()
+    ) {
+      payload.billingSupplierId = values.billingSupplierId.trim();
+    }
+    return payload;
+  };
+
+  const handleCreateAndContinue = async (dormantPayload: CreateDormantClientPayload): Promise<void> => {
+    setDormantPending(true);
+    try {
+      const token = await getAuthToken();
+      if (!token) throw new Error('Not authenticated');
+      const newClient = await createDormantClient(token, dormantPayload);
+
+      // Re-submit intake with the new customerId
+      const intakePayload = pendingPayloadRef.current;
+      if (!intakePayload) throw new Error('Intake payload lost');
+      await onSubmit({ ...intakePayload, customerId: newClient.id });
+      // onSubmit closes the modal on success via parent
+    } finally {
+      setDormantPending(false);
+    }
+  };
+
   return (
     <ModalShell title="Record warehouse intake" onClose={onClose}>
       <form
         onSubmit={handleSubmit(async (values) => {
-          // Derive mode + shipmentType from the unified serviceType selection.
-          // Air Freight  → mode: air,  shipmentType: air
-          // Sea Freight  → mode: sea,  shipmentType: ocean
-          // Door to Door → mode: air|sea (internationalLeg), shipmentType: d2d
-          const mode: 'air' | 'sea' =
-            values.serviceType === 'ocean'
-              ? 'sea'
-              : values.serviceType === 'd2d'
-                ? (values.internationalLeg as 'air' | 'sea')
-                : 'air';
-
-          const payload: ShipmentIntakePayload = {
-            shippingMark: values.shippingMark.trim().toLowerCase(),
-            mode,
-            shipmentType: values.serviceType,
-            goods: values.goods.map(cleanLine),
-          };
-          if (values.shipmentPayer) payload.shipmentPayer = values.shipmentPayer;
-          if (
-            typeof values.billingSupplierId === 'string' &&
-            values.billingSupplierId.trim()
-          ) {
-            payload.billingSupplierId = values.billingSupplierId.trim();
+          const payload = buildPayload(values);
+          try {
+            await onSubmit(payload);
+          } catch (err) {
+            // 404 = shipping mark not found — expand inline dormant form
+            if (err instanceof ApiError && err.status === 404) {
+              pendingPayloadRef.current = payload;
+              setSearchedMark(values.shippingMark.trim().toLowerCase());
+              setCustomerNotFound(true);
+              return;
+            }
+            // All other errors propagate normally (parent already shows toast)
+            throw err;
           }
-          await onSubmit(payload);
         })}
         className="space-y-4"
       >
@@ -457,18 +676,34 @@ export function ShipmentIntakeModal({
           )}
         </div>
 
-        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <Button type="submit" variant="primary" isLoading={isPending}>
-            Record intake
-          </Button>
-        </div>
+        {/* Customer-not-found inline section */}
+        {customerNotFound && (
+          <DormantCustomerSection
+            searchedMark={searchedMark}
+            isSubmitting={dormantPending}
+            onCreateAndContinue={handleCreateAndContinue}
+            onCancel={() => {
+              setCustomerNotFound(false);
+              setSearchedMark('');
+              pendingPayloadRef.current = null;
+            }}
+          />
+        )}
+
+        {!customerNotFound && (
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <Button type="submit" variant="primary" isLoading={isPending}>
+              Record intake
+            </Button>
+          </div>
+        )}
       </form>
     </ModalShell>
   );
@@ -500,4 +735,3 @@ function ModalShell({ title, onClose, children }: ModalShellProps): ReactElement
     </div>
   );
 }
-

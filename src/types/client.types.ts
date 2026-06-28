@@ -38,6 +38,26 @@ export interface CreateClientPayload {
   phone?: string;
 }
 
+export interface CreateDormantClientPayload {
+  firstName?: string;
+  lastName?: string;
+  phone: string;
+  shippingMark: string;
+  whatsappNumber?: string;
+  email?: string;
+  addressCity?: string;
+}
+
+export interface CreateDormantClientResult {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  shippingMark: string;
+  isActive: false;
+  createdAt: string;
+}
+
 export interface ApiClientsResponse {
   success: boolean;
   message: string;

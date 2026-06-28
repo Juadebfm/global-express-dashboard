@@ -73,6 +73,8 @@ export type {
   ApiClientOrder,
   ApiClient,
   CreateClientPayload,
+  CreateDormantClientPayload,
+  CreateDormantClientResult,
   ApiClientsResponse,
   ClientWorkbenchData,
   WorkbenchPagination,

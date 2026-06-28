@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FEEDBACK_MESSAGES } from '@/constants';
 import { useFeedbackStore } from '@/store';
 import { buildErrorFeedback } from '@/lib/feedback';
+import { ApiError } from '@/lib/apiClient';
 import { recordShipmentIntake } from '@/services/shipmentsService';
 import type { ShipmentIntakePayload, ShipmentIntakeResult } from '@/types';
 import { useAuthToken } from './useAuthToken';
@@ -30,6 +31,11 @@ export function useRecordShipmentIntake(): {
       });
     },
     onError: (err, variables) => {
+      // 404 = customer not found — the modal handles this inline by expanding
+      // the dormant-client creation form. Suppress the generic error toast so
+      // the user isn't hit with two error surfaces at once.
+      if (err instanceof ApiError && err.status === 404) return;
+
       // buildErrorFeedback decides whether to surface the Retry button
       // (only 5xx). The retry re-fires with the exact same variables so
       // the user doesn't lose their work to a transient BE blip.

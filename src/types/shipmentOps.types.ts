@@ -39,6 +39,9 @@ export interface ShipmentIntakePayload {
   shipmentPayer?: ShipmentPayer;
   billingSupplierId?: string;
   goods: ShipmentIntakeGoodsLine[];
+  /** When the customer was created on-the-fly (dormant), pass their id here
+   * so the BE skips the shipping-mark lookup and uses the id directly. */
+  customerId?: string;
 }
 
 export interface ShipmentIntakeResult {

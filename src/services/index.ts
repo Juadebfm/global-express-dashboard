@@ -48,6 +48,8 @@ export {
   getClientById,
   getClientOrders,
   createClient,
+  createDormantClient,
+  activateClient,
   sendClientInvite,
   getClientWorkbench,
   getClientSuppliers,

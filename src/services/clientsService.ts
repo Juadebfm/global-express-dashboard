@@ -5,6 +5,8 @@ import type {
   ApiSupplier,
   ClientWorkbenchData,
   CreateClientPayload,
+  CreateDormantClientPayload,
+  CreateDormantClientResult,
   CreateGoodsIntakePayload,
   AddSupplierPayload,
   AddSupplierResult,
@@ -63,6 +65,20 @@ export function createClient(
 
 export async function sendClientInvite(token: string, id: string): Promise<void> {
   await apiPost(`/admin/clients/${id}/send-invite`, undefined, token);
+}
+
+export function createDormantClient(
+  token: string,
+  payload: CreateDormantClientPayload,
+): Promise<CreateDormantClientResult> {
+  return apiPostData<CreateDormantClientResult>('/admin/clients/dormant', payload, token);
+}
+
+export function activateClient(
+  token: string,
+  id: string,
+): Promise<ApiClient> {
+  return apiPostData<ApiClient>(`/admin/clients/${id}/activate`, undefined, token);
 }
 
 // ── Admin client workbench ──────────────────────────────────────────────────
