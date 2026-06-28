@@ -89,15 +89,15 @@ export function ClientWorkbenchPage(): ReactElement {
           Back to clients
         </button>
 
-        {/* Dormant state card — only shown when client is inactive */}
+        {/* No-account card — only shown when client has no portal access */}
         {data?.client.isActive === false && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-amber-800">Dormant account</p>
+                <p className="text-sm font-semibold text-amber-800">No online account</p>
                 <p className="mt-0.5 text-xs text-amber-700">
-                  This client has no portal access.
+                  This customer cannot log in to the portal yet.
                 </p>
 
                 {/* Shipping mark — prominent */}
@@ -122,7 +122,7 @@ export function ClientWorkbenchPage(): ReactElement {
                       >
                         add an email address
                       </button>{' '}
-                      before activating.
+                      before sending an invite.
                     </p>
                   ) : (
                     <Button
@@ -132,7 +132,7 @@ export function ClientWorkbenchPage(): ReactElement {
                       onClick={() => { void handleActivate(); }}
                       className="mt-1"
                     >
-                      Activate client
+                      Send invite
                     </Button>
                   )}
                 </div>
@@ -165,7 +165,9 @@ export function ClientWorkbenchPage(): ReactElement {
                   <h1 className="text-2xl font-semibold text-gray-900">
                     {data.client.businessName ||
                       `${data.client.firstName ?? ''} ${data.client.lastName ?? ''}`.trim() ||
-                      data.client.email}
+                      data.client.email ||
+                      data.client.shippingMark ||
+                      'Unknown customer'}
                   </h1>
                   <p className="mt-1 text-sm text-gray-500">
                     {data.client.email || <span className="italic text-gray-400">No email</span>}
@@ -190,7 +192,7 @@ export function ClientWorkbenchPage(): ReactElement {
                         : 'bg-amber-50 text-amber-700'
                     }`}
                   >
-                    {data.client.isActive ? 'Active' : 'Dormant'}
+                    {data.client.isActive ? 'Active' : 'No account'}
                   </span>
                   <button
                     type="button"
@@ -330,14 +332,14 @@ interface EditClientFormShape {
 
 interface EditClientModalProps {
   client: {
-    firstName: string;
-    lastName: string;
-    businessName?: string;
-    email: string;
-    phone: string;
-    whatsappNumber?: string;
+    firstName: string | null;
+    lastName: string | null;
+    businessName?: string | null;
+    email: string | null;
+    phone: string | null;
+    whatsappNumber?: string | null;
     shippingMark: string | null;
-    addressCity?: string;
+    addressCity?: string | null;
   };
   isPending: boolean;
   onClose: () => void;

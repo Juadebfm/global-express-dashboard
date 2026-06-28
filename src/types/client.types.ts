@@ -8,13 +8,13 @@ export interface ApiClientOrder {
 
 export interface ApiClient {
   id: string;
-  displayName: string;
-  firstName: string;
-  lastName: string;
-  businessName?: string;
-  email: string;
-  phone: string;
-  whatsappNumber?: string;
+  displayName: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  businessName?: string | null;
+  email: string | null;
+  phone: string | null;
+  whatsappNumber?: string | null;
   shippingMark: string | null;
   addressStreet?: string;
   addressCity?: string;

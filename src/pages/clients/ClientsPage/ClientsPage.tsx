@@ -1,17 +1,16 @@
-import React, { type ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
   ChevronDown,
+  Edit2,
   MoreVertical,
-  Plus,
   Search,
   Trash2,
   UserCheck,
-  UserPlus,
   Users,
   Wallet,
   X,
@@ -25,11 +24,12 @@ import {
 import { AppShell } from '@/pages/shared';
 import { useCan, useAuthToken, useActivateClient, useClients, useDashboardData, useSearch } from '@/hooks';
 import { ApiError } from '@/lib/apiClient';
-import { createDormantClient, deleteUser } from '@/services';
+import { deleteUser } from '@/services';
 import i18n from '@/i18n/i18n';
-import type { ApiClient, CreateDormantClientPayload } from '@/types';
+import type { ApiClient } from '@/types';
 import { cn } from '@/utils';
 import { CopyButton, Pagination } from '@/components/ui';
+import { ROUTES } from '@/constants';
 
 type ClientStatus = 'active' | 'inactive';
 
@@ -38,7 +38,7 @@ const statusStyles: Record<ClientStatus, string> = {
   inactive: 'bg-rose-50 text-rose-700',
 };
 
-const dormantBadgeStyle = 'bg-amber-50 text-amber-700';
+const noAccountBadgeStyle = 'bg-amber-50 text-amber-700';
 
 const nairaFormatter = new Intl.NumberFormat('en-NG');
 const formatNaira = (amount: number): string => `₦${nairaFormatter.format(amount)}`;
@@ -51,7 +51,7 @@ const formatDate = (iso: string | null, locale: string = 'en-US'): string => {
 };
 
 const getClientName = (client: ApiClient): string =>
-  client.displayName || `${client.firstName ?? ''} ${client.lastName ?? ''}`.trim() || client.email;
+  client.displayName || `${client.firstName ?? ''} ${client.lastName ?? ''}`.trim() || client.email || client.id;
 
 const buildAddress = (client: ApiClient): string =>
   [client.addressStreet, client.addressCity, client.addressState, client.addressPostalCode, client.addressCountry]
@@ -122,11 +122,11 @@ function ClientModal({ client, dateLocale, statusLabels, onClose, onActivate, is
               <span
                 className={cn(
                   'mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold',
-                  client.isActive ? statusStyles.active : dormantBadgeStyle,
+                  client.isActive ? statusStyles.active : noAccountBadgeStyle,
                 )}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                {client.isActive ? statusLabels.active : 'Dormant'}
+                {client.isActive ? statusLabels.active : 'No account'}
               </span>
             </div>
           </div>
@@ -140,25 +140,25 @@ function ClientModal({ client, dateLocale, statusLabels, onClose, onActivate, is
           </button>
         </div>
 
-        {/* Dormant banner */}
+        {/* No-account banner */}
         {!client.isActive && (
           <div className="mx-4 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 sm:mx-6">
             <div className="flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-amber-800">
-                  Dormant account — no portal access.
+                  No online account — this customer cannot log in to the portal.
                 </p>
                 {client.email ? (
                   <div className="mt-2 flex items-center gap-2 flex-wrap">
-                    <p className="text-xs text-amber-700">Activate to give portal access.</p>
+                    <p className="text-xs text-amber-700">Send them an invite to create their account.</p>
                     <button
                       type="button"
                       disabled={isActivating}
                       onClick={() => { void onActivate(client); }}
                       className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
                     >
-                      {isActivating ? 'Activating…' : 'Activate'}
+                      {isActivating ? 'Sending…' : 'Send invite'}
                     </button>
                     {activateError?.id === client.id && (
                       <p className="text-xs text-red-700">{activateError.message}</p>
@@ -166,7 +166,7 @@ function ClientModal({ client, dateLocale, statusLabels, onClose, onActivate, is
                   </div>
                 ) : (
                   <p className="mt-1 text-xs text-amber-700">
-                    Email required to activate. Add email and activate to give them access.
+                    Add an email address before you can send an invite.
                   </p>
                 )}
               </div>
@@ -199,8 +199,8 @@ function ClientModal({ client, dateLocale, statusLabels, onClose, onActivate, is
             <div className="space-y-2.5">
               <div className="flex items-center gap-3 text-sm text-gray-700">
                 <Mail className="h-4 w-4 shrink-0 text-gray-400" />
-                <span className="min-w-0 flex-1 truncate">{client.email}</span>
-                <CopyButton value={client.email} />
+                <span className="min-w-0 flex-1 truncate">{client.email ?? <span className="italic text-gray-400">No email on file</span>}</span>
+                {client.email && <CopyButton value={client.email} />}
               </div>
               {client.phone && (
                 <div className="flex items-center gap-3 text-sm text-gray-700">
@@ -336,6 +336,8 @@ export function ClientsPage(): ReactElement {
 
   const activateClient = useActivateClient();
 
+  const navigate = useNavigate();
+
   const [activeClient, setActiveClient] = useState<ApiClient | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ApiClient | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -344,7 +346,6 @@ export function ClientsPage(): ReactElement {
   const [openClientMenuId, setOpenClientMenuId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [activateError, setActivateError] = useState<{ id: string; message: string } | null>(null);
-  const [showAddDormant, setShowAddDormant] = useState(false);
 
   const statusMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -551,14 +552,6 @@ export function ClientsPage(): ReactElement {
               <h2 className="text-2xl font-semibold text-gray-900">{t('clientsList')}</h2>
               <p className="text-sm text-gray-500">{t('clientsListDesc')}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowAddDormant(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
-            >
-              <UserPlus className="h-4 w-4" />
-              Add dormant client
-            </button>
           </div>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <div className="relative min-w-0 flex-1 sm:max-w-xs">
@@ -630,7 +623,6 @@ export function ClientsPage(): ReactElement {
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filteredClients.map((client) => {
-                  const clientStatus: ClientStatus = client.isActive ? 'active' : 'inactive';
                   return (
                     <tr
                       key={client.id}
@@ -669,8 +661,8 @@ export function ClientsPage(): ReactElement {
                       {/* Email */}
                       <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                         <span className="inline-flex items-center gap-1.5 text-gray-700">
-                          <span className="max-w-[180px] truncate">{client.email}</span>
-                          <CopyButton value={client.email} />
+                          <span className="max-w-[180px] truncate">{client.email ?? <span className="italic text-gray-400">—</span>}</span>
+                          {client.email && <CopyButton value={client.email} />}
                         </span>
                       </td>
 
@@ -681,17 +673,15 @@ export function ClientsPage(): ReactElement {
 
                       {/* Status */}
                       <td className="px-6 py-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className={cn('inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold', statusStyles[clientStatus])}>
-                            <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                            {statusLabels[clientStatus]}
-                          </span>
-                          {!client.isActive && (
-                            <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold', dormantBadgeStyle)}>
-                              Dormant
-                            </span>
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold',
+                            client.isActive ? statusStyles.active : noAccountBadgeStyle,
                           )}
-                        </div>
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                          {client.isActive ? statusLabels.active : 'No account'}
+                        </span>
                         {activateError?.id === client.id && (
                           <p className="mt-1 text-xs text-red-600">{activateError.message}</p>
                         )}
@@ -703,16 +693,14 @@ export function ClientsPage(): ReactElement {
                           {!client.isActive && (
                             <button
                               type="button"
-                              disabled={activateClient.isPending && activateClient.variables === client.id}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                void handleActivate(client);
+                                navigate(ROUTES.CLIENT_WORKBENCH.replace(':id', client.id));
                               }}
-                              className="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-semibold text-gray-600 transition hover:bg-gray-50"
                             >
-                              {activateClient.isPending && activateClient.variables === client.id
-                                ? 'Activating…'
-                                : 'Activate'}
+                              <Edit2 className="h-3 w-3" />
+                              Update details
                             </button>
                           )}
                           <div className="relative inline-flex" data-client-menu>
@@ -783,170 +771,7 @@ export function ClientsPage(): ReactElement {
         </div>
       </div>
 
-      {showAddDormant && (
-        <AddDormantClientModal
-          onClose={() => setShowAddDormant(false)}
-          onSuccess={(msg) => {
-            setShowAddDormant(false);
-            setActionMessage(msg);
-            void queryClient.invalidateQueries({ queryKey: ['clients'] });
-          }}
-        />
-      )}
     </AppShell>
   );
 }
 
-// ── Add dormant client modal ──────────────────────────────────────────────────
-
-interface AddDormantClientModalProps {
-  onClose: () => void;
-  onSuccess: (message: string) => void;
-}
-
-interface DormantClientFormShape {
-  firstName: string;
-  lastName: string;
-  phone: string;
-  shippingMark: string;
-  whatsappNumber: string;
-  email: string;
-  addressCity: string;
-}
-
-function AddDormantClientModal({ onClose, onSuccess }: AddDormantClientModalProps): ReactElement {
-  const getAuthToken = useAuthToken();
-  const [form, setForm] = useState<DormantClientFormShape>({
-    firstName: '',
-    lastName: '',
-    phone: '',
-    shippingMark: '',
-    whatsappNumber: '',
-    email: '',
-    addressCity: '',
-  });
-  const [isPending, setIsPending] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
-    e.preventDefault();
-    setErrorMsg(null);
-
-    const trim = (v: string): string => v.trim();
-
-    if (!trim(form.phone)) {
-      setErrorMsg('Phone is required.');
-      return;
-    }
-    if (!trim(form.shippingMark)) {
-      setErrorMsg('Shipping mark is required.');
-      return;
-    }
-    const mark = trim(form.shippingMark);
-    if (mark.length < 1 || mark.length > 100) {
-      setErrorMsg('Shipping mark must be between 1 and 100 characters.');
-      return;
-    }
-
-    const payload: CreateDormantClientPayload = {
-      phone: trim(form.phone),
-      shippingMark: mark,
-    };
-    if (trim(form.firstName)) payload.firstName = trim(form.firstName);
-    if (trim(form.lastName)) payload.lastName = trim(form.lastName);
-    if (trim(form.whatsappNumber)) payload.whatsappNumber = trim(form.whatsappNumber);
-    if (trim(form.email)) payload.email = trim(form.email);
-    if (trim(form.addressCity)) payload.addressCity = trim(form.addressCity);
-
-    setIsPending(true);
-    try {
-      const token = await getAuthToken();
-      if (!token) throw new Error('Not authenticated');
-      await createDormantClient(token, payload);
-      const displayName = [trim(form.firstName), trim(form.lastName)].filter(Boolean).join(' ') || mark;
-      onSuccess(`Dormant client "${displayName}" created.`);
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Failed to create dormant client.');
-    } finally {
-      setIsPending(false);
-    }
-  };
-
-  const field = (
-    label: string,
-    key: keyof DormantClientFormShape,
-    type: 'text' | 'email' | 'tel' = 'text',
-    placeholder?: string,
-  ): ReactElement => (
-    <div>
-      <label className="mb-1.5 block text-sm font-medium text-gray-700">{label}</label>
-      <input
-        type={type}
-        placeholder={placeholder}
-        value={form[key]}
-        onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
-        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-brand-500"
-      />
-    </div>
-  );
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Plus className="h-4 w-4 text-amber-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Add dormant client</h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
-            aria-label="Close"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="max-h-[70vh] overflow-y-auto px-6 py-5">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <p className="text-sm text-gray-500">
-              Creates a ledger client without portal access. Phone and shipping mark are required.
-            </p>
-
-            {errorMsg && (
-              <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{errorMsg}</p>
-            )}
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              {field('First name', 'firstName')}
-              {field('Last name', 'lastName')}
-            </div>
-            {field('Phone', 'phone', 'tel')}
-            {field('Shipping mark', 'shippingMark', 'text', 'e.g. BeautyByDaz')}
-            <p className="text-xs text-gray-500">1–100 characters, any format.</p>
-            {field('WhatsApp number', 'whatsappNumber', 'tel')}
-            {field('Email (optional)', 'email', 'email', 'client@example.com')}
-            {field('City', 'addressCity')}
-
-            <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isPending}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-50"
-              >
-                {isPending ? 'Creating…' : 'Create dormant client'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-}

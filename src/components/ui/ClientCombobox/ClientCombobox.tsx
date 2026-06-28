@@ -118,7 +118,7 @@ export function ClientCombobox({
       const name = [resolvedSelected.firstName, resolvedSelected.lastName]
         .filter(Boolean)
         .join(' ');
-      return name || resolvedSelected.email;
+      return name || (resolvedSelected.email ?? '');
     }
     return '';
   })();
