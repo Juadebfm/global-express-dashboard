@@ -50,10 +50,10 @@ export interface CreateDormantClientPayload {
 
 export interface CreateDormantClientResult {
   id: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  shippingMark: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  shippingMark: string | null;
   isActive: false;
   createdAt: string;
 }

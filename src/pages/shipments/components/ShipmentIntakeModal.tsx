@@ -273,8 +273,16 @@ function DormantCustomerSection({
               type="email"
               className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="e.g. john@example.com"
-              {...register('email')}
+              {...register('email', {
+                validate: (v) => {
+                  if (!v.trim()) return true;
+                  return /^[^\r\n\t@]+@[^\r\n\t@]+\.[^\r\n\t@]+$/.test(v.trim()) || 'Enter a valid email address';
+                },
+              })}
             />
+            {errors.email && (
+              <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
+            )}
           </div>
         </div>
 
@@ -424,8 +432,17 @@ export function ShipmentIntakeModal({
       // Re-submit intake with the new customerId
       const intakePayload = pendingPayloadRef.current;
       if (!intakePayload) throw new Error('Intake payload lost');
-      await onSubmit({ ...intakePayload, customerId: newClient.id });
-      // onSubmit closes the modal on success via parent
+      try {
+        await onSubmit({ ...intakePayload, customerId: newClient.id });
+        // onSubmit closes the modal on success via parent
+      } catch (intakeErr) {
+        // Client was created but intake failed. Surface a specific message so staff
+        // know the customer exists and can retry from the Clients page.
+        const reason = intakeErr instanceof Error ? intakeErr.message : 'Unknown error';
+        throw new Error(
+          `Customer account was created, but intake failed: ${reason}. Find them in the Clients list to retry.`,
+        );
+      }
     } finally {
       setDormantPending(false);
     }
