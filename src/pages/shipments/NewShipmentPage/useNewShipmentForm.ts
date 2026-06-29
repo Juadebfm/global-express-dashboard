@@ -258,7 +258,7 @@ export function useNewShipmentForm() {
     } finally {
       setIsCreatingOrder(false);
     }
-  }, [activeStep, steps.length, goNext, validateStep, getApiToken, recipientName, recipientPhone, recipientEmail, shipmentType, packageWeightKg, packageCbm, packageDeclaredValue, packageDescription, selectedSenderId, usePickupRep, pickupRepName, pickupRepPhone, t, isCustomer, navigate]);
+  }, [activeStep, steps.length, goNext, validateStep, getApiToken, recipientName, recipientPhone, recipientEmail, recipientAddress, shipmentType, packageWeightKg, packageCbm, packageDeclaredValue, packageDescription, selectedSenderId, usePickupRep, pickupRepName, pickupRepPhone, t, isCustomer, navigate]);
 
   const formState: ShipmentFormState = {
     shipmentType, pickupDate, deliveryDate, pickupTime, deliveryTime,
