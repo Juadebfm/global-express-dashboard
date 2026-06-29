@@ -137,8 +137,10 @@
       "subheading": "Pick how it should travel. We'll show the price update live at the bottom.",
       "airDescription": "Arrives in 5-7 days · fastest option",
       "oceanDescription": "Arrives in 30-40 days · lowest cost",
+      "d2dDescription": "Door-to-door delivery · custom pricing",
       "airShort": "Air freight",
       "oceanShort": "Ocean freight",
+      "d2dShort": "Door-to-door",
       "senderLabel": "Sending on behalf of",
       "senderHint": "Pick the client this shipment belongs to.",
       "senderPlaceholder": "Select a client…",
@@ -187,7 +189,8 @@
       "sectionTitle": "Shipment Type",
       "sectionSubtitle": "Select the type of shipment",
       "air": "Air Freight",
-      "ocean": "Ocean Freight"
+      "ocean": "Ocean Freight",
+      "d2d": "Door-to-Door"
     },
     "schedule": {
       "pickupDate": "Pick-up Date",

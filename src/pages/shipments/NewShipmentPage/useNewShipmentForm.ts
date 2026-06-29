@@ -41,7 +41,7 @@ export function useNewShipmentForm() {
   // Form state
   const [activeStep, setActiveStep] = useState(0);
   const [shipmentType, setShipmentType] = useState('air');
-  const [pickupDate, setPickupDate] = useState<Date | null>(new Date(Date.UTC(2026, 1, 20)));
+  const [pickupDate, setPickupDate] = useState<Date | null>(null);
   const [deliveryDate, setDeliveryDate] = useState<Date | null>(null);
   const [pickupTime, setPickupTime] = useState('09:30');
   const [deliveryTime, setDeliveryTime] = useState('16:00');
@@ -52,6 +52,7 @@ export function useNewShipmentForm() {
   const [recipientName, setRecipientName] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
   const [recipientPhone, setRecipientPhone] = useState('');
+  const [recipientAddress, setRecipientAddress] = useState('');
   const [usePickupRep, setUsePickupRep] = useState(false);
   const [pickupRepName, setPickupRepName] = useState('');
   const [pickupRepPhone, setPickupRepPhone] = useState('');
@@ -75,23 +76,20 @@ export function useNewShipmentForm() {
 
   const progress = Math.round(((activeStep + 1) / steps.length) * 100);
 
-  // Pre-fill recipient details from logged-in user profile
+  // Pre-fill recipient details for customers only — staff fill from the selected client.
   useEffect(() => {
+    if (!isCustomer) return;
     if (recipientName || recipientEmail || recipientPhone) return;
 
-    if (isCustomer && clerkUser) {
+    if (clerkUser) {
       const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ');
       if (name) setRecipientName(name);
       const email = clerkUser.emailAddresses[0]?.emailAddress;
       if (email) setRecipientEmail(email);
       const phone = clerkUser.phoneNumbers[0]?.phoneNumber;
       if (phone) setRecipientPhone(phone);
-    } else if (user) {
-      const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
-      if (name) setRecipientName(name);
-      if (user.email) setRecipientEmail(user.email);
     }
-  }, [isCustomer, clerkUser, user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isCustomer, clerkUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Profile completeness check for customers
   useEffect(() => {
@@ -122,6 +120,8 @@ export function useNewShipmentForm() {
 
   // Debounced shipping cost estimate
   const fetchEstimate = useCallback(async () => {
+    if (shipmentType === 'd2d') { setEstimate(null); return; }
+
     const weightVal = parseFloat(packageWeightKg);
     const cbmVal = parseFloat(packageCbm);
     const hasAirInput = shipmentType === 'air' && Number.isFinite(weightVal) && weightVal > 0;
@@ -227,10 +227,13 @@ export function useNewShipmentForm() {
           recipientPhone: recipientPhone.trim(),
           recipientEmail: recipientEmail.trim(),
           orderDirection: 'outbound',
-          weight: shipmentType === 'air' ? `${packageWeightKg.trim()}kg` : `${packageCbm.trim()}cbm`,
+          weight: shipmentType === 'air' ? `${packageWeightKg.trim()}kg`
+            : shipmentType === 'ocean' ? `${packageCbm.trim()}cbm`
+            : (packageWeightKg.trim() ? `${packageWeightKg.trim()}kg` : undefined),
           declaredValue: packageDeclaredValue.trim(),
           description: packageDescription.trim(),
-          shipmentType: shipmentType as 'air' | 'ocean',
+          shipmentType: shipmentType as 'air' | 'ocean' | 'd2d',
+          ...(shipmentType === 'd2d' && recipientAddress.trim() && { recipientAddress: recipientAddress.trim() }),
           ...(selectedSenderId && { senderId: selectedSenderId }),
           ...(usePickupRep && pickupRepName.trim() && {
             pickupRepName: pickupRepName.trim(),
@@ -260,14 +263,14 @@ export function useNewShipmentForm() {
   const formState: ShipmentFormState = {
     shipmentType, pickupDate, deliveryDate, pickupTime, deliveryTime,
     packageDescription, packageWeightKg, packageCbm, packageDeclaredValue,
-    recipientName, recipientEmail, recipientPhone,
+    recipientName, recipientEmail, recipientPhone, recipientAddress,
     usePickupRep, pickupRepName, pickupRepPhone, selectedSenderId,
   };
 
   const formActions: ShipmentFormActions = {
     setShipmentType, setPickupDate, setDeliveryDate, setPickupTime, setDeliveryTime,
     setPackageDescription, setPackageWeightKg, setPackageCbm, setPackageDeclaredValue,
-    setRecipientName, setRecipientEmail, setRecipientPhone,
+    setRecipientName, setRecipientEmail, setRecipientPhone, setRecipientAddress,
     setUsePickupRep, setPickupRepName, setPickupRepPhone, setSelectedSenderId,
   };
 

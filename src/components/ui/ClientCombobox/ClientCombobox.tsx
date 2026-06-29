@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
-import { ChevronDown, Loader2 } from 'lucide-react';
+import { ChevronDown, Loader2, UserPlus } from 'lucide-react';
 import { useClients, useDebounce } from '@/hooks';
 import type { ApiClient } from '@/types';
 import { cn } from '@/utils';
@@ -44,6 +44,8 @@ export interface ClientComboboxProps {
   loadingMessage?: string;
   /** Disables the input + closes the dropdown. */
   disabled?: boolean;
+  /** When provided, a "+ Add new client" button appears at the bottom of the dropdown. */
+  onCreateNew?: () => void;
 }
 
 const DEBOUNCE_MS = 300;
@@ -77,6 +79,7 @@ export function ClientCombobox({
   emptyMessage = 'No matches',
   loadingMessage = 'Loading…',
   disabled = false,
+  onCreateNew,
 }: ClientComboboxProps): ReactElement {
   const componentId = useId();
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -220,6 +223,20 @@ export function ClientCombobox({
                 )}
               </button>
             ))}
+
+          {onCreateNew && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onCreateNew();
+              }}
+              className="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-2.5 text-left text-sm font-medium text-brand-600 transition hover:bg-brand-50"
+            >
+              <UserPlus className="h-4 w-4" />
+              Add new client
+            </button>
+          )}
         </div>
       )}
 

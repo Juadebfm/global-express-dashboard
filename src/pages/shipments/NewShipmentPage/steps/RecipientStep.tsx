@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, CheckCircle2, Mail, Phone, User } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Mail, MapPin, Phone, Truck, User } from 'lucide-react';
 import { Checkbox } from '@/components/ui';
 import { cn } from '@/utils';
 import type { ShipmentFormState, ShipmentFormActions } from '../types';
@@ -9,6 +9,7 @@ interface RecipientStepProps {
   formState: ShipmentFormState;
   formActions: ShipmentFormActions;
   fieldErrors: Record<string, string>;
+  shipmentType: string;
 }
 
 /**
@@ -24,8 +25,10 @@ export function RecipientStep({
   formState,
   formActions,
   fieldErrors,
+  shipmentType,
 }: RecipientStepProps): ReactElement {
   const { t } = useTranslation('shipments');
+  const isD2d = shipmentType === 'd2d';
 
   return (
     <div className="space-y-8">
@@ -41,18 +44,30 @@ export function RecipientStep({
         </p>
       </header>
 
-      {/* Fixed route banner */}
-      <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-        <p>
-          <span className="font-semibold">{t('newShipment.recipient.routeFixedPrefix')}</span>{' '}
-          <span className="font-bold">{t('newShipment.recipient.originCity')}</span>{' '}
-          <ArrowRight className="inline h-4 w-4 align-text-bottom" />{' '}
-          <span className="font-bold">{t('newShipment.recipient.destinationCity')}</span>
-          {'. '}
-          {t('newShipment.recipient.routeFixedSuffix')}
-        </p>
-      </div>
+      {/* Route banner */}
+      {isD2d ? (
+        <div className="flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-brand-900">
+          <Truck className="mt-0.5 h-5 w-5 shrink-0 text-brand-500" />
+          <p>
+            <span className="font-semibold">Door-to-door delivery.</span>{' '}
+            Goods travel from{' '}
+            <span className="font-bold">{t('newShipment.recipient.originCity')}</span>{' '}
+            to your specified Nigerian address. If no address is given, delivery defaults to our Lagos office.
+          </p>
+        </div>
+      ) : (
+        <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+          <p>
+            <span className="font-semibold">{t('newShipment.recipient.routeFixedPrefix')}</span>{' '}
+            <span className="font-bold">{t('newShipment.recipient.originCity')}</span>{' '}
+            <ArrowRight className="inline h-4 w-4 align-text-bottom" />{' '}
+            <span className="font-bold">{t('newShipment.recipient.destinationCity')}</span>
+            {'. '}
+            {t('newShipment.recipient.routeFixedSuffix')}
+          </p>
+        </div>
+      )}
 
       <IconInput
         icon={<User className="h-5 w-5" />}
@@ -80,6 +95,17 @@ export function RecipientStep({
         error={fieldErrors.recipientPhone}
         autoComplete="tel"
       />
+
+      {/* D2D delivery address — optional, defaults to Lagos office */}
+      {isD2d && (
+        <IconInput
+          icon={<MapPin className="h-5 w-5" />}
+          label="Delivery address in Nigeria (optional)"
+          value={formState.recipientAddress}
+          onChange={formActions.setRecipientAddress}
+          autoComplete="street-address"
+        />
+      )}
 
       {/* Pickup-rep — optional */}
       <div className="rounded-2xl border border-gray-200 bg-white p-4">

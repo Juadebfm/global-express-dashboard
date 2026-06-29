@@ -1,13 +1,9 @@
 import type { ReactElement } from 'react';
-import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useSearch, useDashboardData, useCan } from '@/hooks';
-import type { ActiveDelivery, UiAction } from '@/types';
-import {
-  ActiveDeliveries,
-  DashboardHeader,
-} from '@/pages/dashboard/components';
+import { useDashboardData, useCan } from '@/hooks';
+import type { UiAction } from '@/types';
+import { DashboardHeader } from '@/pages/dashboard/components';
 import { AppShell } from '@/pages/shared';
 import { ROUTES } from '@/constants';
 import { AdminKpiBar } from './components/AdminKpiBar';
@@ -17,24 +13,9 @@ import { TopCustomers } from './components/TopCustomers';
 
 export function AdminDashboardPage(): ReactElement {
   const { t } = useTranslation('dashboard');
-  const { query } = useSearch();
   const { data, isLoading, error } = useDashboardData();
   const navigate = useNavigate();
   const isAdmin = useCan('app.admin');
-
-  const normalizedQuery = query.trim().toLowerCase();
-
-  const filteredDeliveries = useMemo((): ActiveDelivery[] => {
-    if (!data) return [];
-    if (normalizedQuery.length === 0) return data.activeDeliveries.items;
-    return data.activeDeliveries.items.filter((item) => {
-      const location = `${item.location.city} ${item.location.state}`;
-      return (
-        location.toLowerCase().includes(normalizedQuery) ||
-        item.statusLabel.toLowerCase().includes(normalizedQuery)
-      );
-    });
-  }, [data, normalizedQuery]);
 
   const handleAction = (action: UiAction): void => {
     if (action.id === 'trackShipment') navigate(ROUTES.SHIPMENT_TRACK);
@@ -55,15 +36,6 @@ export function AdminDashboardPage(): ReactElement {
 
             <section>
               <AdminKpiBar kpis={data.kpis} />
-            </section>
-
-            <section>
-              <ActiveDeliveries
-                title={data.activeDeliveries.title}
-                subtitle={data.activeDeliveries.subtitle}
-                items={filteredDeliveries}
-                emptyLabel={t('activeDeliveries.emptyLabel')}
-              />
             </section>
 
             <section className="grid gap-6 lg:grid-cols-2">

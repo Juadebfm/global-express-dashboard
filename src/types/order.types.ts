@@ -12,10 +12,11 @@ export interface CreateOrderPayload {
   recipientPhone: string;
   recipientEmail: string;
   orderDirection: OrderDirection;
-  weight: string;
+  weight?: string;
   declaredValue: string;
   description: string;
-  shipmentType: 'air' | 'sea' | 'ocean';
+  shipmentType: 'air' | 'sea' | 'ocean' | 'd2d';
+  recipientAddress?: string;
   senderId?: string;
   pickupRepName?: string;
   pickupRepPhone?: string;
@@ -67,4 +68,17 @@ export interface OrdersListResult {
     limit: number;
     totalPages: number;
   };
+}
+
+export type PricingSource = 'CUSTOMER_OVERRIDE' | 'DEFAULT_RATE';
+
+export interface OrderEstimateResult {
+  mode: 'air' | 'sea';
+  weightKg: number | null;
+  cbm: number | null;
+  estimatedCostUsd: number;
+  pricingSource: PricingSource;
+  departureFrequency: string;
+  estimatedTransitDays: number;
+  disclaimer: string;
 }

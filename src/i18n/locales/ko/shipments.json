@@ -137,8 +137,10 @@
       "subheading": "운송 방법을 선택하세요. 가격은 아래에서 실시간으로 업데이트됩니다.",
       "airDescription": "5-7일 도착 · 가장 빠른 옵션",
       "oceanDescription": "30-40일 도착 · 최저 비용",
+      "d2dDescription": "문 앞 배송 · 맞춤 가격",
       "airShort": "항공",
       "oceanShort": "해상",
+      "d2dShort": "도어투도어",
       "senderLabel": "발송 의뢰 고객",
       "senderHint": "이 배송이 속한 고객을 선택하세요.",
       "senderPlaceholder": "고객 선택…",
@@ -187,7 +189,8 @@
       "sectionTitle": "배송 유형",
       "sectionSubtitle": "배송 유형을 선택하세요",
       "air": "항공 화물",
-      "ocean": "해상 화물"
+      "ocean": "해상 화물",
+      "d2d": "도어투도어"
     },
     "schedule": {
       "pickupDate": "픽업 날짜",

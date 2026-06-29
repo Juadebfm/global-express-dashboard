@@ -14,7 +14,7 @@ interface StageConfig {
 }
 
 const STAGES: StageConfig[] = [
-  { statusV2: 'BOOKING_SUBMITTED',          label: 'Booking Submitted',  tone: 'amber' },
+  { statusV2: 'PREORDER_SUBMITTED',          label: 'Booking Submitted',  tone: 'amber' },
   { statusV2: 'AWAITING_WAREHOUSE_RECEIPT', label: 'Awaiting Warehouse', tone: 'gray'  },
   { statusV2: 'WAREHOUSE_RECEIVED',         label: 'Warehouse Received', tone: 'amber' },
   { statusV2: 'WAREHOUSE_VERIFIED_PRICED',  label: 'Verified & Priced',  tone: 'blue'  },

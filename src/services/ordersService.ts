@@ -1,13 +1,14 @@
 import type {
   ApiOrder,
   CreateOrderPayload,
+  OrderEstimateResult,
   OrderImage,
   OrderListItem,
   OrdersListResult,
 } from '@/types';
 import { apiDelete, apiGet, apiPatch, apiPatchData, apiPostData } from '@/lib/apiClient';
 
-function normalizeShipmentType(type: 'air' | 'sea' | 'ocean'): 'air' | 'sea' {
+function normalizeShipmentType(type: 'air' | 'sea' | 'ocean' | 'd2d'): 'air' | 'sea' | 'd2d' {
   return type === 'ocean' ? 'sea' : type;
 }
 
@@ -336,6 +337,19 @@ export function updatePickupRep(
   payload: { pickupRepName: string; pickupRepPhone: string },
 ): Promise<ApiOrder> {
   return apiPatchData<ApiOrder>(`/orders/${orderId}/pickup-rep`, payload, token);
+}
+
+/* ── Estimate ────────────────────────────────────────────── */
+
+export type OrderEstimatePayload =
+  | { shipmentType: 'air'; weightKg: number }
+  | { shipmentType: 'ocean'; cbm: number };
+
+export function estimateOrderCost(
+  payload: OrderEstimatePayload,
+  token: string,
+): Promise<OrderEstimateResult> {
+  return apiPostData<OrderEstimateResult>('/orders/estimate', payload, token);
 }
 
 

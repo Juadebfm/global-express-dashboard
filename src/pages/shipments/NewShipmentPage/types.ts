@@ -21,6 +21,7 @@ export interface ShipmentFormState {
   recipientName: string;
   recipientEmail: string;
   recipientPhone: string;
+  recipientAddress: string;
   usePickupRep: boolean;
   pickupRepName: string;
   pickupRepPhone: string;
@@ -40,6 +41,7 @@ export interface ShipmentFormActions {
   setRecipientName: (v: string) => void;
   setRecipientEmail: (v: string) => void;
   setRecipientPhone: (v: string) => void;
+  setRecipientAddress: (v: string) => void;
   setUsePickupRep: (v: boolean) => void;
   setPickupRepName: (v: string) => void;
   setPickupRepPhone: (v: string) => void;
@@ -76,6 +78,7 @@ export const SHIPMENT_CONTENT_CATEGORIES: Array<{ value: string; labelKey: strin
 export const SHIPMENT_TYPE_KEYS = [
   { value: 'air', labelKey: 'newShipment.shipmentType.air' },
   { value: 'ocean', labelKey: 'newShipment.shipmentType.ocean' },
+  { value: 'd2d', labelKey: 'newShipment.shipmentType.d2d' },
 ];
 
 export const ORIGIN_WAREHOUSE = {

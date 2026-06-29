@@ -1,13 +1,14 @@
 import type { ReactElement } from 'react';
-import { useMemo } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Calendar, CheckCircle2, Scale, Send, Ship, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Scale, Send, Ship, ShieldCheck, Truck } from 'lucide-react';
 import { cn } from '@/utils';
 import { ClientCombobox } from '@/components/ui';
+import type { CreateDormantClientResult } from '@/types';
 import { SHIPMENT_TYPE_KEYS } from '../types';
 import type { ShipmentFormState, ShipmentFormActions } from '../types';
-import { DatePicker } from '../DatePicker';
 import { CategoryPicker } from '../CategoryPicker';
+import { CreateClientModal } from '../CreateClientModal';
 
 interface BasicsStepProps {
   formState: ShipmentFormState;
@@ -19,6 +20,7 @@ interface BasicsStepProps {
 const TYPE_META: Record<string, { Icon: typeof Send; descriptionKey: string }> = {
   air: { Icon: Send, descriptionKey: 'newShipment.basics.airDescription' },
   ocean: { Icon: Ship, descriptionKey: 'newShipment.basics.oceanDescription' },
+  d2d: { Icon: Truck, descriptionKey: 'newShipment.basics.d2dDescription' },
 };
 
 /**
@@ -36,6 +38,8 @@ export function BasicsStep({
   isCustomer,
 }: BasicsStepProps): ReactElement {
   const { t } = useTranslation('shipments');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createdClientSnapshot, setCreatedClientSnapshot] = useState<CreateDormantClientResult | null>(null);
 
   const shipmentTypes = SHIPMENT_TYPE_KEYS.map((s) => ({
     value: s.value,
@@ -43,11 +47,6 @@ export function BasicsStep({
     description: t(TYPE_META[s.value]?.descriptionKey ?? ''),
     Icon: TYPE_META[s.value]?.Icon ?? Send,
   }));
-
-  const today = useMemo(() => {
-    const now = new Date();
-    return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-  }, []);
 
   return (
     <div className="space-y-8">
@@ -112,13 +111,42 @@ export function BasicsStep({
         <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
           <ClientCombobox
             selectedId={formState.selectedSenderId}
-            onSelect={(c) => formActions.setSelectedSenderId(c.id)}
+            selectedClient={createdClientSnapshot ? {
+              id: createdClientSnapshot.id,
+              firstName: createdClientSnapshot.firstName,
+              lastName: createdClientSnapshot.lastName,
+              email: '',
+            } : undefined}
+            onSelect={(c) => {
+              formActions.setSelectedSenderId(c.id);
+              setCreatedClientSnapshot(null);
+              // Prefill recipient fields from the selected client
+              const name = [c.firstName, c.lastName].filter(Boolean).join(' ');
+              if (name) formActions.setRecipientName(name);
+              if (c.email) formActions.setRecipientEmail(c.email);
+              if (c.phone) formActions.setRecipientPhone(c.phone);
+            }}
+            onCreateNew={() => setShowCreateModal(true)}
             label={t('newShipment.basics.senderLabel')}
             hint={t('newShipment.basics.senderHint')}
             placeholder={t('newShipment.basics.senderPlaceholder')}
             error={fieldErrors.selectedSenderId ?? null}
           />
         </div>
+      )}
+
+      {showCreateModal && (
+        <CreateClientModal
+          onCreated={(client) => {
+            setCreatedClientSnapshot(client);
+            formActions.setSelectedSenderId(client.id);
+            const name = [client.firstName, client.lastName].filter(Boolean).join(' ');
+            if (name) formActions.setRecipientName(name);
+            if (client.phone) formActions.setRecipientPhone(client.phone);
+            setShowCreateModal(false);
+          }}
+          onClose={() => setShowCreateModal(false)}
+        />
       )}
 
       {/* What's inside */}
@@ -133,26 +161,26 @@ export function BasicsStep({
         <UnitField
           icon={<Scale className="h-4 w-4" />}
           label={
-            formState.shipmentType === 'air'
-              ? t('newShipment.basics.weightLabel')
-              : t('newShipment.basics.volumeLabel')
+            formState.shipmentType === 'ocean'
+              ? t('newShipment.basics.volumeLabel')
+              : t('newShipment.basics.weightLabel')
           }
-          unit={formState.shipmentType === 'air' ? 'kg' : 'cbm'}
+          unit={formState.shipmentType === 'ocean' ? 'cbm' : 'kg'}
           value={
-            formState.shipmentType === 'air'
-              ? formState.packageWeightKg
-              : formState.packageCbm
+            formState.shipmentType === 'ocean'
+              ? formState.packageCbm
+              : formState.packageWeightKg
           }
           onChange={(v) =>
-            formState.shipmentType === 'air'
-              ? formActions.setPackageWeightKg(v)
-              : formActions.setPackageCbm(v)
+            formState.shipmentType === 'ocean'
+              ? formActions.setPackageCbm(v)
+              : formActions.setPackageWeightKg(v)
           }
-          step={formState.shipmentType === 'air' ? '0.01' : '0.001'}
+          step={formState.shipmentType === 'ocean' ? '0.001' : '0.01'}
           error={
-            formState.shipmentType === 'air'
-              ? fieldErrors.packageWeightKg
-              : fieldErrors.packageCbm
+            formState.shipmentType === 'ocean'
+              ? fieldErrors.packageCbm
+              : fieldErrors.packageWeightKg
           }
         />
         <UnitField
@@ -166,19 +194,6 @@ export function BasicsStep({
         />
       </div>
 
-      {/* Pickup date */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
-          <Calendar className="h-4 w-4" />
-          {t('newShipment.basics.pickupDateLabel')}
-        </div>
-        <DatePicker
-          label={t('newShipment.basics.pickupDateLabel')}
-          value={formState.pickupDate}
-          onChange={formActions.setPickupDate}
-          minDate={today}
-        />
-      </div>
     </div>
   );
 }

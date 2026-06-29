@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronDown, LogOut, Menu, ArrowLeft } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Bell, ChevronDown, LogOut, Menu } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { DashboardUser } from '@/types';
@@ -18,7 +18,6 @@ export function Topbar({
   onOpenMobile,
 }: TopbarProps): ReactElement {
   const { t } = useTranslation('nav');
-  const location = useLocation();
   const navigate = useNavigate();
   const { user: authUser, logout } = useAuth();
 
@@ -62,8 +61,6 @@ export function Topbar({
     }
   };
 
-  const isDashboardLikeRoute = location.pathname === ROUTES.DASHBOARD || location.pathname === ROUTES.ADMIN_DASHBOARD;
-
   return (
     <header className="sticky top-0 z-30 border-b border-gray-200 bg-white">
 
@@ -87,17 +84,6 @@ export function Topbar({
         <img src="/images/mainlogo.svg" alt="GlobalXpress" className="h-10 w-auto" />
 
         <div className="flex items-center justify-end gap-3">
-          {!isDashboardLikeRoute && (
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-1.5 text-sm font-medium text-brand-500 transition hover:text-brand-600"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>{t('common:actions.back', 'Back')}</span>
-            </button>
-          )}
-
           <button
             type="button"
             onClick={() => navigate(ROUTES.NOTIFICATIONS)}

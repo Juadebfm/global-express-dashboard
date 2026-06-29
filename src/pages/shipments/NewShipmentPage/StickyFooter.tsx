@@ -50,7 +50,7 @@ export function StickyFooter({
         maximumFractionDigits: 0,
       })}`
     : null;
-  const transitLine = shipmentType === 'air' ? '~7d' : '~3mo';
+  const transitLine = shipmentType === 'air' ? '~7d' : shipmentType === 'ocean' ? '~3mo' : 'Custom';
 
   const stateLine = isReview
     ? t('newShipment.footer.readyToCreate')
@@ -83,23 +83,27 @@ export function StickyFooter({
                 type:
                   shipmentType === 'air'
                     ? t('newShipment.basics.airShort')
-                    : t('newShipment.basics.oceanShort'),
+                    : shipmentType === 'ocean'
+                      ? t('newShipment.basics.oceanShort')
+                      : t('newShipment.basics.d2dShort'),
               })}
             </p>
             <p className="truncate text-sm text-gray-500">{stateLine}</p>
           </div>
         </div>
 
-        {/* Cost — always visible, scales from mobile to desktop */}
-        <div className="text-right">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-            {t('newShipment.footer.estCost')}
-          </p>
-          <p className={cn('text-lg font-extrabold leading-tight text-gray-900 sm:text-2xl', !costLine && 'text-gray-400')}>
-            {estimateLoading ? '—' : costLine ?? t('newShipment.footer.costPending')}
-            <span className="ml-1.5 text-xs font-medium text-gray-500">· {transitLine}</span>
-          </p>
-        </div>
+        {/* Cost — hidden for D2D (custom pricing, no estimate) */}
+        {shipmentType !== 'd2d' && (
+          <div className="text-right">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              {t('newShipment.footer.estCost')}
+            </p>
+            <p className={cn('text-lg font-extrabold leading-tight text-gray-900 sm:text-2xl', !costLine && 'text-gray-400')}>
+              {estimateLoading ? '—' : costLine ?? t('newShipment.footer.costPending')}
+              <span className="ml-1.5 text-xs font-medium text-gray-500">· {transitLine}</span>
+            </p>
+          </div>
+        )}
 
         {/* Buttons */}
         <div className="flex items-center gap-3">
