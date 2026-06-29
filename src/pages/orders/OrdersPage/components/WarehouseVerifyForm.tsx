@@ -518,16 +518,23 @@ export function WarehouseVerifyForm({
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <SectionLabel>Transport mode</SectionLabel>
-            <select
-              value={transportMode}
-              onChange={(e) => setTransportMode(e.target.value as 'air' | 'sea')}
-              className={inputCls}
-            >
-              <option value="air">Air freight</option>
-              <option value="sea">Sea freight</option>
-            </select>
-            {isD2D && (
-              <p className="mt-1 text-xs text-gray-400">Sets the dispatch batch — pricing is always CBM-based for D2D.</p>
+            {isD2D ? (
+              <>
+                <select
+                  value={transportMode}
+                  onChange={(e) => setTransportMode(e.target.value as 'air' | 'sea')}
+                  className={inputCls}
+                >
+                  <option value="air">Air freight</option>
+                  <option value="sea">Sea freight</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-400">Sets the dispatch batch — pricing is always CBM-based for D2D.</p>
+              </>
+            ) : (
+              <div className={cn(inputCls, 'flex items-center gap-2 bg-gray-50 text-gray-500 cursor-not-allowed select-none')}>
+                {transportMode === 'sea' ? 'Sea freight' : 'Air freight'}
+                <span className="ml-auto text-xs text-gray-400">Set at booking</span>
+              </div>
             )}
           </div>
           <div>
