@@ -18,6 +18,7 @@ import { useAuth, useAuthToken, useMySuppliers } from '@/hooks';
 import { createOrder } from '@/services';
 import { ROUTES } from '@/constants';
 import { newBookingSchema, type NewBookingFormValues } from './schema';
+import { EstimatePreview } from './components/EstimatePreview';
 
 // ── Country selector ──────────────────────────────────────────────────────────
 
@@ -184,6 +185,7 @@ export function NewBookingPage(): ReactElement {
   const hasSourcingSupplier = useWatch({ control, name: 'hasSourcingSupplier' });
   const sourcingSupplierType = useWatch({ control, name: 'sourcingSupplierType' });
   const shipmentType = useWatch({ control, name: 'shipmentType' });
+  const weight = useWatch({ control, name: 'weight' });
 
   const mutation = useMutation({
     mutationFn: async (values: NewBookingFormValues) => {
@@ -309,6 +311,8 @@ export function NewBookingPage(): ReactElement {
               error={errors.weight?.message}
               {...register('weight')}
             />
+
+            <EstimatePreview shipmentType={shipmentType} rawWeight={weight ?? ''} />
 
             <Input
               label="Declared value (USD)"

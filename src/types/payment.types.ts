@@ -41,10 +41,6 @@ export interface RecordOfflineResult {
   warning: string | null;
 }
 
-export interface WaiveBalancePayload {
-  reason: string;
-}
-
 export interface ApiPaymentsResponse {
   success: boolean;
   data: {

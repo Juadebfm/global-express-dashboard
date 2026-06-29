@@ -9,11 +9,13 @@ import { ROUTES } from '@/constants';
 import {
   useActivateClient,
   useAddClientSupplier,
+  useCan,
   useClientWorkbench,
   useCreateClientGoodsIntake,
   useDashboardData,
   useUpdateClient,
 } from '@/hooks';
+import { ClientPricingOverrides } from './ClientPricingOverrides';
 import {
   addSupplierSchema,
   type AddSupplierFormData,
@@ -56,6 +58,7 @@ export function ClientWorkbenchPage(): ReactElement {
   const createIntake = useCreateClientGoodsIntake(clientId);
   const updateClient = useUpdateClient(clientId);
   const activateClient = useActivateClient();
+  const isSuperadmin = useCan('app.superadmin');
 
   const [showAddSupplier, setShowAddSupplier] = useState(false);
   const [showIntake, setShowIntake] = useState(false);
@@ -229,6 +232,10 @@ export function ClientWorkbenchPage(): ReactElement {
             />
 
             <RecentOrdersSection orders={data.recentOrders} />
+
+            {clientId && (
+              <ClientPricingOverrides clientId={clientId} canEdit={isSuperadmin} />
+            )}
           </>
         )}
       </div>

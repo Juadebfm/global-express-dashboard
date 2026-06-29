@@ -11,9 +11,23 @@ function getToken(): string {
   return token;
 }
 
+interface CustomerOverrideUpsert {
+  id?: string;
+  customerId: string;
+  mode: 'air' | 'sea';
+  rateUsdPerKg?: number;
+  flatRateUsdPerCbm?: number;
+  minWeightKg?: number;
+  maxWeightKg?: number;
+  isActive?: boolean;
+  notes?: string;
+}
+
 interface UpdatePricingPayload {
   defaultRules?: Omit<PricingRule, 'id'>[];
   deleteDefaultRuleIds?: string[];
+  customerOverrides?: CustomerOverrideUpsert[];
+  deleteCustomerOverrideIds?: string[];
 }
 
 export function usePricingRules(

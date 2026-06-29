@@ -130,6 +130,8 @@ export type {
   ApiCreateOrderResponse,
   OrderListItem,
   OrdersListResult,
+  PricingSource,
+  OrderEstimateResult,
 } from './order.types';
 
 export type {
@@ -150,7 +152,6 @@ export type {
   ApiPayment,
   RecordOfflinePayload,
   RecordOfflineResult,
-  WaiveBalancePayload,
   ApiPaymentsResponse,
 } from './payment.types';
 

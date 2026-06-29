@@ -50,16 +50,15 @@ export interface PricingRule {
 export interface CustomerPricingOverride {
   id: string;
   customerId: string;
-  name: string;
   mode: 'air' | 'sea';
-  minWeightKg?: number;
-  maxWeightKg?: number;
-  rateUsdPerKg?: number;
-  flatRateUsdPerCbm?: number;
+  minWeightKg: string | null;
+  maxWeightKg: string | null;
+  rateUsdPerKg: string | null;
+  flatRateUsdPerCbm: string | null;
   isActive: boolean;
-  startsAt?: string;
-  endsAt?: string;
-  notes?: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  notes: string | null;
 }
 
 export interface NotificationTemplate {

@@ -7,6 +7,7 @@ import { AlertBanner, ConfirmModal } from '@/components/ui';
 import { MfaSettingsCard } from '@/components/auth';
 import {
   useAuth,
+  useAuthToken,
   useCan,
   useChangePassword,
   useDashboardData,
@@ -23,8 +24,9 @@ import {
 } from '@/hooks';
 import { SupportListView } from '@/pages/support';
 import { AppShell, PageHeader } from '@/pages/shared';
-import { deleteMyAccount, exportMyAccountData, getOnboardingSettings, updateOnboardingSettings } from '@/services';
+import { deleteMyAccount, exportMyAccountData, getOnboardingSettings, sendBroadcast, updateOnboardingSettings } from '@/services';
 import type {
+  CustomerPricingOverride,
   EtaNotes,
   NotificationTemplate,
   OfficeInfo,
@@ -48,7 +50,7 @@ type SettingsTab =
   | 'notification-templates'
   | 'support';
 
-const OPERATOR_TAB_IDS: SettingsTab[] = [
+const SUPERADMIN_TAB_IDS: SettingsTab[] = [
   'general',
   'fx',
   'pricing',
@@ -56,6 +58,16 @@ const OPERATOR_TAB_IDS: SettingsTab[] = [
   'shipment-types',
   'logistics',
   'notification-templates',
+  'support',
+];
+
+const OPERATOR_TAB_IDS: SettingsTab[] = [
+  'general',
+  'fx',
+  'pricing',
+  'restricted-goods',
+  'shipment-types',
+  'logistics',
   'support',
 ];
 
@@ -318,6 +330,67 @@ interface EditablePricingRule extends Partial<PricingRule> {
   _markedForDelete?: boolean;
 }
 
+function CustomerRatesSummary({ overrides }: { overrides: CustomerPricingOverride[] }): ReactElement {
+  const navigate = useNavigate();
+
+  const byCustomer = new Map<string, { air?: CustomerPricingOverride; sea?: CustomerPricingOverride }>();
+  for (const o of overrides.filter((o) => o.isActive)) {
+    const existing = byCustomer.get(o.customerId) ?? {};
+    byCustomer.set(o.customerId, { ...existing, [o.mode]: o });
+  }
+  const entries = [...byCustomer.entries()];
+
+  return (
+    <SectionShell
+      title="Customer Rate Overrides"
+      subtitle="Clients with custom per-kg rates applied. Edit rates from the client's workbench."
+    >
+      {entries.length === 0 ? (
+        <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-4 text-center text-sm text-gray-500">
+          No custom client rates configured.
+        </div>
+      ) : (
+        <div className="mt-4 overflow-x-auto rounded-xl border border-gray-200">
+          <table className="w-full min-w-[480px] text-left text-sm">
+            <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <tr>
+                <th className="px-4 py-3">Client ID</th>
+                <th className="px-4 py-3">Air ($/kg)</th>
+                <th className="px-4 py-3">Sea ($/kg)</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 bg-white text-gray-700">
+              {entries.map(([customerId, { air, sea }]) => (
+                <tr key={customerId}>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-500">
+                    {customerId.slice(0, 8)}…
+                  </td>
+                  <td className="px-4 py-3">
+                    {air?.rateUsdPerKg ? `$${parseFloat(air.rateUsdPerKg).toFixed(2)}` : '—'}
+                  </td>
+                  <td className="px-4 py-3">
+                    {sea?.rateUsdPerKg ? `$${parseFloat(sea.rateUsdPerKg).toFixed(2)}` : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => navigate(ROUTES.CLIENT_WORKBENCH.replace(':id', customerId))}
+                      className="text-xs font-semibold text-brand-600 transition hover:text-brand-700"
+                    >
+                      View client →
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
 function PricingSection({ canEdit }: { canEdit: boolean }): ReactElement {
   const pricing = usePricingRules({ includeInactive: true });
   const [success, setSuccess] = useState(false);
@@ -338,20 +411,24 @@ function PricingSection({ canEdit }: { canEdit: boolean }): ReactElement {
   }
 
   const defaultRules = pricing.data?.defaultRules ?? [];
+  const customerOverrides = pricing.data?.customerOverrides ?? [];
   return (
-    <PricingEditor
-      key={defaultRules.map((r) => r.id).join(',')}
-      initialRules={defaultRules}
-      canEdit={canEdit}
-      onSave={async (payload) => {
-        setSuccess(false);
-        await pricing.update(payload);
-        setSuccess(true);
-      }}
-      isPending={pricing.isUpdating}
-      updateError={pricing.updateError instanceof Error ? pricing.updateError : null}
-      success={success}
-    />
+    <>
+      <PricingEditor
+        key={defaultRules.map((r) => r.id).join(',')}
+        initialRules={defaultRules}
+        canEdit={canEdit}
+        onSave={async (payload) => {
+          setSuccess(false);
+          await pricing.update(payload);
+          setSuccess(true);
+        }}
+        isPending={pricing.isUpdating}
+        updateError={pricing.updateError instanceof Error ? pricing.updateError : null}
+        success={success}
+      />
+      <CustomerRatesSummary overrides={customerOverrides} />
+    </>
   );
 }
 
@@ -799,6 +876,122 @@ function LogisticsSection({
   );
 }
 
+/* ── Broadcast section ───────────────────────────────────────── */
+
+type BroadcastType = 'system_announcement' | 'admin_alert';
+
+function BroadcastSection(): ReactElement {
+  const getToken = useAuthToken();
+  const [type, setType] = useState<BroadcastType>('system_announcement');
+  const [title, setTitle] = useState('');
+  const [subtitle, setSubtitle] = useState('');
+  const [body, setBody] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const handleSend = async (): Promise<void> => {
+    if (!title.trim() || !body.trim()) {
+      setError('Title and message body are required.');
+      return;
+    }
+    setError(null);
+    setSuccess(false);
+    setIsSending(true);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error('Not authenticated');
+      await sendBroadcast(token, {
+        type,
+        title: title.trim(),
+        subtitle: subtitle.trim() || undefined,
+        body: body.trim(),
+      });
+      setTitle('');
+      setSubtitle('');
+      setBody('');
+      setSuccess(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send broadcast');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <SectionShell
+      title="System Broadcast"
+      subtitle="Send a notification to all users immediately via WebSocket and in-app inbox."
+    >
+      <div className="mt-4 space-y-4">
+        {error && <AlertBanner tone="error" message={error} />}
+        {success && <AlertBanner tone="success" message="Broadcast sent to all users." />}
+
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-gray-700">Type</label>
+          <div className="flex gap-4">
+            {([
+              { value: 'system_announcement', label: 'System announcement' },
+              { value: 'admin_alert', label: 'Admin alert' },
+            ] as const).map((opt) => (
+              <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="broadcast-type"
+                  value={opt.value}
+                  checked={type === opt.value}
+                  onChange={() => { setType(opt.value); setSuccess(false); }}
+                  className="accent-brand-500"
+                />
+                <span className="text-sm text-gray-700">{opt.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <FieldInput
+          label="Title"
+          value={title}
+          onChange={(v) => { setTitle(v); setSuccess(false); }}
+          placeholder="e.g. Scheduled maintenance tonight"
+        />
+
+        <FieldInput
+          label="Subtitle (optional)"
+          value={subtitle}
+          onChange={(v) => { setSubtitle(v); setSuccess(false); }}
+          placeholder="Short summary line"
+        />
+
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-gray-700">Message body</label>
+          <textarea
+            value={body}
+            onChange={(e) => { setBody(e.target.value); setSuccess(false); }}
+            rows={4}
+            placeholder="Full notification message visible to all users…"
+            className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-brand-500 resize-none"
+          />
+        </div>
+
+        <div className="border-t border-gray-100 pt-4">
+          <button
+            type="button"
+            disabled={isSending}
+            onClick={() => { void handleSend(); }}
+            className={cn(
+              'rounded-xl px-5 py-2 text-sm font-semibold text-white transition',
+              isSending ? 'cursor-not-allowed bg-gray-400' : 'bg-brand-500 hover:bg-brand-600',
+            )}
+          >
+            {isSending ? 'Sending…' : 'Send to all users'}
+          </button>
+        </div>
+      </div>
+    </SectionShell>
+  );
+}
+
 /* ── Notification Templates section ─────────────────────────── */
 
 function NotificationTemplatesSection({ canEdit }: { canEdit: boolean }): ReactElement {
@@ -1157,10 +1350,10 @@ export function SettingsPage(): ReactElement {
       <div className="space-y-6">
         <PageHeader title={t('pageTitle')} subtitle={t('subtitle')} />
 
-        {/* Tab bar — admins see all settings tabs; staff see General + Support */}
+        {/* Tab bar — superadmins see all tabs; admins see all except templates; staff see General + Support */}
         {isOperator && (
           <div className="flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-gray-50 p-1 scrollbar-none">
-            {(isAdmin ? OPERATOR_TAB_IDS : STAFF_TAB_IDS).map((tabId) => (
+            {(isSuperadmin ? SUPERADMIN_TAB_IDS : isAdmin ? OPERATOR_TAB_IDS : STAFF_TAB_IDS).map((tabId) => (
               <button
                 key={tabId}
                 type="button"
@@ -1321,7 +1514,8 @@ export function SettingsPage(): ReactElement {
         {isAdmin && activeTab === 'logistics' && <LogisticsSection canEdit={isAdmin} canEditOffices={isSuperadmin} />}
 
         {/* ── Notification Templates ───────────────────────── */}
-        {isAdmin && activeTab === 'notification-templates' && <NotificationTemplatesSection canEdit={isAdmin} />}
+        {isSuperadmin && activeTab === 'notification-templates' && <NotificationTemplatesSection canEdit={true} />}
+        {isSuperadmin && activeTab === 'notification-templates' && <BroadcastSection />}
 
         {/* ── Support ─────────────────────────────────────── */}
         {isOperator && activeTab === 'support' && <SupportListView />}

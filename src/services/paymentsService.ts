@@ -5,7 +5,6 @@ import type {
   ApiPaymentsResponse,
   RecordOfflinePayload,
   RecordOfflineResult,
-  WaiveBalancePayload,
   ReceiptPresignPayload,
   ReceiptPresignResponse,
   ReceiptSubmitPayload,
@@ -55,14 +54,6 @@ export function recordOfflinePayment(
   payload: RecordOfflinePayload,
 ): Promise<ApiPayment & RecordOfflineResult> {
   return apiPostData<ApiPayment & RecordOfflineResult>(`/payments/${orderId}/record-offline`, payload, token);
-}
-
-export function waiveOrderBalance(
-  token: string,
-  orderId: string,
-  payload: WaiveBalancePayload,
-): Promise<void> {
-  return apiPatchData<void>(`/payments/orders/${orderId}/waive-balance`, payload, token);
 }
 
 // ── Offline receipt flow (presign → submit → superadmin verify) ──────────────

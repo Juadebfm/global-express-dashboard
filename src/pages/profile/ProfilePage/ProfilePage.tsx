@@ -87,11 +87,11 @@ function getErrorMessage(error: unknown): string {
   return 'Something went wrong. Please try again.';
 }
 
-function normaliseCountry(raw: string | null | undefined): string {
+function normaliseCountry(raw: string | null | undefined): 'SK' | 'Nigeria' | '' {
   if (!raw) return '';
-  // Backend may have stored 'South Korea' before we switched to 'SK'
-  if (raw === 'South Korea') return 'SK';
-  return raw;
+  if (raw === 'South Korea' || raw === 'SK') return 'SK';
+  if (raw === 'Nigeria') return 'Nigeria';
+  return '';
 }
 
 function mapInternalToForm(profile: CustomerProfile): StaffProfilePayload {
@@ -513,7 +513,7 @@ export function ProfilePage(): ReactElement {
 
       await updateInternalProfile(token, {
         ...sanitizedInternal,
-        nationalId: sanitizedInternal.nationalId || undefined,
+        nationalId: sanitizedInternal.nationalId || null,
       });
 
       setInternalForm(sanitizedInternal);
@@ -1017,7 +1017,7 @@ export function ProfilePage(): ReactElement {
                         <label className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.country')}</label>
                         <select
                           value={internalForm.addressCountry}
-                          onChange={(e) => handleInternalChange('addressCountry', e.target.value)}
+                          onChange={(e) => handleInternalChange('addressCountry', e.target.value as 'SK' | 'Nigeria' | '')}
                           className={SELECT_CLASS}
                           disabled={isBootstrapping}
                         >

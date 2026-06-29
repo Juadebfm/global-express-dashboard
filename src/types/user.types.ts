@@ -140,12 +140,12 @@ export interface StaffProfilePayload {
   addressStreet: string;
   addressCity: string;
   addressState: string;
-  addressCountry: string;
+  addressCountry: 'SK' | 'Nigeria' | '';
   addressPostalCode: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
   emergencyContactRelationship: string;
-  nationalId?: string;
+  nationalId?: string | null;
 }
 
 export interface ProfileRequirements {
