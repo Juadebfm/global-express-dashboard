@@ -9,7 +9,7 @@ import { STALE_TIME } from '@/lib/queryDefaults';
 const TOKEN_KEY = 'globalxpress_token';
 
 export function TopCustomers(): ReactElement {
-  const { data: customers = [], isLoading } = useQuery({
+  const { data: customers = [], isLoading, error } = useQuery({
     queryKey: ['dashboard', 'top-customers'],
     queryFn: () => {
       const token = localStorage.getItem(TOKEN_KEY);
@@ -35,7 +35,11 @@ export function TopCustomers(): ReactElement {
         </Link>
       </div>
 
-      {isLoading ? (
+      {error ? (
+        <div className="px-5 py-10 text-center">
+          <p className="text-sm text-red-500">Failed to load customers</p>
+        </div>
+      ) : isLoading ? (
         <div className="divide-y divide-gray-100">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 px-5 py-3.5">

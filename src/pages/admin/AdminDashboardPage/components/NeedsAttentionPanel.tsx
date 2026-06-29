@@ -37,10 +37,12 @@ export function NeedsAttentionPanel(): ReactElement {
   const s3 = useOrders(1, 1, STAGES[3].statusV2);
   const s4 = useOrders(1, 1, STAGES[4].statusV2);
 
-  const counts  = [s0.total, s1.total, s2.total, s3.total, s4.total];
-  const loading = [s0.isLoading, s1.isLoading, s2.isLoading, s3.isLoading, s4.isLoading];
+  const counts   = [s0.total, s1.total, s2.total, s3.total, s4.total];
+  const loading  = [s0.isLoading, s1.isLoading, s2.isLoading, s3.isLoading, s4.isLoading];
+  const errors   = [s0.error, s1.error, s2.error, s3.error, s4.error];
   const grandTotal = counts.reduce((a, b) => a + b, 0);
   const anyLoading = loading.some(Boolean);
+  const anyError   = errors.some(Boolean);
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white">
@@ -58,7 +60,11 @@ export function NeedsAttentionPanel(): ReactElement {
         </Link>
       </div>
 
-      {!anyLoading && grandTotal === 0 ? (
+      {anyError ? (
+        <div className="px-5 py-10 text-center">
+          <p className="text-sm text-red-500">Failed to load order counts</p>
+        </div>
+      ) : !anyLoading && grandTotal === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 px-5 py-10 text-center">
           <CheckCircle2 className="h-8 w-8 text-emerald-400" />
           <p className="text-sm font-medium text-gray-700">All clear</p>

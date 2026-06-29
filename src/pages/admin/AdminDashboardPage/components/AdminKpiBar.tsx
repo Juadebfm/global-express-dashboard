@@ -33,7 +33,7 @@ export function AdminKpiBar({ kpis }: AdminKpiBarProps): ReactElement {
   // Fetch with a high limit so weight/items cover the full dataset
   const { data: shipmentsData, isLoading: shipmentsLoading } = useShipmentsDashboard({
     page: 1,
-    limit: 500,
+    limit: 100,
   });
 
   const shipments = shipmentsData?.shipments ?? [];

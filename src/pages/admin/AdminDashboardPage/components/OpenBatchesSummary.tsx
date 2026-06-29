@@ -14,7 +14,7 @@ function modeStats(batches: BatchListItem[], mode: 'air' | 'sea') {
 }
 
 export function OpenBatchesSummary(): ReactElement {
-  const { data, isLoading } = useBatches({ status: 'open' });
+  const { data, isLoading, error } = useBatches({ status: 'open' });
   const batches = data?.batches ?? [];
 
   const air = modeStats(batches, 'air');
@@ -37,7 +37,11 @@ export function OpenBatchesSummary(): ReactElement {
         </Link>
       </div>
 
-      {isLoading ? (
+      {error ? (
+        <div className="px-5 py-10 text-center">
+          <p className="text-sm text-red-500">Failed to load batches</p>
+        </div>
+      ) : isLoading ? (
         <div className="divide-y divide-gray-100">
           {[0, 1].map((i) => (
             <div key={i} className="flex items-center gap-3 px-5 py-4">

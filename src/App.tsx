@@ -314,7 +314,7 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.TEAM}
         element={
-          <ProtectedRoute allowedRoles={['admin', 'superadmin']} redirectTo={ROUTES.ADMIN_DASHBOARD}>
+          <ProtectedRoute allowedRoles={['admin', 'superadmin']} redirectTo={ROUTES.DASHBOARD}>
             <TeamPage />
           </ProtectedRoute>
         }
