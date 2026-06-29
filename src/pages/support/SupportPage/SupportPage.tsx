@@ -31,7 +31,7 @@ import {
 
 // ── List View ────────────────────────────────────────────────────
 
-function SupportListView(): ReactElement {
+export function SupportListView(): ReactElement {
   const { t } = useTranslation('support');
   const { query } = useSearch();
   const isStaff = useCan('app.operator');

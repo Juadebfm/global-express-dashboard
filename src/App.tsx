@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/store';
 import { ProtectedRoute } from '@/components/auth';
 import { SupplierRoute } from '@/components/supplier/SupplierRoute';
@@ -85,9 +85,7 @@ const PaymentCallbackPage = lazy(() =>
 const ReportsPage = lazy(() =>
   import('@/pages/reports/ReportsPage').then((m) => ({ default: m.ReportsPage })),
 );
-const AuditLogsPage = lazy(() =>
-  import('@/pages/reports/AuditLogsPage').then((m) => ({ default: m.AuditLogsPage })),
-);
+
 const ProfilePage = lazy(() =>
   import('@/pages/profile/ProfilePage').then((m) => ({ default: m.ProfilePage })),
 );
@@ -292,7 +290,7 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.SUPPLIERS}
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['user']} redirectTo={ROUTES.ADMIN_DASHBOARD}>
             <SuppliersPage />
           </ProtectedRoute>
         }
@@ -300,7 +298,7 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.ORDERS}
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']} redirectTo={ROUTES.DASHBOARD}>
             <OrdersPage />
           </ProtectedRoute>
         }
@@ -316,7 +314,7 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.TEAM}
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin', 'superadmin']} redirectTo={ROUTES.ADMIN_DASHBOARD}>
             <TeamPage />
           </ProtectedRoute>
         }
@@ -324,7 +322,7 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.SETTINGS}
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']} redirectTo={ROUTES.DASHBOARD}>
             <SettingsPage />
           </ProtectedRoute>
         }
@@ -368,7 +366,7 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.PAYMENTS}
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['user', 'superadmin']} redirectTo={ROUTES.ADMIN_DASHBOARD}>
             <PaymentsPage />
           </ProtectedRoute>
         }
@@ -387,11 +385,7 @@ function AppRoutes(): ReactElement {
       />
       <Route
         path={ROUTES.AUDIT_LOGS}
-        element={
-          <ProtectedRoute allowedRoles={['superadmin']}>
-            <AuditLogsPage />
-          </ProtectedRoute>
-        }
+        element={<Navigate to="/reports?tab=audit" replace />}
       />
       <Route
         path={ROUTES.ADMIN_GALLERY}

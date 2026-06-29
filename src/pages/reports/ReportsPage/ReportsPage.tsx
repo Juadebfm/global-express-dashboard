@@ -1,5 +1,7 @@
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { AuditLogsContent } from '../AuditLogsPage';
 import { useTranslation } from 'react-i18next';
 import {
   BarChart,
@@ -99,6 +101,20 @@ export function ReportsPage(): ReactElement {
   const isSuperAdmin = useCan('app.superadmin');
   const isAdminPlus = useCan('app.admin');
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeReportTab = (searchParams.get('tab') === 'audit' && isSuperAdmin) ? 'audit' : 'analytics';
+  const setActiveReportTab = (tab: string): void => {
+    setSearchParams(
+      (prev) => {
+        const updated = new URLSearchParams(prev);
+        if (tab === 'analytics') updated.delete('tab');
+        else updated.set('tab', tab);
+        return updated;
+      },
+      { replace: true },
+    );
+  };
+
   // Date range
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -184,25 +200,49 @@ export function ReportsPage(): ReactElement {
         {/* Header + date range */}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <PageHeader title={t('pageTitle')} subtitle={t('subtitle')} />
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Calendar className="h-4 w-4 shrink-0 text-gray-400" />
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none sm:w-auto"
-              />
-              <span className="text-sm text-gray-400">{t('dateRange.to')}</span>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none sm:w-auto"
-              />
+          {activeReportTab === 'analytics' && (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Calendar className="h-4 w-4 shrink-0 text-gray-400" />
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none sm:w-auto"
+                />
+                <span className="text-sm text-gray-400">{t('dateRange.to')}</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:outline-none sm:w-auto"
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
+
+        {/* Tab strip — superadmin sees Analytics + Audit Logs */}
+        {isSuperAdmin && (
+          <div className="flex gap-1 w-fit rounded-xl border border-gray-200 bg-gray-50 p-1">
+            {(['analytics', 'audit'] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveReportTab(tab)}
+                className={cn(
+                  'whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition',
+                  activeReportTab === tab ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700',
+                )}
+              >
+                {tab === 'analytics' ? 'Analytics' : 'Audit Logs'}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Analytics content */}
+        {activeReportTab === 'analytics' && (<>
 
         {/* Loading overlay for report sections */}
         {reportsLoading && (
@@ -626,6 +666,11 @@ export function ReportsPage(): ReactElement {
             </div>
           </div>
         )}
+
+        </>)}
+
+        {/* Audit Logs content — superadmin only */}
+        {activeReportTab === 'audit' && isSuperAdmin && <AuditLogsContent />}
       </div>
     </AppShell>
   );

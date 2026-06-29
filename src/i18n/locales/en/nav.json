@@ -1,6 +1,7 @@
 {
   "items": {
     "dashboard": "Dashboard",
+    "adminDashboard": "Dashboard",
     "myShipments": "My Shipments",
     "shipments": "Shipments",
     "deliverySchedule": "Delivery Schedule",
@@ -8,8 +9,8 @@
     "notification": "Notification",
     "orders": "Orders",
     "operations": "Operations",
-    "clients": "Clients",
-    "team": "Team",
+    "clients": "Customers",
+    "team": "Staffs",
     "reports": "Reports",
     "batches": "Batches",
     "supplierNotices": "Supplier Notices",

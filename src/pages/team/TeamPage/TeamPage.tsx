@@ -349,7 +349,88 @@ export function TeamPage(): ReactElement {
               </div>
             ) : (
               <div className="mt-6 space-y-3">
-                <div className="overflow-x-auto rounded-2xl border border-gray-200">
+                <div className="rounded-2xl border border-gray-200">
+                  {/* Mobile: card list */}
+                  <div className="divide-y divide-gray-100 md:hidden">
+                    {filteredMembers.map((member) => {
+                      const canEdit = canEditMember(member);
+                      const canRemove = canRemoveMember(member);
+                      return (
+                        <div
+                          key={member.id}
+                          className="px-4 py-4"
+                          onClick={() => openProfile(member)}
+                        >
+                          {/* Name + email */}
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-600">
+                              {buildInitials(member.fullName)}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-sm font-semibold text-gray-800">{member.fullName}</p>
+                                {member.approvalStatus === 'pending' && (
+                                  <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 whitespace-nowrap">
+                                    {t('table.pendingApproval')}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-500 truncate">{member.email}</p>
+                            </div>
+                          </div>
+                          {/* Role + permissions */}
+                          <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+                            <div>
+                              <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{t('table.columns.role')}</p>
+                              <p className="text-xs font-medium text-gray-700">{roleLabels[member.role]}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{t('table.columns.permission')}</p>
+                              <p className="text-xs text-gray-500">{permissionSummary(member)}</p>
+                            </div>
+                          </div>
+                          {/* Action buttons */}
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {canApproveMember(member) && (
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  approveMember(member);
+                                }}
+                                className="rounded-full bg-emerald-500 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-600"
+                              >
+                                {t('table.approve')}
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openRemove(member);
+                              }}
+                              disabled={!canRemove}
+                              className={cn(
+                                'rounded-full px-4 py-1.5 text-xs font-semibold transition',
+                                canRemove
+                                  ? 'bg-red-500 text-white hover:bg-red-600'
+                                  : 'cursor-not-allowed bg-gray-200 text-gray-400'
+                              )}
+                            >
+                              {t('table.remove')}
+                            </button>
+                          </div>
+                          {!canEdit && (
+                            <p className="mt-1.5 text-xs text-gray-400">
+                              {t('table.requiresSuperAdmin')}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Desktop: table */}
+                  <div className="hidden overflow-x-auto md:block">
                 <table className="w-full min-w-[640px] text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <tr>
@@ -432,6 +513,7 @@ export function TeamPage(): ReactElement {
                     })}
                   </tbody>
                 </table>
+                  </div>
                 </div>
                 {pagination.totalPages > 1 && (
                   <Pagination

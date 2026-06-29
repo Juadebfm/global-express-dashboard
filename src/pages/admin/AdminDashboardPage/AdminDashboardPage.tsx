@@ -2,35 +2,27 @@ import type { ReactElement } from 'react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useSearch, useDashboardData } from '@/hooks';
-import type { ActiveDelivery, KpiCard, UiAction } from '@/types';
+import { useSearch, useDashboardData, useCan } from '@/hooks';
+import type { ActiveDelivery, UiAction } from '@/types';
 import {
   ActiveDeliveries,
   DashboardHeader,
-  DashboardShipmentSummary,
-  KpiGrid,
-  ShipmentListSection,
 } from '@/pages/dashboard/components';
 import { AppShell } from '@/pages/shared';
 import { ROUTES } from '@/constants';
+import { AdminKpiBar } from './components/AdminKpiBar';
+import { NeedsAttentionPanel } from './components/NeedsAttentionPanel';
+import { OpenBatchesSummary } from './components/OpenBatchesSummary';
+import { TopCustomers } from './components/TopCustomers';
 
 export function AdminDashboardPage(): ReactElement {
   const { t } = useTranslation('dashboard');
   const { query } = useSearch();
   const { data, isLoading, error } = useDashboardData();
   const navigate = useNavigate();
+  const isAdmin = useCan('app.admin');
 
   const normalizedQuery = query.trim().toLowerCase();
-
-  const filteredKpis = useMemo((): KpiCard[] => {
-    if (!data) return [];
-    if (normalizedQuery.length === 0) return data.kpis;
-    return data.kpis.filter(
-      (item) =>
-        item.title.toLowerCase().includes(normalizedQuery) ||
-        item.helperText.toLowerCase().includes(normalizedQuery)
-    );
-  }, [data, normalizedQuery]);
 
   const filteredDeliveries = useMemo((): ActiveDelivery[] => {
     if (!data) return [];
@@ -62,11 +54,7 @@ export function AdminDashboardPage(): ReactElement {
             />
 
             <section>
-              <KpiGrid items={filteredKpis} emptyLabel={t('kpiGrid.emptyLabel')} />
-            </section>
-
-            <section>
-              <DashboardShipmentSummary />
+              <AdminKpiBar kpis={data.kpis} />
             </section>
 
             <section>
@@ -78,9 +66,16 @@ export function AdminDashboardPage(): ReactElement {
               />
             </section>
 
-            <section>
-              <ShipmentListSection />
+            <section className="grid gap-6 lg:grid-cols-2">
+              <NeedsAttentionPanel />
+              <OpenBatchesSummary />
             </section>
+
+            {isAdmin && (
+              <section>
+                <TopCustomers />
+              </section>
+            )}
           </>
         )}
       </div>

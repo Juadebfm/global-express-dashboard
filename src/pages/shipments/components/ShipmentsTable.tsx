@@ -115,7 +115,64 @@ export function ShipmentsTable({
         )}
       </div>
 
-      <div className="overflow-x-auto">
+      {/* Mobile: card list */}
+      <div className="divide-y divide-gray-100 md:hidden">
+        {items.length === 0 ? (
+          <p className="px-4 py-10 text-center text-sm text-gray-400">{t('table.empty')}</p>
+        ) : (
+          items.map((shipment) => {
+            const style = getStatusStyle(shipment.statusV2);
+            return (
+              <div
+                key={shipment.id}
+                onClick={onRowClick ? () => onRowClick(shipment) : undefined}
+                className={cn('px-4 py-4', onRowClick ? 'cursor-pointer active:bg-gray-50' : '')}
+              >
+                {/* Primary row */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-semibold text-gray-900 font-mono">{shipment.sku}</span>
+                      <CopyButton value={shipment.sku} />
+                    </div>
+                    <p className="mt-0.5 text-xs text-gray-500">{translateCustomer(shipment.customer)}</p>
+                  </div>
+                  <span className={cn('shrink-0 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold', style.bgClass, style.textClass)}>
+                    {shipment.statusV2 ? t(`statusV2.${shipment.statusV2}`, { defaultValue: shipment.statusLabel || shipment.status }) : (shipment.statusLabel || shipment.status)}
+                  </span>
+                </div>
+                {/* Detail grid */}
+                <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+                  <div>
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Origin</p>
+                    <p className="text-xs text-gray-700">{translateLocation(shipment.origin) || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Destination</p>
+                    <p className="text-xs text-gray-700">{translateLocation(shipment.destination) || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Departure</p>
+                    <p className="text-xs text-gray-700">{formatDate(shipment.departureDate)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">ETA</p>
+                    <p className="text-xs text-gray-700">{formatDate(shipment.etaDate)}</p>
+                  </div>
+                </div>
+                {/* Mode */}
+                <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-500">
+                  {modeIcons[shipment.mode]}
+                  {t(`table.modeLabels.${shipment.mode}`)}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop: table (hidden on mobile) */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="min-w-full text-[12.5px]">
           <thead className="bg-gray-50">
             <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">

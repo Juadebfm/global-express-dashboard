@@ -83,8 +83,62 @@ export function DashboardShipmentList({ shipments }: DashboardShipmentListProps)
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
+      {/* Mobile: card list */}
+      <div className="divide-y divide-gray-100 md:hidden">
+        {filtered.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-gray-400">{t('shipmentList.empty')}</p>
+        ) : (
+          filtered.map((row) => {
+            const statusStyle = STATUS_STYLES[row.status];
+            const statusLabel = row.statusV2
+              ? t(`shipments:statusV2.${row.statusV2}`, { defaultValue: row.statusLabel || t(`shipmentList.tabs.${row.status}`) })
+              : (row.statusLabel || t(`shipmentList.tabs.${row.status}`));
+            return (
+              <div key={row.id} className="px-4 py-4">
+                {/* Tracking + status */}
+                <div className="flex items-start justify-between gap-3">
+                  <span className="inline-flex items-center gap-1.5 font-mono text-sm font-semibold text-gray-900">
+                    {row.sku}<CopyButton value={row.sku} />
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 shrink-0">
+                    <span className={cn('h-1.5 w-1.5 rounded-full', statusStyle.dot)} />
+                    <span className={cn('text-xs font-medium', statusStyle.text)}>{statusLabel}</span>
+                  </span>
+                </div>
+                {/* Customer */}
+                <p className="mt-0.5 text-xs text-gray-500">{tCustomer(row.customer)}</p>
+                {/* Route + dates */}
+                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+                  <div>
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{t('shipmentList.table.origin')}</p>
+                    <p className="text-xs text-gray-700">{tLoc(row.origin) || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{t('shipmentList.table.destination')}</p>
+                    <p className="text-xs text-gray-700">{tLoc(row.destination) || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{t('shipmentList.table.departure')}</p>
+                    <p className="text-xs text-gray-700">{row.departureDate || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{t('shipmentList.table.eta')}</p>
+                    <p className="text-xs text-gray-700">{row.etaDate || '—'}</p>
+                  </div>
+                </div>
+                {/* Mode */}
+                <div className="mt-2 inline-flex items-center gap-1 text-xs text-gray-500">
+                  {MODE_ICON[row.mode] ?? <Plane className="h-4 w-4" />}
+                  <span>{t(`shipments:table.modeLabels.${row.mode}`, { defaultValue: row.mode })}</span>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-gray-100">
@@ -139,3 +193,4 @@ export function DashboardShipmentList({ shipments }: DashboardShipmentListProps)
     </div>
   );
 }
+

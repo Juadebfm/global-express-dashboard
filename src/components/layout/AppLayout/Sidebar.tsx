@@ -99,7 +99,7 @@ export function Sidebar({
     const active = isActive(item.href);
     const icon = iconMap[item.icon] ?? <LayoutDashboard className="h-5 w-5" />;
     const label = t(`items.${item.id}`, item.id);
-    const showSupportBadge = item.id === 'support' && isOperator && openSupportCount > 0;
+    const showSupportBadge = (item.id === 'support' || item.id === 'settings') && isOperator && openSupportCount > 0;
     const showOrdersBadge = item.id === 'orders' && isOperator && undeliveredOrderCount > 0;
 
     return (

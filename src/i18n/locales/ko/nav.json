@@ -1,13 +1,14 @@
 {
   "items": {
     "dashboard": "대시보드",
+    "adminDashboard": "대시보드",
     "shipments": "배송",
     "deliverySchedule": "배송 일정",
     "payments": "결제",
     "notification": "알림",
     "orders": "주문",
     "clients": "고객",
-    "team": "팀",
+    "team": "직원",
     "batches": "배치",
     "reports": "보고서",
     "profile": "프로필",

@@ -1,1 +1,1 @@
-export { SupportPage } from './SupportPage';
+export { SupportPage, SupportListView } from './SupportPage';

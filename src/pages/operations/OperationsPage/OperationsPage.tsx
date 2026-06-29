@@ -148,64 +148,104 @@ function BatchGroup({
       </button>
       {expanded && (
         <div className="border-t border-gray-100">
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 bg-gray-50">Description</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 bg-gray-50">Customer</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 bg-gray-50">Tracking No.</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 bg-gray-50">Status</th>
-                <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-400 bg-gray-50">Weight</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {orders.map((o) => {
-                const style = getStatusStyle(o.statusV2);
-                const raw = o.raw as Record<string, unknown>;
-                const shippingMark = typeof raw['shippingMark'] === 'string' ? raw['shippingMark'] : null;
-                const description = typeof raw['description'] === 'string' ? raw['description'] : null;
-                const weight = typeof raw['weight'] === 'number' || typeof raw['weight'] === 'string'
-                  ? raw['weight']
-                  : null;
+          {/* Mobile: cards */}
+          <div className="divide-y divide-gray-100 md:hidden">
+            {orders.map((o) => {
+              const style = getStatusStyle(o.statusV2);
+              const raw = o.raw as Record<string, unknown>;
+              const shippingMark = typeof raw['shippingMark'] === 'string' ? raw['shippingMark'] : null;
+              const description = typeof raw['description'] === 'string' ? raw['description'] : null;
+              const weight = typeof raw['weight'] === 'number' || typeof raw['weight'] === 'string' ? raw['weight'] : null;
+              return (
+                <div key={o.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-medium text-gray-900 max-w-[180px] truncate" title={shippingMark ?? description ?? undefined}>
+                      {shippingMark ?? description ?? 'No description'}
+                    </p>
+                    <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold', style.bgClass, style.textClass)}>
+                      {o.statusLabel || o.statusV2}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-gray-500">{o.senderName ?? 'Unknown'}</p>
+                  <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+                    <div>
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Tracking</p>
+                      <p className="text-xs font-mono text-gray-600">
+                        {isInternalTracking(o.trackingNumber)
+                          ? formatTrackingDisplay(o.trackingNumber)
+                          : o.trackingNumber}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Weight</p>
+                      <p className="text-xs text-gray-600">{weight != null ? `${weight} kg` : '—'}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Desktop: table */}
+          <div className="hidden md:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 bg-gray-50">Description</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 bg-gray-50">Customer</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 bg-gray-50">Tracking No.</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 bg-gray-50">Status</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-400 bg-gray-50">Weight</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {orders.map((o) => {
+                  const style = getStatusStyle(o.statusV2);
+                  const raw = o.raw as Record<string, unknown>;
+                  const shippingMark = typeof raw['shippingMark'] === 'string' ? raw['shippingMark'] : null;
+                  const description = typeof raw['description'] === 'string' ? raw['description'] : null;
+                  const weight = typeof raw['weight'] === 'number' || typeof raw['weight'] === 'string'
+                    ? raw['weight']
+                    : null;
 
-                return (
-                  <tr key={o.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                      <span className="block max-w-[150px] truncate" title={shippingMark ?? description ?? undefined}>
-                        {shippingMark ?? description ?? 'No description'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
-                      {o.senderName ?? 'Unknown'}
-                    </td>
-                    <td className="px-4 py-3">
-                      {isInternalTracking(o.trackingNumber) ? (
-                        <span className="text-xs italic text-gray-400">
-                          {formatTrackingDisplay(o.trackingNumber)}
+                  return (
+                    <tr key={o.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                        <span className="block max-w-[150px] truncate" title={shippingMark ?? description ?? undefined}>
+                          {shippingMark ?? description ?? 'No description'}
                         </span>
-                      ) : (
-                        <span className="text-xs font-mono text-gray-400">
-                          {o.trackingNumber}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500">
+                        {o.senderName ?? 'Unknown'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {isInternalTracking(o.trackingNumber) ? (
+                          <span className="text-xs italic text-gray-400">
+                            {formatTrackingDisplay(o.trackingNumber)}
+                          </span>
+                        ) : (
+                          <span className="text-xs font-mono text-gray-400">
+                            {o.trackingNumber}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn(
+                          'rounded-full px-2 py-0.5 text-xs font-semibold',
+                          style.bgClass,
+                          style.textClass,
+                        )}>
+                          {o.statusLabel || o.statusV2}
                         </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={cn(
-                        'rounded-full px-2 py-0.5 text-xs font-semibold',
-                        style.bgClass,
-                        style.textClass,
-                      )}>
-                        {o.statusLabel || o.statusV2}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm text-gray-500">
-                      {weight != null ? `${weight} kg` : '—'}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm text-gray-500">
+                        {weight != null ? `${weight} kg` : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

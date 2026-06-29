@@ -111,9 +111,7 @@ function LogRow({ log }: { log: AuditLog }): ReactElement {
   );
 }
 
-export function AuditLogsPage(): ReactElement {
-  const { data: dashData, isLoading: dashLoading, error: dashError } = useDashboardData();
-
+export function AuditLogsContent(): ReactElement {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, Number(searchParams.get('page')) || 1);
   const setPage = (next: number): void => {
@@ -158,12 +156,7 @@ export function AuditLogsPage(): ReactElement {
   const pagination = data?.pagination;
 
   return (
-    <AppShell data={dashData} isLoading={dashLoading} error={dashError} loadingLabel="Loading audit logs…">
-      <div className="space-y-6">
-        <PageHeader
-          title="Audit Logs"
-          subtitle="A full record of every action taken by staff on this platform."
-        />
+    <div className="space-y-6">
 
         {/* Filters */}
         <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4">
@@ -254,7 +247,53 @@ export function AuditLogsPage(): ReactElement {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              {/* Mobile card list */}
+              <div className="divide-y divide-gray-100 md:hidden">
+                {logs.map((log) => (
+                  <div key={log.id} className="px-4 py-4">
+                    {/* Action + time */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <ActionBadge action={log.action} />
+                        <p className="mt-1 text-xs text-gray-500">
+                          {log.resourceType}
+                          {log.resourceId && (
+                            <span className="ml-1 font-mono text-[10px] text-gray-400">
+                              {log.resourceId.slice(0, 8)}…
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-xs font-semibold text-gray-400">{formatDate(log.createdAt)}</p>
+                        <p className="text-[10px] tabular-nums text-gray-400">{formatTime(log.createdAt)}</p>
+                      </div>
+                    </div>
+                    {/* Actor + IP */}
+                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+                      <div>
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Actor</p>
+                        <p className="text-xs font-semibold text-gray-800">
+                          {log.actor.firstName} {log.actor.lastName}
+                        </p>
+                        <p className="text-[10px] capitalize text-gray-400">{log.actor.role}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">IP</p>
+                        <p className="font-mono text-xs text-gray-500">{log.ipAddress}</p>
+                      </div>
+                    </div>
+                    {/* Details if present */}
+                    {log.metadata && Object.keys(log.metadata).length > 0 && (
+                      <div className="mt-2">
+                        <MetadataCell metadata={log.metadata} />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full min-w-[720px] text-left text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-400">
                     <tr>
@@ -293,6 +332,20 @@ export function AuditLogsPage(): ReactElement {
             </>
           )}
         </div>
+    </div>
+  );
+}
+
+export function AuditLogsPage(): ReactElement {
+  const { data: dashData, isLoading: dashLoading, error: dashError } = useDashboardData();
+  return (
+    <AppShell data={dashData} isLoading={dashLoading} error={dashError} loadingLabel="Loading audit logs…">
+      <div className="space-y-6">
+        <PageHeader
+          title="Audit Logs"
+          subtitle="A full record of every action taken by staff on this platform."
+        />
+        <AuditLogsContent />
       </div>
     </AppShell>
   );

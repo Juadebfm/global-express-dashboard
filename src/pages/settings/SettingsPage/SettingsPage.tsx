@@ -2,7 +2,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useClerk } from '@clerk/clerk-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertBanner, ConfirmModal } from '@/components/ui';
 import { MfaSettingsCard } from '@/components/auth';
 import {
@@ -14,12 +14,14 @@ import {
   useLogisticsSettings,
   useMyNotificationPreferences,
   useNotificationTemplates,
+  useOpenSupportTicketCount,
   usePricingRules,
   useRestrictedGoods,
   useSearch,
   useShipmentTypesCatalog,
   useUpdateShipmentTypesCatalog,
 } from '@/hooks';
+import { SupportListView } from '@/pages/support';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { deleteMyAccount, exportMyAccountData, getOnboardingSettings, updateOnboardingSettings } from '@/services';
 import type {
@@ -43,7 +45,8 @@ type SettingsTab =
   | 'restricted-goods'
   | 'shipment-types'
   | 'logistics'
-  | 'notification-templates';
+  | 'notification-templates'
+  | 'support';
 
 const OPERATOR_TAB_IDS: SettingsTab[] = [
   'general',
@@ -53,7 +56,10 @@ const OPERATOR_TAB_IDS: SettingsTab[] = [
   'shipment-types',
   'logistics',
   'notification-templates',
+  'support',
 ];
+
+const STAFF_TAB_IDS: SettingsTab[] = ['general', 'support'];
 
 const TAB_FALLBACK_LABEL: Record<SettingsTab, string> = {
   general: 'General',
@@ -63,6 +69,7 @@ const TAB_FALLBACK_LABEL: Record<SettingsTab, string> = {
   'shipment-types': 'Shipment Types',
   logistics: 'Logistics',
   'notification-templates': 'Templates',
+  support: 'Support',
 };
 
 /* ── Shared sub-components ───────────────────────────────────── */
@@ -1049,7 +1056,12 @@ export function SettingsPage(): ReactElement {
   const isAdmin = useCan('app.admin');
   const isSuperadmin = useCan('app.superadmin');
 
-  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const [searchParams] = useSearchParams();
+  const openSupportCount = useOpenSupportTicketCount();
+  const requestedTab = searchParams.get('tab') as SettingsTab | null;
+  const [activeTab, setActiveTab] = useState<SettingsTab>(
+    requestedTab === 'support' ? 'support' : 'general',
+  );
 
   /* ── Change password ──────────────────────────────────────── */
   const changePasswordMutation = useChangePassword();
@@ -1145,20 +1157,25 @@ export function SettingsPage(): ReactElement {
       <div className="space-y-6">
         <PageHeader title={t('pageTitle')} subtitle={t('subtitle')} />
 
-        {/* Admin/superadmin tab bar — staff only see General (change password + MFA) */}
-        {isAdmin && (
+        {/* Tab bar — admins see all settings tabs; staff see General + Support */}
+        {isOperator && (
           <div className="flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-gray-50 p-1 scrollbar-none">
-            {OPERATOR_TAB_IDS.map((tabId) => (
+            {(isAdmin ? OPERATOR_TAB_IDS : STAFF_TAB_IDS).map((tabId) => (
               <button
                 key={tabId}
                 type="button"
                 onClick={() => setActiveTab(tabId)}
                 className={cn(
-                  'whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition',
+                  'relative whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition',
                   activeTab === tabId ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700',
                 )}
               >
                 {TAB_FALLBACK_LABEL[tabId]}
+                {tabId === 'support' && openSupportCount > 0 && (
+                  <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    {openSupportCount > 99 ? '99+' : openSupportCount}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -1305,6 +1322,9 @@ export function SettingsPage(): ReactElement {
 
         {/* ── Notification Templates ───────────────────────── */}
         {isAdmin && activeTab === 'notification-templates' && <NotificationTemplatesSection canEdit={isAdmin} />}
+
+        {/* ── Support ─────────────────────────────────────── */}
+        {isOperator && activeTab === 'support' && <SupportListView />}
       </div>
     </AppShell>
   );

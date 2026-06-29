@@ -221,6 +221,101 @@ function CustomerRow({
   );
 }
 
+function MobileCustomerCard({
+  customer,
+  batchOpen,
+  canManage,
+  onRemoveOrder,
+  removingOrderId,
+}: {
+  customer: BatchRosterCustomer;
+  batchOpen: boolean;
+  canManage: boolean;
+  onRemoveOrder: (orderId: string) => void;
+  removingOrderId: string | null;
+}): ReactElement {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="px-4 py-4">
+      {/* Header row */}
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-start justify-between gap-3 text-left"
+      >
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-semibold text-gray-900">{customer.customerName}</span>
+            {!customer.allVerified && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                <AlertTriangle className="h-3 w-3" />
+                Unverified
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 text-xs font-mono text-gray-400 truncate">Mark: {customer.shippingMark}</p>
+        </div>
+        {expanded ? <ChevronDown className="h-4 w-4 shrink-0 text-gray-400 mt-0.5" /> : <ChevronRight className="h-4 w-4 shrink-0 text-gray-400 mt-0.5" />}
+      </button>
+      {/* Stats row */}
+      <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Tracking No.</p>
+          <p className="text-xs font-mono font-semibold text-gray-800">{customer.batchTrackingNumber}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Orders / Weight</p>
+          <p className="text-xs text-gray-700">{customer.orderCount} orders · {customer.totalWeightKg} kg</p>
+        </div>
+      </div>
+      {/* Expanded orders */}
+      {expanded && (
+        <div className="mt-3 space-y-2">
+          {customer.orders.map((order: BatchRosterOrder) => {
+            const isVerified = order.status.toLowerCase().includes('verified');
+            return (
+              <div key={order.id} className="rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <Link
+                    to={`/orders?id=${order.id}`}
+                    className="font-mono text-sm font-semibold text-brand-500 hover:text-brand-600"
+                  >
+                    {order.trackingNumber}
+                  </Link>
+                  <span className={cn(
+                    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+                    isVerified ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700',
+                  )}>
+                    <span className={cn('h-1.5 w-1.5 rounded-full', isVerified ? 'bg-emerald-500' : 'bg-amber-500')} />
+                    {isVerified ? 'Verified' : order.statusLabel}
+                  </span>
+                </div>
+                {order.description && (
+                  <p className="mt-0.5 text-xs text-gray-500 truncate">{order.description}</p>
+                )}
+                <div className="mt-1 flex items-center justify-between">
+                  <span className="text-xs text-gray-500">{order.weightKg} kg</span>
+                  {canManage && batchOpen && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onRemoveOrder(order.id); }}
+                      disabled={removingOrderId === order.id}
+                      className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
+                    >
+                      {removingOrderId === order.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const AIR_DOCUMENT_TYPES: { value: BatchDocumentType; label: string }[] = [
   { value: 'mawb', label: 'MAWB (Master Airway Bill)' },
   { value: 'other', label: 'Other' },
@@ -702,21 +797,11 @@ export function BatchDetailPage(): ReactElement {
                   </p>
                 </div>
               ) : (
-                <table className="w-full text-sm border-t border-gray-100">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
-                        <span className="pl-6">Customer</span>
-                      </th>
-                      <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Customer Tracking No.</th>
-                      <th className="px-4 pb-3 pt-2.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Orders</th>
-                      <th className="px-4 pb-3 pt-2.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Weight</th>
-                      <th className="px-4 pb-3 pt-2.5" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
+                <>
+                  {/* Mobile: card list */}
+                  <div className="divide-y divide-gray-100 md:hidden border-t border-gray-100">
                     {customers.map((customer) => (
-                      <CustomerRow
+                      <MobileCustomerCard
                         key={customer.slotId}
                         customer={customer}
                         batchOpen={isOpen}
@@ -725,8 +810,34 @@ export function BatchDetailPage(): ReactElement {
                         removingOrderId={removingOrderId}
                       />
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                  {/* Desktop: existing table */}
+                  <table className="w-full text-sm border-t border-gray-100 hidden md:table">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                          <span className="pl-6">Customer</span>
+                        </th>
+                        <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Customer Tracking No.</th>
+                        <th className="px-4 pb-3 pt-2.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Orders</th>
+                        <th className="px-4 pb-3 pt-2.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Weight</th>
+                        <th className="px-4 pb-3 pt-2.5" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {customers.map((customer) => (
+                        <CustomerRow
+                          key={customer.slotId}
+                          customer={customer}
+                          batchOpen={isOpen}
+                          canManage={canManage}
+                          onRemoveOrder={(orderId) => void handleRemoveOrder(orderId, customer.customerName)}
+                          removingOrderId={removingOrderId}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </>
               )}
             </div>
 

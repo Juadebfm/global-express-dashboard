@@ -134,7 +134,80 @@ export function PaymentsPage(): ReactElement {
             </p>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile: card list */}
+          <div className="divide-y divide-gray-100 md:hidden">
+            {paymentsQuery.isLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="px-4 py-4 space-y-2">
+                  <div className="h-4 w-32 animate-pulse rounded bg-gray-100" />
+                  <div className="h-3 w-24 animate-pulse rounded bg-gray-100" />
+                </div>
+              ))
+            ) : filteredPayments.length === 0 ? (
+              <p className="px-4 py-10 text-center text-sm text-gray-400">No payments found</p>
+            ) : (
+              filteredPayments.map((payment) => (
+                <div key={payment.id} className="px-4 py-4">
+                  {/* Primary row */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-mono font-semibold text-gray-900 truncate">
+                        {payment.trackingNumber || '—'}
+                      </p>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-600">
+                          {payment.paymentType}
+                        </span>
+                      </p>
+                    </div>
+                    {/* Status badge */}
+                    <span className={[
+                      'inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold',
+                      payment.status === 'successful' ? 'bg-emerald-50 text-emerald-700' :
+                      payment.status === 'failed'     ? 'bg-red-50 text-red-700' :
+                      payment.status === 'abandoned'  ? 'bg-amber-50 text-amber-700' :
+                                                        'bg-blue-50 text-blue-700',
+                    ].join(' ')}>
+                      <span className={[
+                        'h-1.5 w-1.5 rounded-full',
+                        payment.status === 'successful' ? 'bg-emerald-500' :
+                        payment.status === 'failed'     ? 'bg-red-500' :
+                        payment.status === 'abandoned'  ? 'bg-amber-500' :
+                                                          'bg-blue-500',
+                      ].join(' ')} />
+                      {payment.status}
+                    </span>
+                  </div>
+                  {/* Detail grid */}
+                  <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+                    <div>
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Amount</p>
+                      <p className="text-xs font-semibold text-gray-900">{formatAmount(payment)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Date</p>
+                      <p className="text-xs text-gray-700">{formatDateTime(payment.paidAt ?? payment.createdAt)}</p>
+                    </div>
+                  </div>
+                  {/* Receipt */}
+                  {payment.proofReference ? (
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        onClick={() => setReceiptUrl(payment.proofReference)}
+                        className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600"
+                      >
+                        <Receipt className="h-3.5 w-3.5" />
+                        View Receipt
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
