@@ -1,6 +1,6 @@
 import type { ComponentType, ReactElement } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
@@ -169,7 +169,6 @@ export function NewBookingPage(): ReactElement {
     register,
     control,
     handleSubmit,
-    watch,
     reset,
     setValue,
     formState: { errors },
@@ -182,9 +181,9 @@ export function NewBookingPage(): ReactElement {
     },
   });
 
-  const hasSourcingSupplier = watch('hasSourcingSupplier');
-  const sourcingSupplierType = watch('sourcingSupplierType');
-  const shipmentType = watch('shipmentType');
+  const hasSourcingSupplier = useWatch({ control, name: 'hasSourcingSupplier' });
+  const sourcingSupplierType = useWatch({ control, name: 'sourcingSupplierType' });
+  const shipmentType = useWatch({ control, name: 'shipmentType' });
 
   const mutation = useMutation({
     mutationFn: async (values: NewBookingFormValues) => {
