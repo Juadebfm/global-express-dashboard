@@ -30,6 +30,7 @@ import {
   useVerifyOrderPayment,
   useWarehouseVerify,
   useCreateOrderForCustomer,
+  useBatch,
 } from '@/hooks';
 import type { OrderListItem } from '@/types';
 import { Button, Pagination, TableRowsSkeleton } from '@/components/ui';
@@ -226,6 +227,7 @@ export function OrdersPage(): ReactElement {
   const deleteOrderImage = useDeleteOrderImage();
   const verifyPayment = useVerifyOrderPayment(selectedOrderId ?? undefined);
   const sendPaymentDetails = useSendPaymentRequest();
+  const batchQuery = useBatch(view?.dispatchBatchId ?? undefined);
 
   // ── Handlers ──────────────────────────────────────────────────
   const handleSelectOrder = (id: string): void => {
@@ -486,6 +488,8 @@ export function OrdersPage(): ReactElement {
                   }
                   onBack={mobileShowDetail ? () => setMobileShowDetail(false) : undefined}
                   advanceLoading={updateStatus.isPending}
+                  onGoToWarehouseTab={() => setActiveTab('warehouse')}
+                  batchSummary={batchQuery.data ?? null}
                 />
 
                 {/* Status advance feedback */}

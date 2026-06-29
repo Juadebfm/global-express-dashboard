@@ -1,8 +1,11 @@
 import type { ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Copy, MoreHorizontal, Plane, Ship, ChevronLeft, ArrowRight, AlertTriangle, CircleAlert, PackagePlus, Layers } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Copy, MoreHorizontal, Plane, Ship, ChevronLeft, ArrowRight, AlertTriangle, CircleAlert, PackagePlus, Layers, ExternalLink } from 'lucide-react';
 import { isInternalTracking } from '@/lib/trackingUtils';
 import { cn } from '@/utils';
+import { ROUTES } from '@/constants';
+import type { Batch } from '@/types';
 import type { OrderView } from '../types';
 import {
   statusLabel,
@@ -38,6 +41,8 @@ interface OrderDetailHeaderProps {
   onCreateOrderForCustomer?: () => void;
   onBack?: () => void;
   advanceLoading?: boolean;
+  onGoToWarehouseTab?: () => void;
+  batchSummary?: Batch | null;
 }
 
 export function OrderDetailHeader({
@@ -46,6 +51,8 @@ export function OrderDetailHeader({
   onAddToShipment,
   onBack,
   advanceLoading = false,
+  onGoToWarehouseTab,
+  batchSummary,
 }: OrderDetailHeaderProps): ReactElement {
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -98,9 +105,30 @@ export function OrderDetailHeader({
       <div className="rounded-2xl border border-gray-200 bg-white px-5 py-4">
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
-            {/* Tracking number + status badge — single line */}
+            {/* Tracking number / batch slot + status badge */}
             <div className="flex min-w-0 items-center gap-2">
-              {isInternalTracking(view.trackingNumber) ? (
+              {batchSummary ? (
+                /* Batch assigned — show transport mode + master tracking number */
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className={cn(
+                    'shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold',
+                    batchSummary.transportMode === 'sea'
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'bg-brand-50 text-brand-700',
+                  )}>
+                    {batchSummary.transportMode === 'sea'
+                      ? <Ship className="h-3 w-3" />
+                      : <Plane className="h-3 w-3" />}
+                    {batchSummary.transportMode === 'sea' ? 'Sea batch' : 'Air batch'}
+                    {view.shipmentType === 'd2d' && (
+                      <span className="ml-1 opacity-70">· D2D</span>
+                    )}
+                  </span>
+                  <span className="truncate text-sm font-semibold text-gray-900 font-mono">
+                    {batchSummary.masterTrackingNumber}
+                  </span>
+                </div>
+              ) : isInternalTracking(view.trackingNumber) ? (
                 <span className="text-sm italic text-gray-400">Awaiting batch assignment</span>
               ) : (
                 <span className="truncate text-sm font-semibold text-gray-900 font-mono">
@@ -124,17 +152,35 @@ export function OrderDetailHeader({
                 {statusLabel(view.statusV2)}
               </span>
             </div>
-            {/* Route — single line, icon replaces mode label */}
-            <div className="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-gray-500">
-              {isSea ? (
-                <Ship className="h-3.5 w-3.5 shrink-0 text-blue-400" />
-              ) : (
-                <Plane className="h-3.5 w-3.5 shrink-0 text-brand-400" />
-              )}
-              <span className="truncate">{view.origin}</span>
-              <ArrowRight className="h-3 w-3 shrink-0 text-gray-300" />
-              <span className="truncate">{view.destination}</span>
-            </div>
+
+            {/* Batch detail row — departure + open link */}
+            {batchSummary ? (
+              <div className="mt-1 flex min-w-0 items-center gap-3">
+                {batchSummary.estimatedDepartureAt && (
+                  <span className="text-xs text-gray-500">
+                    Departs {new Date(batchSummary.estimatedDepartureAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  </span>
+                )}
+                <Link
+                  to={ROUTES.BATCH_DETAIL.replace(':batchId', batchSummary.id)}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700"
+                >
+                  Open batch <ExternalLink className="h-3 w-3" />
+                </Link>
+              </div>
+            ) : (
+              /* Route — single line, icon replaces mode label */
+              <div className="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-gray-500">
+                {isSea ? (
+                  <Ship className="h-3.5 w-3.5 shrink-0 text-blue-400" />
+                ) : (
+                  <Plane className="h-3.5 w-3.5 shrink-0 text-brand-400" />
+                )}
+                <span className="truncate">{view.origin}</span>
+                <ArrowRight className="h-3 w-3 shrink-0 text-gray-300" />
+                <span className="truncate">{view.destination}</span>
+              </div>
+            )}
           </div>
 
           {!isInternalTracking(view.trackingNumber) && (
@@ -158,10 +204,14 @@ export function OrderDetailHeader({
             Current status
           </span>
           {blockReason === 'verify_first' && (
-            <span className="flex items-center gap-1 text-xs font-medium text-amber-600">
+            <button
+              type="button"
+              onClick={onGoToWarehouseTab}
+              className="flex items-center gap-1 text-xs font-medium text-amber-600 transition hover:text-amber-700 hover:underline"
+            >
               <AlertTriangle className="h-3.5 w-3.5" />
               Verify packages to enable
-            </span>
+            </button>
           )}
           {blockReason === 'payment_required' && (
             <span className="flex items-center gap-1 text-xs font-medium text-red-600">

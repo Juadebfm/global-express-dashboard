@@ -350,7 +350,15 @@ export function OperationsPage(): ReactElement {
   return (
     <AppLayout user={layoutUser}>
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Operations</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold text-gray-900">Operations</h1>
+          <Link
+            to={ROUTES.ORDERS}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+          >
+            View all orders →
+          </Link>
+        </div>
 
         {/* Tab strip */}
         <div className="flex gap-1 rounded-xl border border-gray-200 bg-white p-1 w-fit flex-wrap">
