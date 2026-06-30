@@ -50,12 +50,13 @@ const DISPATCHED_STATUSES = new Set([
   'PICKED_UP_COMPLETED',
 ]);
 
-function whatToDoNext(order: OrderListItem): string {
-  if (order.statusV2 === 'WAREHOUSE_RECEIVED') return 'Add measurements';
-  if (order.statusV2 === 'WAREHOUSE_VERIFIED_PRICED') return 'Add to batch';
-  if (order.statusV2 === 'ON_HOLD') return 'Review hold reason';
-  if (order.flaggedForAdminReview) return 'Review flag';
-  return '';
+function actionLink(order: OrderListItem): { label: string; to: string } | null {
+  const base = `${ROUTES.ORDERS}?select=${order.id}`;
+  if (order.statusV2 === 'WAREHOUSE_RECEIVED') return { label: 'Add measurements →', to: `${base}&tab=warehouse` };
+  if (order.statusV2 === 'WAREHOUSE_VERIFIED_PRICED') return { label: 'Add to batch →', to: base };
+  if (order.statusV2 === 'ON_HOLD') return { label: 'Review hold →', to: base };
+  if (order.flaggedForAdminReview) return { label: 'Review flag →', to: base };
+  return null;
 }
 
 function modeIcon(mode: string): ReactElement {
@@ -410,17 +411,25 @@ export function OperationsPage(): ReactElement {
           needsActionOrders,
           allLoading,
           allError,
-          (o) => (
-            <OperationRow
-              key={o.id}
-              order={o}
-              action={
-                <div className="shrink-0 text-right">
-                  <p className="text-xs text-gray-400">{whatToDoNext(o)}</p>
-                </div>
-              }
-            />
-          ),
+          (o) => {
+            const action = actionLink(o);
+            return (
+              <OperationRow
+                key={o.id}
+                order={o}
+                action={
+                  action ? (
+                    <Link
+                      to={action.to}
+                      className="shrink-0 text-xs font-medium text-brand-600 hover:text-brand-700 whitespace-nowrap"
+                    >
+                      {action.label}
+                    </Link>
+                  ) : undefined
+                }
+              />
+            );
+          },
         )}
 
         {/* Tab: In Batch — grouped by dispatchBatchId */}

@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -180,6 +180,16 @@ export function OrdersPage(): ReactElement {
   );
 
   const selectParam = searchParams.get('select');
+  const tabParam = searchParams.get('tab') as DetailTab | null;
+
+  // When arriving via a deep-link (?select=&tab=), honour the tab param once.
+  useEffect(() => {
+    if (selectParam && tabParam) {
+      setActiveTab(tabParam);
+    }
+  // Only fire when the select param changes (i.e. a new deep-link navigation).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectParam]);
 
   const selectedOrderId = useMemo(() => {
     if (!visibleOrders.length) return null;
