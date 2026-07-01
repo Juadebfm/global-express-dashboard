@@ -430,14 +430,14 @@ function QueueStep({ queueType, orders, index, onNext, onSkip, onExit }: QueueSt
 
   switch (queueType) {
     case 'verify':
-      return <VerifyQueueStep {...stepProps} />;
+      return <VerifyQueueStep key={currentOrder.id} {...stepProps} />;
     case 'holds':
     case 'escalated':
-      return <HoldQueueStep {...stepProps} />;
+      return <HoldQueueStep key={currentOrder.id} {...stepProps} />;
     case 'batch':
-      return <BatchQueueStep {...stepProps} />;
+      return <BatchQueueStep key={currentOrder.id} {...stepProps} />;
     case 'payment':
-      return <PaymentQueueStep {...stepProps} />;
+      return <PaymentQueueStep key={currentOrder.id} {...stepProps} />;
   }
 }
 

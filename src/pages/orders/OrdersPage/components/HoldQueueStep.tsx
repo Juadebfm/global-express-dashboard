@@ -231,7 +231,14 @@ export function HoldQueueStep({
 
           {error && (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {'Something went wrong — please try again or skip this order'}
+              <p>{'Something went wrong — please try again or continue to the next order.'}</p>
+              <button
+                type="button"
+                onClick={onNext}
+                className="mt-2 text-xs font-semibold text-red-700 underline underline-offset-2 hover:text-red-900"
+              >
+                Continue anyway →
+              </button>
             </div>
           )}
         </div>
