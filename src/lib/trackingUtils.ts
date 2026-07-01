@@ -6,7 +6,7 @@ export function isInternalTracking(trackingNumber: string): boolean {
 }
 
 export function formatTrackingDisplay(trackingNumber: string): string {
-  if (isInternalTracking(trackingNumber)) return 'Awaiting assignment';
+  if (isInternalTracking(trackingNumber)) return 'Pending tracking no.';
   return trackingNumber;
 }
 

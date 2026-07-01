@@ -57,6 +57,8 @@ export interface OrderListItem {
   paymentCollectionStatus: string;
   paymentDetailsSentAt?: string | null;
   flaggedForAdminReview: boolean;
+  escalatedAt: string | null;
+  escalationNote: string | null;
   raw: Record<string, unknown>;
 }
 

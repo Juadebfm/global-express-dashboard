@@ -87,6 +87,14 @@ export function closeBatch(token: string, batchId: string): Promise<BatchCloseRe
   return apiPostData<BatchCloseResult>(`/batches/${batchId}/close`, undefined, token);
 }
 
+export interface CreateBatchPayload {
+  transportMode: 'air' | 'sea';
+}
+
+export function createBatch(token: string, payload: CreateBatchPayload): Promise<Batch> {
+  return apiPostData<Batch>('/batches', payload, token);
+}
+
 export function getBatchStatusLabels(token: string): Promise<BatchStatusLabel[]> {
   return apiGetData<BatchStatusLabel[]>('/batches/status-labels', token);
 }

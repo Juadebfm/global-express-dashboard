@@ -21,6 +21,8 @@ const EXPECTED: Record<Action, Role[]> = {
   'orders.delete': ['admin', 'superadmin'],
   'orders.updateStatus': ['staff', 'admin', 'superadmin'],
   'orders.warehouseVerify': ['staff', 'admin', 'superadmin'],
+  'orders.escalate': ['staff', 'admin', 'superadmin'],
+  'orders.clearEscalation': ['superadmin'],
 
   // Shipments
   'shipments.viewDetail': ['staff', 'admin', 'superadmin'],

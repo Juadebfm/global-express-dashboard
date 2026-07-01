@@ -1,5 +1,5 @@
 import type { FormEvent, ReactElement } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Info, AlertTriangle, Plus, X, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { formatCurrency } from '@/utils';
@@ -173,17 +173,32 @@ function PackageRowCard({
     : null;
   const usingVol = chargeableKg != null && (volKg ?? 0) > (actualKg ?? 0);
 
+  const hasError = showErrors && isD2D && (!hasWeight || !hasCbm);
+
   return (
     <div className={cn(
-      'rounded-xl border bg-gray-50/50 p-4',
-      showErrors && isD2D && (!hasWeight || !hasCbm)
-        ? 'border-red-300'
-        : 'border-gray-200',
+      'overflow-hidden rounded-xl border bg-white shadow-sm',
+      hasError ? 'border-red-300' : 'border-gray-200',
     )}>
-      <div className="mb-3 flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-          Package {index + 1}
-        </span>
+      {/* Card header */}
+      <div className={cn(
+        'flex items-center justify-between border-b px-4 py-2.5',
+        hasError ? 'border-red-200 bg-red-50' : 'border-gray-100 bg-gray-50',
+      )}>
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            'flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold',
+            hasError ? 'bg-red-200 text-red-700' : 'bg-gray-200 text-gray-700',
+          )}>
+            {index + 1}
+          </span>
+          <span className={cn(
+            'text-sm font-semibold',
+            hasError ? 'text-red-700' : 'text-gray-700',
+          )}>
+            Package {index + 1}
+          </span>
+        </div>
         {canRemove && (
           <button
             type="button"
@@ -194,6 +209,9 @@ function PackageRowCard({
           </button>
         )}
       </div>
+
+      {/* Card body */}
+      <div className="p-4">
 
       {isD2D ? (
         /* D2D: weight + CBM + qty — stack to 2-col on mobile, 3-col on sm+ */
@@ -286,6 +304,7 @@ function PackageRowCard({
           {usingVol ? ' (vol)' : ' (actual)'}
         </p>
       )}
+      </div>{/* end card body */}
     </div>
   );
 }
@@ -300,6 +319,8 @@ interface WarehouseVerifyFormProps {
   isPending: boolean;
   mode?: 'first-verify' | 're-verify';
   initialPackages?: GoodsBreakdownItem[];
+  /** When provided, the form element gets this id and internal action buttons are hidden. The caller renders its own submit trigger with `form={formId}`. */
+  formId?: string;
   onSwitchToImages: () => void;
   onSubmit: (payload: {
     transportMode: 'air' | 'sea';
@@ -318,20 +339,59 @@ export function WarehouseVerifyForm({
   isPending,
   mode = 'first-verify',
   initialPackages = [],
+  formId,
   onSwitchToImages,
   onSubmit,
 }: WarehouseVerifyFormProps): ReactElement {
   const isReVerify = mode === 're-verify';
   const defaultMode = (view.transportMode || view.shipmentType) === 'sea' ? 'sea' : 'air';
+  const draftKey = `gx_verify_draft_${view.id}`;
 
-  const [transportMode, setTransportMode] = useState<'air' | 'sea'>(defaultMode);
-  const [departureDate, setDepartureDate] = useState('');
-  const [rows, setRows] = useState<PackageRow[]>(() =>
-    initialPackages.length > 0
-      ? initialPackages.map((pkg, i) => rowFromBreakdown(pkg, i + 1))
-      : [emptyRow(1)],
+  // Restore draft on mount (only for first-verify; re-verify prefills from existing data)
+  const DRAFT_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+  const restoredDraft = useMemo(() => {
+    if (isReVerify) return null;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { rows: PackageRow[]; transportMode: 'air' | 'sea'; nextId: number; savedAt?: number };
+      if (parsed.savedAt && Date.now() - parsed.savedAt > DRAFT_TTL_MS) {
+        localStorage.removeItem(draftKey);
+        return null;
+      }
+      return parsed;
+    } catch {
+      return null;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const submitting = useRef(false);
+
+  const [transportMode, setTransportMode] = useState<'air' | 'sea'>(
+    restoredDraft?.transportMode ?? defaultMode,
   );
-  const [nextId, setNextId] = useState(initialPackages.length + 2);
+  const [rows, setRows] = useState<PackageRow[]>(() => {
+    if (restoredDraft) return restoredDraft.rows;
+    return initialPackages.length > 0
+      ? initialPackages.map((pkg, i) => rowFromBreakdown(pkg, i + 1))
+      : [emptyRow(1)];
+  });
+  const [nextId, setNextId] = useState(restoredDraft?.nextId ?? initialPackages.length + 2);
+
+  // Save draft to localStorage on every change (debounced 400ms)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (isReVerify) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({ rows, transportMode, nextId, savedAt: Date.now() }));
+      } catch { /* quota exceeded — silently skip */ }
+    }, 400);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, [rows, transportMode, nextId, draftKey, isReVerify]);
   const [restricted, setRestricted] = useState<'none' | 'flag'>('none');
   const [flagNote, setFlagNote] = useState('');
   const [manualCharge, setManualCharge] = useState('');
@@ -369,7 +429,16 @@ export function WarehouseVerifyForm({
   const missingImages = isD2D && imageCount === 0;
   const d2dBlocked = missingMeasurements || missingImages;
 
+  // "Add another package" is disabled until the last row has its required fields
+  const lastRow = rows[rows.length - 1];
+  const lastRowComplete = lastRow
+    ? isD2D
+      ? (parsePositive(lastRow.weightKg) ?? 0) > 0 && (parsePositive(lastRow.cbm) ?? 0) > 0
+      : (parsePositive(lastRow.weightKg) ?? 0) > 0
+    : true;
+
   const addRow = (): void => {
+    if (!lastRowComplete) return;
     setRows((prev) => [...prev, emptyRow(nextId)]);
     setNextId((n) => n + 1);
   };
@@ -384,6 +453,8 @@ export function WarehouseVerifyForm({
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
     setNotice(null);
     setError(null);
 
@@ -432,11 +503,13 @@ export function WarehouseVerifyForm({
     try {
       const result = await onSubmit({
         transportMode,
-        departureDate: toIso(departureDate),
+        departureDate: undefined,
         packages,
         manualFinalChargeUsd,
         manualAdjustmentReason: manualReason.trim() || undefined,
       });
+      // Clear saved draft on success
+      try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
       if (isReVerify && view.finalChargeUsd != null) {
         setNotice(
           `Packages updated. Charge revised from ${formatCurrency(view.finalChargeUsd, 'USD')} → ${formatCurrency(result.finalChargeUsd, 'USD')}.`,
@@ -446,19 +519,27 @@ export function WarehouseVerifyForm({
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Verification failed. Please try again.');
+      submitting.current = false;
     }
   };
 
   return (
-    <form className="space-y-0" onSubmit={(e) => void handleSubmit(e)}>
+    <form id={formId} className="space-y-0" onSubmit={(e) => void handleSubmit(e)}>
       <div className="p-5 space-y-5">
 
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold text-gray-900">
-              {isReVerify ? 'Update package list' : 'Verify packages'}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-semibold text-gray-900">
+                {isReVerify ? 'Update package list' : 'Verify packages'}
+              </h3>
+              {!isReVerify && restoredDraft && (
+                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
+                  Draft restored
+                </span>
+              )}
+            </div>
             <p className="mt-0.5 text-sm text-gray-500">
               {isReVerify
                 ? 'Pre-filled with existing packages. Add new rows below and submit all together.'
@@ -490,7 +571,7 @@ export function WarehouseVerifyForm({
                   onClick={onSwitchToImages}
                   className="font-semibold underline hover:no-underline"
                 >
-                  Go to Images tab →
+                  Upload images →
                 </button>
               </p>
             </div>
@@ -539,12 +620,10 @@ export function WarehouseVerifyForm({
           </div>
           <div>
             <SectionLabel>Departure date</SectionLabel>
-            <input
-              type="datetime-local"
-              value={departureDate}
-              onChange={(e) => setDepartureDate(e.target.value)}
-              className={inputCls}
-            />
+            <div className={cn(inputCls, 'flex items-center gap-2 bg-gray-50 text-gray-500 cursor-not-allowed select-none')}>
+              <span className="flex-1 text-gray-400">—</span>
+              <span className="ml-auto text-xs text-gray-400">Set at dispatch</span>
+            </div>
           </div>
         </div>
 
@@ -569,7 +648,9 @@ export function WarehouseVerifyForm({
           <button
             type="button"
             onClick={addRow}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 py-3 text-sm font-medium text-gray-500 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
+            disabled={!lastRowComplete}
+            title={!lastRowComplete ? (isD2D ? 'Fill weight and CBM before adding another package' : 'Fill weight before adding another package') : undefined}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 py-3 text-sm font-medium text-gray-500 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-gray-300 disabled:hover:bg-transparent disabled:hover:text-gray-500"
           >
             <Plus className="h-4 w-4" />
             Add another package
@@ -698,8 +779,8 @@ export function WarehouseVerifyForm({
         )}
       </div>
 
-      {/* Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-5 py-4">
+      {/* Actions — hidden when managed by an external shell (formId provided) */}
+      <div className={formId ? 'hidden' : 'flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-5 py-4'}>
         <div className="flex items-center gap-3">
           <Button
             type="submit"

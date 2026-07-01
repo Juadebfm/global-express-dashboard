@@ -172,9 +172,7 @@ function BatchGroup({
                     <div>
                       <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Tracking</p>
                       <p className="text-xs font-mono text-gray-600">
-                        {isInternalTracking(o.trackingNumber)
-                          ? formatTrackingDisplay(o.trackingNumber)
-                          : o.trackingNumber}
+                        {isInternalTracking(o.trackingNumber) ? '—' : o.trackingNumber}
                       </p>
                     </div>
                     <div>
@@ -220,9 +218,7 @@ function BatchGroup({
                       </td>
                       <td className="px-4 py-3">
                         {isInternalTracking(o.trackingNumber) ? (
-                          <span className="text-xs italic text-gray-400">
-                            {formatTrackingDisplay(o.trackingNumber)}
-                          </span>
+                          <span className="text-xs text-gray-300">—</span>
                         ) : (
                           <span className="text-xs font-mono text-gray-400">
                             {o.trackingNumber}

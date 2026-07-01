@@ -1,5 +1,4 @@
 export { OrderQueue } from './OrderQueue';
-export { OrderDetailHeader } from './OrderDetailHeader';
 export { StatusProgression } from './StatusProgression';
 export { OverviewPanel } from './OverviewPanel';
 export { WarehouseVerifyForm } from './WarehouseVerifyForm';
@@ -15,3 +14,13 @@ export { CreateOrderModal } from './CreateOrderModal';
 export { OrderPaymentHistory } from './OrderPaymentHistory';
 export { SendPaymentPanel } from './SendPaymentPanel';
 export { MeasurementsTab } from './MeasurementsTab';
+// New operator queue UI
+export { OperatorOrdersView } from './OperatorDashboard';
+export type { QueueKind } from './QueueShell';
+export { QueueShell } from './QueueShell';
+export { OrderSummaryCard } from './OrderSummaryCard';
+export { AllCaughtUp } from './AllCaughtUp';
+export { VerifyQueueStep } from './VerifyQueueStep';
+export { HoldQueueStep } from './HoldQueueStep';
+export { BatchQueueStep } from './BatchQueueStep';
+export { PaymentQueueStep } from './PaymentQueueStep';

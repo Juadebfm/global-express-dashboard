@@ -24,6 +24,7 @@
   "tabs": {
     "overview": "개요",
     "warehouse": "창고",
+    "measurements": "측정값",
     "payment": "결제",
     "images": "이미지",
     "pickup": "픽업 및 이미지",

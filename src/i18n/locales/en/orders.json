@@ -24,6 +24,7 @@
   "tabs": {
     "overview": "Overview",
     "warehouse": "Warehouse",
+    "measurements": "Measurements",
     "payment": "Payment",
     "images": "Images",
     "pickup": "Pickup & Images",

@@ -67,7 +67,7 @@ export {
   getAllSuppliers,
 } from './suppliersService';
 export { getSupportTickets, getSupportTicketById, createSupportTicket, sendSupportMessage, updateTicketStatus, mapSupportMessage } from './supportService';
-export { createOrder, getOrders, getOrderById, getOrderTimeline, getOrderImages, updateOrderStatus, deleteOrder, updatePickupRep, estimateOrderCost } from './ordersService';
+export { createOrder, getOrders, getOrderById, getOrderTimeline, getOrderImages, updateOrderStatus, deleteOrder, updatePickupRep, estimateOrderCost, escalateOrder, clearEscalation } from './ordersService';
 export type { OrderTimeline, OrderTimelineEvent, GoodsBreakdownItem, OrderEstimatePayload } from './ordersService';
 export {
   estimateShipping,
@@ -152,5 +152,6 @@ export {
   closeBatch,
   getBatchStatusLabels,
   getAvailableOrdersForBatch,
+  createBatch,
 } from './batchesService';
-export type { BatchListParams, AvailableOrder } from './batchesService';
+export type { BatchListParams, AvailableOrder, CreateBatchPayload } from './batchesService';

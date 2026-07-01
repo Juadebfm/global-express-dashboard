@@ -25,6 +25,8 @@ export type Action =
   | 'orders.delete'             // soft-delete an order
   | 'orders.updateStatus'       // advance the status pipeline
   | 'orders.warehouseVerify'    // record measurements + packages
+  | 'orders.escalate'           // flag a hold for superadmin review
+  | 'orders.clearEscalation'    // clear the escalation flag (superadmin only)
 
   // ── Shipments
   | 'shipments.viewDetail'      // staff-only detail page
@@ -69,10 +71,12 @@ const policy: Record<Action, ReadonlySet<Role>> = {
 
   // Orders
   'orders.deleteImage': ADMIN_PLUS,
-  'orders.approveOverride': ADMIN_PLUS,
+  'orders.approveOverride': SUPER_ONLY,
   'orders.delete': ADMIN_PLUS,
   'orders.updateStatus': STAFF_PLUS,
   'orders.warehouseVerify': STAFF_PLUS,
+  'orders.escalate': STAFF_PLUS,
+  'orders.clearEscalation': SUPER_ONLY,
 
   // Shipments
   'shipments.viewDetail': STAFF_PLUS,

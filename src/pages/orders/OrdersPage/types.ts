@@ -257,6 +257,8 @@ export interface OrderView {
   origin: string;
   destination: string;
   flaggedForAdminReview: boolean;
+  escalatedAt: string | null;
+  escalationNote: string | null;
   paymentDetailsSentAt: string | null;
   dispatchBatchId: string | null;
   sourcingSupplierId: string | null;
@@ -411,6 +413,8 @@ export function toView(order: ApiOrder): OrderView {
     origin: resolveLocation(pick(record, ['origin', 'originAddress'])) || 'Unknown',
     destination: resolveLocation(pick(record, ['destination', 'destinationAddress', 'recipientAddress'])) || 'Unknown',
     flaggedForAdminReview: readBoolean(record, ['flaggedForAdminReview']),
+    escalatedAt: readString(record, ['escalatedAt']) || null,
+    escalationNote: readString(record, ['escalationNote']) || null,
     paymentDetailsSentAt: readString(record, ['paymentDetailsSentAt']) || null,
     dispatchBatchId: readString(record, ['dispatchBatchId']) || null,
     sourcingSupplierId: readString(record, ['sourcingSupplierId']) || null,

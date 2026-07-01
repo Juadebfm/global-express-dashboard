@@ -170,4 +170,7 @@ export {
   useRemoveOrderFromBatch,
   useSetBatchMovementStatus,
   useCloseBatch,
+  useCreateBatch,
 } from './useBatches';
+export { useEscalateOrder } from './useEscalateOrder';
+export { useClearEscalation } from './useClearEscalation';

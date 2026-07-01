@@ -2,14 +2,32 @@ import type { ReactElement } from 'react';
 import { Plane, Ship } from 'lucide-react';
 import { cn } from '@/utils';
 import { formatDate } from '@/utils';
+import { formatTrackingDisplay } from '@/lib/trackingUtils';
 import type { OrderListItem } from '@/types';
-import {
-  OPERATOR_FILTERS,
-  statusLabel,
-  hasVerifyBadge,
-  hasUnpaidBadge,
-} from '../types';
+import { OPERATOR_FILTERS, statusLabel } from '../types';
 import type { OperatorFilter } from '../types';
+
+interface QueueBadge {
+  label: string;
+  variant: 'amber' | 'red';
+}
+
+function getQueueBadge(statusV2: string, paymentCollectionStatus: string): QueueBadge | null {
+  const s = statusV2.toUpperCase();
+  if (s === 'AWAITING_WAREHOUSE_RECEIPT') return { label: 'Confirm arrival', variant: 'amber' };
+  if (s === 'WAREHOUSE_RECEIVED' || s === 'CLAIM_APPROVED_PENDING_BULK_PROCESSING') {
+    return { label: 'Verify', variant: 'amber' };
+  }
+  if (s === 'ON_HOLD') return { label: 'Resolve hold', variant: 'red' };
+  const pcs = paymentCollectionStatus.toUpperCase();
+  if (
+    (pcs === 'UNPAID' || pcs === 'PAYMENT_IN_PROGRESS') &&
+    s === 'WAREHOUSE_VERIFIED_PRICED'
+  ) {
+    return { label: 'Collect payment', variant: 'amber' };
+  }
+  return null;
+}
 
 interface OrderQueueProps {
   orders: OrderListItem[];
@@ -25,8 +43,9 @@ interface OrderQueueProps {
 }
 
 function truncateTracking(trackingNumber: string): string {
-  if (trackingNumber.length <= 9) return trackingNumber;
-  return `...${trackingNumber.slice(-9)}`;
+  const display = formatTrackingDisplay(trackingNumber);
+  if (display.length <= 9) return display;
+  return `...${display.slice(-9)}`;
 }
 
 export function OrderQueue({
@@ -109,8 +128,7 @@ export function OrderQueue({
           <ul className="divide-y divide-gray-100">
             {orders.map((order) => {
               const selected = order.id === selectedOrderId;
-              const showVerify = hasVerifyBadge(order.statusV2);
-              const showUnpaid = hasUnpaidBadge(order.paymentCollectionStatus);
+              const badge = getQueueBadge(order.statusV2, order.paymentCollectionStatus);
               const isSea = order.transportMode === 'sea';
 
               return (
@@ -156,19 +174,18 @@ export function OrderQueue({
                         )}
                       </div>
 
-                      {/* Badges stacked */}
-                      <div className="flex shrink-0 flex-col items-end gap-1">
-                        {showVerify && (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200">
-                            ⚠ Verify
-                          </span>
-                        )}
-                        {showUnpaid && (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-600 ring-1 ring-red-200">
-                            Unpaid
-                          </span>
-                        )}
-                      </div>
+                      {badge && (
+                        <span
+                          className={cn(
+                            'shrink-0 inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold ring-1',
+                            badge.variant === 'red'
+                              ? 'bg-red-50 text-red-600 ring-red-200'
+                              : 'bg-amber-50 text-amber-700 ring-amber-200',
+                          )}
+                        >
+                          {badge.label}
+                        </span>
+                      )}
                     </div>
 
                     {/* Row 3: status */}

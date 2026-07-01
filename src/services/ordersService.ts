@@ -146,6 +146,8 @@ function mapOrderRow(row: AnyRecord, index: number): OrderListItem {
     paymentCollectionStatus:
       firstString(row, ['paymentCollectionStatus', 'payment_collection_status']) ?? 'PENDING',
     flaggedForAdminReview: row.flaggedForAdminReview === true,
+    escalatedAt: firstString(row, ['escalatedAt']) ?? null,
+    escalationNote: firstString(row, ['escalationNote']) ?? null,
     raw: row,
   };
 }
@@ -320,6 +322,14 @@ export async function updateOrderStatus(
   statusV2: string
 ): Promise<void> {
   await apiPatch(`/orders/${id}/status`, { statusV2 }, token);
+}
+
+export async function escalateOrder(token: string, id: string, note: string): Promise<void> {
+  await apiPatch(`/orders/${id}/escalate`, { note }, token);
+}
+
+export async function clearEscalation(token: string, id: string): Promise<void> {
+  await apiPatch(`/orders/${id}/clear-escalation`, {}, token);
 }
 
 export async function deleteOrder(

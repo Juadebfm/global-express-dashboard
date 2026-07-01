@@ -9,7 +9,10 @@ import {
   closeBatch,
   getBatchStatusLabels,
   getAvailableOrdersForBatch,
+  createBatch,
 } from '@/services';
+import type { CreateBatchPayload } from '@/services';
+import type { Batch } from '@/types';
 import type {
   BatchListParams,
 } from '@/services/batchesService';
@@ -113,6 +116,16 @@ export function useCloseBatch() {
     mutationFn: (batchId: string) => closeBatch(getToken(), batchId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['batches'] });
+    },
+  });
+}
+
+export function useCreateBatch() {
+  const queryClient = useQueryClient();
+  return useMutation<Batch, Error, CreateBatchPayload>({
+    mutationFn: (payload) => createBatch(getToken(), payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['batches', 'list'] });
     },
   });
 }
