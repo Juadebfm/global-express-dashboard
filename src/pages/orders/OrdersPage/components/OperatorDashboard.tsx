@@ -474,13 +474,15 @@ export function OperatorOrdersView(): ReactElement {
   const handleNext = () => {
     if (viewState.kind !== 'queue') return;
     const { orders, index, queueType } = viewState;
+    const completedId = orders[index]?.id;
     const nextIndex = index + 1;
     if (nextIndex < orders.length) {
       // More orders in this snapshot — advance
       setViewState({ ...viewState, index: nextIndex });
     } else {
-      // Snapshot exhausted — check live data for any orders that arrived since queue started
-      const fresh = getQueueOrders(allOrders, queueType);
+      // Snapshot exhausted — check live data for newly arrived orders, excluding the
+      // just-completed one (query invalidation is async; it may still be in the cache)
+      const fresh = getQueueOrders(allOrders, queueType).filter((o) => o.id !== completedId);
       if (fresh.length > 0) {
         setViewState({ kind: 'queue', queueType, orders: fresh, index: 0 });
       } else {

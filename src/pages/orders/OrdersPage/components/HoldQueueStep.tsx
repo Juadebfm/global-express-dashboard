@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
-import { AlertTriangle, Clock, Phone, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Clock, Phone, ShieldAlert } from 'lucide-react';
 import { useUpdateOrderStatus, useEscalateOrder, useClearEscalation, useCan } from '@/hooks';
 import { cn } from '@/utils';
 import type { OrderView } from '../types';
@@ -29,6 +29,7 @@ export function HoldQueueStep({
   const [escalateNote, setEscalateNote] = useState('');
   const [escalateConfirm, setEscalateConfirm] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [released, setReleased] = useState(false);
 
   const updateStatus = useUpdateOrderStatus();
   const escalate = useEscalateOrder();
@@ -38,10 +39,12 @@ export function HoldQueueStep({
   const releaseTarget = view.finalChargeUsd != null
     ? 'WAREHOUSE_VERIFIED_PRICED'
     : 'WAREHOUSE_RECEIVED';
+  const nextLabel = currentIndex + 1 < totalCount ? 'Next order →' : 'Finish';
 
   const handleRelease = async () => {
+    if (released) return;
     await updateStatus.mutateAsync({ orderId: view.id, statusV2: releaseTarget });
-    onNext();
+    setReleased(true);
   };
 
   const handleEscalate = async () => {
@@ -111,6 +114,34 @@ export function HoldQueueStep({
       </div>
     </div>
   );
+
+  // ── Success screen (shared) ───────────────────────────────────────────────
+
+  if (released) {
+    return (
+      <div className="mx-auto max-w-lg space-y-6 py-12 text-center">
+        <div className="flex justify-center">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
+            <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+          </div>
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Hold released</h2>
+          <p className="mt-2 text-sm text-gray-500">
+            {view.senderName ?? 'Order'} has been moved back to{' '}
+            {releaseTarget === 'WAREHOUSE_VERIFIED_PRICED' ? 'Verified & Priced' : 'At Warehouse'}.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onNext}
+          className="rounded-xl bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600"
+        >
+          {nextLabel}
+        </button>
+      </div>
+    );
+  }
 
   // ── PATH A: Superadmin view ───────────────────────────────────────────────
 
