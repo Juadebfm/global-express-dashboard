@@ -144,12 +144,20 @@ function UnitInput({
 
 // ── Package row card ──────────────────────────────────────────────────────────
 
+// datetime-local inputs expect "YYYY-MM-DDTHH:MM" in local time
+function toDatetimeLocal(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function PackageRowCard({
   row,
   index,
   canRemove,
   isD2D,
   showErrors,
+  minDatetime,
   onUpdate,
   onRemove,
 }: {
@@ -158,6 +166,7 @@ function PackageRowCard({
   canRemove: boolean;
   isD2D: boolean;
   showErrors: boolean;
+  minDatetime: string;
   onUpdate: (updates: Partial<PackageRow>) => void;
   onRemove: () => void;
 }): ReactElement {
@@ -288,6 +297,8 @@ function PackageRowCard({
         <input
           type="datetime-local"
           value={row.arrivalAt}
+          min={minDatetime}
+          max={toDatetimeLocal(new Date().toISOString())}
           onChange={(e) => onUpdate({ arrivalAt: e.target.value })}
           className={inputCls}
         />
@@ -641,6 +652,7 @@ export function WarehouseVerifyForm({
               canRemove={rows.length > 1}
               isD2D={isD2D}
               showErrors={showRowErrors}
+              minDatetime={toDatetimeLocal(view.createdAt)}
               onUpdate={(u) => updateRow(row.id, u)}
               onRemove={() => removeRow(row.id)}
             />
