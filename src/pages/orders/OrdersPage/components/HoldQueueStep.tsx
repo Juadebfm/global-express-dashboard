@@ -231,7 +231,7 @@ export function HoldQueueStep({
 
           {error && (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error instanceof Error ? error.message : 'Action failed — please try again'}
+              {'Something went wrong — please try again or skip this order'}
             </div>
           )}
         </div>
@@ -355,7 +355,7 @@ export function HoldQueueStep({
 
         {error && (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error instanceof Error ? error.message : 'Action failed — please try again'}
+            {'Something went wrong — please try again or skip this order'}
           </div>
         )}
       </div>
