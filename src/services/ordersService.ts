@@ -145,6 +145,7 @@ function mapOrderRow(row: AnyRecord, index: number): OrderListItem {
     transportMode: firstString(row, ['transportMode', 'transport_mode', 'mode']) ?? 'air',
     paymentCollectionStatus:
       firstString(row, ['paymentCollectionStatus', 'payment_collection_status']) ?? 'PENDING',
+    paymentDetailsSentAt: firstString(row, ['paymentDetailsSentAt', 'payment_details_sent_at']) ?? null,
     flaggedForAdminReview: row.flaggedForAdminReview === true,
     escalatedAt: firstString(row, ['escalatedAt']) ?? null,
     escalationNote: firstString(row, ['escalationNote']) ?? null,

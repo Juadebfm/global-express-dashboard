@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
-import { CheckCircle2, Image } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Image } from 'lucide-react';
 import { useWarehouseVerify, useOrderImages, useOrderTimeline, useUpload, useCan } from '@/hooks';
 import { cn } from '@/utils';
 import type { OrderView } from '../types';
@@ -32,6 +32,7 @@ export function VerifyQueueStep({
   const canApproveOverride = useCan('orders.approveOverride');
   const [showImages, setShowImages] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [resultStatus, setResultStatus] = useState<'verified' | 'on_hold' | null>(null);
 
   const verifyWarehouse = useWarehouseVerify();
   const uploadImage = useUpload();
@@ -47,6 +48,7 @@ export function VerifyQueueStep({
 
   const handleSubmit = async (payload: Parameters<typeof verifyWarehouse.mutateAsync>[0]['payload']) => {
     const result = await verifyWarehouse.mutateAsync({ orderId: view.id, payload });
+    setResultStatus(result.statusV2 === 'ON_HOLD' ? 'on_hold' : 'verified');
     setVerified(true);
     return result;
   };
@@ -144,18 +146,52 @@ export function VerifyQueueStep({
         )}
       </div>
 
-      {/* ── Success modal ──────────────────────────────────────────────────── */}
-      {verified && (
+      {/* ── Success / On-hold modal ─────────────────────────────────────────── */}
+      {verified && resultStatus === 'on_hold' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-
-          {/* Dialog */}
           <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
-            {/* Accent bar */}
-            <div className="h-1 bg-emerald-500" />
+            <div className="h-1 bg-amber-500" />
+            <div className="flex items-start gap-4 px-7 pt-6 pb-5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+              </div>
+              <div className="min-w-0 flex-1 pt-0.5">
+                <h3 className="text-base font-semibold text-gray-900">Order placed on hold</h3>
+                <p className="mt-0.5 text-sm text-gray-500">
+                  This order has been flagged for restricted item review and is now in the review queue. It won't advance until the hold is cleared.
+                </p>
+              </div>
+            </div>
+            <div className="border-t border-gray-100 mx-7" />
+            <div className="px-7 py-5">
+              <OrderSummaryCard view={view} className="w-full" />
+            </div>
+            <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-7 py-4">
+              <button
+                type="button"
+                onClick={onExit}
+                className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
+              >
+                Go to review queue →
+              </button>
+              <button
+                type="button"
+                onClick={onNext}
+                className="rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700"
+              >
+                {nextLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-            {/* Header */}
+      {verified && resultStatus === 'verified' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="h-1 bg-emerald-500" />
             <div className="flex items-start gap-4 px-7 pt-6 pb-5">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100">
                 <CheckCircle2 className="h-5 w-5 text-emerald-600" />
@@ -171,16 +207,10 @@ export function VerifyQueueStep({
                 </p>
               </div>
             </div>
-
-            {/* Divider */}
             <div className="border-t border-gray-100 mx-7" />
-
-            {/* Order summary */}
             <div className="px-7 py-5">
               <OrderSummaryCard view={view} className="w-full" />
             </div>
-
-            {/* Actions */}
             <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-7 py-4">
               <button
                 type="button"

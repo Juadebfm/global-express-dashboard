@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { Plane, Plus, Ship } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useBatches, useAddOrderToBatch, useCreateBatch } from '@/hooks';
 import { cn } from '@/utils';
 import type { OrderView } from '../types';
@@ -29,6 +30,8 @@ export function BatchQueueStep({
 
   const transportMode = (view.transportMode || view.shipmentType) === 'sea' ? 'sea' : 'air';
 
+  const queryClient = useQueryClient();
+
   const { data: batchesData, isLoading: batchesLoading } = useBatches({
     status: 'open',
     transportMode,
@@ -38,15 +41,34 @@ export function BatchQueueStep({
 
   const batches = batchesData?.batches ?? [];
 
+  const isAlreadyInBatch = (err: unknown) =>
+    err instanceof Error && err.message.toLowerCase().includes('already in a batch');
+
   const handleAssign = async () => {
     if (!selectedBatchId) return;
-    await addOrderToBatch.mutateAsync({ batchId: selectedBatchId, orderId: view.id });
+    try {
+      await addOrderToBatch.mutateAsync({ batchId: selectedBatchId, orderId: view.id });
+    } catch (err) {
+      if (isAlreadyInBatch(err)) {
+        void queryClient.invalidateQueries({ queryKey: ['orders'] });
+        onNext();
+      }
+      return;
+    }
     onNext();
   };
 
   const handleCreateAndAssign = async () => {
-    const newBatch = await createBatch.mutateAsync({ transportMode });
-    await addOrderToBatch.mutateAsync({ batchId: newBatch.id, orderId: view.id });
+    try {
+      const newBatch = await createBatch.mutateAsync({ transportMode });
+      await addOrderToBatch.mutateAsync({ batchId: newBatch.id, orderId: view.id });
+    } catch (err) {
+      if (isAlreadyInBatch(err)) {
+        void queryClient.invalidateQueries({ queryKey: ['orders'] });
+        onNext();
+      }
+      return;
+    }
     onNext();
   };
 

@@ -5,6 +5,7 @@ import { useUpdateOrderStatus, useEscalateOrder, useClearEscalation, useCan } fr
 import { cn } from '@/utils';
 import type { OrderView } from '../types';
 import { QueueShell } from './QueueShell';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { OrderSummaryCard } from './OrderSummaryCard';
 
 interface HoldQueueStepProps {
@@ -29,13 +30,19 @@ export function HoldQueueStep({
   const [escalateNote, setEscalateNote] = useState('');
   const [escalateConfirm, setEscalateConfirm] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [releaseConfirm, setReleaseConfirm] = useState(false);
+  const [clearConfirm, setClearConfirm] = useState(false);
   const [released, setReleased] = useState(false);
 
   const updateStatus = useUpdateOrderStatus();
   const escalate = useEscalateOrder();
   const clearFlag = useClearEscalation();
 
-  const isEscalated = !!view.escalatedAt;
+  const isEscalated = !!view.escalatedAt
+  const isRestrictedItemFlag = view.escalationNote?.startsWith('[RESTRICTED_ITEM] ') ?? false
+  const escalationNoteDisplay = isRestrictedItemFlag
+    ? (view.escalationNote?.replace('[RESTRICTED_ITEM] ', '') ?? '')
+    : (view.escalationNote ?? '');
   const releaseTarget = view.finalChargeUsd != null
     ? 'WAREHOUSE_VERIFIED_PRICED'
     : 'WAREHOUSE_RECEIVED';
@@ -44,6 +51,7 @@ export function HoldQueueStep({
   const handleRelease = async () => {
     if (released) return;
     await updateStatus.mutateAsync({ orderId: view.id, statusV2: releaseTarget });
+    setReleaseConfirm(false);
     setReleased(true);
   };
 
@@ -55,11 +63,13 @@ export function HoldQueueStep({
 
   const handleClearFlag = async () => {
     await clearFlag.mutateAsync(view.id);
+    setClearConfirm(false);
     onNext();
   };
 
   const handleCancel = async () => {
     await updateStatus.mutateAsync({ orderId: view.id, statusV2: 'CANCELLED' });
+    setCancelConfirm(false);
     onNext();
   };
 
@@ -156,31 +166,50 @@ export function HoldQueueStep({
         hint="Review the escalation, then release, return to staff, or cancel"
         primaryLabel="Release from hold →"
         isPending={isPending}
-        onPrimary={() => void handleRelease()}
+        onPrimary={() => setReleaseConfirm(true)}
         secondaryLabel={isEscalated ? 'Clear flag' : undefined}
         secondaryDisabled={isPending}
-        onSecondary={isEscalated ? () => void handleClearFlag() : undefined}
+        onSecondary={isEscalated ? () => setClearConfirm(true) : undefined}
       >
         <div className="space-y-4">
           <OrderSummaryCard view={view} />
 
           {isEscalated && (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
+            <div className={cn(
+              'rounded-2xl border px-5 py-4',
+              isRestrictedItemFlag
+                ? 'border-amber-200 bg-amber-50'
+                : 'border-red-200 bg-red-50',
+            )}>
               <div className="flex items-start gap-3">
-                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                <ShieldAlert className={cn(
+                  'mt-0.5 h-4 w-4 shrink-0',
+                  isRestrictedItemFlag ? 'text-amber-500' : 'text-red-500',
+                )} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-red-800">Escalated by staff</p>
+                  <p className={cn(
+                    'text-sm font-semibold',
+                    isRestrictedItemFlag ? 'text-amber-800' : 'text-red-800',
+                  )}>
+                    {isRestrictedItemFlag ? 'Flagged at verification — restricted item' : 'Escalated by staff'}
+                  </p>
                   {view.escalatedAt && (
-                    <p className="mt-0.5 text-xs text-red-500">
+                    <p className={cn(
+                      'mt-0.5 text-xs',
+                      isRestrictedItemFlag ? 'text-amber-500' : 'text-red-500',
+                    )}>
                       <Clock className="mr-1 inline h-3 w-3" />
                       {new Date(view.escalatedAt).toLocaleString(undefined, {
                         month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
                       })}
                     </p>
                   )}
-                  {view.escalationNote && (
-                    <p className="mt-2 rounded-xl bg-white px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">
-                      "{view.escalationNote}"
+                  {escalationNoteDisplay && (
+                    <p className={cn(
+                      'mt-2 rounded-xl bg-white px-3 py-2 text-sm ring-1',
+                      isRestrictedItemFlag ? 'text-amber-700 ring-amber-200' : 'text-red-700 ring-red-200',
+                    )}>
+                      "{escalationNoteDisplay}"
                     </p>
                   )}
                 </div>
@@ -191,42 +220,17 @@ export function HoldQueueStep({
           {contactCard}
           {holdContext}
 
-          {/* Destructive cancel — inline, not in bottom bar */}
+          {/* Destructive cancel */}
           <div className="rounded-2xl border border-gray-200 bg-white px-5 py-4">
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Destructive actions</p>
-            {!cancelConfirm ? (
-              <button
-                type="button"
-                onClick={() => setCancelConfirm(true)}
-                disabled={isPending}
-                className="mt-3 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
-              >
-                Cancel order
-              </button>
-            ) : (
-              <div className="mt-3 space-y-2">
-                <p className="text-sm text-red-700 font-medium">
-                  This will permanently cancel the order and notify the customer. Are you sure?
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void handleCancel()}
-                    disabled={isPending}
-                    className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
-                  >
-                    Yes, cancel order
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCancelConfirm(false)}
-                    className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-                  >
-                    Go back
-                  </button>
-                </div>
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={() => setCancelConfirm(true)}
+              disabled={isPending}
+              className="mt-3 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+            >
+              Cancel order
+            </button>
           </div>
 
           {error && (
@@ -242,6 +246,37 @@ export function HoldQueueStep({
             </div>
           )}
         </div>
+
+        <ConfirmModal
+          isOpen={releaseConfirm}
+          tone="warning"
+          title="Release from hold?"
+          message={`The order will return to ${releaseTarget === 'WAREHOUSE_VERIFIED_PRICED' ? 'Verified & Priced' : 'At Warehouse'} and enter the next queue.`}
+          confirmLabel="Release order"
+          isLoading={updateStatus.isPending}
+          onConfirm={() => void handleRelease()}
+          onCancel={() => setReleaseConfirm(false)}
+        />
+        <ConfirmModal
+          isOpen={clearConfirm}
+          tone="info"
+          title="Clear escalation flag?"
+          message="The order stays on hold but the supervisor flag is removed. Staff will be able to action it again."
+          confirmLabel="Clear flag"
+          isLoading={clearFlag.isPending}
+          onConfirm={() => void handleClearFlag()}
+          onCancel={() => setClearConfirm(false)}
+        />
+        <ConfirmModal
+          isOpen={cancelConfirm}
+          tone="danger"
+          title="Cancel this order?"
+          message="This cannot be undone. The customer will be notified and any in-progress payments will be voided."
+          confirmLabel="Yes, cancel order"
+          isLoading={updateStatus.isPending}
+          onConfirm={() => void handleCancel()}
+          onCancel={() => setCancelConfirm(false)}
+        />
       </QueueShell>
     );
   }
@@ -278,9 +313,9 @@ export function HoldQueueStep({
                   })}
                 </p>
               )}
-              {view.escalationNote && (
+              {escalationNoteDisplay && (
                 <p className="mt-2 rounded-xl bg-white px-3 py-2 text-sm text-gray-600 ring-1 ring-gray-200">
-                  "{view.escalationNote}"
+                  "{escalationNoteDisplay}"
                 </p>
               )}
             </div>
@@ -302,7 +337,7 @@ export function HoldQueueStep({
       hint="Contact the customer, then release the hold or flag for supervisor"
       primaryLabel="Release from hold →"
       isPending={isPending}
-      onPrimary={() => void handleRelease()}
+      onPrimary={() => setReleaseConfirm(true)}
       secondaryLabel={escalateConfirm ? 'Confirm escalation' : 'Flag for review'}
       secondaryDisabled={isPending || (escalateConfirm && !escalateNote.trim())}
       onSecondary={
@@ -366,6 +401,17 @@ export function HoldQueueStep({
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={releaseConfirm}
+        tone="warning"
+        title="Release from hold?"
+        message={`The order will return to ${releaseTarget === 'WAREHOUSE_VERIFIED_PRICED' ? 'Verified & Priced' : 'At Warehouse'} and enter the next queue.`}
+        confirmLabel="Release order"
+        isLoading={updateStatus.isPending}
+        onConfirm={() => void handleRelease()}
+        onCancel={() => setReleaseConfirm(false)}
+      />
     </QueueShell>
   );
 }

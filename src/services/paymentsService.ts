@@ -105,6 +105,17 @@ export function getOrderPayments(
   return apiGetData<ApiPayment[]>(`/payments/orders/${orderId}/payments`, token);
 }
 
+export function pingSupervisor(
+  token: string,
+  orderId: string,
+): Promise<{ name: string; phone: string | null }> {
+  return apiPostData<{ name: string; phone: string | null }>(
+    `/payments/${orderId}/ping-supervisor`,
+    undefined,
+    token,
+  );
+}
+
 export function verifyOrderPayment(
   token: string,
   paymentId: string,

@@ -150,6 +150,7 @@ export type {
   InitializePaymentPayload,
   PaystackInitResponse,
   ApiPayment,
+  PaymentReceiptMetadata,
   RecordOfflinePayload,
   RecordOfflineResult,
   ApiPaymentsResponse,

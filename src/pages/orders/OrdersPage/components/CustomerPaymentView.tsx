@@ -1,8 +1,8 @@
 import type { ChangeEvent, FormEvent, ReactElement } from 'react';
 import { useRef, useState } from 'react';
-import { ArrowLeft, Building2, Check, Copy, Upload } from 'lucide-react';
+import { ArrowLeft, Building2, Check, Copy, Loader2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui';
-import { useBankAccounts } from '@/hooks';
+import { useBankAccounts, useFxRate } from '@/hooks';
 import { useUploadPaymentReceipt } from '@/hooks/usePaymentReceipts';
 import type { BankInfo, ReceiptContentType } from '@/types';
 import { cn } from '@/utils';
@@ -106,11 +106,27 @@ interface CustomerPaymentViewProps {
 export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps): ReactElement {
   const { data: bankSettings, isLoading: bankLoading } = useBankAccounts();
   const { mutate: uploadReceipt, isPending, error: uploadError } = useUploadPaymentReceipt();
+  const fxRate = useFxRate();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [currency, setCurrency] = useState<'NGN' | 'USD'>('NGN');
+  const [manualAmount, setManualAmount] = useState<string | null>(null);
+  const [remitterName, setRemitterName] = useState('');
+  const [paymentDate, setPaymentDate] = useState('');
+  const [transactionRef, setTransactionRef] = useState('');
+
+  const amountOwedUsd = view.amountDue ?? view.finalChargeUsd ?? 0;
+  const effectiveRate = fxRate.data?.effectiveRate ?? null;
+
+  const autoAmount = (() => {
+    if (currency === 'USD') return amountOwedUsd > 0 ? String(amountOwedUsd) : '';
+    if (effectiveRate !== null) return amountOwedUsd > 0 ? String(Math.round(amountOwedUsd * effectiveRate)) : '';
+    return '';
+  })();
+  const amount = manualAmount ?? autoAmount;
 
   const isConfirmed = view.amountDue !== null;
   const amountDisplay = view.amountDue !== null
@@ -137,17 +153,28 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
     setFile(picked);
   };
 
+  const parsedAmount = parseFloat(amount);
+  const amountValid = amount.trim() !== '' && !isNaN(parsedAmount) && parsedAmount > 0;
+  const rateLoading = currency === 'NGN' && fxRate.isLoading;
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     if (!file) { setFileError('Please choose a receipt file first.'); return; }
+    if (!amountValid) { setFileError('Please enter the amount you are sending.'); return; }
     setFileError(null);
-
-    const amount = view.amountDue ?? view.finalChargeUsd ?? 0;
 
     await uploadReceipt({
       presign: { orderId: view.id, contentType: file.type as ReceiptContentType, originalFileName: file.name },
       file,
-      submit: { orderId: view.id, amount, currency: 'NGN', referenceCode: view.trackingNumber },
+      submit: {
+        orderId: view.id,
+        amount: parsedAmount,
+        currency,
+        referenceCode: view.trackingNumber,
+        remitterName: remitterName.trim() || undefined,
+        paymentDate: paymentDate || undefined,
+        transactionRef: transactionRef.trim() || undefined,
+      },
     });
 
     setSuccess(true);
@@ -241,6 +268,107 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
             </div>
           ) : (
             <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+              {/* Currency selector */}
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  I'm paying in
+                </p>
+                <div className="flex gap-2">
+                  {(['NGN', 'USD'] as const).map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => { setCurrency(c); setManualAmount(null); }}
+                      className={cn(
+                        'flex flex-1 items-center justify-center rounded-xl border py-2.5 text-sm font-semibold transition',
+                        currency === c
+                          ? 'border-brand-400 bg-brand-50 text-brand-700'
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300',
+                      )}
+                    >
+                      {c === 'NGN' ? '₦ Naira (NGN)' : '$ Dollar (USD)'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Amount being sent */}
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Amount you're sending
+                </label>
+                <div className={cn(
+                  'flex items-center gap-2 rounded-xl border bg-gray-50 px-3 py-2.5 transition focus-within:border-brand-400 focus-within:bg-white',
+                  rateLoading ? 'border-gray-100' : 'border-gray-200',
+                )}>
+                  {rateLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-gray-300" />
+                  ) : (
+                    <span className="text-sm font-medium text-gray-400">{currency === 'NGN' ? '₦' : '$'}</span>
+                  )}
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setManualAmount(e.target.value)}
+                    placeholder={rateLoading ? 'Fetching rate…' : '0.00'}
+                    disabled={rateLoading}
+                    min="0"
+                    step={currency === 'NGN' ? '1' : '0.01'}
+                    className="flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400 disabled:text-gray-400"
+                  />
+                </div>
+                {amountOwedUsd > 0 && !rateLoading && (
+                  <p className="mt-1 text-xs text-gray-400">
+                    Full balance: {currency === 'NGN' && effectiveRate
+                      ? `₦${Math.round(amountOwedUsd * effectiveRate).toLocaleString()}`
+                      : `$${amountOwedUsd.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                    } — enter less if paying in instalments
+                  </p>
+                )}
+              </div>
+
+              {/* Remitter name */}
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Name of remitter <span className="font-normal normal-case text-gray-400">(account holder name)</span>
+                </label>
+                <input
+                  type="text"
+                  value={remitterName}
+                  onChange={(e) => setRemitterName(e.target.value)}
+                  placeholder="Full name on your bank account"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-brand-400 focus:bg-white"
+                />
+              </div>
+
+              {/* Payment date + transaction ref */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    Transfer date
+                  </label>
+                  <input
+                    type="date"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-400 focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    Bank reference no.
+                  </label>
+                  <input
+                    type="text"
+                    value={transactionRef}
+                    onChange={(e) => setTransactionRef(e.target.value)}
+                    placeholder="From your receipt"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-brand-400 focus:bg-white"
+                  />
+                </div>
+              </div>
+
               <div
                 role="button"
                 tabIndex={0}
@@ -287,7 +415,7 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
                 className="w-full"
                 size="lg"
                 isLoading={isPending}
-                disabled={!file}
+                disabled={!file || !amountValid || rateLoading}
               >
                 I've sent the payment
               </Button>

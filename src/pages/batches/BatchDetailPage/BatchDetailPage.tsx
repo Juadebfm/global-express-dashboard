@@ -35,6 +35,7 @@ import type { AvailableOrder } from '@/services';
 import { getDisplayErrorMessage } from '@/lib/feedback';
 import { AppLayout } from '@/components/layout';
 import { Button, Card } from '@/components/ui';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useFeedbackStore } from '@/store';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
@@ -460,6 +461,7 @@ export function BatchDetailPage(): ReactElement {
   const [addOrderError, setAddOrderError] = useState<string | null>(null);
   const comboboxRef = useRef<HTMLDivElement>(null);
   const [removingOrderId, setRemovingOrderId] = useState<string | null>(null);
+  const [removeConfirm, setRemoveConfirm] = useState<{ orderId: string; customerName: string } | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
@@ -501,11 +503,17 @@ export function BatchDetailPage(): ReactElement {
     );
   });
 
-  const handleRemoveOrder = async (orderId: string, customerName: string): Promise<void> => {
-    if (!batchId) return;
+  const handleRemoveOrder = (orderId: string, customerName: string): void => {
+    setRemoveConfirm({ orderId, customerName });
+  };
+
+  const confirmRemoveOrder = async (): Promise<void> => {
+    if (!batchId || !removeConfirm) return;
+    const { orderId, customerName } = removeConfirm;
     setRemovingOrderId(orderId);
     try {
       await removeOrder.mutateAsync({ batchId, orderId });
+      setRemoveConfirm(null);
       pushMessage({ tone: 'success', message: `Order removed from ${customerName}'s slot.` });
     } catch (err) {
       pushMessage({ tone: 'error', message: getDisplayErrorMessage(err, 'Failed to remove order. Please try again.') });
@@ -934,6 +942,17 @@ export function BatchDetailPage(): ReactElement {
           </Card>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!removeConfirm}
+        tone="danger"
+        title="Remove order from batch?"
+        message={removeConfirm ? `${removeConfirm.customerName}'s order will be removed from this batch and returned to the assignment queue.` : ''}
+        confirmLabel="Remove order"
+        isLoading={!!removingOrderId}
+        onConfirm={() => void confirmRemoveOrder()}
+        onCancel={() => setRemoveConfirm(null)}
+      />
     </AppLayout>
   );
 }

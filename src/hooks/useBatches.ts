@@ -79,6 +79,7 @@ export function useAddOrderToBatch() {
       void queryClient.invalidateQueries({ queryKey: ['batches', 'detail', batchId] });
       void queryClient.invalidateQueries({ queryKey: ['batches', 'available-orders', batchId] });
       void queryClient.invalidateQueries({ queryKey: ['batches', 'list'] });
+      void queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
 }

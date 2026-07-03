@@ -26,10 +26,13 @@ export interface ReceiptPresignResponse {
 export interface ReceiptSubmitPayload {
   orderId: string;
   amount: number;
-  currency?: 'NGN';
+  currency?: 'NGN' | 'USD';
   r2Key: string;
   referenceCode?: string;
   note?: string;
+  remitterName?: string;
+  paymentDate?: string;
+  transactionRef?: string;
 }
 
 export interface ReceiptVerifyPayload {

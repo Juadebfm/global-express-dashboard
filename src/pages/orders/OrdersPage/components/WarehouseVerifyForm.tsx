@@ -183,6 +183,7 @@ function PackageRowCard({
   const usingVol = chargeableKg != null && (volKg ?? 0) > (actualKg ?? 0);
 
   const hasError = showErrors && isD2D && (!hasWeight || !hasCbm);
+  const qty = parsePositiveInt(row.quantity) ?? 1;
 
   return (
     <div className={cn(
@@ -280,11 +281,12 @@ function PackageRowCard({
         </div>
       )}
 
-      {/* Description */}
+      {/* Extra information */}
       <div className="mt-2.5">
+        <SectionLabel>Extra information</SectionLabel>
         <input
           type="text"
-          placeholder="Description (optional)"
+          placeholder="e.g. box dented, contents don't match label, unusual smell…"
           value={row.description}
           onChange={(e) => onUpdate({ description: e.target.value })}
           className={cn(inputCls, 'text-xs')}
@@ -313,6 +315,12 @@ function PackageRowCard({
           Volumetric: {(volKg ?? 0).toFixed(1)} kg
           {' · '}Chargeable: <span className="font-medium text-gray-600">{chargeableKg.toFixed(2)} kg</span>
           {usingVol ? ' (vol)' : ' (actual)'}
+          {qty > 1 && (
+            <span className="ml-1">
+              {'× '}{qty}{' = '}
+              <span className="font-medium text-gray-700">{(chargeableKg * qty).toFixed(2)} kg total</span>
+            </span>
+          )}
         </p>
       )}
       </div>{/* end card body */}
@@ -371,6 +379,14 @@ export function WarehouseVerifyForm({
         localStorage.removeItem(draftKey);
         return null;
       }
+      // Discard drafts that have no actual measurements (e.g. stale auto-saves from untouched forms)
+      const hasMeasurements = parsed.rows?.some(
+        (r) => parsePositive(r.weightKg) || parsePositive(r.lengthCm) || parsePositive(r.widthCm) || parsePositive(r.heightCm) || parsePositive(r.cbm),
+      );
+      if (!hasMeasurements) {
+        localStorage.removeItem(draftKey);
+        return null;
+      }
       return parsed;
     } catch {
       return null;
@@ -392,11 +408,16 @@ export function WarehouseVerifyForm({
   const [nextId, setNextId] = useState(restoredDraft?.nextId ?? initialPackages.length + 2);
 
   // Save draft to localStorage on every change (debounced 400ms)
+  // Only persist when the user has actually entered measurements — avoids stale "Draft restored" on untouched forms.
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (isReVerify) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
+      const hasMeasurements = rows.some(
+        (r) => parsePositive(r.weightKg) || parsePositive(r.lengthCm) || parsePositive(r.widthCm) || parsePositive(r.heightCm) || parsePositive(r.cbm),
+      );
+      if (!hasMeasurements) return;
       try {
         localStorage.setItem(draftKey, JSON.stringify({ rows, transportMode, nextId, savedAt: Date.now() }));
       } catch { /* quota exceeded — silently skip */ }

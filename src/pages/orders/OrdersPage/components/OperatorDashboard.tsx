@@ -8,6 +8,7 @@ import {
   Loader2,
   PackagePlus,
   Plane,
+  Send,
   ShieldAlert,
   Ship,
   Truck,
@@ -19,13 +20,14 @@ import {
   useOrders,
   useOrderDetail,
   useRecordShipmentIntake,
+  useSendPaymentRequest,
 } from '@/hooks';
 import type { OrderListItem } from '@/types';
 import { cn } from '@/utils';
 import { formatTrackingDisplay } from '@/lib/trackingUtils';
 import { AppShell } from '@/pages/shared';
 import { ShipmentIntakeModal } from '@/pages/shipments/components';
-import { toView, needsAction } from '../types';
+import { toView, needsAction, STATUS_LABELS } from '../types';
 import type { QueueKind } from './QueueShell';
 import { AllCaughtUp } from './AllCaughtUp';
 import { VerifyQueueStep } from './VerifyQueueStep';
@@ -70,6 +72,14 @@ function getQueueOrders(orders: OrderListItem[], kind: QueueKind): OrderListItem
     case 'escalated':
       return orders.filter((o) => o.statusV2 === 'ON_HOLD' && !!o.escalatedAt);
   }
+}
+
+function getAwaitingPaymentOrders(orders: OrderListItem[]): OrderListItem[] {
+  return orders.filter(
+    (o) =>
+      o.statusV2 === 'WAREHOUSE_VERIFIED_PRICED' &&
+      o.paymentCollectionStatus?.toUpperCase() === 'UNPAID',
+  );
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -122,7 +132,7 @@ function TaskCard({ icon, label, count, color, onClick }: TaskCardProps): ReactE
         <p className="text-sm font-medium text-gray-500">{label}</p>
       </div>
       {count > 0 && (
-        <span className="mt-auto text-xs font-semibold text-brand-500">Start queue →</span>
+        <span className="mt-auto text-xs font-semibold text-brand-500">See orders →</span>
       )}
     </button>
   );
@@ -169,7 +179,7 @@ function PriorityRow({ order, actionLabel, onAction }: PriorityRowProps): ReactE
           )}
         </div>
         <p className="truncate text-xs text-gray-500">
-          {order.statusLabel || order.statusV2}
+          {order.statusLabel || STATUS_LABELS[order.statusV2] || order.statusV2.replace(/_/g, ' ')}
           {wait ? ` · ${wait} ago` : ''}
         </p>
       </div>
@@ -183,6 +193,29 @@ function PriorityRow({ order, actionLabel, onAction }: PriorityRowProps): ReactE
       </button>
     </div>
   );
+}
+
+// ── Recently sorted ──────────────────────────────────────────────────────────
+
+const SORTED_EXCLUDE = new Set([
+  'PREORDER_SUBMITTED',
+  'AWAITING_WAREHOUSE_RECEIPT',
+  'WAREHOUSE_RECEIVED',
+  'CLAIM_APPROVED_PENDING_BULK_PROCESSING',
+  'ON_HOLD',
+  'WAREHOUSE_VERIFIED_PRICED',
+  'CANCELLED',
+  'RESTRICTED_ITEM_REJECTED',
+]);
+
+function statusBadgeClass(statusV2: string): string {
+  const s = statusV2.toUpperCase();
+  if (s.startsWith('DELIVERED') || s === 'PICKED_UP_COMPLETED') return 'bg-emerald-100 text-emerald-700';
+  if (s.startsWith('IN_TRANSIT') || s.startsWith('OUT_FOR_DELIVERY')) return 'bg-blue-100 text-blue-700';
+  if (s.startsWith('CUSTOMS') || s.startsWith('READY_FOR_PICKUP')) return 'bg-purple-100 text-purple-700';
+  if (s.startsWith('LOADED') || s.startsWith('VESSEL') || s.startsWith('AT_ORIGIN_PORT')) return 'bg-cyan-100 text-cyan-700';
+  if (s.startsWith('BOARDED') || s.startsWith('FLIGHT') || s.startsWith('AT_ORIGIN_AIRPORT')) return 'bg-sky-100 text-sky-700';
+  return 'bg-gray-100 text-gray-600';
 }
 
 // ── Dashboard view ─────────────────────────────────────────────────────────
@@ -207,8 +240,8 @@ function DashboardView({
   const paymentOrders = getQueueOrders(allOrders, 'payment');
   const outstandingUsd = paymentOrders.reduce((sum, o) => {
     const raw = o.raw as Record<string, unknown>;
-    const charge = typeof raw.finalChargeUsd === 'number' ? raw.finalChargeUsd : 0;
-    const paid = typeof raw.totalPaidUsd === 'number' ? raw.totalPaidUsd : 0;
+    const charge = raw.finalChargeUsd != null ? parseFloat(raw.finalChargeUsd as string) : 0;
+    const paid = raw.totalPaidUsd != null ? parseFloat(raw.totalPaidUsd as string) : 0;
     return sum + Math.max(0, charge - paid);
   }, 0);
 
@@ -225,6 +258,29 @@ function DashboardView({
       const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return aTime - bTime;
     });
+  }, [allOrders]);
+
+  const sendPaymentRequest = useSendPaymentRequest();
+  const [resendingId, setResendingId] = useState<string | null>(null);
+
+  const handleResend = (orderId: string) => {
+    setResendingId(orderId);
+    sendPaymentRequest.mutate(orderId, { onSettled: () => setResendingId(null) });
+  };
+
+  // Awaiting payment: priced but customer hasn't submitted any receipt yet
+  const awaitingOrders = useMemo(() => getAwaitingPaymentOrders(allOrders), [allOrders]);
+
+  // Recently sorted: dispatched and beyond, newest first
+  const recentlySorted = useMemo(() => {
+    return allOrders
+      .filter((o) => !SORTED_EXCLUDE.has(o.statusV2.toUpperCase()))
+      .sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
+      })
+      .slice(0, 10);
   }, [allOrders]);
 
   function getActionLabel(o: OrderListItem): string {
@@ -297,7 +353,7 @@ function DashboardView({
           label="Collect payment"
           count={counts.payment}
           color="bg-emerald-100"
-          onClick={() => onStartQueue('payment')}
+          onClick={() => document.getElementById('section-payment')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
         />
         {isSuperAdmin && (
           <TaskCard
@@ -314,10 +370,10 @@ function DashboardView({
       {paymentOrders.length > 0 && (
         <div
           className="flex cursor-pointer items-center justify-between rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4"
-          onClick={() => onStartQueue('payment')}
+          onClick={() => document.getElementById('section-payment')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && onStartQueue('payment')}
+          onKeyDown={(e) => e.key === 'Enter' && document.getElementById('section-payment')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
         >
           <div>
             <p className="text-sm font-semibold text-amber-800">Outstanding payments</p>
@@ -334,7 +390,7 @@ function DashboardView({
 
       {/* Priority list */}
       {priorityOrders.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        <div id="section-priority" className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
           <div className="border-b border-gray-100 px-4 py-3">
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
               Up next · prioritised
@@ -365,6 +421,134 @@ function DashboardView({
         <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center">
           <p className="text-sm font-medium text-gray-500">All orders are up to date</p>
           <p className="mt-1 text-xs text-gray-400">No pending actions right now</p>
+        </div>
+      )}
+
+      {/* Recently sorted table */}
+      {recentlySorted.length > 0 && (
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+          <div className="border-b border-gray-100 px-4 py-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
+              Recently sorted
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 text-left">
+                  <th className="px-4 py-2.5 text-xs font-semibold text-gray-400">Customer</th>
+                  <th className="px-4 py-2.5 text-xs font-semibold text-gray-400">Destination</th>
+                  <th className="px-4 py-2.5 text-xs font-semibold text-gray-400">Status</th>
+                  <th className="px-4 py-2.5 text-xs font-semibold text-gray-400 text-right">Age</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {recentlySorted.map((order) => {
+                  const isSea = order.transportMode === 'sea';
+                  const isD2D = (order.raw as Record<string, unknown>).shipmentType === 'd2d';
+                  return (
+                    <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className={cn(
+                            'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
+                            isD2D ? 'bg-purple-100' : isSea ? 'bg-blue-100' : 'bg-brand-100',
+                          )}>
+                            {isD2D ? (
+                              <Truck className="h-3.5 w-3.5 text-purple-600" />
+                            ) : isSea ? (
+                              <Ship className="h-3.5 w-3.5 text-blue-600" />
+                            ) : (
+                              <Plane className="h-3.5 w-3.5 text-brand-600" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-gray-900 max-w-[160px]">
+                              {order.senderName || formatTrackingDisplay(order.trackingNumber)}
+                            </p>
+                            <p className="text-[11px] text-gray-400 font-mono">
+                              {formatTrackingDisplay(order.trackingNumber)}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 max-w-[120px]">
+                        <span className="truncate block">{order.destination || '—'}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn(
+                          'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                          statusBadgeClass(order.statusV2),
+                        )}>
+                          {order.statusLabel || STATUS_LABELS[order.statusV2] || order.statusV2.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-xs text-gray-400 tabular-nums">
+                        {waitLabel(order.createdAt)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Awaiting payment panel */}
+      {awaitingOrders.length > 0 && (
+        <div id="section-payment" className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
+              Awaiting payment · {awaitingOrders.length} order{awaitingOrders.length !== 1 ? 's' : ''}
+            </p>
+            <p className="text-xs text-gray-400">No receipt submitted yet</p>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {awaitingOrders.map((order) => {
+              const raw = order.raw as Record<string, unknown>;
+              const charge = raw.finalChargeUsd != null ? parseFloat(raw.finalChargeUsd as string) : null;
+              const sentAt = order.paymentDetailsSentAt;
+              const isSea = order.transportMode === 'sea';
+              const isD2D = raw.shipmentType === 'd2d';
+              const isPending = resendingId === order.id;
+
+              return (
+                <div key={order.id} className="flex items-center gap-3 px-4 py-3">
+                  <div className={cn(
+                    'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
+                    isD2D ? 'bg-purple-100' : isSea ? 'bg-blue-100' : 'bg-brand-100',
+                  )}>
+                    {isD2D ? (
+                      <Truck className="h-3.5 w-3.5 text-purple-600" />
+                    ) : isSea ? (
+                      <Ship className="h-3.5 w-3.5 text-blue-600" />
+                    ) : (
+                      <Plane className="h-3.5 w-3.5 text-brand-600" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-gray-900">
+                      {order.senderName || formatTrackingDisplay(order.trackingNumber)}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {charge != null ? `$${charge.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} due` : 'Charge not set'}
+                      {sentAt ? ` · sent ${waitLabel(sentAt)} ago` : ' · details not sent'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => handleResend(order.id)}
+                    className="flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50"
+                  >
+                    <Send className="h-3 w-3" />
+                    {sentAt ? 'Resend' : 'Send details'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

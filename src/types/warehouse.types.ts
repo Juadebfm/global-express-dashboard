@@ -29,4 +29,5 @@ export interface WarehouseVerifyResult {
   finalChargeUsd: number;
   pricingSource: 'DEFAULT_RATE' | 'CUSTOMER_OVERRIDE' | 'MANUAL_ADJUSTMENT' | string;
   amountDue: number | null;
+  statusV2?: string;
 }

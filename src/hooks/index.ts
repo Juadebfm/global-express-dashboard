@@ -34,6 +34,8 @@ export { useMyPayments } from './useMyPayments';
 export { useSendPaymentRequest } from './useSendPaymentRequest';
 export { useInitializePayment } from './useInitializePayment';
 export { useRecordOfflinePayment } from './useRecordOfflinePayment';
+export { usePingSupervisor } from './usePingSupervisor';
+export type { PingSupervisorResult } from './usePingSupervisor';
 export { useCreateOrderForCustomer } from './useCreateOrderForCustomer';
 export { useUpdatePickupRep } from './useUpdatePickupRep';
 export { useReportSummary, useOrdersByStatus, useRevenueReport } from './useReports';

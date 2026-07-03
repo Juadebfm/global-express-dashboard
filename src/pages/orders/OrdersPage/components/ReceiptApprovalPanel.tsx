@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle, XCircle, FileText, Maximize2, X } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import type { ApiPayment } from '@/types';
 
 interface ReceiptApprovalPanelProps {
@@ -54,14 +55,20 @@ export function ReceiptApprovalPanel({
   const [done, setDone] = useState<'approve' | 'reject' | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [rejectConfirm, setRejectConfirm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handle = async (decision: 'approve' | 'reject'): Promise<void> => {
+    setIsSubmitting(true);
     try {
       const result = await onVerify(payment.id, decision, note.trim() || undefined);
       setWarning(result.warning);
       setDone(decision);
+      setRejectConfirm(false);
     } catch {
       // error toast handled by useVerifyOrderPayment onError
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -163,6 +170,24 @@ export function ReceiptApprovalPanel({
               {payment.paymentType === 'transfer' ? 'Bank transfer' : 'Cash'}
             </p>
           </div>
+          {payment.metadata?.remitterName && (
+            <div className="col-span-2">
+              <p className="font-semibold uppercase tracking-wide text-gray-400">Remitter</p>
+              <p className="mt-0.5 text-sm font-medium text-gray-900">{payment.metadata.remitterName}</p>
+            </div>
+          )}
+          {payment.metadata?.paymentDate && (
+            <div>
+              <p className="font-semibold uppercase tracking-wide text-gray-400">Transfer date</p>
+              <p className="mt-0.5 text-sm text-gray-700">{payment.metadata.paymentDate}</p>
+            </div>
+          )}
+          {payment.metadata?.transactionRef && (
+            <div>
+              <p className="font-semibold uppercase tracking-wide text-gray-400">Bank ref</p>
+              <p className="mt-0.5 text-sm font-mono text-gray-700">{payment.metadata.transactionRef}</p>
+            </div>
+          )}
         </div>
 
         {/* Note */}
@@ -182,7 +207,7 @@ export function ReceiptApprovalPanel({
         <div className="mt-4 flex items-center gap-2">
           <Button
             type="button"
-            isLoading={isPending}
+            isLoading={isPending || isSubmitting}
             onClick={() => void handle('approve')}
             className="bg-emerald-600 text-white hover:bg-emerald-700"
           >
@@ -191,14 +216,25 @@ export function ReceiptApprovalPanel({
           <Button
             type="button"
             variant="secondary"
-            disabled={isPending}
-            onClick={() => void handle('reject')}
+            disabled={isPending || isSubmitting}
+            onClick={() => setRejectConfirm(true)}
             className="border-red-200 text-red-600 hover:bg-red-50"
           >
             Reject
           </Button>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={rejectConfirm}
+        tone="danger"
+        title="Reject this receipt?"
+        message="The payment will be marked as rejected and the customer will need to resubmit. This action is logged."
+        confirmLabel="Yes, reject receipt"
+        isLoading={isSubmitting}
+        onConfirm={() => void handle('reject')}
+        onCancel={() => setRejectConfirm(false)}
+      />
     </>
   );
 }

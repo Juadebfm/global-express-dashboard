@@ -279,6 +279,7 @@ function PendingActions({ declaration, onError }: PendingActionsProps): ReactEle
         title="Accept goods notice"
         message="This will mark the goods notice as accepted. The supplier will be notified."
         confirmLabel="Accept"
+        cancelLabel="Cancel"
         onConfirm={() => void handleAccept()}
         onCancel={() => setShowAcceptModal(false)}
         isLoading={isAccepting}
