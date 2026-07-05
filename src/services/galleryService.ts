@@ -6,10 +6,10 @@ import type {
   AuthedGalleryListings,
   GalleryAdvertCreatePayload,
   GalleryAdvertUpdatePayload,
-  GalleryClaim,
   GalleryClaimReviewPayload,
   GalleryClaimReviewResult,
   GalleryClaimsQuery,
+  GalleryClaimsPaginatedResult,
   GalleryClaimSubmissionResult,
   GalleryItem,
   GalleryItemCreatePayload,
@@ -174,15 +174,16 @@ export function updateGalleryAdvert(
 export function getGalleryClaims(
   token: string,
   query: GalleryClaimsQuery = {},
-): Promise<GalleryClaim[]> {
+): Promise<GalleryClaimsPaginatedResult> {
   const params = new URLSearchParams();
   if (query.status) params.set('status', query.status);
   if (query.claimType) params.set('claimType', query.claimType);
   if (query.itemTrackingNumber) params.set('itemTrackingNumber', query.itemTrackingNumber);
   if (typeof query.limit === 'number') params.set('limit', String(query.limit));
+  if (typeof query.page === 'number') params.set('page', String(query.page));
   const qs = params.toString();
   const path = qs ? `/gallery/claims?${qs}` : '/gallery/claims';
-  return apiGetData<GalleryClaim[]>(path, token);
+  return apiGetData<GalleryClaimsPaginatedResult>(path, token);
 }
 
 export function reviewGalleryClaim(

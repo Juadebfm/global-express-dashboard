@@ -505,7 +505,8 @@ function ClaimsTab(): ReactElement {
     () => (statusFilter === 'all' ? {} : { status: statusFilter }),
     [statusFilter],
   );
-  const { data, isLoading, error } = useGalleryClaims(query);
+  const { data: claimsResult, isLoading, error } = useGalleryClaims(query);
+  const data = claimsResult?.data;
   const [reviewTarget, setReviewTarget] = useState<GalleryClaim | null>(null);
 
   return (

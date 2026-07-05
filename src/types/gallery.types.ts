@@ -183,6 +183,14 @@ export interface GalleryClaimsQuery {
   claimType?: GalleryClaimType;
   itemTrackingNumber?: string;
   limit?: number;
+  page?: number;
+}
+
+export interface GalleryClaimsPaginatedResult {
+  data: GalleryClaim[];
+  total: number;
+  page: number;
+  totalPages: number;
 }
 
 export interface GalleryClaimReviewPayload {

@@ -29,10 +29,10 @@ import type {
   AuthedGalleryListings,
   GalleryAdvertCreatePayload,
   GalleryAdvertUpdatePayload,
-  GalleryClaim,
   GalleryClaimReviewPayload,
   GalleryClaimReviewResult,
   GalleryClaimsQuery,
+  GalleryClaimsPaginatedResult,
   GalleryClaimSubmissionResult,
   GalleryItem,
   GalleryItemCreatePayload,
@@ -575,12 +575,12 @@ export function useUpdateGalleryAdvert(): {
 // ── Staff claim review ───────────────────────────────────────────────────────
 
 export function useGalleryClaims(query: GalleryClaimsQuery = {}): {
-  data: GalleryClaim[] | undefined;
+  data: GalleryClaimsPaginatedResult | undefined;
   isLoading: boolean;
   error: Error | null;
 } {
   const getToken = useAuthToken();
-  const q = useQuery<GalleryClaim[]>({
+  const q = useQuery<GalleryClaimsPaginatedResult>({
     queryKey: claimsKey(query),
     queryFn: async () => {
       const token = await getToken();

@@ -296,6 +296,7 @@ export type {
   GalleryAdvertCreatePayload,
   GalleryAdvertUpdatePayload,
   GalleryClaimsQuery,
+  GalleryClaimsPaginatedResult,
   GalleryClaimReviewPayload,
 } from './gallery.types';
 

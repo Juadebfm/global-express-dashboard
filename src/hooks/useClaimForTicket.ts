@@ -18,8 +18,8 @@ export function useClaimForTicket({ ticketId, trackingNumber }: UseClaimForTicke
 
   // Prefer exact supportTicketId match; fall back to first result from the targeted query.
   const claim =
-    data?.find((c) => c.supportTicketId === ticketId) ??
-    (trackingNumber ? (data?.[0] ?? null) : null);
+    data?.data?.find((c) => c.supportTicketId === ticketId) ??
+    (trackingNumber ? (data?.data?.[0] ?? null) : null);
 
   return { claim, isLoading, error };
 }
