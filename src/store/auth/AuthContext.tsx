@@ -67,7 +67,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   }, [state.user?.role]);
 
   const checkAuth = useCallback(async () => {
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token = sessionStorage.getItem(TOKEN_KEY);
     if (!token) {
       setState((prev) => ({ ...prev, isLoading: false }));
       return;
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
         error: null,
       });
     } catch {
-      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
       setState({
         user: null,
         isAuthenticated: false,
@@ -116,7 +116,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     if (typeof document === 'undefined') return;
     const handler = async (): Promise<void> => {
       if (document.visibilityState !== 'visible') return;
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) return;
       const elapsed = Date.now() - lastSyncedAtRef.current;
       if (elapsed < REFRESH_ON_FOCUS_IDLE_MS) return;
@@ -153,7 +153,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   // useEffect dep / ref dance.
   useEffect(() => {
     const handler = async (): Promise<void> => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       // Only refresh if we still think we're logged in — otherwise this
       // races into the 401 handler below.
       if (!token) return;
@@ -183,9 +183,9 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   // sees isAuthenticated=false on the next render and redirects to /login.
   useEffect(() => {
     const handler = (): void => {
-      if (!localStorage.getItem(TOKEN_KEY)) return;
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem('globalxpress_refresh');
+      if (!sessionStorage.getItem(TOKEN_KEY)) return;
+      sessionStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem('globalxpress_refresh');
       // Wipe cached server state too — a revoked token means everything
       // we have is from the now-invalid session. Without this, a user-B
       // login on the same browser could briefly read user-A's cached
@@ -215,7 +215,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
         return { kind: 'mfa_required', mfaToken: outcome.mfaToken, userId: outcome.userId };
       }
 
-      localStorage.setItem(TOKEN_KEY, outcome.token);
+      sessionStorage.setItem(TOKEN_KEY, outcome.token);
       // For internal staff, enrich the login-response user with
       // /internal/me so we get isActive/mustCompleteProfile immediately.
       let user = outcome.user;
@@ -247,7 +247,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
 
   const completeMfaChallenge = useCallback(
     ({ user: loginUser, token }: { user: User; token: string }) => {
-      localStorage.setItem(TOKEN_KEY, token);
+      sessionStorage.setItem(TOKEN_KEY, token);
       syncLanguageFromUser(loginUser);
       setState({
         user: loginUser,
@@ -270,12 +270,12 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   );
 
   const logout = useCallback(async () => {
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token = sessionStorage.getItem(TOKEN_KEY);
     try {
       if (token) await apiLogout(token);
     } finally {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem('globalxpress_refresh');
+      sessionStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem('globalxpress_refresh');
       // Wipe the React Query cache so a same-browser switch (user-A
       // logs out, user-B logs in) can't briefly render A's data. Most
       // query keys don't include user.id, so without this the next
@@ -295,7 +295,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   }, []);
 
   const refreshUser = useCallback(async () => {
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token = sessionStorage.getItem(TOKEN_KEY);
     if (!token) return;
     try {
       const user = await fetchUser(token, currentRoleRef.current);

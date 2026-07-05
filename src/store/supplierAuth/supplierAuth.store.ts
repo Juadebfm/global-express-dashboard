@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { SupplierPortalUser } from '@/types/supplierPortal.types';
 
 interface SupplierAuthState {
@@ -8,9 +9,17 @@ interface SupplierAuthState {
   clearAuth: () => void;
 }
 
-export const useSupplierAuthStore = create<SupplierAuthState>((set) => ({
-  token: null,
-  user: null,
-  setAuth: (token, user) => set({ token, user }),
-  clearAuth: () => set({ token: null, user: null }),
-}));
+export const useSupplierAuthStore = create<SupplierAuthState>()(
+  persist(
+    (set) => ({
+      token: null,
+      user: null,
+      setAuth: (token, user) => set({ token, user }),
+      clearAuth: () => set({ token: null, user: null }),
+    }),
+    {
+      name: 'gex_supplier_auth',
+      storage: createJSONStorage(() => sessionStorage),
+    },
+  ),
+);
