@@ -260,8 +260,8 @@ export function OperationsPage(): ReactElement {
   const { orders: allArrivals, isLoading: arrivalsLoading, error: arrivalsError } = useOrders(
     1, 50, 'AWAITING_WAREHOUSE_RECEIPT'
   );
-  const { orders: allOrders, total: allTotal, isLoading: allLoading, error: allError } = useOrders(
-    1, 100
+  const { orders: allOrders, isLoading: allLoading, error: allError } = useOrders(
+    1, 250
   );
 
   const layoutUser = {
@@ -497,12 +497,6 @@ export function OperationsPage(): ReactElement {
           )
         )}
 
-        {/* Pagination gap notice */}
-        {allTotal > 100 && (
-          <p className="text-xs text-amber-600 text-center py-2">
-            Showing first 100 orders. Use Batches page to manage older entries.
-          </p>
-        )}
       </div>
 
       {intakeOrder && (

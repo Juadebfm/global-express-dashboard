@@ -81,10 +81,11 @@ export function SupplierDashboardPage(): ReactElement {
   const location = useLocation();
   const user = useSupplierAuthStore((s) => s.user);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [limit, setLimit] = useState(50);
 
   const { data: declarations, isLoading, error } = useSupplierDeclarations({
     status: statusFilter !== 'all' ? statusFilter : undefined,
-    limit: 50,
+    limit,
   });
 
   return (
@@ -196,11 +197,24 @@ export function SupplierDashboardPage(): ReactElement {
                 )}
               </Card>
             ) : (
-              <Card className="divide-y divide-gray-100 overflow-hidden p-0">
-                {declarations.map((decl) => (
-                  <DeclarationRow key={decl.id} decl={decl} />
-                ))}
-              </Card>
+              <>
+                <Card className="divide-y divide-gray-100 overflow-hidden p-0">
+                  {declarations.map((decl) => (
+                    <DeclarationRow key={decl.id} decl={decl} />
+                  ))}
+                </Card>
+                {declarations.length === limit && (
+                  <div className="flex justify-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setLimit((l) => l + 50)}
+                      className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      Load more
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

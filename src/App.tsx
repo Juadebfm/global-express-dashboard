@@ -198,7 +198,14 @@ function AppRoutes(): ReactElement {
       <Route path={ROUTES.COMPLETE_PROFILE} element={<CompleteProfilePage />} />
 
       {/* Staff onboarding (password change + profile completion) */}
-      <Route path={ROUTES.STAFF_ONBOARDING} element={<StaffOnboardingPage />} />
+      <Route
+        path={ROUTES.STAFF_ONBOARDING}
+        element={
+          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']} redirectTo={ROUTES.LOGIN}>
+            <StaffOnboardingPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Protected routes */}
       <Route
@@ -278,7 +285,7 @@ function AppRoutes(): ReactElement {
         path={ROUTES.CLIENTS}
         element={
           <ProtectedRoute
-            allowedRoles={['admin', 'superadmin']}
+            allowedRoles={['staff', 'admin', 'superadmin']}
             redirectTo={ROUTES.ADMIN_DASHBOARD}
           >
             <ClientsPage />

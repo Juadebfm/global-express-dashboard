@@ -1,4 +1,4 @@
-import { type ChangeEvent, useCallback, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -191,6 +191,31 @@ function ShopInquiryModal({ item, onClose }: { item: GalleryItem; onClose: () =>
   const { mutateAsync, isPending } = useSubmitShopInquiry();
   const pushMessage = useFeedbackStore((s) => s.pushMessage);
   const [form, setForm] = useState({ fullName: '', phone: '', email: '', message: '' });
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const focusable = container.querySelectorAll<HTMLElement>(
+      'button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    focusable[0]?.focus();
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === 'Tab') {
+        const items = Array.from(focusable);
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault(); last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault(); first?.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [onClose]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -222,7 +247,7 @@ function ShopInquiryModal({ item, onClose }: { item: GalleryItem; onClose: () =>
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900">
+      <div ref={containerRef} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Inquire about this item</h2>
