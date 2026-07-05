@@ -53,7 +53,7 @@ export function useClients(params: UseClientsParams = {}): ClientsState {
   const { data, isLoading, error } = useQuery({
     queryKey: ['clients', effectiveParams],
     queryFn: async () => {
-      const token = isCustomer ? await getToken() : localStorage.getItem(TOKEN_KEY);
+      const token = isCustomer ? await getToken() : sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return getClients(token, effectiveParams);
     },

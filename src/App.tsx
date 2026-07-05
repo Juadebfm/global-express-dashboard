@@ -136,6 +136,15 @@ const SupplierDeclarationDetailPage = lazy(() =>
 const SupplierRequestsPage = lazy(() =>
   import('@/pages/supplier/SupplierRequestsPage/SupplierRequestsPage').then((m) => ({ default: m.SupplierRequestsPage })),
 );
+const LeadsPage = lazy(() =>
+  import('@/pages/leads/LeadsPage').then((m) => ({ default: m.LeadsPage })),
+);
+const NewsletterSubscribersPage = lazy(() =>
+  import('@/pages/newsletter/NewsletterSubscribersPage').then((m) => ({ default: m.NewsletterSubscribersPage })),
+);
+const D2DMyRequestsPage = lazy(() =>
+  import('@/pages/d2d/D2DMyRequestsPage').then((m) => ({ default: m.D2DMyRequestsPage })),
+);
 
 function AppRoutes(): ReactElement {
   const [launchGateActive, setLaunchGateActive] = useState<boolean>(() => isLaunchGateActive());
@@ -258,7 +267,7 @@ function AppRoutes(): ReactElement {
         path={ROUTES.SHIPMENT_DETAIL}
         element={
           <ProtectedRoute
-            allowedRoles={['staff', 'admin', 'superadmin']}
+            allowedRoles={['user', 'staff', 'admin', 'superadmin']}
             redirectTo={ROUTES.SHIPMENTS}
           >
             <ShipmentDetailPage />
@@ -434,6 +443,32 @@ function AppRoutes(): ReactElement {
         element={
           <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
             <SupplierNoticeReviewPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Leads — staff+ see all leads; customers see their own D2D requests */}
+      <Route
+        path={ROUTES.LEADS}
+        element={
+          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']} redirectTo={ROUTES.ADMIN_DASHBOARD}>
+            <LeadsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.NEWSLETTER_SUBSCRIBERS}
+        element={
+          <ProtectedRoute allowedRoles={['superadmin']} redirectTo={ROUTES.ADMIN_DASHBOARD}>
+            <NewsletterSubscribersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.D2D_MY_REQUESTS}
+        element={
+          <ProtectedRoute allowedRoles={['user']} redirectTo={ROUTES.DASHBOARD}>
+            <D2DMyRequestsPage />
           </ProtectedRoute>
         }
       />

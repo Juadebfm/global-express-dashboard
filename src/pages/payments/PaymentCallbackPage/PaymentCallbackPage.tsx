@@ -23,7 +23,7 @@ export function PaymentCallbackPage(): ReactElement {
 
     const verify = async () => {
       try {
-        const internalToken = localStorage.getItem(TOKEN_KEY);
+        const internalToken = sessionStorage.getItem(TOKEN_KEY);
         const token = internalToken ?? (isClerkSignedIn ? await getToken() : null);
         if (!token) throw new Error('Not authenticated');
         await verifyPayment(token, reference);

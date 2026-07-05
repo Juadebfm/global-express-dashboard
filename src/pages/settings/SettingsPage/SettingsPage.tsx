@@ -1280,7 +1280,7 @@ export function SettingsPage(): ReactElement {
 
   useEffect(() => {
     if (!isSuperadmin) return;
-    const token = localStorage.getItem('globalxpress_token');
+    const token = sessionStorage.getItem('globalxpress_token');
     if (!token) return;
     setOnboardingLoading(true);
     getOnboardingSettings(token)
@@ -1290,7 +1290,7 @@ export function SettingsPage(): ReactElement {
   }, [isSuperadmin, t]);
 
   const handleToggleNationalId = async (): Promise<void> => {
-    const token = localStorage.getItem('globalxpress_token');
+    const token = sessionStorage.getItem('globalxpress_token');
     if (!token || !onboardingReqs) return;
     setOnboardingSaving(true);
     try {
@@ -1335,8 +1335,8 @@ export function SettingsPage(): ReactElement {
       const token = await getToken();
       if (!token) throw new Error('Authentication token is missing.');
       await deleteMyAccount(token);
-      localStorage.removeItem('globalxpress_token');
-      localStorage.removeItem('globalxpress_refresh');
+      sessionStorage.removeItem('globalxpress_token');
+      sessionStorage.removeItem('globalxpress_refresh');
       await signOut();
       navigate(ROUTES.HOME, { replace: true });
     } catch (err) {

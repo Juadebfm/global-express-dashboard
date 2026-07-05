@@ -194,7 +194,7 @@ export function useNewShipmentForm() {
 
   const getApiToken = useCallback(async (): Promise<string | null> => {
     if (isCustomer) return getToken();
-    return localStorage.getItem(INTERNAL_TOKEN_KEY);
+    return sessionStorage.getItem(INTERNAL_TOKEN_KEY);
   }, [isCustomer, getToken]);
 
   const handlePrimaryAction = useCallback(async (): Promise<void> => {

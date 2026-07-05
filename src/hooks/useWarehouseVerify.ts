@@ -9,7 +9,7 @@ export function useWarehouseVerify() {
 
   return useMutation({
     mutationFn: async ({ orderId, payload }: { orderId: string; payload: WarehouseVerifyPayload }) => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return verifyOrder(token, orderId, payload);
     },

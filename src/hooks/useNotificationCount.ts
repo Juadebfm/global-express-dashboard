@@ -16,7 +16,7 @@ export function useNotificationCount(): number {
   const { data } = useQuery({
     queryKey: ['notifications', 'unread-count'],
     queryFn: async () => {
-      const token = isCustomer ? await getToken() : localStorage.getItem(TOKEN_KEY);
+      const token = isCustomer ? await getToken() : sessionStorage.getItem(TOKEN_KEY);
       if (!token) return 0;
       return getUnreadCount(token);
     },

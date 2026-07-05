@@ -10,7 +10,7 @@ export function useUpdateOrderStatus() {
 
   return useMutation({
     mutationFn: async ({ orderId, statusV2 }: { orderId: string; statusV2: string }) => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       await updateOrderStatus(token, orderId, statusV2);
     },

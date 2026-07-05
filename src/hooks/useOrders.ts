@@ -38,7 +38,7 @@ export function useOrders(
   const { data, isLoading, error } = useQuery({
     queryKey: ['orders', 'list', isCustomer ? 'customer' : 'internal', page, limit, statusV2 ?? 'all'],
     queryFn: async (): Promise<OrdersListResult> => {
-      const token = isCustomer ? await getToken() : localStorage.getItem(TOKEN_KEY);
+      const token = isCustomer ? await getToken() : sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return getOrders(token, page, limit, statusV2);
     },

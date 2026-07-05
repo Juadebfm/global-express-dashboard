@@ -23,7 +23,7 @@ export function useAdminUsers(params: AdminUserListParams = {}): AdminUsersState
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin-users', params],
     queryFn: async () => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return getUsers(token, params);
     },
@@ -49,7 +49,7 @@ export function useAdminUserDetail(id: string | null): {
   const query = useQuery<User>({
     queryKey: ['admin-users', 'detail', id],
     queryFn: async () => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       if (!id) throw new Error('Missing user id');
       return getUserById(token, id);
@@ -70,7 +70,7 @@ export function useUpdateClientLoginPermission(): {
 
   const m = useMutation<User, Error, { id: string; canProvisionClientLogin: boolean }>({
     mutationFn: async ({ id, canProvisionClientLogin }) => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return updateClientLoginPermission(token, id, canProvisionClientLogin);
     },
@@ -111,7 +111,7 @@ export function useUpdateShipmentBatchPermission(): {
 
   const m = useMutation<User, Error, { id: string; canManageShipmentBatches: boolean }>({
     mutationFn: async ({ id, canManageShipmentBatches }) => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return updateShipmentBatchPermission(token, id, canManageShipmentBatches);
     },

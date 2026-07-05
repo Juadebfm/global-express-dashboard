@@ -12,7 +12,7 @@ export function useOpenSupportTicketCount(): number {
   const { data } = useQuery({
     queryKey: ['support', 'tickets', 'open-count'],
     queryFn: () => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) return [];
       return getSupportTickets(token, { status: 'open' });
     },

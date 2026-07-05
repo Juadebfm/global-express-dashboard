@@ -110,7 +110,7 @@ function BatchPicker({ selectedId, onSelect }: BatchPickerProps): ReactElement {
   const { data, isLoading } = useQuery({
     queryKey: ['shipments', 'batches', 'open'],
     queryFn: () => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return listDispatchBatches(token, { status: 'open', limit: 50 });
     },
@@ -254,7 +254,7 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
     setIsDownloading(true);
     setDownloadError(null);
     try {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       const blob = await downloadBatchManifest(token, batchId);
       const url = URL.createObjectURL(blob);

@@ -12,7 +12,7 @@ export function TopCustomers(): ReactElement {
   const { data: customers = [], isLoading, error } = useQuery({
     queryKey: ['dashboard', 'top-customers'],
     queryFn: () => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return getTopCustomers(token, { limit: 5 });
     },

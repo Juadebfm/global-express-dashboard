@@ -16,7 +16,7 @@ export function useLanguage() {
       void i18n.changeLanguage(lang);
 
       // Best-effort sync to backend
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (token) {
         void apiPatch('/users/me', { preferredLanguage: lang }, token).catch(() => {});
       }

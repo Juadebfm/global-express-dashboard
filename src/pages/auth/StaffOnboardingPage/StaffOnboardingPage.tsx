@@ -50,7 +50,7 @@ export function StaffOnboardingPage(): ReactElement {
     if (!confirmPassword) { setPwError(tv.confirmRequired); return; }
     if (newPassword !== confirmPassword) { setPwError(tv.passwordsDoNotMatch); return; }
 
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token = sessionStorage.getItem(TOKEN_KEY);
     if (!token) return;
 
     setPwLoading(true);

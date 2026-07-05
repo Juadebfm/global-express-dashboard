@@ -10,7 +10,7 @@ export function useClearEscalation() {
 
   return useMutation({
     mutationFn: (orderId: string) => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return clearEscalation(token, orderId);
     },

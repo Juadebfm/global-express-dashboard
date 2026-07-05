@@ -70,7 +70,7 @@ describe('AuthContext — cache clearing on session loss', () => {
     });
 
     expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
-    expect(localStorage.getItem(TOKEN_KEY)).toBeNull();
+    expect(sessionStorage.getItem(TOKEN_KEY)).toBeNull();
     expect(authService.logout).toHaveBeenCalledWith('fake-token-123');
   });
 
@@ -93,7 +93,7 @@ describe('AuthContext — cache clearing on session loss', () => {
     });
 
     expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
-    expect(localStorage.getItem(TOKEN_KEY)).toBeNull();
+    expect(sessionStorage.getItem(TOKEN_KEY)).toBeNull();
   });
 
   it('ignores auth:unauthorized when no token is present (idle tab)', async () => {

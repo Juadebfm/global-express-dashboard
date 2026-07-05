@@ -33,7 +33,7 @@ export function useShipmentsDashboard(
     queryFn: async (): Promise<ShipmentsDashboardData> => {
       const token = isCustomer
         ? await getToken()
-        : localStorage.getItem(TOKEN_KEY);
+        : sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return getShipmentsDashboard(token, isCustomer, params);
     },

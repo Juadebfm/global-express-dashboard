@@ -38,7 +38,7 @@ export function useImportUsersSuppliers(): {
 
   const m = useMutation<AdminImportResult, Error, { file: File; dryRun?: boolean }>({
     mutationFn: async ({ file, dryRun }) => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       const validation = validateImportFile(file);
       if (validation) throw new Error(validation.message);

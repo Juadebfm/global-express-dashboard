@@ -155,3 +155,20 @@ export {
   createBatch,
 } from './batchesService';
 export type { BatchListParams, AvailableOrder, CreateBatchPayload } from './batchesService';
+
+export {
+  listLeads,
+  getLead,
+  updateLead,
+  deleteLead,
+  getMyD2dLeads,
+  submitD2dIntake,
+  submitShopInquiry,
+} from './leadsService';
+
+export {
+  listSubscribers,
+  deactivateSubscriber,
+  deleteSubscriber,
+  downloadSubscribersCsv,
+} from './newsletterService';

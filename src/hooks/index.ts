@@ -176,3 +176,5 @@ export {
 } from './useBatches';
 export { useEscalateOrder } from './useEscalateOrder';
 export { useClearEscalation } from './useClearEscalation';
+export { useLeads, useUpdateLead, useDeleteLead, useMyD2dLeads, useSubmitD2dIntake, useSubmitShopInquiry } from './useLeads';
+export { useNewsletterSubscribers, useDeactivateSubscriber, useDeleteSubscriber, useExportSubscribers } from './useNewsletter';

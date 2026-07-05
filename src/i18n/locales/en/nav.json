@@ -15,6 +15,9 @@
     "batches": "Batches",
     "supplierNotices": "Supplier Notices",
     "auditLogs": "Audit Logs",
+    "leads": "Leads",
+    "newsletterSubscribers": "Newsletter",
+    "d2dRequests": "My D2D Requests",
     "profile": "Profile",
     "settings": "Settings",
     "support": "Support"

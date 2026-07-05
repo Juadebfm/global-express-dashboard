@@ -8,10 +8,12 @@ import {
   CalendarDays,
   ChartColumnIncreasing,
   ClipboardList,
+  Inbox,
   LayoutDashboard,
   Layers,
   LifeBuoy,
   LogOut,
+  Mail,
   Package,
   Settings,
   Shield,
@@ -50,6 +52,8 @@ const iconMap: Record<string, ReactElement> = {
   chart: <ChartColumnIncreasing className="h-5 w-5" />,
   shield: <Shield className="h-5 w-5" />,
   layers: <Layers className="h-5 w-5" />,
+  inbox: <Inbox className="h-5 w-5" />,
+  mail: <Mail className="h-5 w-5" />,
 };
 
 export function Sidebar({

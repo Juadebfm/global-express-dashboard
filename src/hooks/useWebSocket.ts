@@ -43,7 +43,7 @@ export function useWebSocket(): void {
     const connect = async (): Promise<void> => {
       const token = isClerkSignedIn && !user
         ? await getToken()
-        : localStorage.getItem(TOKEN_KEY);
+        : sessionStorage.getItem(TOKEN_KEY);
 
       if (!token || !isMounted) return;
 

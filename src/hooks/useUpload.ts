@@ -13,7 +13,7 @@ export function useUpload() {
 
   return useMutation({
     mutationFn: async ({ orderId, file }: UploadParams) => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
 
       const contentType = file.type as 'image/jpeg' | 'image/jpg' | 'image/png' | 'image/webp';

@@ -25,7 +25,7 @@ export function usePushNotifications(enabled: boolean): void {
     if (!enabled || subscribedRef.current) return;
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token = sessionStorage.getItem(TOKEN_KEY);
     if (!token) return;
 
     subscribedRef.current = true;
@@ -68,7 +68,7 @@ export function useUnsubscribeFromPush(): () => Promise<void> {
   return useCallback(async () => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token = sessionStorage.getItem(TOKEN_KEY);
     if (!token) return;
 
     try {

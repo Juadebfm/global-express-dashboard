@@ -13,6 +13,9 @@
     "reports": "보고서",
     "profile": "프로필",
     "settings": "설정",
+    "leads": "리드",
+    "newsletterSubscribers": "뉴스레터",
+    "d2dRequests": "D2D 요청",
     "support": "지원"
   },
   "rolePanel": "{{role}} 패널",

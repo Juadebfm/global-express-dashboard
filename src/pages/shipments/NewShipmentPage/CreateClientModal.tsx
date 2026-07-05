@@ -26,7 +26,7 @@ export function CreateClientModal({ onCreated, onClose }: CreateClientModalProps
 
     setSaving(true);
     try {
-      const token = localStorage.getItem(INTERNAL_TOKEN_KEY);
+      const token = sessionStorage.getItem(INTERNAL_TOKEN_KEY);
       if (!token) throw new Error('Not authenticated.');
       const result = await createDormantClient(token, {
         firstName: firstName.trim() || undefined,

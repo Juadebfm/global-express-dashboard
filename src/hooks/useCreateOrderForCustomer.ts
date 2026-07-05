@@ -9,7 +9,7 @@ export function useCreateOrderForCustomer() {
 
   return useMutation({
     mutationFn: async ({ payload, idempotencyKey }: { payload: CreateOrderPayload; idempotencyKey: string }) => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return createOrder(payload, token, idempotencyKey);
     },

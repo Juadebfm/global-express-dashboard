@@ -10,7 +10,7 @@ import { STALE_TIME } from '@/lib/queryDefaults';
 const TOKEN_KEY = 'globalxpress_token';
 
 export function useBatchDocuments(batchId: string) {
-  const token = localStorage.getItem(TOKEN_KEY);
+  const token = sessionStorage.getItem(TOKEN_KEY);
   return useQuery({
     queryKey: ['batches', batchId, 'documents'],
     queryFn: () => getBatchDocuments(token!, batchId),
@@ -24,7 +24,7 @@ export function useUploadBatchDocument(batchId: string) {
 
   return useMutation({
     mutationFn: async (params: { file: File; documentType: BatchDocumentType }) => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
 
       const { uploadUrl, r2Key } = await presignBatchDocument(

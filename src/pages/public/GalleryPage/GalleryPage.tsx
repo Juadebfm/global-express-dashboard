@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
+import { type ChangeEvent, useCallback, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,6 +28,7 @@ import {
   usePublicGallery,
   useSubmitAnonymousClaim,
   useSubmitPublicCarPurchase,
+  useSubmitShopInquiry,
   useSubscribeToNewsletter,
 } from '@/hooks';
 import {
@@ -60,6 +61,7 @@ export default function GalleryPage(): ReactElement {
   const { data, isLoading, error } = usePublicGallery();
   const [claimTarget, setClaimTarget] = useState<GalleryItem | null>(null);
   const [purchaseTarget, setPurchaseTarget] = useState<GalleryItem | null>(null);
+  const [inquiryTarget, setInquiryTarget] = useState<GalleryItem | null>(null);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -149,10 +151,20 @@ export default function GalleryPage(): ReactElement {
 
             <GallerySection
               title="Sales"
-              description="Items currently on offer."
+              description="Items currently on offer. Tap 'Inquire' to express interest and a team member will follow up."
               icon={<ImageIcon className="h-5 w-5" />}
               items={data.sales}
               emptyLabel="No sale items right now."
+              renderActions={(item) => (
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="w-full"
+                  onClick={() => setInquiryTarget(item)}
+                >
+                  Inquire
+                </Button>
+              )}
             />
           </>
         )}
@@ -166,6 +178,97 @@ export default function GalleryPage(): ReactElement {
       {purchaseTarget && (
         <CarPurchaseModal item={purchaseTarget} onClose={() => setPurchaseTarget(null)} />
       )}
+      {inquiryTarget && (
+        <ShopInquiryModal item={inquiryTarget} onClose={() => setInquiryTarget(null)} />
+      )}
+    </div>
+  );
+}
+
+// ── Shop Inquiry Modal ────────────────────────────────────────────────────────
+
+function ShopInquiryModal({ item, onClose }: { item: GalleryItem; onClose: () => void }) {
+  const { mutateAsync, isPending } = useSubmitShopInquiry();
+  const pushMessage = useFeedbackStore((s) => s.pushMessage);
+  const [form, setForm] = useState({ fullName: '', phone: '', email: '', message: '' });
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await mutateAsync({
+        fullName: form.fullName,
+        phone: form.phone || undefined,
+        email: form.email || undefined,
+        message: form.message,
+        itemId: item.id,
+      });
+      pushMessage({ tone: 'success', message: 'Inquiry submitted. Our team will be in touch.' });
+      onClose();
+    } catch {
+      pushMessage({ tone: 'error', message: 'Failed to submit inquiry. Please try again.' });
+    }
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Shop inquiry"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Inquire about this item</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{item.title}</p>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name *</label>
+            <input name="fullName" value={form.fullName} onChange={handleChange} required
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+              <input name="phone" value={form.phone} onChange={handleChange}
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+              <input name="email" type="email" value={form.email} onChange={handleChange}
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message *</label>
+            <textarea name="message" value={form.message} onChange={handleChange} required minLength={5}
+              rows={3}
+              placeholder="Tell us what you'd like to know or offer"
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          </div>
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+              Cancel
+            </button>
+            <button type="submit" disabled={isPending}
+              className="flex-1 rounded-lg bg-blue-600 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+              {isPending ? 'Sending…' : 'Send Inquiry'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

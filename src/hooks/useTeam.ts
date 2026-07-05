@@ -65,7 +65,7 @@ export function useTeam(params: UseTeamParams = {}): TeamState {
 
   const getToken_ = async (): Promise<string | null> => {
     if (isCustomer) return getToken();
-    return localStorage.getItem(TOKEN_KEY);
+    return sessionStorage.getItem(TOKEN_KEY);
   };
 
   const { data, isLoading, error } = useQuery({

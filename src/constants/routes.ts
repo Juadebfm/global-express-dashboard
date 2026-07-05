@@ -52,6 +52,10 @@ export const ROUTES = {
 
   SUPPLIER_NOTICES: '/supplier-notices',
   SUPPLIER_NOTICE_REVIEW: '/supplier-notices/:id',
+
+  LEADS: '/leads',
+  NEWSLETTER_SUBSCRIBERS: '/newsletter/subscribers',
+  D2D_MY_REQUESTS: '/d2d/my-requests',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

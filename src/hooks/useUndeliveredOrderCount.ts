@@ -12,7 +12,7 @@ export function useUndeliveredOrderCount(): number {
   const { data: allData } = useQuery({
     queryKey: ['shipments', 'badge-count', 'all'],
     queryFn: async () => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) return null;
       return getShipmentsDashboard(token, false, { page: 1, limit: 1 });
     },
@@ -24,7 +24,7 @@ export function useUndeliveredOrderCount(): number {
   const { data: completedData } = useQuery({
     queryKey: ['shipments', 'badge-count', 'completed'],
     queryFn: async () => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) return null;
       return getShipmentsDashboard(token, false, { page: 1, limit: 1, statusV2: 'PICKED_UP_COMPLETED' });
     },

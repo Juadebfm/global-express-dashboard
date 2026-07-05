@@ -8,7 +8,7 @@ export function useActivateClient() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return activateClient(token, id);
     },

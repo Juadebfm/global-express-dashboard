@@ -9,7 +9,7 @@ export function useUpdateUser() {
 
   return useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload: UpdateUserPayload }) => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return updateUser(token, id, payload);
     },

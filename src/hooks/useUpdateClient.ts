@@ -9,7 +9,7 @@ export function useUpdateClient(clientId?: string) {
 
   return useMutation({
     mutationFn: async (payload: UpdateClientPayload) => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       if (!clientId) throw new Error('Client ID is required');
       return updateClientDetails(token, clientId, payload);

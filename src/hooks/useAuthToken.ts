@@ -12,6 +12,6 @@ export function useAuthToken(): () => Promise<string | null> {
 
   return useCallback(async (): Promise<string | null> => {
     if (isCustomer) return getToken();
-    return localStorage.getItem(TOKEN_KEY);
+    return sessionStorage.getItem(TOKEN_KEY);
   }, [isCustomer, getToken]);
 }

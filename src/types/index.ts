@@ -338,3 +338,12 @@ export type {
   AuditLogPagination,
   AuditLogsResponse,
 } from './audit.types';
+
+export type {
+  Lead,
+  LeadType,
+  LeadStatus,
+  LeadsListResult,
+  NewsletterSubscriber,
+  NewsletterSubscribersResult,
+} from './leads.types';

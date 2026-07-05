@@ -130,7 +130,7 @@ export function ReportsPage(): ReactElement {
   const [reportsLoading, setReportsLoading] = useState(true);
 
   const fetchReports = useCallback(async () => {
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token = sessionStorage.getItem(TOKEN_KEY);
     if (!token) return;
 
     setReportsLoading(true);

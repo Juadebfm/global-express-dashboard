@@ -9,7 +9,7 @@ export function useChangeUserRole() {
 
   return useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload: ChangeUserRolePayload }) => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return changeUserRole(token, id, payload);
     },

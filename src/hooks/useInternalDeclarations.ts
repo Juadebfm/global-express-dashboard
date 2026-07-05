@@ -17,7 +17,7 @@ import { STALE_TIME } from '@/lib/queryDefaults';
 const TOKEN_KEY = 'globalxpress_token';
 
 function getToken(): string {
-  const token = localStorage.getItem(TOKEN_KEY);
+  const token = sessionStorage.getItem(TOKEN_KEY);
   if (!token) throw new Error('Not authenticated');
   return token;
 }

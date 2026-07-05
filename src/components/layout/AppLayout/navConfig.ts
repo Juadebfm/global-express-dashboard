@@ -15,12 +15,14 @@ type Role = User['role'];
 export const CUSTOMER_NAV: SidebarItem[] = [
   { id: 'myShipments', icon: 'clipboard', href: ROUTES.DASHBOARD },
   { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
+  { id: 'd2dRequests', icon: 'truck', href: ROUTES.D2D_MY_REQUESTS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
 ];
 
 export const STAFF_NAV: SidebarItem[] = [
   { id: 'adminDashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
   { id: 'operations', icon: 'layers', href: ROUTES.OPERATIONS },
+  { id: 'leads', icon: 'inbox', href: ROUTES.LEADS },
   { id: 'supplierNotices', icon: 'package', href: ROUTES.SUPPLIER_NOTICES },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
 ];
@@ -29,6 +31,7 @@ export const ADMIN_NAV: SidebarItem[] = [
   { id: 'adminDashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
   { id: 'operations', icon: 'layers', href: ROUTES.OPERATIONS },
   { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
+  { id: 'leads', icon: 'inbox', href: ROUTES.LEADS },
   { id: 'supplierNotices', icon: 'package', href: ROUTES.SUPPLIER_NOTICES },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
   { id: 'team', icon: 'team', href: ROUTES.TEAM },
@@ -39,11 +42,13 @@ export const SUPERADMIN_NAV: SidebarItem[] = [
   { id: 'adminDashboard', icon: 'dashboard', href: ROUTES.ADMIN_DASHBOARD },
   { id: 'operations', icon: 'layers', href: ROUTES.OPERATIONS },
   { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
+  { id: 'leads', icon: 'inbox', href: ROUTES.LEADS },
   { id: 'supplierNotices', icon: 'package', href: ROUTES.SUPPLIER_NOTICES },
   { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
   { id: 'team', icon: 'team', href: ROUTES.TEAM },
   { id: 'reports', icon: 'chart', href: ROUTES.REPORTS },
+  { id: 'newsletterSubscribers', icon: 'mail', href: ROUTES.NEWSLETTER_SUBSCRIBERS },
 ];
 
 export const CUSTOMER_FOOTER: SidebarItem[] = [

@@ -16,7 +16,7 @@ export function useRecordOfflinePayment() {
     { orderId: string; payload: RecordOfflinePayload }
   >({
     mutationFn: async ({ orderId, payload }) => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return recordOfflinePayment(token, orderId, payload);
     },

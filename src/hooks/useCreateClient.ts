@@ -9,7 +9,7 @@ export function useCreateClient() {
 
   return useMutation({
     mutationFn: async (payload: CreateClientPayload) => {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
       return createClient(token, payload);
     },

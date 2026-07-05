@@ -206,8 +206,8 @@ export function ExternalSignInPage(): ReactElement {
         // catch (which would call resetExistingSession and sign the user out).
         try {
           const redirectPath = await resolvePostAuthRedirect();
-          localStorage.removeItem('globalxpress_token');
-          localStorage.removeItem('globalxpress_refresh');
+          sessionStorage.removeItem('globalxpress_token');
+          sessionStorage.removeItem('globalxpress_refresh');
           navigate(redirectPath, { replace: true });
         } catch {
           setFormError('Connection error — please try again.');
@@ -285,8 +285,8 @@ export function ExternalSignInPage(): ReactElement {
     // can click Verify again and we'll skip straight here via session_exists.
     try {
       const redirectPath = await resolvePostAuthRedirect();
-      localStorage.removeItem('globalxpress_token');
-      localStorage.removeItem('globalxpress_refresh');
+      sessionStorage.removeItem('globalxpress_token');
+      sessionStorage.removeItem('globalxpress_refresh');
       navigate(redirectPath, { replace: true });
     } catch {
       setFormError('Connection error — please try again.');
