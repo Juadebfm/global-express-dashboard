@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useSignIn, useUser } from '@clerk/clerk-react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
@@ -37,13 +37,39 @@ function getErrorCode(error: unknown): string | null {
   return null;
 }
 
+function getSafeNextPath(rawNext: string | null): string | null {
+  if (!rawNext) return null;
+  if (!rawNext.startsWith('/') || rawNext.startsWith('//')) return null;
+  return rawNext;
+}
+
+function buildCompleteProfilePath(nextPath: string | null): string {
+  if (!nextPath) return ROUTES.COMPLETE_PROFILE;
+  const params = new URLSearchParams({ next: nextPath });
+  return `${ROUTES.COMPLETE_PROFILE}?${params.toString()}`;
+}
+
 export function ExternalSignInPage(): ReactElement {
   const { t } = useTranslation('auth');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isLoaded, signIn, setActive } = useSignIn();
   const { isLoaded: isUserLoaded, isSignedIn } = useUser();
   const { getToken, signOut } = useClerkAuth();
   const { isProvisioningActive, countdownLabel, remainingMs } = useProvisioningGate();
+  const safeNextPath = useMemo(
+    () => getSafeNextPath(searchParams.get('next')),
+    [searchParams],
+  );
+  const defaultPostAuthRedirect = useMemo(
+    () => buildCompleteProfilePath(safeNextPath),
+    [safeNextPath],
+  );
+  const signUpPath = useMemo(() => {
+    if (!safeNextPath) return ROUTES.SIGN_UP;
+    const params = new URLSearchParams({ next: safeNextPath });
+    return `${ROUTES.SIGN_UP}?${params.toString()}`;
+  }, [safeNextPath]);
 
   const [step, setStep] = useState<Step>('sign-in');
 
@@ -63,7 +89,7 @@ export function ExternalSignInPage(): ReactElement {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [postAuthRedirect, setPostAuthRedirect] = useState<string>(ROUTES.COMPLETE_PROFILE);
+  const [postAuthRedirect, setPostAuthRedirect] = useState<string>(defaultPostAuthRedirect);
   const [dismissedProvisioningTarget, setDismissedProvisioningTarget] = useState<number | null>(null);
   const [isSessionReady, setIsSessionReady] = useState(false);
 
@@ -74,6 +100,10 @@ export function ExternalSignInPage(): ReactElement {
   const provisioningModalMessage =
     `${PROVISIONING_GATE_BLOCK_MESSAGE}. Estimated unlock in ${countdownLabel}.`;
 
+  useEffect(() => {
+    setPostAuthRedirect(defaultPostAuthRedirect);
+  }, [defaultPostAuthRedirect]);
+
   const resolvePostAuthRedirect = useCallback(async (): Promise<string> => {
     const token = await getToken();
     if (!token) {
@@ -82,8 +112,10 @@ export function ExternalSignInPage(): ReactElement {
 
     await syncClerkAccount(token);
     const completeness = await getMyProfileCompleteness(token);
-    return completeness.isComplete ? ROUTES.DASHBOARD : ROUTES.COMPLETE_PROFILE;
-  }, [getToken]);
+    return completeness.isComplete
+      ? safeNextPath ?? ROUTES.DASHBOARD
+      : buildCompleteProfilePath(safeNextPath);
+  }, [getToken, safeNextPath]);
 
   useEffect(() => {
     if (!isLoaded || !isUserLoaded || hasPreparedSessionRef.current) {
@@ -482,7 +514,7 @@ export function ExternalSignInPage(): ReactElement {
 
             <p className="mt-6 text-center text-sm text-gray-500">
               {t('externalSignIn.noAccount')}{' '}
-              <Link to={ROUTES.SIGN_UP} className="font-medium text-brand-500 hover:text-brand-600">
+              <Link to={signUpPath} className="font-medium text-brand-500 hover:text-brand-600">
                 {t('externalSignIn.signUp')}
               </Link>
             </p>

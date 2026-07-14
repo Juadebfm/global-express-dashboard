@@ -1,6 +1,6 @@
 import type { ComponentType, ReactElement } from 'react';
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import type { Country } from 'react-phone-number-input';
 import {
@@ -86,6 +86,12 @@ function getLocalPhoneValue(
     return digits.slice(dialDigits.length);
   }
   return digits;
+}
+
+function getSafeNextPath(rawNext: string | null): string | null {
+  if (!rawNext) return null;
+  if (!rawNext.startsWith('/') || rawNext.startsWith('//')) return null;
+  return rawNext;
 }
 
 interface CountrySelectProps {
@@ -184,6 +190,7 @@ function CountrySelect({ selected, onSelect, isError = false }: CountrySelectPro
 export function CompleteProfilePage(): ReactElement {
   const { t } = useTranslation('auth');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { getToken, isSignedIn, isLoaded: isClerkLoaded } = useAuth();
   const { user } = useUser();
 
@@ -194,6 +201,11 @@ export function CompleteProfilePage(): ReactElement {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const safeNextPath = useMemo(
+    () => getSafeNextPath(searchParams.get('next')),
+    [searchParams],
+  );
+  const postProfileRedirect = safeNextPath ?? ROUTES.DASHBOARD;
 
   const selectedCountryOption =
     COUNTRY_OPTIONS.find((item) => item.code === selectedCountry) || COUNTRY_OPTIONS[0];
@@ -244,7 +256,7 @@ export function CompleteProfilePage(): ReactElement {
         if (completeness.isComplete) {
           await user?.update({ unsafeMetadata: { profileCompleted: true } });
           if (isMounted) {
-            navigate(ROUTES.DASHBOARD, { replace: true });
+            navigate(postProfileRedirect, { replace: true });
           }
           return;
         }
@@ -283,7 +295,7 @@ export function CompleteProfilePage(): ReactElement {
     return () => {
       isMounted = false;
     };
-  }, [getToken, isClerkLoaded, isSignedIn, navigate, user]);
+  }, [getToken, isClerkLoaded, isSignedIn, navigate, postProfileRedirect, user]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -333,7 +345,7 @@ export function CompleteProfilePage(): ReactElement {
       // Mark profile complete in Clerk metadata so we skip this page on future logins
       await user?.update({ unsafeMetadata: { profileCompleted: true } });
 
-      navigate(ROUTES.DASHBOARD, { replace: true });
+      navigate(postProfileRedirect, { replace: true });
     } catch (error) {
       setFormError(getErrorMessage(error));
     } finally {

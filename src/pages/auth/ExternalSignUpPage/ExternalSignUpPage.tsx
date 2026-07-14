@@ -1,5 +1,5 @@
 import type { ComponentType, ReactElement } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth, useClerk, useSignUp, useUser } from '@clerk/clerk-react';
 import type { Country } from 'react-phone-number-input';
 import {
@@ -9,7 +9,7 @@ import {
 } from 'react-phone-number-input';
 import flags from 'react-phone-number-input/flags';
 import en from 'react-phone-number-input/locale/en';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthLayout } from '@/components/layout';
 import {
@@ -44,6 +44,12 @@ const COUNTRY_OPTIONS: CountryOption[] = getCountries()
     dialCode: `+${getCountryCallingCode(code)}`,
   }))
   .sort((a, b) => a.name.localeCompare(b.name));
+
+function getSafeNextPath(rawNext: string | null): string | null {
+  if (!rawNext) return null;
+  if (!rawNext.startsWith('/') || rawNext.startsWith('//')) return null;
+  return rawNext;
+}
 
 interface SignUpFormState {
   firstName: string;
@@ -285,6 +291,7 @@ export function ExternalSignUpPage(): ReactElement {
   const { t } = useTranslation('auth');
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isLoaded, signUp, setActive } = useSignUp();
   const { getToken, isSignedIn } = useAuth();
   const { user: clerkUser } = useUser();
@@ -292,6 +299,10 @@ export function ExternalSignUpPage(): ReactElement {
   const inputClassName = 'auth-form-control text-sm placeholder:text-sm';
   const buttonTextClassName = 'text-sm';
   const emailPattern = /\S+@\S+\.\S+/;
+  const postSignUpRedirect = useMemo(
+    () => getSafeNextPath(searchParams.get('next')) ?? ROUTES.DASHBOARD,
+    [searchParams],
+  );
 
   const [step, setStep] = useState<SignUpStep>('details');
   const [form, setForm] = useState<SignUpFormState>(initialFormState);
@@ -415,8 +426,8 @@ export function ExternalSignUpPage(): ReactElement {
     }
 
     await clerkUser?.update({ unsafeMetadata: { profileCompleted: true } });
-    navigate(ROUTES.DASHBOARD, { replace: true });
-  }, [buildE164, clerkUser, form, navigate]);
+    navigate(postSignUpRedirect, { replace: true });
+  }, [buildE164, clerkUser, form, navigate, postSignUpRedirect]);
 
   const handleFinishSetupRetry = useCallback(async (): Promise<void> => {
     setFormError(null);

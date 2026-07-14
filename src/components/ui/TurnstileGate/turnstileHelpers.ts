@@ -5,7 +5,7 @@ import { ApiError, PROBLEM_TYPE } from '@/lib/apiClient';
  * VITE_TURNSTILE_SITE_KEY set). The BE middleware short-circuits the same
  * way when its TURNSTILE_SECRET_KEY is unset.
  */
-export const TURNSTILE_DEV_TOKEN = 'dev-skip';
+export const TURNSTILE_DEV_TOKEN = 'dev-bypass-token';
 
 /**
  * Returns true if `err` is a CAPTCHA-failure response. Form catch blocks

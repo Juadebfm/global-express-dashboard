@@ -98,9 +98,12 @@ export function useSubmitD2dIntake() {
 }
 
 export function useSubmitShopInquiry() {
-  const token = sessionStorage.getItem(TOKEN_KEY) ?? '';
+  const getToken = useAuthToken();
   return useMutation({
-    mutationFn: (payload: Parameters<typeof submitShopInquiry>[0]) =>
-      submitShopInquiry(payload, token),
+    mutationFn: async (payload: Parameters<typeof submitShopInquiry>[0]) => {
+      const token = await getToken();
+      if (!token) throw new Error('Not authenticated');
+      return submitShopInquiry(payload, token);
+    },
   });
 }

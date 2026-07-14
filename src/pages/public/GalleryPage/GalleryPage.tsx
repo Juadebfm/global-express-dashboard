@@ -1,5 +1,5 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -59,9 +59,45 @@ function isAllowedType(value: string): value is GalleryUploadContentType {
 
 export default function GalleryPage(): ReactElement {
   const { data, isLoading, error } = usePublicGallery();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [claimTarget, setClaimTarget] = useState<GalleryItem | null>(null);
   const [purchaseTarget, setPurchaseTarget] = useState<GalleryItem | null>(null);
   const [inquiryTarget, setInquiryTarget] = useState<GalleryItem | null>(null);
+
+  useEffect(() => {
+    if (!data) return;
+
+    const intent = searchParams.get('intent');
+    const itemId = searchParams.get('itemId');
+
+    if (!intent || !itemId) return;
+
+    const allItems = [
+      ...data.anonymousGoods,
+      ...data.cars,
+      ...data.sales,
+      ...data.adverts,
+    ];
+    const matchedItem = allItems.find((item) => item.id === itemId);
+
+    if (!matchedItem) return;
+
+    if (intent === 'claim') {
+      setClaimTarget(matchedItem);
+    } else if (intent === 'shop-inquiry') {
+      setInquiryTarget(matchedItem);
+    } else if (intent === 'car-purchase') {
+      setPurchaseTarget(matchedItem);
+    }
+
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.delete('intent');
+      next.delete('itemId');
+      next.delete('source');
+      return next;
+    }, { replace: true });
+  }, [data, searchParams, setSearchParams]);
 
   return (
     <div className="min-h-screen bg-gray-50">
