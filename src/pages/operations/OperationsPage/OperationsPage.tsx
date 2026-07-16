@@ -261,7 +261,7 @@ export function OperationsPage(): ReactElement {
     1, 50, 'AWAITING_WAREHOUSE_RECEIPT'
   );
   const { orders: allOrders, isLoading: allLoading, error: allError } = useOrders(
-    1, 250
+    1, 100
   );
 
   const layoutUser = {

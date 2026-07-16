@@ -193,6 +193,8 @@ function extractPagination(
   return { total, page, limit, totalPages };
 }
 
+export const MAX_ORDERS_PAGE_SIZE = 100;
+
 export async function getOrders(
   token: string,
   page = 1,
@@ -202,6 +204,9 @@ export async function getOrders(
   limit = 20,
   statusV2?: string
 ): Promise<OrdersListResult> {
+  if (limit < 1 || limit > MAX_ORDERS_PAGE_SIZE) {
+    throw new Error(`Orders page size must be between 1 and ${MAX_ORDERS_PAGE_SIZE}.`);
+  }
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (statusV2) params.set('statusV2', statusV2);
 
@@ -362,5 +367,4 @@ export function estimateOrderCost(
 ): Promise<OrderEstimateResult> {
   return apiPostData<OrderEstimateResult>('/orders/estimate', payload, token);
 }
-
 

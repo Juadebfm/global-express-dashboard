@@ -19,8 +19,8 @@ interface UseOrdersOptions {
   enabled?: boolean;
 }
 
-// Matches the BE default + ShipmentsDashboard. Callers can override if they
-// need a larger window, but the day-to-day list views all paginate at 20.
+// Matches the BE default. The backend accepts at most 100 rows per request;
+// callers that need more data must paginate instead of increasing this limit.
 const DEFAULT_ORDERS_PAGE_SIZE = 20;
 
 export function useOrders(
