@@ -1,30 +1,12 @@
 import { z } from 'zod';
 
-// Mirrors POST /public/gallery/anonymous/:trackingNumber/claim payload (proof
-// uploads handled by the surrounding hook; this schema covers the form fields).
-export const anonymousClaimSchema = z.object({
-  itemId: z.string().uuid('Missing gallery item id'),
-  fullName: z.string().min(2, 'Enter your full name'),
-  email: z.string().email('Enter a valid email'),
-  phone: z.string().min(5, 'Enter a valid phone number'),
-  city: z.string().max(120).optional().or(z.literal('')),
-  country: z.string().max(120).optional().or(z.literal('')),
+// Mirrors POST /gallery/anonymous/:trackingNumber/claim. The authenticated
+// account supplies the claimant identity; the form only collects context.
+export const authenticatedClaimSchema = z.object({
   message: z.string().max(2000, 'Message must be 2000 characters or fewer').optional().or(z.literal('')),
 });
 
-export type AnonymousClaimFormData = z.infer<typeof anonymousClaimSchema>;
-
-// Mirrors POST /public/gallery/cars/:trackingNumber/purchase-attempt.
-export const anonymousCarPurchaseSchema = z.object({
-  fullName: z.string().min(2, 'Enter your full name'),
-  email: z.string().email('Enter a valid email'),
-  phone: z.string().min(5, 'Enter a valid phone number'),
-  city: z.string().max(120).optional().or(z.literal('')),
-  country: z.string().max(120).optional().or(z.literal('')),
-  message: z.string().max(2000).optional().or(z.literal('')),
-});
-
-export type AnonymousCarPurchaseFormData = z.infer<typeof anonymousCarPurchaseSchema>;
+export type AuthenticatedClaimFormData = z.infer<typeof authenticatedClaimSchema>;
 
 // Mirrors POST /gallery/items (staff). Validates the form, not the upload —
 // previewImageUrl is captured separately after media presign returns the URL.

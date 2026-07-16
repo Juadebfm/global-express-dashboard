@@ -8,6 +8,7 @@ import { act, cleanup, render, renderHook } from '@testing-library/react';
 vi.mock('@/services/authService', () => ({
   login: vi.fn(),
   getMe: vi.fn(),
+  getInternalMe: vi.fn(),
   logout: vi.fn(),
 }));
 
@@ -34,12 +35,13 @@ beforeEach(() => {
   // token (checkAuth short-circuits), but we set it to a safe value anyway
   // so tests that DO seed a token can override per-case.
   vi.mocked(authService.getMe).mockResolvedValue(undefined as never);
+  vi.mocked(authService.getInternalMe).mockResolvedValue(undefined as never);
   vi.mocked(authService.logout).mockResolvedValue(undefined);
 });
 
 afterEach(() => {
   cleanup();
-  localStorage.clear();
+  sessionStorage.clear();
   queryClient.clear();
   vi.clearAllMocks();
 });
@@ -49,7 +51,7 @@ describe('AuthContext — cache clearing on session loss', () => {
     // Seed a token + cached query as if we were mid-session. getMe will be
     // called on mount; we make it return a fake operator so the boot probe
     // settles before the test exercises logout.
-    localStorage.setItem(TOKEN_KEY, 'fake-token-123');
+    sessionStorage.setItem(TOKEN_KEY, 'fake-token-123');
     vi.mocked(authService.getMe).mockResolvedValue({
       id: 'u-1',
       email: 'op@example.com',
@@ -77,7 +79,7 @@ describe('AuthContext — cache clearing on session loss', () => {
   it('clears the react-query cache when a 401 dispatches auth:unauthorized', async () => {
     // Seed a token + cached data — the listener only runs when a token is
     // present (it's the "active session got revoked" signal).
-    localStorage.setItem(TOKEN_KEY, 'fake-token-456');
+    sessionStorage.setItem(TOKEN_KEY, 'fake-token-456');
     queryClient.setQueryData(['notifications', 'list'], { data: [] });
     queryClient.setQueryData(['users', 'me'], { id: 'user-1' });
     expect(queryClient.getQueryCache().getAll()).toHaveLength(2);
@@ -120,7 +122,7 @@ describe('AuthContext — cache clearing on session loss', () => {
 describe('AuthContext — role refresh on auth:forbidden', () => {
   it('refetches /auth/me when a 403 fires so a demoted role catches up', async () => {
     // Seed a token + a "staff" user the boot probe will return first.
-    localStorage.setItem(TOKEN_KEY, 'fake-token-789');
+    sessionStorage.setItem(TOKEN_KEY, 'fake-token-789');
     const wasStaff = {
       id: 'u-2',
       email: 'op@example.com',
@@ -137,6 +139,7 @@ describe('AuthContext — role refresh on auth:forbidden', () => {
     vi.mocked(authService.getMe)
       .mockResolvedValueOnce(wasStaff as never)
       .mockResolvedValueOnce(nowCustomer as never);
+    vi.mocked(authService.getInternalMe).mockResolvedValue(nowCustomer as never);
 
     render(
       <Wrapper>
@@ -157,9 +160,10 @@ describe('AuthContext — role refresh on auth:forbidden', () => {
       // Let the async handler resolve.
       await Promise.resolve();
       await Promise.resolve();
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
     });
 
-    expect(authService.getMe).toHaveBeenCalledTimes(2);
+    expect(authService.getInternalMe).toHaveBeenCalledTimes(1);
   });
 
   it('ignores auth:forbidden when there is no active session', async () => {
@@ -184,7 +188,7 @@ describe('AuthContext — role refresh on tab refocus', () => {
   it('refetches /auth/me when the tab regains focus after a long idle', async () => {
     // Seed a token. The lastSyncedAtRef starts at 0, so Date.now() - 0
     // is a huge number — guaranteed to exceed the 5-minute idle window.
-    localStorage.setItem(TOKEN_KEY, 'fake-token-vis-1');
+    sessionStorage.setItem(TOKEN_KEY, 'fake-token-vis-1');
     vi.mocked(authService.getMe).mockResolvedValue({
       id: 'u-3',
       email: 'op3@example.com',
@@ -253,7 +257,7 @@ describe('AuthContext — role refresh on tab refocus', () => {
     // visibilitychange immediately should NOT trigger a second probe —
     // we don't want to hammer /auth/me when the user is just tab-flicking
     // between two open windows of the dashboard.
-    localStorage.setItem(TOKEN_KEY, 'fake-token-vis-2');
+    sessionStorage.setItem(TOKEN_KEY, 'fake-token-vis-2');
     vi.mocked(authService.getMe).mockResolvedValue({
       id: 'u-4',
       email: 'op4@example.com',

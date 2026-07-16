@@ -12,19 +12,12 @@ import {
   getPublicGallerySales,
   presignGalleryClaim,
   presignGalleryItemMedia,
-  presignPublicGalleryClaim,
   reviewGalleryClaim,
   submitAuthedAnonymousClaim,
-  submitAuthedCarPurchaseAttempt,
-  submitPublicAnonymousClaim,
-  submitPublicCarPurchaseAttempt,
   updateGalleryAdvert,
   updateGalleryItem,
 } from '@/services/galleryService';
 import type {
-  AnonymousCarPurchasePayload,
-  AnonymousClaimPayload,
-  AuthedCarPurchasePayload,
   AuthedClaimPayload,
   AuthedGalleryListings,
   GalleryAdvertCreatePayload,
@@ -96,141 +89,6 @@ export function usePublicGallerySales(limit?: number): {
     staleTime: STALE_TIME.SLOW_MOVING,
   });
   return { data: query.data, isLoading: query.isLoading, error: query.error };
-}
-
-// ── Public claim flow (anonymous) ────────────────────────────────────────────
-
-export interface AnonymousClaimSubmissionInput {
-  trackingNumber: string;
-  files: File[];
-  fullName: string;
-  email: string;
-  phone: string;
-  city?: string;
-  country?: string;
-  message?: string;
-  itemId: string;
-  /**
-   * Async factory that resolves with a fresh Turnstile token for each call.
-   * The claim flow fires N+1 protected POSTs (N presigns + 1 submit) and
-   * Turnstile tokens are single-use, so the form passes
-   * `() => gateRef.current!.requestNextToken()` here.
-   */
-  getTurnstileToken: () => Promise<string>;
-}
-
-export function useSubmitAnonymousClaim(): {
-  mutate: (input: AnonymousClaimSubmissionInput) => Promise<GalleryClaimSubmissionResult>;
-  isPending: boolean;
-  error: Error | null;
-} {
-  const pushMessage = useFeedbackStore((s) => s.pushMessage);
-  const queryClient = useQueryClient();
-
-  const m = useMutation<GalleryClaimSubmissionResult, Error, AnonymousClaimSubmissionInput>({
-    mutationFn: async (input) => {
-      if (input.files.length === 0) {
-        throw new Error('Attach at least one proof document.');
-      }
-      let uploadToken: string | undefined;
-      const r2Keys: string[] = [];
-      for (const file of input.files) {
-        const turnstileToken = await input.getTurnstileToken();
-        const presign = await presignPublicGalleryClaim(
-          {
-            uploadToken,
-            contentType: file.type as GalleryUploadPresignPayload['contentType'],
-            originalFileName: file.name,
-          },
-          turnstileToken,
-        );
-        uploadToken = presign.uploadToken;
-        const putResp = await fetch(presign.uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': file.type },
-          body: file,
-        });
-        if (!putResp.ok) {
-          throw new Error(`Upload to storage failed (${putResp.status})`);
-        }
-        r2Keys.push(presign.r2Key);
-      }
-      if (!uploadToken) {
-        throw new Error('Upload token missing — please retry.');
-      }
-      const payload: AnonymousClaimPayload = {
-        itemId: input.itemId,
-        fullName: input.fullName,
-        email: input.email,
-        phone: input.phone,
-        city: input.city,
-        country: input.country,
-        message: input.message,
-        uploadToken,
-        proofR2Keys: r2Keys,
-      };
-      const submitToken = await input.getTurnstileToken();
-      return submitPublicAnonymousClaim(input.trackingNumber, payload, submitToken);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gallery', 'public'] });
-      pushMessage({
-        tone: 'success',
-        message: FEEDBACK_MESSAGES.gallery.claimSubmitSuccess,
-      });
-    },
-    onError: (err) => {
-      pushMessage({
-        tone: 'error',
-        message: err.message || FEEDBACK_MESSAGES.gallery.claimSubmitError,
-      });
-    },
-  });
-
-  return {
-    mutate: (input) => m.mutateAsync(input),
-    isPending: m.isPending,
-    error: m.error,
-  };
-}
-
-export function useSubmitPublicCarPurchase(): {
-  mutate: (input: {
-    trackingNumber: string;
-    payload: AnonymousCarPurchasePayload;
-    turnstileToken: string;
-  }) => Promise<GalleryClaimSubmissionResult>;
-  isPending: boolean;
-  error: Error | null;
-} {
-  const pushMessage = useFeedbackStore((s) => s.pushMessage);
-  const queryClient = useQueryClient();
-  const m = useMutation<
-    GalleryClaimSubmissionResult,
-    Error,
-    { trackingNumber: string; payload: AnonymousCarPurchasePayload; turnstileToken: string }
-  >({
-    mutationFn: ({ trackingNumber, payload, turnstileToken }) =>
-      submitPublicCarPurchaseAttempt(trackingNumber, payload, turnstileToken),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gallery', 'public'] });
-      pushMessage({
-        tone: 'success',
-        message: FEEDBACK_MESSAGES.gallery.carPurchaseSuccess,
-      });
-    },
-    onError: (err) => {
-      pushMessage({
-        tone: 'error',
-        message: err.message || FEEDBACK_MESSAGES.gallery.carPurchaseError,
-      });
-    },
-  });
-  return {
-    mutate: (input) => m.mutateAsync(input),
-    isPending: m.isPending,
-    error: m.error,
-  };
 }
 
 // ── Authed gallery (signed-in users) ─────────────────────────────────────────
@@ -317,50 +175,6 @@ export function useSubmitAuthedClaim(): {
       pushMessage({
         tone: 'error',
         message: err.message || FEEDBACK_MESSAGES.gallery.claimSubmitError,
-      });
-    },
-  });
-
-  return {
-    mutate: (input) => m.mutateAsync(input),
-    isPending: m.isPending,
-    error: m.error,
-  };
-}
-
-export function useSubmitAuthedCarPurchase(): {
-  mutate: (input: {
-    trackingNumber: string;
-    payload: AuthedCarPurchasePayload;
-  }) => Promise<GalleryClaimSubmissionResult>;
-  isPending: boolean;
-  error: Error | null;
-} {
-  const getToken = useAuthToken();
-  const pushMessage = useFeedbackStore((s) => s.pushMessage);
-  const queryClient = useQueryClient();
-
-  const m = useMutation<
-    GalleryClaimSubmissionResult,
-    Error,
-    { trackingNumber: string; payload: AuthedCarPurchasePayload }
-  >({
-    mutationFn: async ({ trackingNumber, payload }) => {
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
-      return submitAuthedCarPurchaseAttempt(token, trackingNumber, payload);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gallery'] });
-      pushMessage({
-        tone: 'success',
-        message: FEEDBACK_MESSAGES.gallery.carPurchaseSuccess,
-      });
-    },
-    onError: (err) => {
-      pushMessage({
-        tone: 'error',
-        message: err.message || FEEDBACK_MESSAGES.gallery.carPurchaseError,
       });
     },
   });

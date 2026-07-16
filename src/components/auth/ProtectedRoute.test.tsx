@@ -212,7 +212,7 @@ describe('ProtectedRoute', () => {
     expect(getByText('staff-onboarding-page')).toBeTruthy();
   });
 
-  it('redirects to /staff-onboarding when mustCompleteProfile is true', () => {
+  it('allows access when mustCompleteProfile is true (soft gate)', () => {
     mockAuth({
       user: makeUser({ role: 'staff', mustCompleteProfile: true }),
     });
@@ -223,7 +223,7 @@ describe('ProtectedRoute', () => {
         </ProtectedRoute>,
       ),
     );
-    expect(getByText('staff-onboarding-page')).toBeTruthy();
+    expect(getByText(PROTECTED_CONTENT)).toBeTruthy();
   });
 
   it('shows the loader while auth state is still resolving', () => {

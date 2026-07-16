@@ -1,7 +1,4 @@
 import type {
-  AnonymousCarPurchasePayload,
-  AnonymousClaimPayload,
-  AuthedCarPurchasePayload,
   AuthedClaimPayload,
   AuthedGalleryListings,
   GalleryAdvertCreatePayload,
@@ -20,9 +17,7 @@ import type {
 } from '@/types';
 import { apiGetData, apiPatchData, apiPostData } from '@/lib/apiClient';
 
-// Phase 4 — both /public/gallery/* (anonymous) and /gallery/* (staff/authed).
-// Grouped in one module because the only difference between the two route
-// prefixes is permissions: same domain, same response shapes.
+// Public gallery reads and authenticated gallery operations share this module.
 
 // ── Public (anonymous) gallery listings ──────────────────────────────────────
 
@@ -41,44 +36,6 @@ export function getPublicGalleryAdverts(limit?: number): Promise<GalleryItem[]> 
 export function getPublicGallerySales(limit?: number): Promise<GalleryItem[]> {
   const q = limit ? `?limit=${encodeURIComponent(limit)}` : '';
   return apiGetData<GalleryItem[]>(`/public/gallery/sales${q}`);
-}
-
-export function presignPublicGalleryClaim(
-  payload: GalleryUploadPresignPayload,
-  turnstileToken: string,
-): Promise<GalleryUploadPresignResult> {
-  return apiPostData<GalleryUploadPresignResult>(
-    '/public/gallery/claims/presign',
-    payload,
-    undefined,
-    { turnstileToken },
-  );
-}
-
-export function submitPublicAnonymousClaim(
-  trackingNumber: string,
-  payload: AnonymousClaimPayload,
-  turnstileToken: string,
-): Promise<GalleryClaimSubmissionResult> {
-  return apiPostData<GalleryClaimSubmissionResult>(
-    `/public/gallery/anonymous/${encodeURIComponent(trackingNumber)}/claim`,
-    payload,
-    undefined,
-    { turnstileToken },
-  );
-}
-
-export function submitPublicCarPurchaseAttempt(
-  trackingNumber: string,
-  payload: AnonymousCarPurchasePayload,
-  turnstileToken: string,
-): Promise<GalleryClaimSubmissionResult> {
-  return apiPostData<GalleryClaimSubmissionResult>(
-    `/public/gallery/cars/${encodeURIComponent(trackingNumber)}/purchase-attempt`,
-    payload,
-    undefined,
-    { turnstileToken },
-  );
 }
 
 // ── Authenticated gallery (staff + signed-in users) ──────────────────────────
@@ -116,18 +73,6 @@ export function submitAuthedAnonymousClaim(
 ): Promise<GalleryClaimSubmissionResult> {
   return apiPostData<GalleryClaimSubmissionResult>(
     `/gallery/anonymous/${encodeURIComponent(trackingNumber)}/claim`,
-    payload,
-    token,
-  );
-}
-
-export function submitAuthedCarPurchaseAttempt(
-  token: string,
-  trackingNumber: string,
-  payload: AuthedCarPurchasePayload,
-): Promise<GalleryClaimSubmissionResult> {
-  return apiPostData<GalleryClaimSubmissionResult>(
-    `/gallery/cars/${encodeURIComponent(trackingNumber)}/purchase-attempt`,
     payload,
     token,
   );

@@ -17,7 +17,7 @@ const EXPECTED: Record<Action, Role[]> = {
 
   // Orders
   'orders.deleteImage': ['admin', 'superadmin'],
-  'orders.approveOverride': ['admin', 'superadmin'],
+  'orders.approveOverride': ['superadmin'],
   'orders.delete': ['admin', 'superadmin'],
   'orders.updateStatus': ['staff', 'admin', 'superadmin'],
   'orders.warehouseVerify': ['staff', 'admin', 'superadmin'],

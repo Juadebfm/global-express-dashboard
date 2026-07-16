@@ -44,14 +44,12 @@ export type {
 } from './PublicForms';
 
 export {
-  anonymousClaimSchema,
-  anonymousCarPurchaseSchema,
+  authenticatedClaimSchema,
   galleryItemSchema,
   galleryClaimReviewSchema,
 } from './GalleryForms';
 export type {
-  AnonymousClaimFormData,
-  AnonymousCarPurchaseFormData,
+  AuthenticatedClaimFormData,
   GalleryItemFormData,
   GalleryClaimReviewFormData,
 } from './GalleryForms';

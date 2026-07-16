@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import type { ReportSummary, OrdersByStatusEntry, RevenueEntry } from '@/types';
-import { getReportSummary, getOrdersByStatus, getRevenueReport } from '@/services';
+import type { ReportSummary, RevenueEntry } from '@/types';
+import { getReportSummary, getRevenueReport } from '@/services';
 import { STALE_TIME } from '@/lib/queryDefaults';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -15,14 +15,6 @@ export function useReportSummary() {
   return useQuery<ReportSummary>({
     queryKey: ['reports', 'summary'],
     queryFn: () => getReportSummary(getToken()),
-    staleTime: STALE_TIME.REAL_TIME,
-  });
-}
-
-export function useOrdersByStatus() {
-  return useQuery<OrdersByStatusEntry[]>({
-    queryKey: ['reports', 'orders-by-status'],
-    queryFn: () => getOrdersByStatus(getToken()),
     staleTime: STALE_TIME.REAL_TIME,
   });
 }

@@ -25,9 +25,8 @@ export interface TurnstileGateRef {
    * Returns a promise that resolves with a fresh token. The first call
    * resolves immediately with the currently captured token (if any). Each
    * subsequent call resets the widget and awaits the next `onSuccess`. Use
-   * this for flows that fire multiple protected POSTs in sequence (e.g. the
-   * anonymous claim flow: N presigns + 1 submit, each consuming a single-use
-   * token). In dev-bypass mode, always resolves with the sentinel.
+   * this for flows that fire multiple protected POSTs in sequence. In
+   * dev-bypass mode, always resolves with the sentinel.
    */
   requestNextToken: () => Promise<string>;
 }
@@ -45,9 +44,8 @@ export interface TurnstileGateProps {
 }
 
 /**
- * Renders the Cloudflare Turnstile widget on the 5 unauthenticated public
- * POST forms (newsletter subscribe, gallery claim presign/submit, car
- * purchase attempt, D2D intake). Captures the token, hands it to the form
+ * Renders the Cloudflare Turnstile widget on unauthenticated public POST
+ * forms (newsletter subscribe, vehicle inquiry, D2D intake). Captures the token, hands it to the form
  * via `onToken`, and exposes `reset()` so the form can re-issue after a
  * server-side CAPTCHA rejection.
  *

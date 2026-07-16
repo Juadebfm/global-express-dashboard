@@ -1,6 +1,5 @@
 import type {
   ReportSummary,
-  OrdersByStatusEntry,
   RevenueEntry,
   RevenueAnalytics,
   ShipmentVolume,
@@ -25,14 +24,10 @@ function buildQs(params: Record<string, string | number | boolean | undefined>):
   return qs ? `?${qs}` : '';
 }
 
-/* ── legacy (used by useReports hooks) ──────────────────── */
+/* ── retained summary endpoint ──────────────────────────── */
 
 export function getReportSummary(token: string): Promise<ReportSummary> {
   return apiGetData<ReportSummary>('/reports/summary', token);
-}
-
-export function getOrdersByStatus(token: string): Promise<OrdersByStatusEntry[]> {
-  return apiGetData<OrdersByStatusEntry[]>('/reports/orders/by-status', token);
 }
 
 export function getRevenueReport(

@@ -76,8 +76,6 @@ export const FEEDBACK_MESSAGES = {
   gallery: {
     claimSubmitSuccess: 'Claim submitted — our team will be in touch with next steps.',
     claimSubmitError: 'Unable to submit your claim. Please try again.',
-    carPurchaseSuccess: 'Purchase interest recorded — our team will contact you with next steps.',
-    carPurchaseError: 'Unable to record your interest. Please try again.',
     itemCreateSuccess: 'Gallery item created.',
     itemCreateError: 'Unable to create gallery item. Please try again.',
     itemUpdateSuccess: 'Gallery item updated.',

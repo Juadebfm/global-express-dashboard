@@ -1,5 +1,6 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -26,24 +27,18 @@ import {
 } from '@/store';
 import {
   usePublicGallery,
-  useSubmitAnonymousClaim,
-  useSubmitPublicCarPurchase,
+  useSubmitAuthedClaim,
   useSubmitShopInquiry,
   useSubscribeToNewsletter,
+  useAuth,
 } from '@/hooks';
 import {
-  anonymousCarPurchaseSchema,
-  anonymousClaimSchema,
+  authenticatedClaimSchema,
   newsletterSubscribeSchema,
-  type AnonymousCarPurchaseFormData,
-  type AnonymousClaimFormData,
+  type AuthenticatedClaimFormData,
   type NewsletterSubscribeFormData,
 } from '@/components/forms';
-import type {
-  AnonymousCarPurchasePayload,
-  GalleryItem,
-  GalleryUploadContentType,
-} from '@/types';
+import type { GalleryItem, GalleryUploadContentType } from '@/types';
 
 const ALLOWED_PROOF_TYPES: GalleryUploadContentType[] = [
   'application/pdf',
@@ -61,7 +56,6 @@ export default function GalleryPage(): ReactElement {
   const { data, isLoading, error } = usePublicGallery();
   const [searchParams, setSearchParams] = useSearchParams();
   const [claimTarget, setClaimTarget] = useState<GalleryItem | null>(null);
-  const [purchaseTarget, setPurchaseTarget] = useState<GalleryItem | null>(null);
   const [inquiryTarget, setInquiryTarget] = useState<GalleryItem | null>(null);
 
   useEffect(() => {
@@ -86,8 +80,6 @@ export default function GalleryPage(): ReactElement {
       setClaimTarget(matchedItem);
     } else if (intent === 'shop-inquiry') {
       setInquiryTarget(matchedItem);
-    } else if (intent === 'car-purchase') {
-      setPurchaseTarget(matchedItem);
     }
 
     setSearchParams((previous) => {
@@ -161,20 +153,10 @@ export default function GalleryPage(): ReactElement {
 
             <GallerySection
               title="Cars for sale"
-              description="First-come-first-served. Express interest below and we'll reach out with payment details."
+              description="Browse current vehicle listings. Contact our team for availability and next steps."
               icon={<Car className="h-5 w-5" />}
               items={data.cars}
               emptyLabel="No cars listed at the moment."
-              renderActions={(item) => (
-                <Button
-                  type="button"
-                  variant="primary"
-                  className="w-full"
-                  onClick={() => setPurchaseTarget(item)}
-                >
-                  Buy this car
-                </Button>
-              )}
             />
 
             <GallerySection
@@ -210,9 +192,6 @@ export default function GalleryPage(): ReactElement {
 
       {claimTarget && (
         <ClaimModal item={claimTarget} onClose={() => setClaimTarget(null)} />
-      )}
-      {purchaseTarget && (
-        <CarPurchaseModal item={purchaseTarget} onClose={() => setPurchaseTarget(null)} />
       )}
       {inquiryTarget && (
         <ShopInquiryModal item={inquiryTarget} onClose={() => setInquiryTarget(null)} />
@@ -427,41 +406,24 @@ interface ClaimModalProps {
 }
 
 function ClaimModal({ item, onClose }: ClaimModalProps): ReactElement {
-  const submit = useSubmitAnonymousClaim();
+  const submit = useSubmitAuthedClaim();
   const pushMessage = useFeedbackStore((s) => s.pushMessage);
   const [files, setFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
-  // Claim flow fires N+1 protected POSTs (N presigns + 1 submit). Each
-  // consumes a single-use Turnstile token, so the hook requests a fresh
-  // one per call via this ref.
-  const [turnstileToken, setTurnstileToken] = useState<string>('');
-  const turnstileRef = useRef<TurnstileGateRef | null>(null);
-  // Stable callbacks so ref access lives outside the render-time closure
-  // handleSubmit creates (satisfies react-hooks/refs).
-  const resetTurnstile = useCallback(() => {
-    setTurnstileToken('');
-    turnstileRef.current?.reset();
-  }, []);
-  const requestNextToken = useCallback((): Promise<string> => {
-    if (!turnstileRef.current) {
-      return Promise.reject(new Error('Turnstile widget unavailable.'));
-    }
-    return turnstileRef.current.requestNextToken();
-  }, []);
+  const { isSignedIn: isClerkSignedIn, isLoaded: isClerkLoaded } = useClerkAuth();
+  const { isAuthenticated: isInternalAuthenticated, isLoading: isInternalLoading } = useAuth();
+  const isAuthenticated = Boolean(isClerkSignedIn || isInternalAuthenticated);
+  const isAuthLoading = !isClerkLoaded || isInternalLoading;
+  const signInNext = `/gallery?intent=claim&itemId=${encodeURIComponent(item.id)}`;
+  const signInHref = `${ROUTES.SIGN_IN}?next=${encodeURIComponent(signInNext)}`;
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<AnonymousClaimFormData>({
-    resolver: zodResolver(anonymousClaimSchema),
+  } = useForm<AuthenticatedClaimFormData>({
+    resolver: zodResolver(authenticatedClaimSchema),
     defaultValues: {
-      itemId: item.id,
-      fullName: '',
-      email: '',
-      phone: '',
-      city: '',
-      country: '',
       message: '',
     },
   });
@@ -473,11 +435,32 @@ function ClaimModal({ item, onClose }: ClaimModalProps): ReactElement {
         Item: <span className="font-semibold">{item.title}</span> ·
         <span className="ml-1 font-mono text-xs uppercase">{item.trackingNumberMasked}</span>
       </p>
+      {isAuthLoading ? (
+        <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600">Checking your sign-in status…</p>
+      ) : !isAuthenticated ? (
+        <div className="space-y-4">
+          <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-700">
+            Sign in to submit an ownership claim. Your account details will be attached automatically.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <Link
+              to={signInHref}
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700"
+              onClick={onClose}
+            >
+              Sign in to claim
+            </Link>
+          </div>
+        </div>
+      ) : (
       <form
-        // react-hooks/refs flags ref access in render-time closures; safe
-        // here because the closure runs on submit (event handler) and the
-        // ref is read via the stable callbacks above.
-        // eslint-disable-next-line react-hooks/refs
         onSubmit={handleSubmit(async (values) => {
           if (files.length === 0) {
             setFileError('Attach at least one proof file (ID, invoice, packing slip).');
@@ -486,40 +469,18 @@ function ClaimModal({ item, onClose }: ClaimModalProps): ReactElement {
           setFileError(null);
           try {
             await submit.mutate({
-              trackingNumber: item.trackingNumberMasked,
+              trackingNumber: item.trackingNumber,
               files,
               itemId: item.id,
-              fullName: values.fullName,
-              email: values.email,
-              phone: values.phone,
-              city: values.city?.trim() || undefined,
-              country: values.country?.trim() || undefined,
               message: values.message?.trim() || undefined,
-              // Hook calls this once per protected POST in the chain.
-              getTurnstileToken: requestNextToken,
             });
             onClose();
-          } catch (err) {
-            if (isTurnstileError(err)) resetTurnstile();
+          } catch {
             /* feedback handled in hook */
           }
         })}
         className="space-y-3"
       >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Input
-            label="Full name"
-            error={errors.fullName?.message}
-            {...register('fullName')}
-          />
-          <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Input label="Phone" error={errors.phone?.message} {...register('phone')} />
-          <Input label="City (optional)" error={errors.city?.message} {...register('city')} />
-        </div>
-        <Input label="Country (optional)" error={errors.country?.message} {...register('country')} />
-
         <div>
           <label className="mb-1.5 block text-sm font-medium text-gray-700">
             Proof of ownership
@@ -555,7 +516,6 @@ function ClaimModal({ item, onClose }: ClaimModalProps): ReactElement {
           )}
         </div>
 
-        <TurnstileGate ref={turnstileRef} onToken={setTurnstileToken} />
         <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
           <button
             type="button"
@@ -568,111 +528,13 @@ function ClaimModal({ item, onClose }: ClaimModalProps): ReactElement {
             type="submit"
             variant="primary"
             isLoading={submit.isPending}
-            disabled={!turnstileToken || submit.isPending}
+            disabled={submit.isPending}
           >
             Submit claim
           </Button>
         </div>
       </form>
-    </Modal>
-  );
-}
-
-interface CarPurchaseModalProps {
-  item: GalleryItem;
-  onClose: () => void;
-}
-
-function CarPurchaseModal({ item, onClose }: CarPurchaseModalProps): ReactElement {
-  const submit = useSubmitPublicCarPurchase();
-  const [turnstileToken, setTurnstileToken] = useState<string>('');
-  const turnstileRef = useRef<TurnstileGateRef | null>(null);
-  const resetTurnstile = useCallback(() => {
-    setTurnstileToken('');
-    turnstileRef.current?.reset();
-  }, []);
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<AnonymousCarPurchaseFormData>({
-    resolver: zodResolver(anonymousCarPurchaseSchema),
-    defaultValues: { fullName: '', email: '', phone: '', city: '', country: '', message: '' },
-  });
-
-  return (
-    <Modal title="Buy this car" onClose={onClose}>
-      <p className="mb-4 rounded-2xl bg-gray-50 px-4 py-3 text-sm text-gray-700">
-        {item.title} —{' '}
-        <span className="font-mono text-xs uppercase">{item.trackingNumberMasked}</span>
-      </p>
-      <form
-        // react-hooks/refs flags ref access in render-time closures; safe
-        // here because the closure runs on submit (event handler) and the
-        // ref is read via the stable callbacks above.
-        // eslint-disable-next-line react-hooks/refs
-        onSubmit={handleSubmit(async (values) => {
-          const payload: AnonymousCarPurchasePayload = {
-            fullName: values.fullName,
-            email: values.email,
-            phone: values.phone,
-            city: values.city?.trim() || undefined,
-            country: values.country?.trim() || undefined,
-            message: values.message?.trim() || undefined,
-          };
-          try {
-            await submit.mutate({
-              trackingNumber: item.trackingNumberMasked,
-              payload,
-              turnstileToken,
-            });
-            onClose();
-          } catch (err) {
-            if (isTurnstileError(err)) resetTurnstile();
-            /* feedback handled in hook */
-          }
-        })}
-        className="space-y-3"
-      >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Input label="Full name" error={errors.fullName?.message} {...register('fullName')} />
-          <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Input label="Phone" error={errors.phone?.message} {...register('phone')} />
-          <Input label="City (optional)" error={errors.city?.message} {...register('city')} />
-        </div>
-        <Input label="Country (optional)" error={errors.country?.message} {...register('country')} />
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700" htmlFor="carMessage">
-            Message (optional)
-          </label>
-          <textarea
-            id="carMessage"
-            rows={3}
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
-            {...register('message')}
-          />
-        </div>
-        <TurnstileGate ref={turnstileRef} onToken={setTurnstileToken} />
-        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <Button
-            type="submit"
-            variant="primary"
-            isLoading={submit.isPending}
-            disabled={!turnstileToken || submit.isPending}
-          >
-            Submit interest
-          </Button>
-        </div>
-      </form>
+      )}
     </Modal>
   );
 }

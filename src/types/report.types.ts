@@ -1,14 +1,8 @@
-/* Legacy types (used by useReports hooks) */
 export interface ReportSummary {
   totalOrders: number;
   totalUsers: number;
   totalRevenue: string;
-  currency: string;
-}
-
-export interface OrdersByStatusEntry {
-  statusV2: string;
-  count: number;
+  currency?: string;
 }
 
 export interface RevenueEntry {

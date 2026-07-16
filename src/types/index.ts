@@ -158,7 +158,6 @@ export type {
 
 export type {
   ReportSummary,
-  OrdersByStatusEntry,
   RevenueEntry,
   RevenueAnalytics,
   ShipmentVolume,
@@ -287,10 +286,7 @@ export type {
   GalleryUploadContentType,
   GalleryUploadPresignPayload,
   GalleryUploadPresignResult,
-  AnonymousClaimPayload,
   AuthedClaimPayload,
-  AnonymousCarPurchasePayload,
-  AuthedCarPurchasePayload,
   GalleryItemCreatePayload,
   GalleryItemUpdatePayload,
   GalleryAdvertCreatePayload,

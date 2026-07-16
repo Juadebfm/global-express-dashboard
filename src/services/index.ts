@@ -80,14 +80,10 @@ export {
   getPublicGallery,
   getPublicGalleryAdverts,
   getPublicGallerySales,
-  presignPublicGalleryClaim,
-  submitPublicAnonymousClaim,
-  submitPublicCarPurchaseAttempt,
   getAuthedGallery,
   presignGalleryClaim,
   presignGalleryItemMedia,
   submitAuthedAnonymousClaim,
-  submitAuthedCarPurchaseAttempt,
   createGalleryItem,
   createGalleryAdvert,
   updateGalleryItem,
@@ -109,7 +105,7 @@ export {
   verifyOrderPayment,
   sendPaymentRequest,
 } from './paymentsService';
-export { getReportSummary, getOrdersByStatus, getRevenueReport, getRevenueAnalytics, getShipmentVolume, getTopCustomers, getDeliveryPerformance, getStatusPipeline, getPaymentBreakdown, getShipmentComparison, getAuditLogs } from './reportsService';
+export { getReportSummary, getRevenueReport, getRevenueAnalytics, getShipmentVolume, getTopCustomers, getDeliveryPerformance, getStatusPipeline, getPaymentBreakdown, getShipmentComparison, getAuditLogs } from './reportsService';
 export {
   getLogisticsSettings,
   updateLogisticsSettings,

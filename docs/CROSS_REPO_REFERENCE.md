@@ -64,7 +64,7 @@ The public site is intentionally not a second dashboard. It provides public-safe
 | Vehicle inquiry | `POST /api/v1/public/shop/vehicles/:listingId/inquiries` | Public + Turnstile | Creates an inbound lead and shop-interest record; staff are notified |
 | General-item inquiry | `POST /api/v1/shop/items/:listingId/inquiries` | Customer auth | Creates a shop-interest record; staff are notified |
 | Anonymous goods list | `GET /api/v1/public/gallery` | Public | Includes public-safe anonymous-goods rows for the claim page |
-| Anonymous ownership claim | `POST /api/v1/public/gallery/anonymous/:trackingNumber/claim` | Public + Turnstile | Creates an ownership claim for staff review |
+| Anonymous ownership claim handoff | Dashboard sign-in → `POST /api/v1/gallery/anonymous/:trackingNumber/claim` | Customer auth | The dashboard submits the claim after authentication |
 
 The public site must use the dedicated `/public/shop/*` endpoints for Shop. Do not reintroduce legacy gallery sales feeds or car-purchase claim endpoints into the new Shop flow.
 
@@ -146,4 +146,3 @@ Never copy values from `.env` files into documentation or source control. Use th
 - Backend public-shop design history: `context/public-shop-build-checklist.md`
 - Dashboard rebuild specification: `docs/FE_REBUILD_SPEC.md` in the dashboard repository
 - Public website migration history: `docs/public-website-api-migration-checklist.md` in the public-website repository
-

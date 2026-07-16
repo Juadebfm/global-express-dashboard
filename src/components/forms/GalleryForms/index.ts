@@ -1,12 +1,10 @@
 export {
-  anonymousClaimSchema,
-  anonymousCarPurchaseSchema,
+  authenticatedClaimSchema,
   galleryItemSchema,
   galleryClaimReviewSchema,
 } from './gallerySchemas';
 export type {
-  AnonymousClaimFormData,
-  AnonymousCarPurchaseFormData,
+  AuthenticatedClaimFormData,
   GalleryItemFormData,
   GalleryClaimReviewFormData,
 } from './gallerySchemas';

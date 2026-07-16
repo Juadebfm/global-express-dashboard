@@ -379,8 +379,8 @@ export interface PostOpts {
   /**
    * Cloudflare Turnstile token captured by the widget. When set, attaches
    * `cf-turnstile-response: <token>` to the request. Required by the BE
-   * for the 5 unauthenticated public POSTs (newsletter subscribe, gallery
-   * claim presign/submit, car purchase attempt, D2D intake). Tokens are
+   * for the remaining unauthenticated public POSTs (newsletter subscribe,
+   * vehicle inquiry, D2D intake). Tokens are
    * single-use and expire after 5 minutes — on a 422 with
    * `code: "captcha_failed"`/"captcha_missing", reset the widget and
    * re-issue.

@@ -1,5 +1,5 @@
-// Phase 4 — Gallery + Public marketing types.
-// Mirrors backend /gallery (staff) + /public/gallery (anonymous) responses.
+// Gallery + public marketing types.
+// Mirrors the backend /gallery (authenticated) and /public/gallery (read-only) responses.
 // See global-express-backend/API_ENDPOINTS.md §Gallery + §Public.
 
 export type GalleryItemType = 'anonymous_goods' | 'car' | 'advert';
@@ -15,6 +15,8 @@ export type GalleryItemStatus =
 
 export interface GalleryItem {
   id: string;
+  /** Raw tracking number returned by the backend for gallery claim handoff. */
+  trackingNumber: string;
   trackingNumberMasked: string;
   itemType: GalleryItemType;
   title: string;
@@ -114,36 +116,11 @@ export interface GalleryUploadPresignResult {
   uploadToken: string;
 }
 
-export interface AnonymousClaimPayload {
-  itemId: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  city?: string;
-  country?: string;
-  message?: string;
-  uploadToken: string;
-  proofR2Keys: string[];
-}
-
 export interface AuthedClaimPayload {
   itemId: string;
   message?: string;
   uploadToken: string;
   proofR2Keys: string[];
-}
-
-export interface AnonymousCarPurchasePayload {
-  fullName: string;
-  email: string;
-  phone: string;
-  city?: string;
-  country?: string;
-  message?: string;
-}
-
-export interface AuthedCarPurchasePayload {
-  message?: string;
 }
 
 export interface GalleryItemCreatePayload {

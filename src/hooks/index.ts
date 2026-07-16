@@ -38,7 +38,7 @@ export { usePingSupervisor } from './usePingSupervisor';
 export type { PingSupervisorResult } from './usePingSupervisor';
 export { useCreateOrderForCustomer } from './useCreateOrderForCustomer';
 export { useUpdatePickupRep } from './useUpdatePickupRep';
-export { useReportSummary, useOrdersByStatus, useRevenueReport } from './useReports';
+export { useReportSummary, useRevenueReport } from './useReports';
 export { useLogisticsSettings } from './useLogisticsSettings';
 export {
   useShipmentTypesCatalog,
@@ -144,11 +144,8 @@ export {
   usePublicGallery,
   usePublicGalleryAdverts,
   usePublicGallerySales,
-  useSubmitAnonymousClaim,
-  useSubmitPublicCarPurchase,
   useAuthedGallery,
   useSubmitAuthedClaim,
-  useSubmitAuthedCarPurchase,
   useUploadGalleryItemMedia,
   useCreateGalleryItem,
   useCreateGalleryAdvert,
@@ -158,7 +155,6 @@ export {
   useReviewGalleryClaim,
 } from './useGallery';
 export type {
-  AnonymousClaimSubmissionInput,
   UploadGalleryMediaInput,
 } from './useGallery';
 export { useCountries, useCountryStates, useStateCities } from './useLocationApi';
