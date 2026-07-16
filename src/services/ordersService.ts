@@ -198,9 +198,8 @@ export const MAX_ORDERS_PAGE_SIZE = 100;
 export async function getOrders(
   token: string,
   page = 1,
-  // Matches the BE default. The hook (useOrders) also defaults to 20 so
-  // service + hook agree — a future direct service caller won't accidentally
-  // request a 100-row window.
+  // Matches the BE default. The hook (useOrders) also defaults to 20; larger
+  // requests are allowed only up to MAX_ORDERS_PAGE_SIZE and rejected above it.
   limit = 20,
   statusV2?: string
 ): Promise<OrdersListResult> {
@@ -367,4 +366,3 @@ export function estimateOrderCost(
 ): Promise<OrderEstimateResult> {
   return apiPostData<OrderEstimateResult>('/orders/estimate', payload, token);
 }
-
