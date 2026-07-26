@@ -2,7 +2,6 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { FEEDBACK_MESSAGES } from '@/constants';
 import { useFeedbackStore } from '@/store';
 import {
-  getPublicCalculatorRates,
   getPublicShipmentTypes,
   submitPublicD2dIntake,
   subscribeToNewsletter,
@@ -10,7 +9,6 @@ import {
 import type {
   NewsletterSubscribePayload,
   NewsletterSubscribeResult,
-  PublicCalculatorRates,
   PublicD2dIntakePayload,
   PublicD2dIntakeResult,
   PublicShipmentTypesResult,
@@ -18,7 +16,6 @@ import type {
 import { STALE_TIME } from '@/lib/queryDefaults';
 
 const publicShipmentTypesKey = ['public', 'shipment-types'] as const;
-const publicRatesKey = ['public', 'calculator-rates'] as const;
 
 export function usePublicShipmentTypes(): {
   data: PublicShipmentTypesResult | undefined;
@@ -28,19 +25,6 @@ export function usePublicShipmentTypes(): {
   const query = useQuery<PublicShipmentTypesResult>({
     queryKey: publicShipmentTypesKey,
     queryFn: () => getPublicShipmentTypes(),
-    staleTime: STALE_TIME.STATIC,
-  });
-  return { data: query.data, isLoading: query.isLoading, error: query.error };
-}
-
-export function usePublicCalculatorRates(): {
-  data: PublicCalculatorRates | undefined;
-  isLoading: boolean;
-  error: Error | null;
-} {
-  const query = useQuery<PublicCalculatorRates>({
-    queryKey: publicRatesKey,
-    queryFn: () => getPublicCalculatorRates(),
     staleTime: STALE_TIME.STATIC,
   });
   return { data: query.data, isLoading: query.isLoading, error: query.error };

@@ -4,6 +4,8 @@ import {
   addMySupplier,
   decideSupplierValidationRequest,
   getAllSuppliers,
+  getSupplierDirectory,
+  getSupplierDirectorySupplier,
   getMySupplierUpdateRequests,
   getMySupplierValidationRequests,
   getMySuppliers,
@@ -215,5 +217,50 @@ describe('getAllSuppliers (admin)', () => {
     expect(url).toContain('limit=25');
     const headers = new Headers(init.headers);
     expect(headers.get('Authorization')).toBe('Bearer admin-token');
+  });
+});
+
+describe('customer supplier directory', () => {
+  it('lists discoverable suppliers with encoded search and pagination query parameters', async () => {
+    mockFetch({
+      success: true,
+      data: {
+        data: [{
+          id: 's1', name: 'Acme Trading', country: 'China', city: 'Guangzhou',
+          services: ['Sourcing'], logoUrl: null, verificationStatus: 'verified',
+        }],
+        pagination: { total: 1, page: 2, limit: 10, totalPages: 2 },
+      },
+    });
+
+    const result = await getSupplierDirectory('customer-token', { q: 'Acme & Sons', page: 2, limit: 10 });
+
+    expect(result.data[0]?.name).toBe('Acme Trading');
+    const { url, init } = lastCall();
+    expect(url).toContain('/supplier-directory');
+    expect(url).toContain('q=Acme+%26+Sons');
+    expect(url).toContain('page=2');
+    expect(url).toContain('limit=10');
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer customer-token');
+  });
+
+  it('loads supplier detail from the customer-safe endpoint', async () => {
+    mockFetch({
+      success: true,
+      data: {
+        id: 's1', name: 'Acme Trading', country: 'China', city: 'Guangzhou',
+        services: ['Sourcing'], logoUrl: null, verificationStatus: 'verified',
+        publicEmail: 'contact@acme.example', publicPhone: null, publicWhatsapp: '+86123456789',
+      },
+    });
+
+    const result = await getSupplierDirectorySupplier('customer-token', 's1');
+    expect(result.publicEmail).toBe('contact@acme.example');
+    expect(lastCall().url).toContain('/supplier-directory/s1');
+  });
+
+  it('surfaces customer authentication failures', async () => {
+    mockFetch({ message: 'Unauthorized' }, 401);
+    await expect(getSupplierDirectory('expired-token')).rejects.toThrow('Unauthorized');
   });
 });

@@ -2,6 +2,8 @@ import type {
   ApiOrder,
   CreateOrderPayload,
   OrderEstimateResult,
+  WarehousePricingQuotePayload,
+  WarehousePricingQuoteResult,
   OrderImage,
   OrderListItem,
   OrdersListResult,
@@ -24,6 +26,17 @@ export function createOrder(
   return apiPostData<ApiOrder>('/orders', normalizedPayload, token, {
     idempotencyKey,
   });
+}
+
+export function getWarehousePricingQuote(
+  payload: WarehousePricingQuotePayload,
+  token: string,
+): Promise<WarehousePricingQuoteResult> {
+  return apiPostData<WarehousePricingQuoteResult>(
+    '/orders/warehouse-pricing-quote',
+    payload,
+    token,
+  );
 }
 
 type AnyRecord = Record<string, unknown>;

@@ -84,3 +84,11 @@ export interface OrderEstimateResult {
   estimatedTransitDays: number;
   disclaimer: string;
 }
+
+export type WarehousePricingQuotePayload =
+  | { shipmentType: 'air'; weightKg: number; rateOwnerId?: string }
+  | { shipmentType: 'ocean'; cbm: number; rateOwnerId?: string };
+
+export interface WarehousePricingQuoteResult {
+  estimatedCostUsd: number;
+}

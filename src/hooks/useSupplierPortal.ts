@@ -5,8 +5,11 @@ import {
   getDeclaration,
   createDeclaration,
   getOrderTrackingNumber,
+  getSupplierDirectoryProfile,
+  updateSupplierDirectoryProfile,
 } from '@/services/supplierPortalService';
 import type { DeclarationListParams, NewDeclarationPayload } from '@/types/supplierPortal.types';
+import type { SupplierDirectoryProfileInput } from '@/types';
 import { STALE_TIME } from '@/lib/queryDefaults';
 
 export function useSupplierDeclarations(params: DeclarationListParams = {}) {
@@ -50,6 +53,30 @@ export function useCreateDeclaration() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['supplier', 'declarations'] });
+    },
+  });
+}
+
+export function useSupplierDirectoryProfile() {
+  const token = useSupplierAuthStore((s) => s.token);
+  return useQuery({
+    queryKey: ['supplier', 'directory-profile'],
+    queryFn: () => getSupplierDirectoryProfile(token!),
+    enabled: !!token,
+    staleTime: STALE_TIME.SLOW_MOVING,
+  });
+}
+
+export function useUpdateSupplierDirectoryProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: SupplierDirectoryProfileInput) => {
+      const token = useSupplierAuthStore.getState().token;
+      if (!token) throw new Error('Not authenticated');
+      return updateSupplierDirectoryProfile(token, payload);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['supplier', 'directory-profile'] });
     },
   });
 }

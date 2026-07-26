@@ -4,8 +4,8 @@ import { CheckCircle2, Info, AlertTriangle, Plus, X, ImageIcon } from 'lucide-re
 import { Button } from '@/components/ui';
 import { formatCurrency } from '@/utils';
 import { cn } from '@/utils';
-import { usePublicCalculatorRates } from '@/hooks';
-import type { PublicCalculatorRates } from '@/types';
+import { useDebounce, useWarehousePricingQuote } from '@/hooks';
+import type { WarehousePricingQuotePayload } from '@/types';
 import type { GoodsBreakdownItem } from '@/services';
 import type { OrderView } from '../types';
 import { mapPackageForm, parsePositive, parsePositiveInt, toIso } from '../types';
@@ -66,37 +66,6 @@ function rowCbmFromDims(row: PackageRow): number | null {
   const h = parsePositive(row.heightCm);
   if (!l || !w || !h) return null;
   return (l * w * h) / 1_000_000;
-}
-
-function computeTotalCharge(
-  rates: PublicCalculatorRates,
-  mode: 'air' | 'sea',
-  rows: PackageRow[],
-  isD2D: boolean,
-): number | null {
-  if (isD2D || mode === 'sea') {
-    const totalCbm = rows.reduce((sum, row) => {
-      const cbm = isD2D
-        ? (parsePositive(row.cbm) ?? 0)
-        : (rowCbmFromDims(row) ?? 0);
-      const qty = parsePositiveInt(row.quantity) ?? 1;
-      return sum + cbm * qty;
-    }, 0);
-    if (totalCbm <= 0) return null;
-    return totalCbm * rates.sea.flatRateUsdPerCbm;
-  }
-  const totalKg = rows.reduce((sum, row) => {
-    const actual = parsePositive(row.weightKg) ?? 0;
-    const vol = rowVolKg(row) ?? 0;
-    const qty = parsePositiveInt(row.quantity) ?? 1;
-    return sum + Math.max(actual, vol) * qty;
-  }, 0);
-  if (totalKg <= 0) return null;
-  const tier =
-    rates.air.tiers.find((t) => totalKg >= t.minKg && totalKg <= t.maxKg) ??
-    rates.air.tiers.at(-1);
-  if (!tier) return null;
-  return totalKg * tier.rateUsdPerKg;
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -432,18 +401,17 @@ export function WarehouseVerifyForm({
   const [error, setError] = useState<string | null>(null);
   const [showRowErrors, setShowRowErrors] = useState(false);
 
-  const { data: rates } = usePublicCalculatorRates();
-
-  const systemCharge = useMemo(
-    () => (rates ? computeTotalCharge(rates, transportMode, rows, isD2D) : null),
-    [rates, transportMode, rows, isD2D],
-  );
-
   const totalKgSummary = useMemo(() => rows.reduce((sum, row) => {
     const actual = parsePositive(row.weightKg) ?? 0;
     const vol = rowVolKg(row) ?? 0;
     const qty = parsePositiveInt(row.quantity) ?? 1;
     return sum + Math.max(actual, vol) * qty;
+  }, 0), [rows]);
+
+  const totalActualWeightKg = useMemo(() => rows.reduce((sum, row) => {
+    const actual = parsePositive(row.weightKg) ?? 0;
+    const qty = parsePositiveInt(row.quantity) ?? 1;
+    return sum + actual * qty;
   }, 0), [rows]);
 
   const totalCbmSummary = useMemo(() => rows.reduce((sum, row) => {
@@ -453,6 +421,25 @@ export function WarehouseVerifyForm({
     const qty = parsePositiveInt(row.quantity) ?? 1;
     return sum + cbm * qty;
   }, 0), [rows, isD2D]);
+
+  const rateOwnerId = view.shipmentPayer === 'SUPPLIER'
+    ? view.billingSupplierId ?? undefined
+    : view.senderId || undefined;
+  const quotePayload = useMemo<WarehousePricingQuotePayload | null>(() => {
+    if (isD2D && transportMode === 'sea') {
+      return totalCbmSummary > 0
+        ? { shipmentType: 'ocean', cbm: totalCbmSummary, rateOwnerId }
+        : null;
+    }
+    const weightKg = isD2D ? totalActualWeightKg : totalKgSummary;
+    return weightKg > 0 ? { shipmentType: 'air', weightKg, rateOwnerId } : null;
+  }, [isD2D, rateOwnerId, totalActualWeightKg, totalCbmSummary, totalKgSummary, transportMode]);
+  const debouncedQuotePayload = useDebounce(quotePayload, 350);
+  const pricingQuote = useWarehousePricingQuote(debouncedQuotePayload);
+  const systemCharge = pricingQuote.data?.estimatedCostUsd ?? null;
+  const quoteMeasurementLabel = isD2D
+    ? transportMode === 'sea' ? 'CBM total' : 'actual package weight'
+    : transportMode === 'sea' ? 'CBM total' : 'chargeable weight';
 
   // D2D gates
   const missingMeasurements = isD2D && rows.some(
@@ -641,7 +628,7 @@ export function WarehouseVerifyForm({
                   <option value="air">Air freight</option>
                   <option value="sea">Sea freight</option>
                 </select>
-                <p className="mt-1 text-xs text-gray-400">Sets the dispatch batch — pricing is always CBM-based for D2D.</p>
+                <p className="mt-1 text-xs text-gray-400">Sets the dispatch batch and quote basis: air uses actual package weight; sea uses total CBM.</p>
               </>
             ) : (
               <div className={cn(inputCls, 'flex items-center gap-2 bg-gray-50 text-gray-500 cursor-not-allowed select-none')}>
@@ -732,41 +719,42 @@ export function WarehouseVerifyForm({
         </div>
 
         {/* System charge summary */}
-        {canApproveOverride && (
-          <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+        <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                  System calculated charge
-                  {isD2D && <span className="ml-1 normal-case font-normal">(CBM-based)</span>}
+                  Authoritative system quote
                 </p>
-                {systemCharge != null ? (
+                {pricingQuote.isLoading ? (
+                  <p className="mt-0.5 text-sm text-gray-400">Updating quote…</p>
+                ) : systemCharge != null ? (
                   <p className="mt-0.5 text-xl font-semibold text-gray-900">
                     {formatCurrency(systemCharge, 'USD')}
                   </p>
+                ) : pricingQuote.error ? (
+                  <p className="mt-0.5 text-sm text-red-600">Could not load the system quote. Check the measurements and try again.</p>
                 ) : (
                   <p className="mt-0.5 text-sm text-gray-400">
-                    Enter {isD2D ? 'CBM values' : 'measurements'} above to see estimate
+                    Enter {isD2D && transportMode === 'sea' ? 'CBM values' : 'measurements'} above to see quote
                   </p>
                 )}
-                {systemCharge != null && totalCbmSummary > 0 && (isD2D || transportMode === 'sea') && (
+                {systemCharge != null && totalCbmSummary > 0 && transportMode === 'sea' && (
                   <p className="mt-0.5 text-xs text-gray-400">
                     {rows.length} package{rows.length > 1 ? 's' : ''} · {totalCbmSummary.toFixed(4)} CBM total
                   </p>
                 )}
-                {systemCharge != null && transportMode === 'air' && !isD2D && totalKgSummary > 0 && (
+                {systemCharge != null && transportMode === 'air' && ((isD2D && totalActualWeightKg > 0) || (!isD2D && totalKgSummary > 0)) && (
                   <p className="mt-0.5 text-xs text-gray-400">
-                    {rows.length} package{rows.length > 1 ? 's' : ''} · {totalKgSummary.toFixed(2)} kg total chargeable
+                    {rows.length} package{rows.length > 1 ? 's' : ''} · {(isD2D ? totalActualWeightKg : totalKgSummary).toFixed(2)} kg {quoteMeasurementLabel}
                   </p>
                 )}
               </div>
               <div className="flex items-center gap-1 text-xs text-gray-400">
                 <Info className="h-3.5 w-3.5 shrink-0" />
-                Auto-applied if no override
+                Backend pricing rules applied
               </div>
             </div>
-          </div>
-        )}
+        </div>
 
         {/* Manual override */}
         {canApproveOverride && (

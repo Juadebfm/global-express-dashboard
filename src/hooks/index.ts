@@ -102,10 +102,15 @@ export {
   useMySupplierUpdateRequests,
   useMySupplierValidationRequests,
   useAllSuppliers,
+  useSupplierDirectory,
+  useSupplierDirectorySupplier,
+  useAdminSupplierDirectoryProfile,
+  useUpdateAdminSupplierDirectoryVerification,
   useAddMySupplier,
   useRequestSupplierUpdate,
   useDecideSupplierValidationRequest,
 } from './useSuppliers';
+export { useWarehousePricingQuote } from './useWarehousePricingQuote';
 export {
   useClientWorkbench,
   useClientSuppliers,
@@ -136,7 +141,6 @@ export {
 } from './useShipmentBatches';
 export {
   usePublicShipmentTypes,
-  usePublicCalculatorRates,
   useSubscribeToNewsletter,
   useSubmitPublicD2dIntake,
 } from './usePublic';

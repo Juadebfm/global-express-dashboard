@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   estimateShipping,
-  getPublicCalculatorRates,
   getPublicShipmentTypes,
   submitPublicD2dIntake,
   subscribeToNewsletter,
@@ -88,20 +87,6 @@ describe('getPublicShipmentTypes', () => {
     const { url, init } = lastCall();
     expect(url).toContain('/public/shipment-types');
     expect(init.method ?? 'GET').toBe('GET');
-    const headers = new Headers(init.headers);
-    expect(headers.has('Authorization')).toBe(false);
-  });
-});
-
-describe('getPublicCalculatorRates', () => {
-  it('GETs the rates endpoint anonymously', async () => {
-    mockFetch({
-      success: true,
-      data: { air: { unit: 'kg', tiers: [] }, sea: { unit: 'cbm', flatRateUsdPerCbm: 200 } },
-    });
-    await getPublicCalculatorRates();
-    const { url, init } = lastCall();
-    expect(url).toContain('/public/calculator/rates');
     const headers = new Headers(init.headers);
     expect(headers.has('Authorization')).toBe(false);
   });

@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plane, Ship, Package2, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Plane, Ship, Package2, CheckCircle2, XCircle, Clock, Store } from 'lucide-react';
 import { AppLayout } from '@/components/layout';
 import { Card, Button, ConfirmModal, ClientCombobox } from '@/components/ui';
 import { ROUTES } from '@/constants';
@@ -342,7 +342,17 @@ export function SupplierNoticeReviewPage(): ReactElement {
             <StatusBanner declaration={declaration} />
 
             <Card className="p-4 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Supplier</p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Supplier</p>
+                <button
+                  type="button"
+                  onClick={() => navigate(ROUTES.ADMIN_SUPPLIER_DIRECTORY_PROFILE.replace(':supplierId', declaration.supplierId))}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 transition hover:text-brand-700"
+                >
+                  <Store className="h-4 w-4" />
+                  Review directory profile
+                </button>
+              </div>
               <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                 <Field label="Name" value={declaration.supplierName} />
                 <Field label="Business" value={declaration.supplierBusinessName} />

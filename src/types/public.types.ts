@@ -48,23 +48,6 @@ export interface PublicShipmentTypesResult {
   updatedAt: string;
 }
 
-export interface PublicCalculatorRateTier {
-  minKg: number;
-  maxKg: number;
-  rateUsdPerKg: number;
-}
-
-export interface PublicCalculatorRates {
-  air: {
-    unit: 'kg';
-    tiers: PublicCalculatorRateTier[];
-  };
-  sea: {
-    unit: 'cbm';
-    flatRateUsdPerCbm: number;
-  };
-}
-
 export interface NewsletterSubscribePayload {
   email: string;
 }

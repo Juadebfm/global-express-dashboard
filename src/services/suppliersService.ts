@@ -10,6 +10,11 @@ import type {
   SupplierUpdateRequestListParams,
   SupplierUpdateRequestPayload,
   SupplierValidationDecisionPayload,
+  SupplierDirectoryListParams,
+  SupplierDirectorySupplier,
+  PaginatedSupplierDirectory,
+  SupplierDirectoryProfile,
+  SupplierDirectoryVerificationInput,
 } from '@/types';
 
 function buildSupplierQuery(params: SupplierListParams = {}): string {
@@ -30,6 +35,56 @@ function buildUpdateRequestQuery(
   if (params.status) search.set('status', params.status);
   const qs = search.toString();
   return qs ? `?${qs}` : '';
+}
+
+function buildSupplierDirectoryQuery(params: SupplierDirectoryListParams = {}): string {
+  const search = new URLSearchParams();
+  if (params.q?.trim()) search.set('q', params.q.trim());
+  if (params.page !== undefined) search.set('page', String(params.page));
+  if (params.limit !== undefined) search.set('limit', String(params.limit));
+  const qs = search.toString();
+  return qs ? `?${qs}` : '';
+}
+
+// ── Customer supplier directory ─────────────────────────────────────────────
+
+export function getSupplierDirectory(
+  token: string,
+  params: SupplierDirectoryListParams = {},
+): Promise<PaginatedSupplierDirectory> {
+  return apiGetData<PaginatedSupplierDirectory>(
+    `/supplier-directory${buildSupplierDirectoryQuery(params)}`,
+    token,
+  );
+}
+
+export function getSupplierDirectorySupplier(
+  token: string,
+  id: string,
+): Promise<SupplierDirectorySupplier> {
+  return apiGetData<SupplierDirectorySupplier>(`/supplier-directory/${id}`, token);
+}
+
+export function getAdminSupplierDirectoryProfile(
+  token: string,
+  supplierId: string,
+): Promise<SupplierDirectoryProfile> {
+  return apiGetData<SupplierDirectoryProfile>(
+    `/admin/suppliers/${supplierId}/directory-profile`,
+    token,
+  );
+}
+
+export function updateAdminSupplierDirectoryVerification(
+  token: string,
+  supplierId: string,
+  payload: SupplierDirectoryVerificationInput,
+): Promise<SupplierDirectoryProfile> {
+  return apiPatchData<SupplierDirectoryProfile>(
+    `/admin/suppliers/${supplierId}/directory-profile/verification`,
+    payload,
+    token,
+  );
 }
 
 // ── Customer-facing supplier address book ────────────────────────────────────

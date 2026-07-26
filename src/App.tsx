@@ -136,6 +136,12 @@ const SupplierDeclarationDetailPage = lazy(() =>
 const SupplierRequestsPage = lazy(() =>
   import('@/pages/supplier/SupplierRequestsPage/SupplierRequestsPage').then((m) => ({ default: m.SupplierRequestsPage })),
 );
+const SupplierDirectoryProfilePage = lazy(() =>
+  import('@/pages/supplier/SupplierDirectoryProfilePage').then((m) => ({ default: m.SupplierDirectoryProfilePage })),
+);
+const AdminSupplierDirectoryProfilePage = lazy(() =>
+  import('@/pages/admin/AdminSupplierDirectoryProfilePage').then((m) => ({ default: m.AdminSupplierDirectoryProfilePage })),
+);
 const LeadsPage = lazy(() =>
   import('@/pages/leads/LeadsPage').then((m) => ({ default: m.LeadsPage })),
 );
@@ -512,6 +518,22 @@ function AppRoutes(): ReactElement {
           <SupplierRoute>
             <SupplierRequestsPage />
           </SupplierRoute>
+        }
+      />
+      <Route
+        path={ROUTES.SUPPLIER_DIRECTORY_PROFILE}
+        element={
+          <SupplierRoute>
+            <SupplierDirectoryProfilePage />
+          </SupplierRoute>
+        }
+      />
+      <Route
+        path={ROUTES.ADMIN_SUPPLIER_DIRECTORY_PROFILE}
+        element={
+          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']} redirectTo={ROUTES.ADMIN_DASHBOARD}>
+            <AdminSupplierDirectoryProfilePage />
+          </ProtectedRoute>
         }
       />
 

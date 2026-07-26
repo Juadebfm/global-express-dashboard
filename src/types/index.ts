@@ -101,6 +101,13 @@ export type {
   Pagination,
   PaginatedSuppliers,
   PaginatedSupplierUpdateRequests,
+  SupplierDirectorySummary,
+  SupplierDirectorySupplier,
+  SupplierDirectoryListParams,
+  PaginatedSupplierDirectory,
+  SupplierDirectoryProfile,
+  SupplierDirectoryProfileInput,
+  SupplierDirectoryVerificationInput,
 } from './supplier.types';
 
 export type {
@@ -132,6 +139,8 @@ export type {
   OrdersListResult,
   PricingSource,
   OrderEstimateResult,
+  WarehousePricingQuotePayload,
+  WarehousePricingQuoteResult,
 } from './order.types';
 
 export type {
@@ -303,8 +312,6 @@ export type {
   PublicShipmentTypeIntake,
   PublicShipmentType,
   PublicShipmentTypesResult,
-  PublicCalculatorRateTier,
-  PublicCalculatorRates,
   NewsletterSubscribePayload,
   NewsletterSubscribeResult,
   PublicD2dIntakePayload,

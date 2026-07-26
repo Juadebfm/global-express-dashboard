@@ -1,4 +1,4 @@
-import { apiGet, apiGetData, apiPost, apiPostData } from '@/lib/apiClient';
+import { apiGet, apiGetData, apiPatchData, apiPost, apiPostData } from '@/lib/apiClient';
 import type {
   Declaration,
   DeclarationListParams,
@@ -6,6 +6,10 @@ import type {
   SupplierPortalUser,
   SupplierOrderRequest,
 } from '@/types/supplierPortal.types';
+import type {
+  SupplierDirectoryProfile,
+  SupplierDirectoryProfileInput,
+} from '@/types';
 
 interface SupplierLoginResponse {
   success: boolean;
@@ -78,4 +82,15 @@ export function getSupplierOrderRequests(
   token: string,
 ): Promise<SupplierOrderRequest[]> {
   return apiGetData<SupplierOrderRequest[]>('/supplier/orders/requests', token);
+}
+
+export function getSupplierDirectoryProfile(token: string): Promise<SupplierDirectoryProfile> {
+  return apiGetData<SupplierDirectoryProfile>('/supplier/directory-profile', token);
+}
+
+export function updateSupplierDirectoryProfile(
+  token: string,
+  payload: SupplierDirectoryProfileInput,
+): Promise<SupplierDirectoryProfile> {
+  return apiPatchData<SupplierDirectoryProfile>('/supplier/directory-profile', payload, token);
 }

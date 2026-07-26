@@ -109,3 +109,64 @@ export interface PaginatedSupplierUpdateRequests {
   data: ApiSupplierUpdateRequest[];
   pagination: Pagination;
 }
+
+// Customer supplier directory — mirrors /supplier-directory. This is
+// intentionally separate from ApiSupplier, which represents a customer's
+// personal supplier address book rather than the shared discoverable catalog.
+export interface SupplierDirectorySummary {
+  id: string;
+  name: string;
+  country: string;
+  city: string;
+  services: string[];
+  logoUrl?: string | null;
+  verificationStatus: string;
+}
+
+export interface SupplierDirectorySupplier extends SupplierDirectorySummary {
+  publicEmail?: string | null;
+  publicPhone?: string | null;
+  publicWhatsapp?: string | null;
+}
+
+export interface SupplierDirectoryListParams {
+  q?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedSupplierDirectory {
+  data: SupplierDirectorySummary[];
+  pagination: Pagination;
+}
+
+// Supplier-owned profile used to populate the customer-facing directory.
+// Verification is staff-managed; discoverability remains supplier-controlled.
+export interface SupplierDirectoryProfile {
+  displayName: string;
+  country: string;
+  city: string;
+  services: string[];
+  logoUrl: string | null;
+  publicEmail: string | null;
+  publicPhone: string | null;
+  publicWhatsapp: string | null;
+  isDiscoverable: boolean;
+  verificationStatus: string;
+}
+
+export interface SupplierDirectoryProfileInput {
+  displayName: string;
+  country: string;
+  city: string;
+  services: string[];
+  logoUrl?: string;
+  publicEmail?: string;
+  publicPhone?: string;
+  publicWhatsapp?: string;
+  isDiscoverable: boolean;
+}
+
+export interface SupplierDirectoryVerificationInput {
+  verificationStatus: 'verified' | 'unverified';
+}

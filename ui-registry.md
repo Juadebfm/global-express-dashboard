@@ -291,6 +291,47 @@ Public forms use a bottom sheet on mobile and a centred modal from `sm` upward. 
 
 ---
 
+### Supplier directory picker and details
+
+File: `src/pages/bookings/NewBookingPage/NewBookingPage.tsx`
+Last updated: 2026-07-26
+
+| Property | Class |
+|---|---|
+| Search input | `rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-4` |
+| Supplier result row | `border-b border-gray-100 px-3 py-3 hover:bg-gray-50` |
+| Result title | `text-sm font-medium text-gray-900` |
+| Result metadata | `text-xs text-gray-500` |
+| Selected state | `rounded-xl border border-brand-200 bg-brand-50 px-3 py-3` |
+| Details modal | `rounded-t-3xl sm:rounded-3xl bg-white shadow-2xl` |
+| Contact channel | `rounded-xl border border-gray-200 px-3 py-2.5 hover:bg-gray-50` |
+| Service tag | `rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700` |
+
+**Pattern notes:**
+Directory results are detail-first: opening a row reveals location, display-only verification status, services, and approved public contacts before the primary “Use this supplier” action. On mobile, the detail view is a safe-area-aware bottom sheet; on desktop it is a centred modal. Keep the selected supplier in a brand-tinted confirmation panel and use a plain text “Change” action to clear it.
+
+---
+
+### Supplier directory profile forms
+
+Files: `src/pages/supplier/SupplierDirectoryProfilePage/SupplierDirectoryProfilePage.tsx`, `src/pages/admin/AdminSupplierDirectoryProfilePage/AdminSupplierDirectoryProfilePage.tsx`
+Last updated: 2026-07-26
+
+| Property | Class |
+|---|---|
+| Information panel | `rounded-xl border border-gray-200 bg-gray-50 px-4 py-3` |
+| Form fields | `<Input>` / `rounded-xl border border-gray-200 bg-white px-4 py-2.5` |
+| Opt-in control | `rounded-xl border border-gray-200 px-4 py-3 hover:bg-gray-50` |
+| Status pill | `rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700` |
+| Service tag | `rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700` |
+| Visibility on | `text-emerald-600` |
+| Staff action | `<Button size="sm">` with primary/secondary variants |
+
+**Pattern notes:**
+Supplier-controlled discoverability and staff-managed verification must remain visually and conceptually separate. Explain that verification is informational and never make a staff action imply it can publish a supplier. Use a bordered neutral information panel for requirements and semantic amber/red feedback for incomplete or failed saves.
+
+---
+
 ## Known Tech Debt
 
 - `src/components/forms/SupportTicketForm/SupportTicketForm.tsx` — raw `border-[#DDE5E9]` hex inputs

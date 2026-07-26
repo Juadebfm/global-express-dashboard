@@ -13,14 +13,14 @@ export const newBookingSchema = z.object({
   recipientPhone: z.string().min(1, 'Recipient phone is required'),
   recipientEmail: z.string().email().optional().or(z.literal('')),
   hasSourcingSupplier: z.boolean(),
-  sourcingSupplierType: z.enum(['saved', 'new']).optional(),
+  sourcingSupplierType: z.enum(['directory', 'new']).optional(),
   sourcingSupplierId: z.string().uuid().optional(),
   sourcingSupplierName: z.string().optional(),
   sourcingSupplierPhone: z.string().optional(),
   sourcingSupplierEmail: z.string().email().optional().or(z.literal('')),
 }).superRefine((val, ctx) => {
   if (!val.hasSourcingSupplier) return;
-  if (val.sourcingSupplierType === 'saved' && !val.sourcingSupplierId) {
+  if (val.sourcingSupplierType === 'directory' && !val.sourcingSupplierId) {
     ctx.addIssue({ code: 'custom', path: ['sourcingSupplierId'], message: 'Select a supplier' });
   }
   if (val.sourcingSupplierType === 'new' && !val.sourcingSupplierName) {

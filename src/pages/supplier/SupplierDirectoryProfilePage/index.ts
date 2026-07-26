@@ -1,0 +1,1 @@
+export { SupplierDirectoryProfilePage } from './SupplierDirectoryProfilePage';

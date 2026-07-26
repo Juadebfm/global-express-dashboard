@@ -1,7 +1,6 @@
 import type {
   NewsletterSubscribePayload,
   NewsletterSubscribeResult,
-  PublicCalculatorRates,
   PublicD2dIntakePayload,
   PublicD2dIntakeResult,
   PublicEstimatePayload,
@@ -29,10 +28,6 @@ export function estimateShipping(
 
 export function getPublicShipmentTypes(): Promise<PublicShipmentTypesResult> {
   return apiGetData<PublicShipmentTypesResult>('/public/shipment-types');
-}
-
-export function getPublicCalculatorRates(): Promise<PublicCalculatorRates> {
-  return apiGetData<PublicCalculatorRates>('/public/calculator/rates');
 }
 
 export function subscribeToNewsletter(

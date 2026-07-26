@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogOut, Inbox } from 'lucide-react';
+import { LogOut, Inbox, Store } from 'lucide-react';
 import { useSupplierAuthStore } from '@/store/supplierAuth';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
@@ -34,9 +34,23 @@ export function SupplierLayout({ children }: SupplierLayoutProps): ReactElement 
                   ? 'bg-brand-50 text-brand-600'
                   : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100',
               )}
+              aria-label="Customer requests"
             >
               <Inbox className="h-4 w-4" />
-              Customer Requests
+              <span className="hidden sm:inline">Customer Requests</span>
+            </Link>
+            <Link
+              to={ROUTES.SUPPLIER_DIRECTORY_PROFILE}
+              className={cn(
+                'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-colors',
+                location.pathname === ROUTES.SUPPLIER_DIRECTORY_PROFILE
+                  ? 'bg-brand-50 text-brand-600'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900',
+              )}
+              aria-label="Directory profile"
+            >
+              <Store className="h-4 w-4" />
+              <span className="hidden sm:inline">Directory profile</span>
             </Link>
           </nav>
 

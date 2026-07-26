@@ -251,6 +251,8 @@ export interface OrderView {
   finalChargeUsd: number | null;
   paymentNote: string | null;
   pricingSource: string;
+  shipmentPayer: string;
+  billingSupplierId: string | null;
   pickupRepName: string;
   pickupRepPhone: string;
   createdAt: string;
@@ -407,6 +409,8 @@ export function toView(order: ApiOrder): OrderView {
     finalChargeUsd: readNumber(record, ['finalChargeUsd']),
     paymentNote: readString(record, ['paymentNote']) || null,
     pricingSource: readString(record, ['pricingSource']),
+    shipmentPayer: readString(record, ['shipmentPayer']),
+    billingSupplierId: readString(record, ['billingSupplierId']) || null,
     pickupRepName: readString(record, ['pickupRepName']),
     pickupRepPhone: readString(record, ['pickupRepPhone']),
     createdAt: readString(record, ['createdAt']),
