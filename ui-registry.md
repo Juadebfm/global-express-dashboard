@@ -269,6 +269,28 @@ Table uses both horizontal (`divide-y divide-gray-100` on tbody) and vertical (`
 
 ---
 
+### Responsive public modal
+
+File: `src/pages/public/GalleryPage/GalleryPage.tsx`
+Last updated: 2026-07-26
+
+| Property | Class |
+|---|---|
+| Overlay | `bg-black/40` |
+| Container — mobile | `rounded-t-3xl bg-white max-h-[calc(100dvh-1rem)] overflow-y-auto` |
+| Container — desktop | `sm:rounded-3xl sm:max-h-[calc(100dvh-3rem)]` |
+| Spacing | `p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]` for form sheets |
+| Input | `rounded-xl border border-gray-200 bg-white px-4 py-2.5` |
+| Focus | `focus:border-brand-500 focus:ring-2 focus:ring-brand-500` |
+| Primary action | `<Button variant="primary">` |
+| Secondary action | `<Button variant="secondary">` |
+| Shadow | `shadow-xl` |
+
+**Pattern notes:**
+Public forms use a bottom sheet on mobile and a centred modal from `sm` upward. The scrollable container and safe-area-aware bottom padding keep actions reachable on short screens. Do not introduce blue or dark-mode-only control classes in the otherwise light dashboard UI.
+
+---
+
 ## Known Tech Debt
 
 - `src/components/forms/SupportTicketForm/SupportTicketForm.tsx` — raw `border-[#DDE5E9]` hex inputs

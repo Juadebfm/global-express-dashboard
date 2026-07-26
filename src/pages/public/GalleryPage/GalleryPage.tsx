@@ -259,53 +259,59 @@ function ShopInquiryModal({ item, onClose }: { item: GalleryItem; onClose: () =>
       role="dialog"
       aria-modal="true"
       aria-label="Shop inquiry"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:px-4 sm:py-6"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div ref={containerRef} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900">
-        <div className="flex items-center justify-between mb-4">
+      <div
+        ref={containerRef}
+        className="max-h-[calc(100dvh-1rem)] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-3xl"
+      >
+        <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Inquire about this item</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{item.title}</p>
+            <h2 className="text-lg font-semibold text-gray-900">Inquire about this item</h2>
+            <p className="mt-0.5 text-sm text-gray-500">{item.title}</p>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl p-1.5 text-gray-500 transition hover:bg-gray-100"
+            aria-label="Close"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name *</label>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">Full Name *</label>
             <input name="fullName" value={form.fullName} onChange={handleChange} required
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500" />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">Phone</label>
               <input name="phone" value={form.phone} onChange={handleChange}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">Email</label>
               <input name="email" type="email" value={form.email} onChange={handleChange}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message *</label>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">Message *</label>
             <textarea name="message" value={form.message} onChange={handleChange} required minLength={5}
               rows={3}
               placeholder="Tell us what you'd like to know or offer"
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500" />
           </div>
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose}
-              className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+            <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
               Cancel
-            </button>
-            <button type="submit" disabled={isPending}
-              className="flex-1 rounded-lg bg-blue-600 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+            </Button>
+            <Button type="submit" variant="primary" isLoading={isPending} disabled={isPending} className="flex-1">
               {isPending ? 'Sending…' : 'Send Inquiry'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -679,8 +685,8 @@ interface ModalProps {
 
 function Modal({ title, onClose, children }: ModalProps): ReactElement {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
-      <div className="max-h-full w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 pt-8 sm:items-center sm:px-4 sm:py-6">
+      <div className="max-h-[calc(100dvh-1rem)] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-3xl">
         <div className="sticky top-0 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
           <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
           <button
