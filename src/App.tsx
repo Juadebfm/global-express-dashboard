@@ -139,6 +139,9 @@ const SupplierRequestsPage = lazy(() =>
 const SupplierDirectoryProfilePage = lazy(() =>
   import('@/pages/supplier/SupplierDirectoryProfilePage').then((m) => ({ default: m.SupplierDirectoryProfilePage })),
 );
+const SupplierAccountPage = lazy(() =>
+  import('@/pages/supplier/SupplierAccountPage').then((m) => ({ default: m.SupplierAccountPage })),
+);
 const AdminSupplierDirectoryProfilePage = lazy(() =>
   import('@/pages/admin/AdminSupplierDirectoryProfilePage').then((m) => ({ default: m.AdminSupplierDirectoryProfilePage })),
 );
@@ -525,6 +528,14 @@ function AppRoutes(): ReactElement {
         element={
           <SupplierRoute>
             <SupplierDirectoryProfilePage />
+          </SupplierRoute>
+        }
+      />
+      <Route
+        path={ROUTES.SUPPLIER_ACCOUNT}
+        element={
+          <SupplierRoute>
+            <SupplierAccountPage />
           </SupplierRoute>
         }
       />

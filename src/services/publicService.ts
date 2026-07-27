@@ -1,6 +1,8 @@
 import type {
   NewsletterSubscribePayload,
   NewsletterSubscribeResult,
+  AccountAvailabilityPayload,
+  AccountAvailabilityResult,
   PublicD2dIntakePayload,
   PublicD2dIntakeResult,
   PublicEstimatePayload,
@@ -28,6 +30,12 @@ export function estimateShipping(
 
 export function getPublicShipmentTypes(): Promise<PublicShipmentTypesResult> {
   return apiGetData<PublicShipmentTypesResult>('/public/shipment-types');
+}
+
+export function checkAccountAvailability(
+  payload: AccountAvailabilityPayload,
+): Promise<AccountAvailabilityResult> {
+  return apiPostData<AccountAvailabilityResult>('/public/account-availability', payload);
 }
 
 export function subscribeToNewsletter(

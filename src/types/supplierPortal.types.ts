@@ -1,6 +1,7 @@
 export interface SupplierPortalUser {
   id: string;
   email: string;
+  avatarUrl: string | null;
   firstName: string;
   lastName: string;
   businessName?: string;

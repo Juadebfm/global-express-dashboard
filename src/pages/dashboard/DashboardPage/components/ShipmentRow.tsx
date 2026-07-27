@@ -1,17 +1,16 @@
 import type { ReactElement } from 'react';
-import { Link } from 'react-router-dom';
 import { Plane, Ship } from 'lucide-react';
 import { cn, formatDate } from '@/utils';
 import { formatTrackingDisplay, isInternalTracking } from '@/lib/trackingUtils';
 import { getStatusStyle } from '@/lib/statusUtils';
 import type { OrderListItem } from '@/types';
-import { ROUTES } from '@/constants';
 
 interface ShipmentRowProps {
   row: OrderListItem;
+  onOpen: (orderId: string) => void;
 }
 
-export function ShipmentRow({ row }: ShipmentRowProps): ReactElement {
+export function ShipmentRow({ row, onOpen }: ShipmentRowProps): ReactElement {
   const isSea = row.transportMode === 'sea';
   const style = getStatusStyle(row.statusV2);
   const internal = isInternalTracking(row.trackingNumber);
@@ -21,9 +20,10 @@ export function ShipmentRow({ row }: ShipmentRowProps): ReactElement {
     : null;
 
   return (
-    <Link
-      to={`${ROUTES.ORDERS}?id=${row.id}`}
-      className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors"
+    <button
+      type="button"
+      onClick={() => onOpen(row.id)}
+      className="flex w-full items-center gap-3 px-4 py-3.5 text-left hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500"
     >
       <span className="shrink-0 text-gray-400">
         {isSea ? <Ship className="h-4 w-4" /> : <Plane className="h-4 w-4" />}
@@ -63,6 +63,6 @@ export function ShipmentRow({ row }: ShipmentRowProps): ReactElement {
           )}
         </div>
       </div>
-    </Link>
+    </button>
   );
 }

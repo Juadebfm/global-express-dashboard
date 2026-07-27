@@ -27,7 +27,7 @@ export interface AppMeta {
 export interface DashboardUser {
   displayName: string;
   email: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
 }
 
 export interface DashboardUi {

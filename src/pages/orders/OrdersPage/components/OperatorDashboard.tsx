@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
   Box,
@@ -34,6 +35,8 @@ import { VerifyQueueStep } from './VerifyQueueStep';
 import { HoldQueueStep } from './HoldQueueStep';
 import { BatchQueueStep } from './BatchQueueStep';
 import { PaymentQueueStep } from './PaymentQueueStep';
+import { PreorderQueueStep } from './PreorderQueueStep';
+import { AwaitingArrivalQueueStep } from './AwaitingArrivalQueueStep';
 
 // ── State machine ────────────────────────────────────────────────────────────
 
@@ -46,6 +49,10 @@ type ViewState =
 
 function getQueueOrders(orders: OrderListItem[], kind: QueueKind): OrderListItem[] {
   switch (kind) {
+    case 'preorder':
+      return orders.filter((o) => o.statusV2 === 'PREORDER_SUBMITTED');
+    case 'arrival':
+      return orders.filter((o) => o.statusV2 === 'AWAITING_WAREHOUSE_RECEIPT');
     case 'verify':
       return orders.filter(
         (o) =>
@@ -284,6 +291,7 @@ function DashboardView({
   }, [allOrders]);
 
   function getActionLabel(o: OrderListItem): string {
+    if (o.statusV2 === 'PREORDER_SUBMITTED') return 'Register';
     if (o.statusV2 === 'ON_HOLD') return 'Resolve';
     if (o.statusV2 === 'WAREHOUSE_RECEIVED' || o.statusV2 === 'CLAIM_APPROVED_PENDING_BULK_PROCESSING') return 'Verify';
     if (o.statusV2 === 'WAREHOUSE_VERIFIED_PRICED') {
@@ -294,6 +302,7 @@ function DashboardView({
   }
 
   function getQueueKindForOrder(o: OrderListItem): QueueKind {
+    if (o.statusV2 === 'PREORDER_SUBMITTED') return 'preorder';
     if (o.statusV2 === 'ON_HOLD') return 'holds';
     if (o.statusV2 === 'WAREHOUSE_RECEIVED' || o.statusV2 === 'CLAIM_APPROVED_PENDING_BULK_PROCESSING') return 'verify';
     if (o.statusV2 === 'WAREHOUSE_VERIFIED_PRICED') {
@@ -326,7 +335,21 @@ function DashboardView({
       </div>
 
       {/* Task cards */}
-      <div className={cn('grid grid-cols-2 gap-3', isSuperAdmin ? 'lg:grid-cols-5' : 'lg:grid-cols-4')}>
+      <div className={cn('grid grid-cols-2 gap-3', isSuperAdmin ? 'lg:grid-cols-6 xl:grid-cols-7' : 'lg:grid-cols-6')}>
+        <TaskCard
+          icon={<ClipboardCheck className="h-5 w-5 text-blue-600" />}
+          label="New orders"
+          count={counts.preorder}
+          color="bg-blue-100"
+          onClick={() => onStartQueue('preorder')}
+        />
+        <TaskCard
+          icon={<PackagePlus className="h-5 w-5 text-brand-600" />}
+          label="Awaiting arrival"
+          count={counts.arrival}
+          color="bg-brand-100"
+          onClick={() => onStartQueue('arrival')}
+        />
         <TaskCard
           icon={<ClipboardCheck className="h-5 w-5 text-brand-600" />}
           label="To verify"
@@ -564,9 +587,20 @@ interface QueueStepProps {
   onNext: () => void;
   onSkip?: () => void;
   onExit: () => void;
+  onAwaitArrival?: () => void;
+  onStartVerification?: () => void;
 }
 
-function QueueStep({ queueType, orders, index, onNext, onSkip, onExit }: QueueStepProps): ReactElement {
+function QueueStep({
+  queueType,
+  orders,
+  index,
+  onNext,
+  onSkip,
+  onExit,
+  onAwaitArrival,
+  onStartVerification,
+}: QueueStepProps): ReactElement {
   const currentOrder = orders[index];
   const orderDetailQuery = useOrderDetail(currentOrder?.id);
   const view = useMemo(() => {
@@ -613,6 +647,23 @@ function QueueStep({ queueType, orders, index, onNext, onSkip, onExit }: QueueSt
   };
 
   switch (queueType) {
+    case 'preorder':
+      return (
+        <PreorderQueueStep
+          key={currentOrder.id}
+          {...stepProps}
+          onAwaitArrival={onAwaitArrival ?? onNext}
+          onStartVerification={onStartVerification ?? onNext}
+        />
+      );
+    case 'arrival':
+      return (
+        <AwaitingArrivalQueueStep
+          key={currentOrder.id}
+          {...stepProps}
+          onStartVerification={onStartVerification ?? onNext}
+        />
+      );
     case 'verify':
       return <VerifyQueueStep key={currentOrder.id} {...stepProps} />;
     case 'holds':
@@ -625,12 +676,41 @@ function QueueStep({ queueType, orders, index, onNext, onSkip, onExit }: QueueSt
   }
 }
 
+function directQueueKind(statusV2: string): QueueKind {
+  if (statusV2 === 'AWAITING_WAREHOUSE_RECEIPT') return 'arrival';
+  if (statusV2 === 'WAREHOUSE_RECEIVED') return 'verify';
+  return 'preorder';
+}
+
+function DirectOrderQueue({
+  order,
+  onExit,
+}: {
+  order: OrderListItem;
+  onExit: () => void;
+}): ReactElement {
+  const [queueType, setQueueType] = useState<QueueKind>(() => directQueueKind(order.statusV2));
+
+  return (
+    <QueueStep
+      queueType={queueType}
+      orders={[order]}
+      index={0}
+      onNext={onExit}
+      onExit={onExit}
+      onAwaitArrival={() => setQueueType('arrival')}
+      onStartVerification={() => setQueueType('verify')}
+    />
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 
 export function OperatorOrdersView(): ReactElement {
   const { data: appData, isLoading: appLoading, error: appError } = useDashboardData();
   const { user } = useAuth();
   const [viewState, setViewState] = useState<ViewState>({ kind: 'dashboard' });
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showIntake, setShowIntake] = useState(false);
   const recordIntake = useRecordShipmentIntake();
 
@@ -638,8 +718,24 @@ export function OperatorOrdersView(): ReactElement {
 
   const isSuperAdmin = useCan('app.superadmin');
 
+  const selectedOrderId = searchParams.get('select');
+  const directlySelectedOrder = useMemo(
+    () => (selectedOrderId ? allOrders.find((order) => order.id === selectedOrderId) ?? null : null),
+    [allOrders, selectedOrderId],
+  );
+
+  const clearDirectSelection = () => {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.delete('select');
+      return next;
+    }, { replace: true });
+  };
+
   const counts = useMemo<Record<QueueKind, number>>(
     () => ({
+      preorder: getQueueOrders(allOrders, 'preorder').length,
+      arrival: getQueueOrders(allOrders, 'arrival').length,
       verify: getQueueOrders(allOrders, 'verify').length,
       holds: getQueueOrders(allOrders, 'holds').length,
       batch: getQueueOrders(allOrders, 'batch').length,
@@ -675,6 +771,13 @@ export function OperatorOrdersView(): ReactElement {
     }
   };
 
+  const handleMoveToQueue = (queueType: QueueKind) => {
+    if (viewState.kind !== 'queue') return;
+    const order = viewState.orders[viewState.index];
+    if (!order) return;
+    setViewState({ kind: 'queue', queueType, orders: [order], index: 0 });
+  };
+
   const handleSkip = () => {
     if (viewState.kind !== 'queue') return;
     const { orders, index } = viewState;
@@ -698,7 +801,9 @@ export function OperatorOrdersView(): ReactElement {
       error={appError}
       loadingLabel="Loading orders…"
     >
-      {viewState.kind === 'dashboard' && (
+      {directlySelectedOrder ? (
+        <DirectOrderQueue key={directlySelectedOrder.id} order={directlySelectedOrder} onExit={clearDirectSelection} />
+      ) : viewState.kind === 'dashboard' && (
         <DashboardView
           allOrders={allOrders}
           counts={counts}
@@ -709,7 +814,7 @@ export function OperatorOrdersView(): ReactElement {
         />
       )}
 
-      {viewState.kind === 'queue' && (
+      {!directlySelectedOrder && viewState.kind === 'queue' && (
         <QueueStep
           queueType={viewState.queueType}
           orders={viewState.orders}
@@ -717,10 +822,12 @@ export function OperatorOrdersView(): ReactElement {
           onNext={handleNext}
           onSkip={handleSkip}
           onExit={handleExit}
+          onAwaitArrival={() => handleMoveToQueue('arrival')}
+          onStartVerification={() => handleMoveToQueue('verify')}
         />
       )}
 
-      {viewState.kind === 'all-caught-up' && (
+      {!directlySelectedOrder && viewState.kind === 'all-caught-up' && (
         <AllCaughtUp
           queueType={viewState.queueType}
           otherQueues={(Object.keys(counts) as QueueKind[])
@@ -747,4 +854,3 @@ export function OperatorOrdersView(): ReactElement {
     </AppShell>
   );
 }
-

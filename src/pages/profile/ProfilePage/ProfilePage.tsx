@@ -5,8 +5,17 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import { AppLayout } from '@/components/layout';
+import { AvatarUploader } from '@/components/profile';
 import { AlertBanner, Button, Card, Input } from '@/components/ui';
-import { useAuth, useAuthToken, useCountries, useCountryStates, useStateCities } from '@/hooks';
+import {
+  useAuth,
+  useAuthToken,
+  useCountries,
+  useCountryStates,
+  useCurrentUserAvatar,
+  useSetCurrentUserAvatar,
+  useStateCities,
+} from '@/hooks';
 import { PageHeader } from '@/pages/shared';
 import { ROUTES, STAFF_COUNTRIES, RELATIONSHIP_OPTIONS, COUNTRY_LABELS, getStates, getCities } from '@/constants';
 import { ApiError } from '@/lib/apiClient';
@@ -163,6 +172,8 @@ export function ProfilePage(): ReactElement {
   const { user: authUser, refreshUser } = useAuth();
   const { isLoaded: isClerkLoaded, isSignedIn: isClerkSignedIn } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
+  const currentAvatarUrl = useCurrentUserAvatar();
+  const setCurrentUserAvatar = useSetCurrentUserAvatar();
 
   const mode: ProfileMode = useMemo(() => {
     if (authUser && ['staff', 'admin', 'superadmin'].includes(authUser.role)) {
@@ -213,7 +224,7 @@ export function ProfilePage(): ReactElement {
         displayName:
           `${authUser.firstName ?? ''} ${authUser.lastName ?? ''}`.trim() || 'User',
         email: authUser.email,
-        avatarUrl: '/images/favicon.svg',
+        avatarUrl: currentAvatarUrl,
       };
     }
 
@@ -225,16 +236,16 @@ export function ProfilePage(): ReactElement {
           clerkUser.emailAddresses[0]?.emailAddress ||
           'Customer',
         email: clerkUser.emailAddresses[0]?.emailAddress ?? '',
-        avatarUrl: clerkUser.imageUrl || '/images/favicon.svg',
+        avatarUrl: currentAvatarUrl ?? clerkUser.imageUrl ?? null,
       };
     }
 
     return {
       displayName: 'User',
       email: '',
-      avatarUrl: '/images/favicon.svg',
-    };
-  }, [authUser, clerkUser]);
+        avatarUrl: null,
+      };
+  }, [authUser, clerkUser, currentAvatarUrl]);
 
   useEffect(() => {
     if (mode !== 'external' || !clerkUser) return;
@@ -408,6 +419,14 @@ export function ProfilePage(): ReactElement {
     setProfileSuccess(null);
     setValidationError(null);
     setIsEditing(true);
+  };
+
+  const handleAvatarChanged = async (avatarUrl: string | null): Promise<void> => {
+    if (authUser) {
+      await refreshUser();
+      return;
+    }
+    setCurrentUserAvatar(avatarUrl);
   };
 
   const handleCancelEditing = () => {
@@ -620,9 +639,12 @@ export function ProfilePage(): ReactElement {
         <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
           <Card className="rounded-3xl bg-white p-8">
             <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 text-center">
-              <div className="flex h-28 w-28 items-center justify-center rounded-full bg-brand-50 text-5xl font-semibold text-brand-500">
-                {initials}
-              </div>
+              <AvatarUploader
+                avatarUrl={currentAvatarUrl}
+                initials={initials}
+                getToken={getToken}
+                onAvatarChanged={handleAvatarChanged}
+              />
               <div>
                 <p className="text-lg font-semibold text-gray-900">
                   {`${identity.firstName} ${identity.lastName}`.trim() || t('identity.fallbackName')}

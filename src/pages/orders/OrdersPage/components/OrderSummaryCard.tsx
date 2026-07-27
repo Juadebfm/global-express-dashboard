@@ -10,6 +10,8 @@ interface OrderSummaryCardProps {
 }
 
 const STATUS_CHIP: Record<string, { label: string; cls: string }> = {
+  PREORDER_SUBMITTED: { label: 'New order', cls: 'bg-blue-50 text-blue-700' },
+  AWAITING_WAREHOUSE_RECEIPT: { label: 'Awaiting warehouse', cls: 'bg-brand-50 text-brand-700' },
   ON_HOLD: { label: 'On hold', cls: 'bg-amber-100 text-amber-700' },
   WAREHOUSE_RECEIVED: { label: 'At warehouse', cls: 'bg-brand-50 text-brand-700' },
   CLAIM_APPROVED_PENDING_BULK_PROCESSING: { label: 'Pending processing', cls: 'bg-brand-50 text-brand-700' },

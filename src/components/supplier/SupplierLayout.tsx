@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogOut, Inbox, Store } from 'lucide-react';
+import { LogOut, Inbox, Store, UserRound } from 'lucide-react';
 import { useSupplierAuthStore } from '@/store/supplierAuth';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
@@ -51,6 +51,19 @@ export function SupplierLayout({ children }: SupplierLayoutProps): ReactElement 
             >
               <Store className="h-4 w-4" />
               <span className="hidden sm:inline">Directory profile</span>
+            </Link>
+            <Link
+              to={ROUTES.SUPPLIER_ACCOUNT}
+              className={cn(
+                'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-colors',
+                location.pathname === ROUTES.SUPPLIER_ACCOUNT
+                  ? 'bg-brand-50 text-brand-600'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900',
+              )}
+              aria-label="Account"
+            >
+              <UserRound className="h-4 w-4" />
+              <span className="hidden sm:inline">Account</span>
             </Link>
           </nav>
 

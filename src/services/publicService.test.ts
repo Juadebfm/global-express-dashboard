@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  checkAccountAvailability,
   estimateShipping,
   getPublicShipmentTypes,
   submitPublicD2dIntake,
@@ -89,6 +90,29 @@ describe('getPublicShipmentTypes', () => {
     expect(init.method ?? 'GET').toBe('GET');
     const headers = new Headers(init.headers);
     expect(headers.has('Authorization')).toBe(false);
+  });
+});
+
+describe('checkAccountAvailability', () => {
+  it('POSTs only the email and E.164 primary phone without Authorization', async () => {
+    mockFetch({
+      success: true,
+      data: { emailAvailable: true, phoneAvailable: true },
+    });
+
+    await expect(checkAccountAvailability({
+      email: 'user@example.test',
+      phone: '+2348037584818',
+    })).resolves.toEqual({ emailAvailable: true, phoneAvailable: true });
+
+    const { url, init } = lastCall();
+    expect(url).toContain('/public/account-availability');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body as string)).toEqual({
+      email: 'user@example.test',
+      phone: '+2348037584818',
+    });
+    expect(new Headers(init.headers).has('Authorization')).toBe(false);
   });
 });
 

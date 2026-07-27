@@ -20,6 +20,7 @@ export function Topbar({
   const { t } = useTranslation('nav');
   const navigate = useNavigate();
   const { user: authUser, logout } = useAuth();
+  const avatarUrl = user.avatarUrl ?? '/images/favicon.svg';
 
   const notificationsCount = useNotificationCount();
   const { isSignedIn: isClerkSignedIn, signOut } = useClerkAuth();
@@ -112,11 +113,12 @@ export function Topbar({
                 {user.displayName}
               </span>
               <img
-                src={user.avatarUrl}
+                src={avatarUrl}
                 alt={user.displayName}
                 className="h-10 w-10 rounded-full border-2 border-brand-500 object-cover"
                 onError={(event) => {
-                  (event.currentTarget as HTMLImageElement).style.display = 'none';
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = '/images/favicon.svg';
                 }}
               />
               <ChevronDown
@@ -128,11 +130,12 @@ export function Topbar({
               <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-2xl border border-gray-200 bg-white shadow-xl">
                 <div className="flex items-center gap-3 border-b border-gray-100 p-4">
                   <img
-                    src={user.avatarUrl}
+                    src={avatarUrl}
                     alt={user.displayName}
                     className="h-11 w-11 rounded-full object-cover"
                     onError={(event) => {
-                      (event.currentTarget as HTMLImageElement).style.display = 'none';
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = '/images/favicon.svg';
                     }}
                   />
                   <div className="min-w-0 flex-1">

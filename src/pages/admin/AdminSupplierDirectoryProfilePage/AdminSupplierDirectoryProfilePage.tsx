@@ -26,7 +26,7 @@ export function AdminSupplierDirectoryProfilePage(): ReactElement {
   const layoutUser = {
     displayName: user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email : 'Staff',
     email: user?.email ?? '',
-    avatarUrl: '/images/favicon.svg',
+    avatarUrl: user?.avatarUrl ?? null,
   };
 
   const setVerification = async (verificationStatus: 'verified' | 'unverified'): Promise<void> => {

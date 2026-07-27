@@ -301,7 +301,7 @@ export function SupplierNoticeReviewPage(): ReactElement {
       ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email
       : 'Staff',
     email: user?.email ?? '',
-    avatarUrl: '/images/favicon.svg',
+    avatarUrl: user?.avatarUrl ?? null,
   };
 
   return (

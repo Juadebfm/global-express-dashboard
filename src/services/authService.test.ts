@@ -1,6 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { getMe, login, register } from './authService';
+import {
+  confirmMyAvatar,
+  getMe,
+  login,
+  presignMyAvatar,
+  register,
+  removeMyAvatar,
+  syncClerkAccount,
+  uploadAvatarFile,
+} from './authService';
 
 const ORIGINAL_FETCH = globalThis.fetch;
 
@@ -13,6 +22,12 @@ function mockFetch(body: unknown, status = 200): void {
       }),
     ),
   ) as typeof fetch;
+}
+
+function lastCall(): { url: string; init: RequestInit } {
+  const calls = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls;
+  const [url, init] = calls.at(-1) ?? ['', {}];
+  return { url: String(url), init: init as RequestInit };
 }
 
 afterEach(() => {
@@ -120,5 +135,65 @@ describe('getMe', () => {
     const [, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     const headers = new Headers((init as RequestInit).headers);
     expect(headers.get('Authorization')).toBe('Bearer jwt-x');
+  });
+});
+
+describe('self-service avatar', () => {
+  it('presigns with the selected content type and authenticated user only', async () => {
+    mockFetch({
+      success: true,
+      data: { uploadUrl: 'https://r2.example/upload', r2Key: 'avatars/u/avatar.webp', publicUrl: 'https://cdn.example/avatar.webp', expiresInSeconds: 300 },
+    });
+
+    await presignMyAvatar('token', { contentType: 'image/webp' });
+
+    const { url, init } = lastCall();
+    expect(url).toContain('/users/me/avatar/presign');
+    expect(JSON.parse(init.body as string)).toEqual({ contentType: 'image/webp' });
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer token');
+  });
+
+  it('uploads raw bytes to R2 without an application bearer token', async () => {
+    mockFetch({});
+    const file = new File(['avatar'], 'avatar.webp', { type: 'image/webp' });
+
+    await uploadAvatarFile('https://r2.example/upload', file);
+
+    const { url, init } = lastCall();
+    expect(url).toBe('https://r2.example/upload');
+    expect(init.method).toBe('PUT');
+    const headers = new Headers(init.headers);
+    expect(headers.get('Content-Type')).toBe('image/webp');
+    expect(headers.has('Authorization')).toBe(false);
+    expect(init.body).toBe(file);
+  });
+
+  it('confirms and removes only the current user avatar', async () => {
+    mockFetch({ success: true, data: { avatarUrl: 'https://cdn.example/avatar.webp' } });
+    await confirmMyAvatar('token', 'avatars/u/avatar.webp');
+    let call = lastCall();
+    expect(call.url).toContain('/users/me/avatar');
+    expect(call.init.method).toBe('POST');
+    expect(JSON.parse(call.init.body as string)).toEqual({ r2Key: 'avatars/u/avatar.webp' });
+
+    mockFetch({ success: true, data: { avatarUrl: null } });
+    await removeMyAvatar('token');
+    call = lastCall();
+    expect(call.url).toContain('/users/me/avatar');
+    expect(call.init.method).toBe('DELETE');
+    expect(new Headers(call.init.headers).get('Authorization')).toBe('Bearer token');
+  });
+
+  it('syncs Clerk without a request body and returns the updated user', async () => {
+    mockFetch({
+      success: true,
+      data: { id: 'u1', email: 'a@b.test', avatarUrl: 'https://cdn.example/avatar.webp', firstName: 'A', lastName: 'B', role: 'user', createdAt: '', updatedAt: '' },
+    });
+
+    await expect(syncClerkAccount('token')).resolves.toMatchObject({
+      avatarUrl: 'https://cdn.example/avatar.webp',
+    });
+    const { init } = lastCall();
+    expect(init.body).toBeUndefined();
   });
 });

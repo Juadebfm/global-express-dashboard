@@ -205,7 +205,49 @@ Last updated: 2026-06-24
 | Date / separator | `text-xs text-gray-400` / `text-xs text-gray-300` |
 
 **Pattern notes:**
-Always call `isInternalTracking()` first. Padding is `px-4 py-3.5` (tighter than `px-5 py-4` used in staff rows). Links to `${ROUTES.ORDERS}?id=${row.id}`.
+Always call `isInternalTracking()` first. Padding is `px-4 py-3.5` (tighter than `px-5 py-4` used in staff rows). The row is a full-width button which opens the customer shipment-detail modal; preserve the same hover and inset brand focus treatment.
+
+### Dashboard Shipment Table
+
+File: `src/pages/dashboard/DashboardPage/components/ShipmentTable.tsx`
+Last updated: 2026-07-26
+
+| Property | Class |
+|---|---|
+| Wrapper | `hidden md:block overflow-x-auto` |
+| Header | `bg-gray-50 text-xs font-medium text-gray-400` |
+| Header dividers | `border-r border-gray-200` |
+| Cell dividers | `border-r border-gray-100` |
+| Cell spacing | `px-5 py-4` |
+| Row | `bg-white cursor-pointer hover:bg-gray-50 transition-colors` |
+| Keyboard state | `focus-visible:bg-brand-50` |
+| Status | `rounded-full px-2.5 py-0.5 text-xs font-semibold` |
+| Shadow | none |
+| Accent usage | `bg-brand-50` for keyboard focus only |
+
+**Pattern notes:**
+Desktop customer shipment lists use five columns: goods, tracking number, shipment type, booked date, and status. Entire rows open the shipment detail modal. Preserve `ShipmentRow` as the mobile-only alternative instead of forcing horizontal scrolling on narrow viewports.
+
+### Customer Shipment Details Modal
+
+File: `src/pages/dashboard/DashboardPage/components/ShipmentDetailsModal.tsx`
+Last updated: 2026-07-26
+
+| Property | Class |
+|---|---|
+| Overlay | `bg-black/40` |
+| Container | `bg-white shadow-xl rounded-t-3xl sm:rounded-3xl` |
+| Section surface | `rounded-2xl border border-gray-200 bg-white p-4` |
+| Warehouse state | `rounded-2xl border border-brand-100 bg-brand-50 p-4` |
+| Heading | `text-lg font-semibold text-gray-900` |
+| Body text | `text-sm text-gray-500` |
+| Spacing | `p-6` with `space-y-5` sections |
+| Interactive state | `hover:bg-gray-100` with `focus:ring-2 focus:ring-brand-500` |
+| Shadow | `shadow-xl` on modal only |
+| Accent usage | `bg-brand-50 text-brand-700` for warehouse and shipment mode |
+
+**Pattern notes:**
+Use this detail-on-demand pattern for customer list rows: open a scrollable desktop modal or mobile bottom sheet, load detailed data after selection, and keep the list in place behind the overlay. Goods remain separate bordered cards; semantic amber is reserved for additional handling notices.
 
 ---
 
@@ -329,6 +371,99 @@ Last updated: 2026-07-26
 
 **Pattern notes:**
 Supplier-controlled discoverability and staff-managed verification must remain visually and conceptually separate. Explain that verification is informational and never make a staff action imply it can publish a supplier. Use a bordered neutral information panel for requirements and semantic amber/red feedback for incomplete or failed saves.
+
+---
+
+### Signup identity availability gate
+
+File: `src/pages/auth/ExternalSignUpPage/ExternalSignUpPage.tsx`
+Last updated: 2026-07-26
+
+| Property | Class |
+|---|---|
+| Inline field error | Input error state: `border-red-500` / `text-red-600` |
+| Progress copy | `text-sm text-gray-600` |
+| Primary action | `<Button size="lg" className="auth-cta-btn w-full">` |
+| Action loading state | Built-in `Loader2 h-4 w-4 animate-spin` with disabled opacity |
+| CAPTCHA target | `space-y-2` wrapper with `aria-live="polite"` |
+
+**Pattern notes:**
+Identity availability is an in-place progress state, never a new screen or modal. Keep entered values visible but lock the fieldset during the request so results cannot apply to stale data. Put duplicate and validation feedback beside the relevant identity field; reserve the red form banner for retryable rate-limit and service failures. Do not mount Clerk's CAPTCHA target until the backend confirms both primary email and phone are available.
+
+---
+
+### Self-service avatar uploader
+
+File: `src/components/profile/AvatarUploader.tsx`
+Last updated: 2026-07-26
+
+| Property | Class |
+|---|---|
+| Avatar image | `h-28 w-28 rounded-full border-2 border-brand-500 object-cover` |
+| Initials fallback | `h-28 w-28 rounded-full bg-brand-50 text-5xl font-semibold text-brand-500` |
+| File actions | `<Button size="sm">`; choose/remove use `variant="secondary"` |
+| Helper text | `text-center text-xs text-gray-500` |
+| Error feedback | `text-center text-sm text-red-600` |
+| Success feedback | `text-center text-sm text-emerald-700` |
+
+**Pattern notes:**
+Keep profile images circular and preserve initials when no image is available or loading fails. A selected local image previews in the same circle before it is saved. Avatar upload is a self-service control only: do not surface a user identifier, and keep removal beside upload rather than hiding it in a menu.
+
+---
+
+### Actionable notification detail
+
+File: `src/pages/notifications/NotificationsPage/NotificationsPage.tsx`
+Last updated: 2026-07-27
+
+| Property | Class |
+|---|---|
+| Primary order action | `rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white` |
+| Hover / focus | `hover:bg-brand-600 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2` |
+| Icon | `ArrowUpRight h-4 w-4` |
+| Action placement | `mr-auto` in the modal footer, ahead of destructive/close actions |
+
+**Pattern notes:**
+Only staff+ users see an order action, and only when a `new_order` notification resolves to an order still in `PREORDER_SUBMITTED`. The primary label is “View order”; it closes the notification detail and opens the normal Orders new-order queue using `?select=<orderId>`. Once staff starts warehouse handling, the order moves to `AWAITING_WAREHOUSE_RECEIPT` and this action is intentionally absent; the notification remains historical. Customer notifications remain informational.
+
+---
+
+### New-order queue
+
+File: `src/pages/orders/OrdersPage/components/PreorderQueueStep.tsx`
+Last updated: 2026-07-27
+
+| Property | Class |
+|---|---|
+| Booking context | `rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4` |
+| Awaiting-arrival context | `rounded-2xl border border-brand-100 bg-brand-50 px-5 py-4` |
+| Details surface | `rounded-2xl border border-gray-200 bg-white` |
+| Section heading | `text-base font-semibold text-gray-900` |
+| Body text | `text-sm text-gray-500` |
+| Primary action | QueueShell `rounded-xl bg-brand-500` action |
+| Spacing | `space-y-4` between queue sections |
+| Shadow | none |
+
+**Pattern notes:**
+New bookings enter the existing staff Orders workflow through a dedicated queue, not a standalone shipment utility. Staff choose between “Await warehouse arrival” and “Goods received — verify now.” The latter carries the order through its required sequential status updates and opens the established package-verification form. Use blue for new booking review and brand tone for the awaiting-arrival state; emerald remains reserved for confirmed completion.
+
+### Awaiting-arrival queue
+
+File: `src/pages/orders/OrdersPage/components/AwaitingArrivalQueueStep.tsx`
+Last updated: 2026-07-27
+
+| Property | Class |
+|---|---|
+| Arrival context | `rounded-2xl border border-brand-100 bg-brand-50 px-5 py-4` |
+| Details surface | `rounded-2xl border border-gray-200 bg-white` |
+| Section heading | `text-base font-semibold text-gray-900` |
+| Body text | `text-sm text-gray-500` |
+| Primary action | QueueShell `rounded-xl bg-brand-500` action |
+| Spacing | `space-y-4` between queue sections |
+| Shadow | none |
+
+**Pattern notes:**
+This is the durable staff holding area for a booking whose goods are not yet physically at the warehouse. Its only action moves the exact order into the existing verification workspace, where package dimensions, weight, images and pricing are handled.
 
 ---
 

@@ -15,9 +15,13 @@ import type {
   CreateInternalUserPayload,
   StaffProfilePayload,
   ProfileRequirements,
+  AvatarPresignRequest,
+  AvatarPresignResponse,
+  AvatarUpdateResult,
 } from '@/types';
 import {
   apiDelete,
+  apiDeleteData,
   apiGet,
   apiGetBlob,
   apiGetData,
@@ -82,8 +86,34 @@ export function logout(token: string): Promise<void> {
   return apiPost<void>('/auth/logout', {}, token);
 }
 
-export async function syncClerkAccount(token: string): Promise<void> {
-  await apiPost('/auth/sync', {}, token);
+export function syncClerkAccount(token: string): Promise<User> {
+  return apiPostData<User>('/auth/sync', undefined, token);
+}
+
+export function presignMyAvatar(
+  token: string,
+  payload: AvatarPresignRequest,
+): Promise<AvatarPresignResponse> {
+  return apiPostData<AvatarPresignResponse>('/users/me/avatar/presign', payload, token);
+}
+
+export function confirmMyAvatar(token: string, r2Key: string): Promise<AvatarUpdateResult> {
+  return apiPostData<AvatarUpdateResult>('/users/me/avatar', { r2Key }, token);
+}
+
+export function removeMyAvatar(token: string): Promise<AvatarUpdateResult> {
+  return apiDeleteData<AvatarUpdateResult>('/users/me/avatar', token);
+}
+
+export async function uploadAvatarFile(uploadUrl: string, file: File): Promise<void> {
+  const response = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  });
+  if (!response.ok) {
+    throw new Error('Unable to upload the avatar. Please try again.');
+  }
 }
 
 export async function getMyProfile(token: string): Promise<CustomerProfile> {

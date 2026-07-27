@@ -1,17 +1,22 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Bookmark, Info, RotateCcw, Trash2, X } from 'lucide-react';
+import { ArrowUpRight, Bookmark, Info, RotateCcw, Trash2 } from 'lucide-react';
 import {
+  useCan,
   useDashboardData,
   useNotifications,
+  useOrderDetail,
   useSearch,
 } from '@/hooks';
 import type { ApiNotification } from '@/types';
 import { AppShell } from '@/pages/shared';
 import { TableRowsSkeleton } from '@/components/ui';
 import { cn } from '@/utils';
+import { ROUTES } from '@/constants';
 import i18n from '@/i18n/i18n';
+import { isNewOrderHandlingActionable, resolveNotificationOrderId } from './notificationOrder';
 
 interface NotificationItem {
   id: string;
@@ -122,7 +127,7 @@ function mapApiNotification(n: ApiNotification): NotificationItem {
     unread: !n.isRead,
     saved: n.isSaved,
     notifType: n.type,
-    orderId: n.orderId ?? null,
+    orderId: resolveNotificationOrderId(n),
     metadata: n.metadata ?? {},
   };
 }
@@ -131,11 +136,15 @@ function NotificationDetailModal({
   item,
   onClose,
   onDelete,
+  onOpenOrder,
+  canOpenOrders,
   t,
 }: {
   item: NotificationItem;
   onClose: () => void;
   onDelete: () => void;
+  onOpenOrder: (() => void) | null;
+  canOpenOrders: boolean;
   t: (key: string) => string;
 }): ReactElement {
   const cleanBody = stripUuids(item.description);
@@ -147,6 +156,13 @@ function NotificationDetailModal({
     ...(metaTracking ? [metaTracking] : []),
     ...trackingNumbers,
   ]));
+  const orderQuery = useOrderDetail(
+    canOpenOrders && item.notifType === 'new_order' ? item.orderId ?? undefined : undefined,
+  );
+  const canOpenOrderHandling = isNewOrderHandlingActionable(
+    item.notifType,
+    orderQuery.data?.statusV2,
+  );
 
   const metaFields: { label: string; value: string }[] = [];
   if (typeof item.metadata.amount === 'number' || typeof item.metadata.amount === 'string') {
@@ -168,18 +184,9 @@ function NotificationDetailModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-xl"
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </button>
 
         {/* Type chip + date */}
         <div className="flex flex-wrap items-center gap-2">
@@ -229,7 +236,17 @@ function NotificationDetailModal({
         </div>
 
         {/* Actions */}
-        <div className="mt-5 flex items-center justify-end gap-3">
+        <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
+          {onOpenOrder && item.orderId && canOpenOrderHandling && (
+            <button
+              type="button"
+              onClick={onOpenOrder}
+              className="mr-auto inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+            >
+              View order
+              <ArrowUpRight className="h-4 w-4" />
+            </button>
+          )}
           <button
             type="button"
             onClick={onDelete}
@@ -253,6 +270,8 @@ function NotificationDetailModal({
 
 function CustomerNotificationsView(): ReactElement {
   const { t } = useTranslation('notifications');
+  const navigate = useNavigate();
+  const canOpenOrders = useCan('app.operator');
   const { data, isLoading, error } = useDashboardData();
   const { query } = useSearch();
   const {
@@ -599,6 +618,17 @@ function CustomerNotificationsView(): ReactElement {
             });
             setActiveNotification(null);
           }}
+          onOpenOrder={
+            canOpenOrders && activeNotification.orderId
+              ? () => {
+                  const orderId = activeNotification.orderId;
+                  if (!orderId) return;
+                  setActiveNotification(null);
+                  navigate(`${ROUTES.ORDERS}?select=${encodeURIComponent(orderId)}`);
+                }
+              : null
+          }
+          canOpenOrders={canOpenOrders}
           t={t}
         />
       )}

@@ -49,6 +49,7 @@ export const ROUTES = {
   SUPPLIER_NEW_GOODS_NOTICE: '/supplier/goods-notices/new',
   SUPPLIER_GOODS_NOTICE_DETAIL: '/supplier/goods-notices/:id',
   SUPPLIER_REQUESTS: '/supplier/requests',
+  SUPPLIER_ACCOUNT: '/supplier/account',
   SUPPLIER_DIRECTORY_PROFILE: '/supplier/directory-profile',
 
   SUPPLIER_NOTICES: '/supplier-notices',

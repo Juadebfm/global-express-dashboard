@@ -9,7 +9,7 @@ import { Topbar } from './Topbar';
 import { getFooterItems, getNavItems } from './navConfig';
 import { WelcomePopup, OnboardingTour, useOnboarding } from '@/components/onboarding';
 import { cn } from '@/utils';
-import { useAuth, useDashboardData, usePushNotifications, useWebSocket } from '@/hooks';
+import { useAuth, useCurrentUserAvatar, useDashboardData, usePushNotifications, useWebSocket } from '@/hooks';
 import { ROUTES } from '@/constants';
 
 interface AppLayoutProps {
@@ -22,6 +22,7 @@ interface AppLayoutProps {
 export function AppLayout({ children, user }: AppLayoutProps): ReactElement {
   const { t } = useTranslation('nav');
   const { user: authUser } = useAuth();
+  const currentAvatarUrl = useCurrentUserAvatar();
   const { isSignedIn: isClerkSignedIn } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
   useWebSocket();
@@ -65,7 +66,7 @@ export function AppLayout({ children, user }: AppLayoutProps): ReactElement {
       return {
         displayName,
         email: authUser.email,
-        avatarUrl: '/images/favicon.svg',
+        avatarUrl: currentAvatarUrl,
       };
     }
     if (isClerkSignedIn && clerkUser) {
@@ -76,7 +77,7 @@ export function AppLayout({ children, user }: AppLayoutProps): ReactElement {
           clerkUser.emailAddresses[0]?.emailAddress ||
           'Customer',
         email: clerkUser.emailAddresses[0]?.emailAddress ?? '',
-        avatarUrl: clerkUser.imageUrl || '/images/favicon.svg',
+        avatarUrl: currentAvatarUrl ?? clerkUser.imageUrl ?? null,
       };
     }
     return user;

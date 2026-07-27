@@ -48,6 +48,7 @@ function makeUser(overrides: Partial<User> = {}): User {
   return {
     id: 'u-1',
     email: 'op@example.com',
+    avatarUrl: null,
     firstName: 'Op',
     lastName: 'One',
     role: 'staff',

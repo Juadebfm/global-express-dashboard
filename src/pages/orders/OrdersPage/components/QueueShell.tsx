@@ -2,9 +2,11 @@ import type { ReactElement, ReactNode } from 'react';
 import { Loader2, LogOut, SkipForward } from 'lucide-react';
 import { cn } from '@/utils';
 
-export type QueueKind = 'verify' | 'holds' | 'batch' | 'payment' | 'escalated';
+export type QueueKind = 'preorder' | 'arrival' | 'verify' | 'holds' | 'batch' | 'payment' | 'escalated';
 
 const QUEUE_LABELS: Record<QueueKind, string> = {
+  preorder: 'New orders',
+  arrival: 'Awaiting arrivals',
   verify: 'Verify packages',
   holds: 'Resolve holds',
   batch: 'Assign to batch',

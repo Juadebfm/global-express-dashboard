@@ -325,7 +325,7 @@ export function NewBookingPage(): ReactElement {
       ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email
       : '',
     email: user?.email ?? '',
-    avatarUrl: '/images/favicon.svg',
+    avatarUrl: user?.avatarUrl ?? null,
   };
 
   const {

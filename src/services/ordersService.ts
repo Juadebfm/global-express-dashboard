@@ -255,8 +255,11 @@ export interface GoodsBreakdownItem {
   cbm: number;
   quantity: number;
   description: string;
+  itemType: string | null;
   dimensionsCm: { length: number; width: number; height: number } | null;
   arrivalAt: string | null;
+  requiresExtraTruckMovement: boolean;
+  supplierName: string | null;
 }
 
 export interface OrderTimeline {
@@ -296,10 +299,13 @@ export async function getOrderTimeline(
       cbm: asNumber(item.cbm) ?? 0,
       quantity: asNumber(item.quantity) ?? 1,
       description: typeof item.description === 'string' ? item.description : '',
+      itemType: firstString(item, ['itemType', 'item_type']),
       dimensionsCm: dims
         ? { length: asNumber(dims.length) ?? 0, width: asNumber(dims.width) ?? 0, height: asNumber(dims.height) ?? 0 }
         : null,
       arrivalAt: typeof item.arrivalAt === 'string' && item.arrivalAt ? item.arrivalAt : null,
+      requiresExtraTruckMovement: item.requiresExtraTruckMovement === true,
+      supplierName: firstString(item, ['supplierName', 'supplier_name']),
     };
   });
 
@@ -338,8 +344,8 @@ export async function updateOrderStatus(
   token: string,
   id: string,
   statusV2: string
-): Promise<void> {
-  await apiPatch(`/orders/${id}/status`, { statusV2 }, token);
+): Promise<ApiOrder> {
+  return apiPatchData<ApiOrder>(`/orders/${id}/status`, { statusV2 }, token);
 }
 
 export async function escalateOrder(token: string, id: string, note: string): Promise<void> {

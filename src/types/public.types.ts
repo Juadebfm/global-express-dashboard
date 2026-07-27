@@ -48,6 +48,16 @@ export interface PublicShipmentTypesResult {
   updatedAt: string;
 }
 
+export interface AccountAvailabilityPayload {
+  email: string;
+  phone: string;
+}
+
+export interface AccountAvailabilityResult {
+  emailAvailable: boolean;
+  phoneAvailable: boolean;
+}
+
 export interface NewsletterSubscribePayload {
   email: string;
 }

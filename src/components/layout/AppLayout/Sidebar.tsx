@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { SidebarItem } from '@/types';
-import { useAuth, useNotificationCount, useOpenSupportTicketCount, useUndeliveredOrderCount } from '@/hooks';
+import { useAuth, useCurrentUserAvatar, useNotificationCount, useOpenSupportTicketCount, useUndeliveredOrderCount } from '@/hooks';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
 
@@ -68,6 +68,7 @@ export function Sidebar({
   const location = useLocation();
   const navigate = useNavigate();
   const { user: authUser, logout } = useAuth();
+  const currentAvatarUrl = useCurrentUserAvatar();
   const { isSignedIn: isClerkSignedIn, signOut } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
   const notificationsCount = useNotificationCount();
@@ -85,7 +86,7 @@ export function Sidebar({
         : authUser.email)
     : (clerkUser?.fullName ?? clerkUser?.firstName ?? clerkUser?.emailAddresses[0]?.emailAddress ?? 'User');
   const email = authUser?.email ?? clerkUser?.emailAddresses[0]?.emailAddress ?? '';
-  const avatarUrl = isClerkSignedIn ? (clerkUser?.imageUrl || '/images/favicon.svg') : '/images/favicon.svg';
+  const avatarUrl = authUser?.avatarUrl ?? currentAvatarUrl ?? clerkUser?.imageUrl ?? '/images/favicon.svg';
 
   const handleLogout = async (): Promise<void> => {
     onCloseMobile();
@@ -185,7 +186,10 @@ export function Sidebar({
               src={avatarUrl}
               alt={displayName}
               className="h-10 w-10 rounded-full border-2 border-brand-500 object-cover shrink-0"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = '/images/favicon.svg';
+              }}
             />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-gray-900">{displayName}</p>

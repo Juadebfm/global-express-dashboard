@@ -6,6 +6,7 @@ interface SupplierAuthState {
   token: string | null;
   user: SupplierPortalUser | null;
   setAuth: (token: string, user: SupplierPortalUser) => void;
+  setAvatarUrl: (avatarUrl: string | null) => void;
   clearAuth: () => void;
 }
 
@@ -15,6 +16,9 @@ export const useSupplierAuthStore = create<SupplierAuthState>()(
       token: null,
       user: null,
       setAuth: (token, user) => set({ token, user }),
+      setAvatarUrl: (avatarUrl) => set((state) => (
+        state.user ? { user: { ...state.user, avatarUrl } } : state
+      )),
       clearAuth: () => set({ token: null, user: null }),
     }),
     {

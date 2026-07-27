@@ -12,9 +12,10 @@ export function useUpdateOrderStatus() {
     mutationFn: async ({ orderId, statusV2 }: { orderId: string; statusV2: string }) => {
       const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) throw new Error('Not authenticated');
-      await updateOrderStatus(token, orderId, statusV2);
+      return updateOrderStatus(token, orderId, statusV2);
     },
-    onSuccess: () => {
+    onSuccess: (updatedOrder) => {
+      queryClient.setQueryData(['order', updatedOrder.id], updatedOrder);
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
       void queryClient.invalidateQueries({ queryKey: ['order'] });
       void queryClient.invalidateQueries({ queryKey: ['order', 'timeline'] });

@@ -9,6 +9,7 @@ export { useSearch } from './useSearch';
 export { useDashboardData } from './useDashboardData';
 export { useShipmentsDashboard } from './useShipmentsDashboard';
 export { useAuthToken } from './useAuthToken';
+export { useCurrentUserAvatar, useSetCurrentUserAvatar } from './useCurrentUserAvatar';
 export { useNotifications } from './useNotifications';
 export { useNotificationCount } from './useNotificationCount';
 export { useWebSocket } from './useWebSocket';

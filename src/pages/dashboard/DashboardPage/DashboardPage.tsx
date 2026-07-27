@@ -8,6 +8,8 @@ import { Button, Card, AlertBanner, Pagination } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import { ROUTES } from '@/constants';
 import { ShipmentRow } from './components/ShipmentRow';
+import { ShipmentDetailsModal } from './components/ShipmentDetailsModal';
+import { ShipmentTable } from './components/ShipmentTable';
 
 const SKELETON_COUNT = 5;
 
@@ -15,6 +17,7 @@ export function DashboardPage(): ReactElement {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null);
   const { orders, pagination, isLoading, error } = useOrders(page);
 
   const layoutUser = {
@@ -22,7 +25,7 @@ export function DashboardPage(): ReactElement {
       ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email
       : '',
     email: user?.email ?? '',
-    avatarUrl: '/images/favicon.svg',
+    avatarUrl: user?.avatarUrl ?? null,
   };
 
   return (
@@ -59,16 +62,30 @@ export function DashboardPage(): ReactElement {
         ) : (
           <Card className="p-0 divide-y divide-gray-100">
             {isLoading ? (
-              Array.from({ length: SKELETON_COUNT }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 px-4 py-3.5 animate-pulse">
-                  <div className="h-4 w-4 rounded bg-gray-200 shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3.5 w-2/3 rounded bg-gray-200" />
-                    <div className="h-3 w-1/3 rounded bg-gray-100" />
-                  </div>
-                  <div className="h-5 w-20 rounded-full bg-gray-200 shrink-0" />
+              <>
+                <div className="md:hidden">
+                  {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 px-4 py-3.5 animate-pulse">
+                      <div className="h-4 w-4 rounded bg-gray-200 shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3.5 w-2/3 rounded bg-gray-200" />
+                        <div className="h-3 w-1/3 rounded bg-gray-100" />
+                      </div>
+                      <div className="h-5 w-20 rounded-full bg-gray-200 shrink-0" />
+                    </div>
+                  ))}
                 </div>
-              ))
+                <div className="hidden animate-pulse md:block">
+                  <div className="grid grid-cols-5 gap-4 border-b border-gray-100 bg-gray-50 px-5 py-3">
+                    {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-3 rounded bg-gray-200" />)}
+                  </div>
+                  {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+                    <div key={i} className="grid grid-cols-5 gap-4 border-b border-gray-100 px-5 py-4">
+                      {Array.from({ length: 5 }).map((_, column) => <div key={column} className="h-4 rounded bg-gray-100" />)}
+                    </div>
+                  ))}
+                </div>
+              </>
             ) : orders.length === 0 ? (
               <div className="flex flex-col items-center gap-4 p-12 text-center">
                 <PackagePlus className="h-10 w-10 text-gray-300" />
@@ -81,7 +98,14 @@ export function DashboardPage(): ReactElement {
                 </Button>
               </div>
             ) : (
-              orders.map((row) => <ShipmentRow key={row.id} row={row} />)
+              <>
+                <div className="md:hidden">
+                  {orders.map((row) => (
+                    <ShipmentRow key={row.id} row={row} onOpen={setSelectedShipmentId} />
+                  ))}
+                </div>
+                <ShipmentTable orders={orders} onOpen={setSelectedShipmentId} />
+              </>
             )}
           </Card>
         )}
@@ -96,6 +120,12 @@ export function DashboardPage(): ReactElement {
           />
         )}
       </div>
+      {selectedShipmentId && (
+        <ShipmentDetailsModal
+          orderId={selectedShipmentId}
+          onClose={() => setSelectedShipmentId(null)}
+        />
+      )}
     </AppLayout>
   );
 }

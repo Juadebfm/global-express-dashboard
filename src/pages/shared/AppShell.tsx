@@ -7,7 +7,7 @@ import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-r
 import type { DashboardData } from '@/types';
 import { AppLayout } from '@/components/layout';
 import { ROUTES } from '@/constants';
-import { useAuth } from '@/hooks';
+import { useAuth, useCurrentUserAvatar } from '@/hooks';
 
 interface AppShellProps {
   data: DashboardData | null;
@@ -30,6 +30,7 @@ export function AppShell({
   const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { isAuthenticated, user: authUser } = useAuth();
+  const currentAvatarUrl = useCurrentUserAvatar();
   const { isSignedIn: isClerkSignedIn } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
 
@@ -40,9 +41,9 @@ export function AppShell({
           ? `${authUser.firstName ?? ''} ${authUser.lastName ?? ''}`.trim()
           : clerkUser?.fullName || clerkUser?.firstName) || data?.user.displayName || 'User',
       email: authUser?.email || clerkUser?.emailAddresses[0]?.emailAddress || data?.user.email || '',
-      avatarUrl: clerkUser?.imageUrl || data?.user.avatarUrl || '/images/favicon.svg',
+      avatarUrl: authUser?.avatarUrl ?? currentAvatarUrl ?? clerkUser?.imageUrl ?? data?.user.avatarUrl ?? null,
     }),
-    [authUser, clerkUser, data]
+    [authUser, clerkUser, currentAvatarUrl, data]
   );
 
   const shouldShowError = !isLoading && (requireData ? (!data || !!error) : !!error);

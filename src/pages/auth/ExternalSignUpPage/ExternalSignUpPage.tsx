@@ -25,11 +25,13 @@ import { ROUTES } from '@/constants';
 import { useLanguage } from '@/hooks';
 import { ApiError, apiPatch } from '@/lib/apiClient';
 import {
+  checkAccountAvailability,
   syncClerkAccount,
   updateMyNotificationPreferences,
 } from '@/services';
 
 type SignUpStep = 'details' | 'verify';
+type AccountIdentityField = 'email' | 'phone';
 
 type CountryOption = {
   code: Country;
@@ -108,6 +110,28 @@ class SignUpSessionLostError extends Error {
     super(message);
     this.name = 'SignUpSessionLostError';
   }
+}
+
+class SyncConflictError extends Error {
+  field: AccountIdentityField;
+
+  constructor(message: string, field: AccountIdentityField) {
+    super(message);
+    this.name = 'SyncConflictError';
+    this.field = field;
+  }
+}
+
+function getProblemIdentityField(error: ApiError): AccountIdentityField | null {
+  const explicitField = error.problem?.field;
+  if (explicitField === 'email' || explicitField === 'phone') {
+    return explicitField;
+  }
+
+  const pathField = error.problem?.errors
+    ?.map((entry) => entry.path[0])
+    .find((field): field is AccountIdentityField => field === 'email' || field === 'phone');
+  return pathField ?? null;
 }
 
 function extractMissingFields(payload: unknown): string[] {
@@ -324,6 +348,9 @@ export function ExternalSignUpPage(): ReactElement {
    */
   const [showSessionLostModal, setShowSessionLostModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingAccountDetails, setIsCheckingAccountDetails] = useState(false);
+  const [isPreparingSecureVerification, setIsPreparingSecureVerification] = useState(false);
+  const [shouldRenderClerkCaptcha, setShouldRenderClerkCaptcha] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [needsFinishSetupRetry, setNeedsFinishSetupRetry] = useState(false);
   const [isFinishingSetup, setIsFinishingSetup] = useState(false);
@@ -359,6 +386,13 @@ export function ExternalSignUpPage(): ReactElement {
     setErrors((prev) => ({ ...prev, [key]: '' }));
   };
 
+  const showFieldError = (field: AccountIdentityField, message: string) => {
+    setErrors((prev) => ({ ...prev, [field]: message }));
+    window.requestAnimationFrame(() => {
+      document.getElementById(`signup-${field}`)?.focus();
+    });
+  };
+
   const syncCurrentSession = useCallback(async (): Promise<string> => {
     const token = await getToken();
     if (!token) {
@@ -373,6 +407,13 @@ export function ExternalSignUpPage(): ReactElement {
       await syncClerkAccount(token);
       return token;
     } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        const field = getProblemIdentityField(err);
+        if (field) {
+          throw new SyncConflictError(err.problem?.detail || err.message, field);
+        }
+      }
+
       if (err instanceof ApiError && err.status === 422) {
         // BE Problem Details may carry validation errors in
         // `problem.errors[].path` (path segments), but older shapes
@@ -438,6 +479,12 @@ export function ExternalSignUpPage(): ReactElement {
       setNeedsFinishSetupRetry(false);
       setStep('details');
     } catch (error) {
+      if (error instanceof SyncConflictError) {
+        setNeedsFinishSetupRetry(false);
+        setStep('details');
+        showFieldError(error.field, error.message);
+        return;
+      }
       if (error instanceof SyncValidationError) {
         setNeedsFinishSetupRetry(false);
         setStep('details');
@@ -500,6 +547,12 @@ export function ExternalSignUpPage(): ReactElement {
         try {
           token = await syncCurrentSession();
         } catch (error) {
+          if (error instanceof SyncConflictError) {
+            setNeedsFinishSetupRetry(false);
+            setStep('details');
+            showFieldError(error.field, error.message);
+            return;
+          }
           if (error instanceof SyncValidationError) {
             setNeedsFinishSetupRetry(false);
             setStep('details');
@@ -613,6 +666,8 @@ export function ExternalSignUpPage(): ReactElement {
       return;
     }
 
+    let availabilityCheckStarted = false;
+    let availabilityCheckCompleted = false;
     setIsSubmitting(true);
     try {
       if (isSignedIn) {
@@ -625,6 +680,38 @@ export function ExternalSignUpPage(): ReactElement {
         setFormError('Sign up is not ready yet. Please try again.');
         return;
       }
+
+      setIsCheckingAccountDetails(true);
+      availabilityCheckStarted = true;
+      const availability = await checkAccountAvailability({
+        email: form.email.trim(),
+        phone: buildE164(form.phone),
+      });
+
+      if (!availability.emailAvailable || !availability.phoneAvailable) {
+        const availabilityErrors: Record<string, string> = {};
+        if (!availability.emailAvailable) {
+          availabilityErrors.email =
+            'An account already exists with this email. Sign in or use a different email address.';
+        }
+        if (!availability.phoneAvailable) {
+          availabilityErrors.phone = 'This phone number is already in use. Use a different number.';
+        }
+        setErrors((prev) => ({ ...prev, ...availabilityErrors }));
+        const firstUnavailableField = !availability.emailAvailable ? 'email' : 'phone';
+        window.requestAnimationFrame(() => {
+          document.getElementById(`signup-${firstUnavailableField}`)?.focus();
+        });
+        return;
+      }
+
+      availabilityCheckCompleted = true;
+      setIsCheckingAccountDetails(false);
+      setIsPreparingSecureVerification(true);
+      setShouldRenderClerkCaptcha(true);
+      // Mount Clerk's CAPTCHA target only after the account identities pass
+      // the backend check, then yield one paint before creating the signup.
+      await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
 
       await signUp.create({
         firstName: form.firstName.trim() || undefined,
@@ -656,6 +743,40 @@ export function ExternalSignUpPage(): ReactElement {
         return;
       }
 
+      if (error instanceof SyncConflictError) {
+        showFieldError(error.field, error.message);
+        return;
+      }
+
+      if (availabilityCheckStarted && !availabilityCheckCompleted) {
+        if (error instanceof ApiError && error.status === 422) {
+          const field = getProblemIdentityField(error);
+          if (field) {
+            showFieldError(
+              field,
+              field === 'email'
+                ? 'Enter a valid email address.'
+                : 'Enter a valid phone number including the country code.',
+            );
+          } else {
+            setErrors((prev) => ({
+              ...prev,
+              email: 'Check the email address and try again.',
+              phone: 'Check the phone number and try again.',
+            }));
+          }
+          return;
+        }
+
+        if (error instanceof ApiError && error.status === 429) {
+          setFormError('Too many attempts. Please wait a minute and try again.');
+          return;
+        }
+
+        setFormError('We could not check your account details. Please try again.');
+        return;
+      }
+
       // Clerk's errors are standardised — branch on `code` for the cases
       // that warrant a special UX (e.g. duplicate email → "Sign in instead?"
       // CTA rendered below the banner). Everything else falls through to
@@ -673,6 +794,9 @@ export function ExternalSignUpPage(): ReactElement {
       setFormError(getErrorMessage(error));
     } finally {
       setIsSubmitting(false);
+      setIsCheckingAccountDetails(false);
+      setIsPreparingSecureVerification(false);
+      setShouldRenderClerkCaptcha(false);
     }
   };
 
@@ -707,7 +831,8 @@ export function ExternalSignUpPage(): ReactElement {
     value: string,
     onChange: (value: string) => void,
     error?: string,
-    disabled?: boolean
+    disabled?: boolean,
+    inputId?: string,
   ) => (
     <div className="space-y-1.5">
       <label className="block text-sm font-medium text-gray-700">
@@ -720,6 +845,7 @@ export function ExternalSignUpPage(): ReactElement {
           isError={!!error}
         />
         <input
+          id={inputId}
           type="tel"
           value={value}
           onChange={(event) => onChange(normalizeDigits(event.target.value))}
@@ -865,6 +991,7 @@ export function ExternalSignUpPage(): ReactElement {
             )}
 
             <form onSubmit={handleDetailsSubmit} className="space-y-4">
+              <fieldset disabled={isSubmitting} className="m-0 min-w-0 space-y-4 border-0 p-0">
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label={t('externalSignUp.firstName')}
@@ -894,6 +1021,7 @@ export function ExternalSignUpPage(): ReactElement {
               />
 
               <Input
+                id="signup-email"
                 label={t('externalSignUp.emailLabel')}
                 type="email"
                 placeholder={t('externalSignUp.emailPlaceholder')}
@@ -925,7 +1053,9 @@ export function ExternalSignUpPage(): ReactElement {
                     updateField('whatsappNumber', value);
                   }
                 },
-                errors.phone
+                errors.phone,
+                false,
+                'signup-phone',
               )}
 
               <div className="space-y-2">
@@ -1002,16 +1132,30 @@ export function ExternalSignUpPage(): ReactElement {
                 onChange={(event) => updateField('consentMarketing', event.target.checked)}
               />
 
-              {!isSignedIn && <div id="clerk-captcha" data-cl-theme="light" data-cl-size="flexible" />}
+              {!isSignedIn && shouldRenderClerkCaptcha && (
+                <div className="space-y-2" aria-live="polite">
+                  {isPreparingSecureVerification && (
+                    <p className="text-sm text-gray-600">Preparing secure verification…</p>
+                  )}
+                  <div id="clerk-captcha" data-cl-theme="light" data-cl-size="flexible" />
+                </div>
+              )}
+              </fieldset>
 
               <Button
                 type="submit"
                 className={`auth-cta-btn w-full ${buttonTextClassName}`}
                 size="lg"
                 isLoading={isSubmitting}
-                disabled={!isDetailsStepValid}
+                disabled={!isDetailsStepValid || isSubmitting}
               >
-                {isSignedIn ? t('externalSignUp.completeRegistration') : t('externalSignUp.continueButton')}
+                {isCheckingAccountDetails
+                  ? 'Checking account details…'
+                  : isPreparingSecureVerification
+                    ? 'Preparing secure verification…'
+                    : isSignedIn
+                      ? t('externalSignUp.completeRegistration')
+                      : t('externalSignUp.continueButton')}
               </Button>
             </form>
 

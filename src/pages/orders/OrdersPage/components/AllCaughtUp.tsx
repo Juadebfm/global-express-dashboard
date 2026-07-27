@@ -1,9 +1,19 @@
 import type { ReactElement } from 'react';
-import { AlertTriangle, Box, CheckCircle2, CreditCard, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, Box, CheckCircle2, ClipboardCheck, CreditCard, PackageCheck, ShieldAlert } from 'lucide-react';
 import { cn } from '@/utils';
 import type { QueueKind } from './QueueShell';
 
 const QUEUE_META: Record<QueueKind, { label: string; done: string; Icon: React.FC<{ className?: string }> }> = {
+  preorder: {
+    label: 'New orders',
+    done: 'All new bookings have been registered for warehouse handling.',
+    Icon: ({ className }) => <ClipboardCheck className={className} />,
+  },
+  arrival: {
+    label: 'Awaiting arrivals',
+    done: 'No registered orders are waiting for their goods to arrive at the warehouse.',
+    Icon: ({ className }) => <PackageCheck className={className} />,
+  },
   verify: {
     label: 'Verify packages',
     done: "All packages have been verified — nothing left to process right now.",

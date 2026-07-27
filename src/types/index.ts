@@ -17,6 +17,9 @@ export type {
   CreateInternalUserPayload,
   StaffProfilePayload,
   ProfileRequirements,
+  AvatarPresignRequest,
+  AvatarPresignResponse,
+  AvatarUpdateResult,
 } from './user.types';
 
 export type {
@@ -312,6 +315,8 @@ export type {
   PublicShipmentTypeIntake,
   PublicShipmentType,
   PublicShipmentTypesResult,
+  AccountAvailabilityPayload,
+  AccountAvailabilityResult,
   NewsletterSubscribePayload,
   NewsletterSubscribeResult,
   PublicD2dIntakePayload,

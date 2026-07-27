@@ -23,3 +23,4 @@ export {
   getStates,
   getCities,
 } from './locationData';
+export { DESTINATION_OFFICE, ORIGIN_WAREHOUSE } from './shippingLocations';

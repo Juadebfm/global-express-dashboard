@@ -1,4 +1,5 @@
 import type { PublicShippingEstimate } from '@/types';
+export { DESTINATION_OFFICE, ORIGIN_WAREHOUSE } from '@/constants';
 
 export type StepKey = 'basics' | 'recipient' | 'review';
 
@@ -80,15 +81,3 @@ export const SHIPMENT_TYPE_KEYS = [
   { value: 'ocean', labelKey: 'newShipment.shipmentType.ocean' },
   { value: 'd2d', labelKey: 'newShipment.shipmentType.d2d' },
 ];
-
-export const ORIGIN_WAREHOUSE = {
-  company: 'GLOBAL EXPRESS (Korea)',
-  address: '76-25 Daehwa-ro, Ilsanseo-gu, Goyang-si, Gyeonggi-do (Bldg. B)',
-  phone: '+82-10-4710-5920',
-};
-
-export const DESTINATION_OFFICE = {
-  company: 'GLOBAL EXPRESS (Lagos)',
-  address: '58B Awoniyi Elemo Street, Ajao Estate, Lagos',
-  phone: '+234-000-000-0000',
-};

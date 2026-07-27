@@ -1,0 +1,1 @@
+export { SupplierAccountPage } from './SupplierAccountPage';

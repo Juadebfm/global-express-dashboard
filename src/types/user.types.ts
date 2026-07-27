@@ -1,6 +1,7 @@
 export interface User {
   id: string;
   email: string;
+  avatarUrl: string | null;
   firstName: string;
   lastName: string;
   // Roles the BE can return on /auth/me. The FE has historically used
@@ -55,6 +56,7 @@ export interface CreateInternalUserPayload {
 export interface CustomerProfile {
   id: string;
   email: string;
+  avatarUrl: string | null;
   firstName: string | null;
   lastName: string | null;
   businessName: string | null;
@@ -150,4 +152,19 @@ export interface StaffProfilePayload {
 
 export interface ProfileRequirements {
   requireNationalId: boolean;
+}
+
+export interface AvatarPresignRequest {
+  contentType: 'image/jpeg' | 'image/png' | 'image/webp';
+}
+
+export interface AvatarPresignResponse {
+  uploadUrl: string;
+  r2Key: string;
+  publicUrl: string;
+  expiresInSeconds: number;
+}
+
+export interface AvatarUpdateResult {
+  avatarUrl: string | null;
 }

@@ -24,3 +24,5 @@ export { VerifyQueueStep } from './VerifyQueueStep';
 export { HoldQueueStep } from './HoldQueueStep';
 export { BatchQueueStep } from './BatchQueueStep';
 export { PaymentQueueStep } from './PaymentQueueStep';
+export { PreorderQueueStep } from './PreorderQueueStep';
+export { AwaitingArrivalQueueStep } from './AwaitingArrivalQueueStep';

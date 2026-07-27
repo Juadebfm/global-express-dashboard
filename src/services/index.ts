@@ -13,6 +13,10 @@ export {
   getInternalMe,
   logout,
   syncClerkAccount,
+  presignMyAvatar,
+  confirmMyAvatar,
+  removeMyAvatar,
+  uploadAvatarFile,
   getMyProfile,
   getMyProfileCompleteness,
   getMyNotificationPreferences,
@@ -76,6 +80,7 @@ export type { OrderTimeline, OrderTimelineEvent, GoodsBreakdownItem, OrderEstima
 export {
   estimateShipping,
   getPublicShipmentTypes,
+  checkAccountAvailability,
   subscribeToNewsletter,
   submitPublicD2dIntake,
 } from './publicService';
