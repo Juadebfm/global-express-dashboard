@@ -348,7 +348,7 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.TEAM}
         element={
-          <ProtectedRoute allowedRoles={['admin', 'superadmin']} redirectTo={ROUTES.DASHBOARD}>
+          <ProtectedRoute allowedRoles={['superadmin']} redirectTo={ROUTES.DASHBOARD}>
             <TeamPage />
           </ProtectedRoute>
         }
@@ -412,7 +412,7 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.REPORTS}
         element={
-          <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+          <ProtectedRoute allowedRoles={['superadmin']}>
             <ReportsPage />
           </ProtectedRoute>
         }
@@ -432,7 +432,7 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.ADMIN_IMPORTS}
         element={
-          <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+          <ProtectedRoute allowedRoles={['superadmin']}>
             <AdminImportsPage />
           </ProtectedRoute>
         }

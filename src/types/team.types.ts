@@ -1,4 +1,6 @@
-export type TeamRole = 'staff' | 'admin' | 'superadmin';
+// Backend only ever assigns 'staff' or 'superadmin' — there is no 'admin'
+// role in the database (user_role enum: superadmin | staff | user | supplier).
+export type TeamRole = 'staff' | 'superadmin';
 
 export interface TeamPermissions {
   makeAdmin: boolean;
@@ -21,7 +23,7 @@ export interface ApiTeamMember {
   lastName: string;
   displayName?: string;
   email: string;
-  role: 'staff' | 'admin' | 'superadmin';
+  role: TeamRole;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

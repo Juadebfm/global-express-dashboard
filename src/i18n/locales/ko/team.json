@@ -6,12 +6,12 @@
   "searchPlaceholder": "검색",
   "accessRestricted": {
     "title": "접근 제한",
-    "message": "팀 관리는 관리자 및 최고 관리자 계정만 사용할 수 있습니다."
+    "message": "팀 관리는 최고 관리자 계정만 사용할 수 있습니다."
   },
   "tabs": {
     "all": "전체 팀",
-    "admin": "관리자",
-    "nonAdmin": "비관리자"
+    "admin": "최고 관리자",
+    "nonAdmin": "직원"
   },
   "roleLabels": {
     "staff": "직원",

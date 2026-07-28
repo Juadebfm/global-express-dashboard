@@ -16,7 +16,7 @@ import { useAuth } from './useAuth';
 const TOKEN_KEY = 'globalxpress_token';
 
 function derivePermissions(member: ApiTeamMember): TeamPermissions {
-  const makeAdmin = member.role === 'admin' || member.role === 'superadmin';
+  const makeAdmin = member.role === 'superadmin';
   return {
     makeAdmin,
     canTransfer: makeAdmin,

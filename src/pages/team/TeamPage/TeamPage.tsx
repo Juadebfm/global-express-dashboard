@@ -38,7 +38,6 @@ const emptyForm: TeamFormState = {
 
 const roleLabels: Record<TeamRole, string> = {
   staff: 'Staff',
-  admin: 'Admin',
   superadmin: 'Super Admin',
 };
 
@@ -54,7 +53,7 @@ const permissionSummary = (member: TeamMember): string => {
   if (member.role === 'superadmin') {
     return 'All Access (Owner)';
   }
-  if (member.role === 'admin' || member.permissions.makeAdmin) {
+  if (member.permissions.makeAdmin) {
     return 'Elevated Access';
   }
   const labels: string[] = [];
@@ -117,13 +116,9 @@ export function TeamPage(): ReactElement {
   };
 
   const isSuperAdmin = useCan('app.superadmin');
-  // 'isAdmin' here historically meant the literal admin role (not "admin
-  // or above"). Keep the same semantics — the existing canEditMember /
-  // canRemoveMember logic branches on it as a distinct middle tier.
-  const isAdmin = user?.role === 'admin';
   const hasAccess = useCan('team.view');
 
-  const roleOptions: TeamRole[] = isSuperAdmin ? ['staff', 'admin', 'superadmin'] : ['staff'];
+  const roleOptions: TeamRole[] = isSuperAdmin ? ['staff', 'superadmin'] : ['staff'];
 
   const resolvedMembers = useMemo(() => {
     if (!user || user.role !== 'superadmin') return members;
@@ -138,7 +133,7 @@ export function TeamPage(): ReactElement {
   const filteredMembers = useMemo(() => {
     const base = resolvedMembers.filter((member) => {
       if (activeTab === 'admin') {
-        return member.role === 'admin' || member.role === 'superadmin';
+        return member.role === 'superadmin';
       }
       if (activeTab === 'non-admin') {
         return member.role === 'staff';
@@ -189,10 +184,10 @@ export function TeamPage(): ReactElement {
     setFormState((prev) => ({ ...prev, role: value }));
   };
 
-  const canEditMember = (member: TeamMember): boolean => {
-    if (isSuperAdmin) return true;
-    return isAdmin && member.role === 'staff';
-  };
+  // Only superadmin can reach this page at all (team.view requires
+  // app.admin — see src/lib/permissions.ts — and there is no 'admin' role
+  // in the backend), so editing has only ever been a superadmin action.
+  const canEditMember = (): boolean => isSuperAdmin;
 
   const canRemoveMember = (member: TeamMember): boolean => {
     if (!isSuperAdmin) return false;
@@ -353,7 +348,7 @@ export function TeamPage(): ReactElement {
                   {/* Mobile: card list */}
                   <div className="divide-y divide-gray-100 md:hidden">
                     {filteredMembers.map((member) => {
-                      const canEdit = canEditMember(member);
+                      const canEdit = canEditMember();
                       const canRemove = canRemoveMember(member);
                       return (
                         <div
@@ -443,7 +438,7 @@ export function TeamPage(): ReactElement {
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white">
                     {filteredMembers.map((member) => {
-                      const canEdit = canEditMember(member);
+                      const canEdit = canEditMember();
                       const canRemove = canRemoveMember(member);
                       return (
                         <tr
@@ -596,10 +591,10 @@ export function TeamPage(): ReactElement {
                   <button
                     type="button"
                     onClick={() => openEdit(selectedMember)}
-                    disabled={!canEditMember(selectedMember)}
+                    disabled={!canEditMember()}
                     className={cn(
                       'rounded-xl px-6 py-2.5 text-sm font-semibold text-white',
-                      canEditMember(selectedMember)
+                      canEditMember()
                         ? 'bg-brand-500 hover:bg-brand-600'
                         : 'cursor-not-allowed bg-gray-200 text-gray-400'
                     )}

@@ -53,7 +53,12 @@ export type Action =
   | 'settings.editPackaging';
 
 const STAFF_PLUS: ReadonlySet<Role> = new Set(['staff', 'admin', 'superadmin']);
-const ADMIN_PLUS: ReadonlySet<Role> = new Set(['admin', 'superadmin']);
+// There is no 'admin' role in the backend (user_role enum: superadmin |
+// staff | user | supplier) — 'admin' can never be a real user's role, so
+// this is equivalent to SUPER_ONLY in practice. Kept as a separate action
+// name (app.admin) rather than merged, in case a real admin tier gets
+// added later; the role set itself must not include the phantom value.
+const ADMIN_PLUS: ReadonlySet<Role> = new Set(['superadmin']);
 const SUPER_ONLY: ReadonlySet<Role> = new Set(['superadmin']);
 
 /**

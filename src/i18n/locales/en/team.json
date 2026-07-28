@@ -6,12 +6,12 @@
   "searchPlaceholder": "Search",
   "accessRestricted": {
     "title": "Access restricted",
-    "message": "Team management is available to Admin and Super Admin accounts only."
+    "message": "Team management is available to Super Admin accounts only."
   },
   "tabs": {
     "all": "All team",
-    "admin": "Admin",
-    "nonAdmin": "Non Admin"
+    "admin": "Super Admin",
+    "nonAdmin": "Staff"
   },
   "roleLabels": {
     "staff": "Staff",
