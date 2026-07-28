@@ -136,16 +136,13 @@
   "images": {
     "title": "Package Images",
     "selectFiles": "Select files",
-    "filesSelected": "{{count}} selected",
-    "noFiles": "No files selected",
-    "upload": "Upload",
+    "uploading": "Uploading…",
     "loading": "Loading images...",
     "empty": "No images uploaded yet.",
     "delete": "Delete",
     "uploadSuccess": "Uploaded {{count}} image(s).",
     "deleteSuccess": "Image deleted.",
     "errors": {
-      "noFiles": "Select at least one image.",
       "uploadFailed": "Upload failed.",
       "deleteFailed": "Failed to delete image."
     }

@@ -1,5 +1,5 @@
 import type { ReactElement, ReactNode } from 'react';
-import { Loader2, LogOut, SkipForward } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/utils';
 
 export type QueueKind = 'preorder' | 'arrival' | 'verify' | 'holds' | 'batch' | 'payment' | 'escalated';
@@ -51,16 +51,15 @@ export function QueueShell({
   const canSkip = !!onSkip && totalCount > 1;
 
   return (
-    <div className="pb-24">
+    <div>
       {/* Top bar */}
       <div className="mb-4 flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3">
         <button
           type="button"
           onClick={onExit}
-          className="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+          className="shrink-0 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900"
         >
-          <LogOut className="h-4 w-4" />
-          Exit
+          Back
         </button>
 
         <span className="hidden flex-1 text-center text-sm font-semibold text-gray-800 sm:block">
@@ -94,10 +93,9 @@ export function QueueShell({
           <button
             type="button"
             onClick={onSkip}
-            className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            className="shrink-0 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
           >
             Skip
-            <SkipForward className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
@@ -105,9 +103,12 @@ export function QueueShell({
       {/* Content */}
       {children}
 
-      {/* Fixed bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-gray-200 bg-white px-6 py-3 lg:left-28">
-        <div className="mx-auto flex max-w-screen-xl items-center gap-3">
+      {/* Bottom action bar — sticky to the containing panel (not the
+          viewport), so it stays within the right pane's own width/scroll on
+          desktop and naturally spans full width on mobile where the panel
+          already is the full viewport. */}
+      <div className="sticky bottom-0 z-20 mt-4 border-t border-gray-200 bg-white px-4 py-3">
+        <div className="flex items-center gap-3">
           {hint && (
             <p className="min-w-0 flex-1 truncate text-sm text-gray-500">
               {hint}

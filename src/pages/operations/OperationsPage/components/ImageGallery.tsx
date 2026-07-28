@@ -1,9 +1,8 @@
-import type { FormEvent, ReactElement } from 'react';
-import { useRef, useState, useEffect, useMemo, useCallback } from 'react';
+import type { ReactElement } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { Camera, Image as ImageIcon, Maximize2, Trash2, Upload, X, ImageOff } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { Image as ImageIcon, Maximize2, X, ImageOff } from 'lucide-react';
 import { cn } from '@/utils';
 import { formatDate } from '@/utils';
 import type { OrderImage } from '@/types';
@@ -59,7 +58,6 @@ export function ImageGallery({
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
-  const [files, setFiles] = useState<File[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
@@ -84,25 +82,18 @@ export function ImageGallery({
     }
   }, [queryClient, orderId]);
 
-  const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
-  useEffect(() => () => { previews.forEach((u) => URL.revokeObjectURL(u)); }, [previews]);
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
-    e.preventDefault();
+  const handlePicked = async (picked: File[]): Promise<void> => {
+    if (picked.length === 0) return;
     setNotice(null);
     setUploadError(null);
-    if (files.length === 0) {
-      setUploadError(t('images.errors.noFiles'));
-      return;
-    }
     try {
-      await onUpload(orderId, files);
-      setNotice(t('images.uploadSuccess', { count: files.length }));
-      setFiles([]);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      if (cameraInputRef.current) cameraInputRef.current.value = '';
+      await onUpload(orderId, picked);
+      setNotice(t('images.uploadSuccess', { count: picked.length }));
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : t('images.errors.uploadFailed'));
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
     }
   };
 
@@ -120,36 +111,37 @@ export function ImageGallery({
   return (
     <>
     {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
-    <form className="rounded-2xl border border-gray-200 bg-white p-5" onSubmit={(e) => void handleSubmit(e)}>
+    <div className="rounded-2xl border border-gray-200 bg-white p-5">
       <h3 className="text-base font-semibold text-gray-900">{t('images.title')}</h3>
 
       {canUpload && (
         <>
-          {/* Upload controls */}
+          {/* Upload controls — selecting or capturing a photo uploads it immediately */}
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            {/* Select from library */}
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-              <Upload className="h-4 w-4" />
+            <label
+              className={cn(
+                'inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50',
+                isUploading && 'pointer-events-none opacity-50',
+              )}
+            >
               {t('images.selectFiles')}
               <input
                 ref={fileInputRef}
                 type="file"
                 className="hidden"
                 multiple
+                disabled={isUploading}
                 accept="image/jpeg,image/jpg,image/png,image/webp"
-                onChange={(e) => {
-                  const picked = Array.from(e.target.files ?? []);
-                  if (picked.length > 0) {
-                    setFiles((prev) => [...prev, ...picked]);
-                    setUploadError(null);
-                  }
-                }}
+                onChange={(e) => void handlePicked(Array.from(e.target.files ?? []))}
               />
             </label>
 
-            {/* Take photo — each capture appends to the queue */}
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-              <Camera className="h-4 w-4" />
+            <label
+              className={cn(
+                'inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50',
+                isUploading && 'pointer-events-none opacity-50',
+              )}
+            >
               Take photo
               <input
                 ref={cameraInputRef}
@@ -157,48 +149,17 @@ export function ImageGallery({
                 className="hidden"
                 accept="image/*"
                 capture="environment"
-                onChange={(e) => {
-                  const captured = Array.from(e.target.files ?? []);
-                  if (captured.length > 0) {
-                    setFiles((prev) => [...prev, ...captured]);
-                    setUploadError(null);
-                    // Reset so the same input fires again next tap
-                    if (cameraInputRef.current) cameraInputRef.current.value = '';
-                  }
-                }}
+                disabled={isUploading}
+                onChange={(e) => void handlePicked(Array.from(e.target.files ?? []))}
               />
             </label>
 
-            <span className="text-xs text-gray-500">
-              {files.length > 0 ? t('images.filesSelected', { count: files.length }) : t('images.noFiles')}
-            </span>
-            <Button type="submit" size="sm" isLoading={isUploading}>
-              {t('images.upload')}
-            </Button>
+            {isUploading && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+                {t('images.uploading')}
+              </span>
+            )}
           </div>
-
-          {/* Selected file previews */}
-          {previews.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {previews.map((src, i) => (
-                <div key={src} className="relative h-20 w-20 overflow-hidden rounded-xl border border-brand-200 ring-2 ring-brand-100">
-                  <img src={src} alt={files[i]?.name} className="h-full w-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const next = files.filter((_, idx) => idx !== i);
-                      setFiles(next);
-                      setUploadError(null);
-                    }}
-                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
-                    aria-label="Remove"
-                  >
-                    <span className="text-[10px] font-bold leading-none">✕</span>
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
 
           {notice && <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</p>}
           {uploadError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{uploadError}</p>}
@@ -274,7 +235,6 @@ export function ImageGallery({
                         onClick={() => void handleDelete(image.id)}
                         className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-red-300 hover:text-red-200"
                       >
-                        <Trash2 className="h-3 w-3" />
                         {t('images.delete')}
                       </button>
                     )}
@@ -285,7 +245,7 @@ export function ImageGallery({
           </div>
         )}
       </div>
-    </form>
+    </div>
     </>
   );
 }

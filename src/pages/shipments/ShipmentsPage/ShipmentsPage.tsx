@@ -6,7 +6,6 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { AppShell } from '@/pages/shared';
 import {
   useAuth,
-  useCan,
   useDashboardData,
   useRecordShipmentIntake,
   useSearch,
@@ -23,6 +22,7 @@ import {
 import { Pagination, TableRowsSkeleton } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import i18n from '@/i18n/i18n';
+import { buildCsv, copyCsvToClipboard, downloadCsv, exportDate } from '@/pages/operations/OperationsPage/utils/csvExport';
 
 const matchesQuery = (shipment: ShipmentRecord, query: string): boolean => {
   if (!query) return true;
@@ -39,52 +39,29 @@ const matchesQuery = (shipment: ShipmentRecord, query: string): boolean => {
   return haystack.includes(query.toLowerCase());
 };
 
-const escapeCsv = (value: string | number): string => {
-  const text = String(value);
-  if (/["\n,]/.test(text)) {
-    return `"${text.replace(/"/g, '""')}"`;
-  }
-  return text;
-};
-
-const exportDate = (value: string | null | undefined): string => {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toISOString().slice(0, 10);
-};
-
-const buildCsv = (
+function buildShipmentsCsv(
   rows: ShipmentRecord[],
   statusLabels: Record<StatusCategory, string>,
   csvHeaders: string[],
-): string => {
-  const lines = rows.map((shipment) =>
-    [
-      shipment.sku,
-      shipment.customer,
-      shipment.origin,
-      shipment.destination,
-      exportDate(shipment.departureDate),
-      exportDate(shipment.etaDate),
-      shipment.statusLabel || statusLabels[shipment.status],
-      shipment.mode,
-    ]
-      .map(escapeCsv)
-      .join(',')
-  );
-
-  return [csvHeaders.join(','), ...lines].join('\n');
-};
+): string {
+  return buildCsv(rows, csvHeaders, (shipment) => [
+    shipment.sku,
+    shipment.customer,
+    shipment.origin,
+    shipment.destination,
+    exportDate(shipment.departureDate),
+    exportDate(shipment.etaDate),
+    shipment.statusLabel || statusLabels[shipment.status],
+    shipment.mode,
+  ]);
+}
 
 export function ShipmentsPage(): ReactElement {
   const { t } = useTranslation('shipments');
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn } = useClerkAuth();
   const isCustomer = isClerkSignedIn && !user;
-  const isOperator = useCan('app.operator');
   const [activeFilter, setActiveFilter] = useState<ShipmentFilterTab['value']>('all');
-  const operatorStatusV2 = isOperator && activeFilter !== 'all' ? activeFilter : undefined;
 
   // `?page=N` in the URL is the source of truth for the current page so a
   // refresh / deep link / browser-back keeps position. We coerce + clamp to
@@ -109,7 +86,7 @@ export function ShipmentsPage(): ReactElement {
   const { data: dashboardData, isLoading: isDashboardLoading, error: dashboardError } =
     useDashboardData();
   const { data: shipmentsData, isLoading: isShipmentsLoading, error: shipmentsError } =
-    useShipmentsDashboard({ statusV2: operatorStatusV2, page });
+    useShipmentsDashboard({ page });
   const { query, setQuery } = useSearch();
   const navigate = useNavigate();
   const recordIntake = useRecordShipmentIntake();
@@ -307,14 +284,9 @@ export function ShipmentsPage(): ReactElement {
       return;
     }
 
-    const csv = buildCsv(filteredShipments, statusLabels, csvHeaders);
-
-    try {
-      await navigator.clipboard.writeText(csv);
-      setActionMessage(t('actions.copied', { count: filteredShipments.length }));
-    } catch {
-      setActionMessage(t('actions.copyFailed'));
-    }
+    const csv = buildShipmentsCsv(filteredShipments, statusLabels, csvHeaders);
+    const ok = await copyCsvToClipboard(csv);
+    setActionMessage(ok ? t('actions.copied', { count: filteredShipments.length }) : t('actions.copyFailed'));
   };
 
   const handleDownload = (): void => {
@@ -323,24 +295,13 @@ export function ShipmentsPage(): ReactElement {
       return;
     }
 
-    const csv = buildCsv(filteredShipments, statusLabels, csvHeaders);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `shipments-${new Date().toISOString().slice(0, 10)}.csv`;
-    anchor.click();
-    window.URL.revokeObjectURL(url);
+    const csv = buildShipmentsCsv(filteredShipments, statusLabels, csvHeaders);
+    downloadCsv(csv, 'shipments');
     setActionMessage(t('actions.downloaded', { count: filteredShipments.length }));
   };
 
   const handleTrackShipment = (): void => {
     navigate(ROUTES.SHIPMENT_TRACK);
-  };
-
-  const handleOpenShipment = (shipment: ShipmentRecord): void => {
-    if (!isOperator) return;
-    navigate(`/shipments/${shipment.id}`);
   };
 
   const handleSearchChange = (value: string): void => {
@@ -397,7 +358,6 @@ export function ShipmentsPage(): ReactElement {
               onSearchClear={handleSearchClear}
               searchPlaceholder={t('searchPlaceholder')}
               searchMeta={visibleLabel}
-              onRowClick={isOperator ? handleOpenShipment : undefined}
             />
 
             {shipmentsData.pagination.totalPages > 1 && (

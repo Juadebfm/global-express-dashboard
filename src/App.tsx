@@ -1,7 +1,8 @@
 import type { ReactElement } from 'react';
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route, useSearchParams } from 'react-router-dom';
 import { AuthProvider } from '@/store';
+import { useCan } from '@/hooks';
 import { ProtectedRoute } from '@/components/auth';
 import { SupplierRoute } from '@/components/supplier/SupplierRoute';
 import { RouteErrorBoundary } from '@/components/errors';
@@ -44,9 +45,6 @@ const TrackShipmentPage = lazy(() =>
 const NewShipmentPage = lazy(() =>
   import('@/pages/shipments/NewShipmentPage').then((m) => ({ default: m.NewShipmentPage })),
 );
-const ShipmentDetailPage = lazy(() =>
-  import('@/pages/shipments/ShipmentDetailPage').then((m) => ({ default: m.ShipmentDetailPage })),
-);
 const ClientsPage = lazy(() =>
   import('@/pages/clients/ClientsPage').then((m) => ({ default: m.ClientsPage })),
 );
@@ -56,6 +54,8 @@ const ClientWorkbenchPage = lazy(() =>
 const SuppliersPage = lazy(() =>
   import('@/pages/suppliers/SuppliersPage').then((m) => ({ default: m.SuppliersPage })),
 );
+// /orders: staff+ get redirected to /operations; customers render the
+// customer-facing OrdersPage directly (see OrdersRoleRouter below).
 const OrdersPage = lazy(() =>
   import('@/pages/orders/OrdersPage').then((m) => ({ default: m.OrdersPage })),
 );
@@ -154,6 +154,21 @@ const NewsletterSubscribersPage = lazy(() =>
 const D2DMyRequestsPage = lazy(() =>
   import('@/pages/d2d/D2DMyRequestsPage').then((m) => ({ default: m.D2DMyRequestsPage })),
 );
+
+// Staff+ visiting /orders get bounced to /operations (preserving the query
+// string — ?select=<id>, &tab=warehouse, etc. — a bare <Navigate> would drop
+// it, breaking deep links like notifications/batch-detail into an order).
+// Customers get the real customer-facing OrdersPage rendered directly —
+// this is their only in-app path to view shipment detail and pay
+// (ShipmentListSection's "My Shipments" row click still links here).
+function OrdersRoleRouter(): ReactElement {
+  const [searchParams] = useSearchParams();
+  const isOperator = useCan('app.operator');
+  if (isOperator) {
+    return <Navigate to={{ pathname: ROUTES.OPERATIONS, search: searchParams.toString() }} replace />;
+  }
+  return <OrdersPage />;
+}
 
 function AppRoutes(): ReactElement {
   const [launchGateActive, setLaunchGateActive] = useState<boolean>(() => isLaunchGateActive());
@@ -280,17 +295,6 @@ function AppRoutes(): ReactElement {
         }
       />
       <Route
-        path={ROUTES.SHIPMENT_DETAIL}
-        element={
-          <ProtectedRoute
-            allowedRoles={['user', 'staff', 'admin', 'superadmin']}
-            redirectTo={ROUTES.SHIPMENTS}
-          >
-            <ShipmentDetailPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path={ROUTES.CLIENTS}
         element={
           <ProtectedRoute
@@ -323,8 +327,8 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.ORDERS}
         element={
-          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']} redirectTo={ROUTES.DASHBOARD}>
-            <OrdersPage />
+          <ProtectedRoute>
+            <OrdersRoleRouter />
           </ProtectedRoute>
         }
       />

@@ -1,14 +1,6 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
-import {
-  Banknote,
-  Bell,
-  Building2,
-  CheckCircle2,
-  FileText,
-  Loader2,
-  Phone,
-} from 'lucide-react';
+import { Building2, CheckCircle2, Loader2 } from 'lucide-react';
 import {
   useOrderPayments,
   useVerifyOrderPayment,
@@ -19,7 +11,7 @@ import {
 import { cn } from '@/utils';
 import { formatCurrency } from '@/utils';
 import type { ApiPayment } from '@/types';
-import type { OrderView } from '../types';
+import type { OrderView } from '@/pages/shared/orderStatus';
 import { QueueShell } from './QueueShell';
 import { OrderSummaryCard } from './OrderSummaryCard';
 import { ReceiptApprovalPanel } from './ReceiptApprovalPanel';
@@ -64,7 +56,6 @@ function StaffReceiptCard({ payment, orderId }: StaffReceiptCardProps): ReactEle
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
       {/* Receipt header */}
       <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-3">
-        <FileText className="h-4 w-4 text-gray-400" />
         <span className="text-sm font-semibold text-gray-900">Receipt submitted</span>
         <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
           Awaiting supervisor
@@ -114,6 +105,12 @@ function StaffReceiptCard({ payment, orderId }: StaffReceiptCardProps): ReactEle
             <p className="mt-0.5 font-mono text-sm text-gray-700">{payment.metadata.transactionRef}</p>
           </div>
         )}
+        {payment.note && (
+          <div className="col-span-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Customer note</p>
+            <p className="mt-0.5 text-sm text-gray-700">{payment.note}</p>
+          </div>
+        )}
       </div>
 
       {/* Ping section */}
@@ -127,11 +124,7 @@ function StaffReceiptCard({ payment, orderId }: StaffReceiptCardProps): ReactEle
                 onClick={() => void handlePing()}
                 className="flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
               >
-                {ping.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Bell className="h-4 w-4" />
-                )}
+                {ping.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 Ping supervisor
               </button>
               <p className="text-xs text-gray-400">Notify supervisor to confirm payment</p>
@@ -142,10 +135,7 @@ function StaffReceiptCard({ payment, orderId }: StaffReceiptCardProps): ReactEle
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm text-emerald-700">
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-              <span className="font-semibold">Supervisor notified</span>
-            </div>
+            <p className="text-sm font-semibold text-emerald-700">Supervisor notified</p>
             {supervisor && (
               <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
                 <div>
@@ -155,9 +145,8 @@ function StaffReceiptCard({ payment, orderId }: StaffReceiptCardProps): ReactEle
                 {supervisor.phone && (
                   <a
                     href={`tel:${supervisor.phone}`}
-                    className="flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-100"
+                    className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-100"
                   >
-                    <Phone className="h-3.5 w-3.5" />
                     Call directly
                   </a>
                 )}
@@ -208,8 +197,7 @@ function CashForm({ view, onSuccess }: CashFormProps): ReactElement {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-      <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-3">
-        <Banknote className="h-4 w-4 text-gray-400" />
+      <div className="border-b border-gray-100 px-5 py-3">
         <span className="text-sm font-semibold text-gray-900">Record cash payment</span>
       </div>
       <div className="space-y-4 px-5 py-5">

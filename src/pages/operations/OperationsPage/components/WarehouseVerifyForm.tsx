@@ -1,14 +1,14 @@
 import type { FormEvent, ReactElement } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, Info, AlertTriangle, Plus, X, ImageIcon } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { formatCurrency } from '@/utils';
 import { cn } from '@/utils';
 import { useDebounce, useWarehousePricingQuote } from '@/hooks';
 import type { WarehousePricingQuotePayload } from '@/types';
 import type { GoodsBreakdownItem } from '@/services';
-import type { OrderView } from '../types';
-import { mapPackageForm, parsePositive, parsePositiveInt, toIso } from '../types';
+import type { OrderView } from '@/pages/shared/orderStatus';
+import { mapPackageForm, parsePositive, parsePositiveInt, toIso } from '@/pages/shared/orderStatus';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -579,8 +579,7 @@ export function WarehouseVerifyForm({
 
         {/* D2D: missing images gate */}
         {isD2D && missingImages && (
-          <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-            <ImageIcon className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-red-700">No goods images uploaded</p>
               <p className="mt-0.5 text-xs text-red-600">
@@ -599,8 +598,7 @@ export function WarehouseVerifyForm({
 
         {/* Re-verify warning */}
         {isReVerify && (
-          <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
             <div className="text-sm text-amber-800">
               <p className="font-semibold">Re-verifying will recalculate the final charge.</p>
               <p className="mt-0.5">
@@ -670,9 +668,8 @@ export function WarehouseVerifyForm({
             onClick={addRow}
             disabled={!lastRowComplete}
             title={!lastRowComplete ? (isD2D ? 'Fill weight and CBM before adding another package' : 'Fill weight before adding another package') : undefined}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 py-3 text-sm font-medium text-gray-500 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-gray-300 disabled:hover:bg-transparent disabled:hover:text-gray-500"
+            className="flex w-full items-center justify-center rounded-xl border border-dashed border-gray-300 py-3 text-sm font-medium text-gray-500 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-gray-300 disabled:hover:bg-transparent disabled:hover:text-gray-500"
           >
-            <Plus className="h-4 w-4" />
             Add another package
           </button>
         </div>
@@ -691,7 +688,6 @@ export function WarehouseVerifyForm({
                   : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50',
               )}
             >
-              {restricted === 'none' && <CheckCircle2 className="h-4 w-4" />}
               No restricted items
             </button>
             <button
@@ -749,8 +745,7 @@ export function WarehouseVerifyForm({
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-1 text-xs text-gray-400">
-                <Info className="h-3.5 w-3.5 shrink-0" />
+              <div className="text-xs text-gray-400">
                 Backend pricing rules applied
               </div>
             </div>
@@ -808,7 +803,6 @@ export function WarehouseVerifyForm({
             variant="primary"
             isLoading={isPending}
             disabled={isPending || d2dBlocked}
-            leftIcon={!isPending ? <CheckCircle2 className="h-4 w-4" /> : undefined}
           >
             {isReVerify ? 'Update packages & reprice' : 'Mark verified'}
           </Button>

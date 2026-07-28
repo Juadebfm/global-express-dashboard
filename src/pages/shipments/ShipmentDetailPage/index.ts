@@ -1,1 +1,0 @@
-export { ShipmentDetailPage } from './ShipmentDetailPage';

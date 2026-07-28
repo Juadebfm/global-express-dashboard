@@ -1,8 +1,7 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
-import { ClipboardCheck } from 'lucide-react';
 import { useUpdateOrderStatus } from '@/hooks';
-import type { OrderView } from '../types';
+import type { OrderView } from '@/pages/shared/orderStatus';
 import { OverviewPanel } from './OverviewPanel';
 import { OrderSummaryCard } from './OrderSummaryCard';
 import { QueueShell } from './QueueShell';
@@ -73,14 +72,11 @@ export function PreorderQueueStep({
       onSecondary={isPreorder ? () => void handleArrivalLater() : undefined}
     >
       <div className="space-y-4">
-        <div className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4">
-          <ClipboardCheck className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
-          <div>
-            <p className="text-sm font-semibold text-blue-800">New booking review</p>
-            <p className="mt-1 text-sm text-blue-700">
-              If the goods are here, continue to package verification. Otherwise, register this booking as awaiting warehouse arrival.
-            </p>
-          </div>
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4">
+          <p className="text-sm font-semibold text-blue-800">New booking review</p>
+          <p className="mt-1 text-sm text-blue-700">
+            If the goods are here, continue to package verification. Otherwise, register this booking as awaiting warehouse arrival.
+          </p>
         </div>
 
         <OrderSummaryCard view={view} />

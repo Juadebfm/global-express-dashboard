@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { Plane, Ship, Truck } from 'lucide-react';
 import { cn } from '@/utils';
 import { formatTrackingDisplay } from '@/lib/trackingUtils';
-import type { OrderView } from '../types';
+import type { OrderView } from '@/pages/shared/orderStatus';
 
 interface OrderSummaryCardProps {
   view: OrderView;

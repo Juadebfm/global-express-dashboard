@@ -18,6 +18,7 @@ export { useClients } from './useClients';
 export { useSupportTickets } from './useSupportTickets';
 export { useOpenSupportTicketCount } from './useOpenSupportTicketCount';
 export { useUndeliveredOrderCount } from './useUndeliveredOrderCount';
+export { usePendingPaymentsCount } from './usePendingPaymentsCount';
 export { useMyNotificationPreferences } from './useMyNotificationPreferences';
 export { useOrders } from './useOrders';
 export { useOrderEstimate } from './useOrderEstimate';
@@ -48,8 +49,6 @@ export {
 export { useFxRate } from './useFxRate';
 export { useItemTypes } from './useItemTypes';
 export { useAuditLogs } from './useAuditLogs';
-export { useMeasurements } from './useMeasurements';
-export { useRecordMeasurement } from './useRecordMeasurement';
 export { usePricingRules } from './usePricingRules';
 export { useNotificationTemplates } from './useNotificationTemplates';
 export { useRestrictedGoods } from './useRestrictedGoods';

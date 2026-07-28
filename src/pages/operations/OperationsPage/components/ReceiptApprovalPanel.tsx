@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
-import { AlertTriangle, CheckCircle, XCircle, FileText, Maximize2, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import type { ApiPayment } from '@/types';
@@ -82,18 +82,12 @@ export function ReceiptApprovalPanel({
               : 'flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4'
           }
         >
-          {done === 'approve' ? (
-            <CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" />
-          ) : (
-            <XCircle className="h-5 w-5 shrink-0 text-red-500" />
-          )}
           <p className="text-sm font-semibold text-gray-800">
             Receipt {done === 'approve' ? 'approved' : 'rejected'}.
           </p>
         </div>
         {done === 'approve' && warning && (
-          <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
             <p className="text-sm text-amber-800">{warning}</p>
           </div>
         )}
@@ -112,7 +106,6 @@ export function ReceiptApprovalPanel({
       <div className="rounded-2xl border border-gray-200 bg-white p-5">
         {/* Header */}
         <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-gray-400" />
           <h4 className="text-sm font-semibold text-gray-900">Receipt review</h4>
           <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
             Pending review
@@ -132,24 +125,23 @@ export function ReceiptApprovalPanel({
                 <button
                   type="button"
                   onClick={() => setLightboxOpen(true)}
-                  className="absolute right-2 top-2 flex items-center gap-1.5 rounded-lg bg-black/50 px-2.5 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 transition"
+                  className="absolute right-2 top-2 rounded-lg bg-black/50 px-2.5 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 transition"
                 >
-                  <Maximize2 className="h-3.5 w-3.5" />
                   View full
                 </button>
               </div>
             ) : (
-              <div className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                  Proof reference
+                  Proof of payment
                 </p>
                 <a
                   href={payment.proofReference}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-0.5 block break-all text-sm text-brand-600 hover:underline"
+                  className="shrink-0 rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600"
                 >
-                  {payment.proofReference}
+                  View receipt
                 </a>
               </div>
             )}
@@ -186,6 +178,12 @@ export function ReceiptApprovalPanel({
             <div>
               <p className="font-semibold uppercase tracking-wide text-gray-400">Bank ref</p>
               <p className="mt-0.5 text-sm font-mono text-gray-700">{payment.metadata.transactionRef}</p>
+            </div>
+          )}
+          {payment.note && (
+            <div className="col-span-2">
+              <p className="font-semibold uppercase tracking-wide text-gray-400">Customer note</p>
+              <p className="mt-0.5 text-sm text-gray-700">{payment.note}</p>
             </div>
           )}
         </div>

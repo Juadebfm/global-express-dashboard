@@ -1,7 +1,6 @@
 import type { ReactElement } from 'react';
-import { PackageCheck } from 'lucide-react';
 import { useUpdateOrderStatus } from '@/hooks';
-import type { OrderView } from '../types';
+import type { OrderView } from '@/pages/shared/orderStatus';
 import { OverviewPanel } from './OverviewPanel';
 import { OrderSummaryCard } from './OrderSummaryCard';
 import { QueueShell } from './QueueShell';
@@ -48,14 +47,11 @@ export function AwaitingArrivalQueueStep({
       onPrimary={() => void handleGoodsReceived()}
     >
       <div className="space-y-4">
-        <div className="flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50 px-5 py-4">
-          <PackageCheck className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
-          <div>
-            <p className="text-sm font-semibold text-brand-800">Awaiting warehouse arrival</p>
-            <p className="mt-1 text-sm text-brand-700">
-              Keep this booking here until the goods physically arrive. Marking them received opens the measurements, photos and pricing work for this exact order.
-            </p>
-          </div>
+        <div className="rounded-2xl border border-brand-100 bg-brand-50 px-5 py-4">
+          <p className="text-sm font-semibold text-brand-800">Awaiting warehouse arrival</p>
+          <p className="mt-1 text-sm text-brand-700">
+            Keep this booking here until the goods physically arrive. Marking them received opens the measurements, photos and pricing work for this exact order.
+          </p>
         </div>
 
         <OrderSummaryCard view={view} />

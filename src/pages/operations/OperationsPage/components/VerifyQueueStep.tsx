@@ -1,10 +1,10 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
-import { AlertTriangle, CheckCircle2, Image } from 'lucide-react';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useWarehouseVerify, useOrderImages, useOrderTimeline, useUpload, useCan } from '@/hooks';
 import { cn } from '@/utils';
-import type { OrderView } from '../types';
-import { canReVerifyPackages } from '../types';
+import type { OrderView } from '@/pages/shared/orderStatus';
+import { canReVerifyPackages } from '@/pages/shared/orderStatus';
 import { QueueShell } from './QueueShell';
 import { OrderSummaryCard } from './OrderSummaryCard';
 import { WarehouseVerifyForm } from './WarehouseVerifyForm';
@@ -95,7 +95,6 @@ export function VerifyQueueStep({
           )}
         >
           <span className="flex items-center gap-2">
-            <Image className="h-4 w-4" />
             Package photos
             {images.length > 0 && (
               <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-semibold text-gray-700">

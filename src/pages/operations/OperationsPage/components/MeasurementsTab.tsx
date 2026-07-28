@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Clock, Edit2, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { cn } from '@/utils';
-import type { Measurement, MeasurementCheckpoint } from '@/services/measurementsService';
+import type { MeasurementCheckpoint, ShipmentMeasurement } from '@/types';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -17,11 +17,14 @@ const inputCls =
   'w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-brand-500 transition';
 
 // ── Delta badge ───────────────────────────────────────────────────────────────
+// `useShipmentMeasurements` (the live endpoint) doesn't return a precomputed
+// delta-from-baseline the way the old, unused `useMeasurements` did — compute
+// it client-side against the SK_WAREHOUSE reading instead.
 
-function DeltaBadge({ value, unit }: { value: string; unit: string }): ReactElement {
-  const num = parseFloat(value);
-  const isPositive = num > 0;
-  const isZero = num === 0;
+function DeltaBadge({ value, unit }: { value: number; unit: string }): ReactElement {
+  const isPositive = value > 0;
+  const isZero = value === 0;
+  const magnitude = Math.abs(value);
   return (
     <span className={cn(
       'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold',
@@ -29,7 +32,7 @@ function DeltaBadge({ value, unit }: { value: string; unit: string }): ReactElem
         : isPositive ? 'bg-amber-100 text-amber-700'
           : 'bg-emerald-100 text-emerald-700',
     )}>
-      {isPositive ? '+' : ''}{num > 0 ? num.toFixed(num < 0.01 ? 6 : 3) : Math.abs(num).toFixed(Math.abs(num) < 0.01 ? 6 : 3)}{isZero ? '' : isPositive ? '' : ''} {unit}
+      {isPositive ? '+' : isZero ? '' : '-'}{magnitude.toFixed(magnitude < 0.01 ? 6 : 3)} {unit}
     </span>
   );
 }
@@ -39,20 +42,18 @@ function DeltaBadge({ value, unit }: { value: string; unit: string }): ReactElem
 function RecordForm({
   checkpoint,
   existing,
-  orderId,
   isPending,
   onSubmit,
   onCancel,
 }: {
   checkpoint: MeasurementCheckpoint;
-  existing?: Measurement;
-  orderId: string;
+  existing?: ShipmentMeasurement;
   isPending: boolean;
-  onSubmit: (orderId: string, data: { checkpoint: MeasurementCheckpoint; measuredWeightKg: number; measuredCbm: number; notes?: string }) => void;
+  onSubmit: (data: { checkpoint: MeasurementCheckpoint; measuredWeightKg: number; measuredCbm: number; notes?: string }) => void;
   onCancel: () => void;
 }): ReactElement {
-  const [weightKg, setWeightKg] = useState(existing?.measuredWeightKg ?? '');
-  const [cbm, setCbm] = useState(existing?.measuredCbm ?? '');
+  const [weightKg, setWeightKg] = useState(existing ? String(existing.measuredWeightKg) : '');
+  const [cbm, setCbm] = useState(existing ? String(existing.measuredCbm) : '');
   const [notes, setNotes] = useState(existing?.notes ?? '');
   const [error, setError] = useState<string | null>(null);
 
@@ -64,7 +65,7 @@ function RecordForm({
       return;
     }
     setError(null);
-    onSubmit(orderId, { checkpoint, measuredWeightKg: w, measuredCbm: c, notes: notes.trim() || undefined });
+    onSubmit({ checkpoint, measuredWeightKg: w, measuredCbm: c, notes: notes.trim() || undefined });
   };
 
   return (
@@ -117,22 +118,22 @@ function CheckpointCard({
   checkpoint,
   label,
   measurement,
+  deltaFromBaseline,
   isBaseline,
   isAutoFilled,
-  orderId,
   canRecord,
   isPending,
   onRecord,
 }: {
   checkpoint: MeasurementCheckpoint;
   label: string;
-  measurement?: Measurement;
+  measurement?: ShipmentMeasurement;
+  deltaFromBaseline?: { weightKg: number; cbm: number };
   isBaseline: boolean;
   isAutoFilled: boolean;
-  orderId: string;
   canRecord: boolean;
   isPending: boolean;
-  onRecord: (orderId: string, data: { checkpoint: MeasurementCheckpoint; measuredWeightKg: number; measuredCbm: number; notes?: string }) => void;
+  onRecord: (data: { checkpoint: MeasurementCheckpoint; measuredWeightKg: number; measuredCbm: number; notes?: string }) => void;
 }): ReactElement {
   // 'idle' | 'editing' | 'submitting' — one state drives both the form
   // visibility and the loading indicator, avoiding two setState calls in the
@@ -207,15 +208,15 @@ function CheckpointCard({
               <span className="text-xs text-gray-400">CBM</span>
               <p className="text-sm font-semibold text-gray-900">{measurement.measuredCbm} m³</p>
             </div>
-            {!isBaseline && measurement.deltaFromSkWeightKg !== null && measurement.deltaFromSkCbm !== null && (
+            {!isBaseline && deltaFromBaseline && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400">vs baseline</span>
-                <DeltaBadge value={measurement.deltaFromSkWeightKg} unit="kg" />
-                <DeltaBadge value={measurement.deltaFromSkCbm} unit="m³" />
+                <DeltaBadge value={deltaFromBaseline.weightKg} unit="kg" />
+                <DeltaBadge value={deltaFromBaseline.cbm} unit="m³" />
               </div>
             )}
           </div>
-          <p className="text-xs text-gray-400">{fmtDate(measurement.measuredAt)}</p>
+          <p className="text-xs text-gray-400">{fmtDate(measurement.updatedAt)}</p>
           {measurement.notes && (
             <p className="text-xs text-gray-600 italic">{measurement.notes}</p>
           )}
@@ -236,11 +237,10 @@ function CheckpointCard({
         <RecordForm
           checkpoint={checkpoint}
           existing={measurement}
-          orderId={orderId}
           isPending={editState === 'submitting' && isPending}
-          onSubmit={(id, data) => {
+          onSubmit={(data) => {
             setEditState('submitting');
-            onRecord(id, data);
+            onRecord(data);
           }}
           onCancel={() => {
             if (editState !== 'submitting') setEditState('idle');
@@ -254,16 +254,14 @@ function CheckpointCard({
 // ── Main component ─────────────────────────────────────────────────────────────
 
 interface MeasurementsTabProps {
-  orderId: string;
-  measurements: Measurement[];
+  measurements: ShipmentMeasurement[];
   isLoading: boolean;
   canRecord: boolean;
   isPending: boolean;
-  onRecord: (orderId: string, data: { checkpoint: MeasurementCheckpoint; measuredWeightKg: number; measuredCbm: number; notes?: string }) => void;
+  onRecord: (data: { checkpoint: MeasurementCheckpoint; measuredWeightKg: number; measuredCbm: number; notes?: string }) => void;
 }
 
 export function MeasurementsTab({
-  orderId,
   measurements,
   isLoading,
   canRecord,
@@ -279,6 +277,7 @@ export function MeasurementsTab({
   }
 
   const byCheckpoint = Object.fromEntries(measurements.map((m) => [m.checkpoint, m]));
+  const baseline = byCheckpoint['SK_WAREHOUSE'];
 
   return (
     <div className="p-5 space-y-3">
@@ -290,15 +289,22 @@ export function MeasurementsTab({
       </div>
       {CHECKPOINTS.map((cp) => {
         const isAutoFilled = cp.key === 'SK_WAREHOUSE';
+        const measurement = byCheckpoint[cp.key];
+        const deltaFromBaseline = !isAutoFilled && measurement && baseline
+          ? {
+              weightKg: measurement.measuredWeightKg - baseline.measuredWeightKg,
+              cbm: measurement.measuredCbm - baseline.measuredCbm,
+            }
+          : undefined;
         return (
           <CheckpointCard
             key={cp.key}
             checkpoint={cp.key}
             label={cp.label}
-            measurement={byCheckpoint[cp.key]}
+            measurement={measurement}
+            deltaFromBaseline={deltaFromBaseline}
             isBaseline={isAutoFilled}
             isAutoFilled={isAutoFilled}
-            orderId={orderId}
             canRecord={canRecord && !isAutoFilled}
             isPending={isPending}
             onRecord={onRecord}

@@ -4,7 +4,6 @@ import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import {
-  useCan,
   useDashboardData,
   useMyPayments,
   useOrderDetail,
@@ -20,14 +19,14 @@ import {
   OrderQueue,
   CustomerShipmentDetail,
   CustomerPaymentView,
-  OperatorOrdersView,
 } from './components';
 import { includesQuery, toView } from './types';
 import type { OperatorFilter } from './types';
 
+// Rendered directly for customers at /orders — staff+ get redirected to
+// /operations instead (see OrdersRoleRouter in App.tsx). This is the
+// customer's only in-app path to view shipment detail and pay.
 export function OrdersPage(): ReactElement {
-  const isOperator = useCan('app.operator');
-  if (isOperator) return <OperatorOrdersView />;
   return <CustomerOrdersView />;
 }
 
@@ -37,10 +36,15 @@ function CustomerOrdersView(): ReactElement {
 
   const [activeFilter, setActiveFilter] = useState<OperatorFilter>('all');
   const [selectedOrderIdState, setSelectedOrderIdState] = useState<string | null>(null);
-  const [showPaymentView, setShowPaymentView] = useState(false);
-  const [mobileShowDetail, setMobileShowDetail] = useState(false);
 
   const [searchParams, setSearchParams] = useSearchParams();
+  // Deep links (?select=<id>, e.g. from the dashboard's "Pay now" CTA) should
+  // land straight on the detail pane on mobile, not the list.
+  const [mobileShowDetail, setMobileShowDetail] = useState(() => searchParams.has('select'));
+  // ?pay=1 alongside ?select=<id> (e.g. from the "Pay now" CTA on the
+  // shipment details modal) jumps straight to the settle-balance screen
+  // instead of the read-only detail view.
+  const [showPaymentView, setShowPaymentView] = useState(() => searchParams.get('pay') === '1');
   const page = Math.max(1, Number(searchParams.get('page')) || 1);
   const setPage = (next: number): void => {
     setSearchParams(
@@ -200,7 +204,7 @@ function CustomerOrdersView(): ReactElement {
                   ? orderDetailQuery.error.message
                   : t('orders:detail.error')}
               </div>
-            ) : showPaymentView ? (
+            ) : showPaymentView && effectiveView.amountDue != null && effectiveView.amountDue > 0 ? (
               <CustomerPaymentView
                 view={effectiveView}
                 onBack={() => setShowPaymentView(false)}

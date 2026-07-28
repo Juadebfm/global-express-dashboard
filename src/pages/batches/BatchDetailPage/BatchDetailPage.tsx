@@ -167,7 +167,7 @@ function CustomerRow({
             <td className="py-3 pl-12 pr-4" colSpan={2}>
               <div className="flex items-center gap-3 min-w-0">
                 <Link
-                  to={`/orders?id=${order.id}`}
+                  to={`${ROUTES.ORDERS}?select=${order.id}`}
                   onClick={(e) => e.stopPropagation()}
                   className="font-mono text-sm font-semibold text-brand-500 shrink-0 hover:text-brand-600"
                 >
@@ -278,7 +278,7 @@ function MobileCustomerCard({
               <div key={order.id} className="rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <Link
-                    to={`/orders?id=${order.id}`}
+                    to={`${ROUTES.ORDERS}?select=${order.id}`}
                     className="font-mono text-sm font-semibold text-brand-500 hover:text-brand-600"
                   >
                     {order.trackingNumber}

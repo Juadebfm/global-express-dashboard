@@ -1,43 +1,35 @@
 import type { ReactElement } from 'react';
-import { AlertTriangle, Box, CheckCircle2, ClipboardCheck, CreditCard, PackageCheck, ShieldAlert } from 'lucide-react';
-import { cn } from '@/utils';
+import { CheckCircle2 } from 'lucide-react';
 import type { QueueKind } from './QueueShell';
 
-const QUEUE_META: Record<QueueKind, { label: string; done: string; Icon: React.FC<{ className?: string }> }> = {
+const QUEUE_META: Record<QueueKind, { label: string; done: string }> = {
   preorder: {
     label: 'New orders',
     done: 'All new bookings have been registered for warehouse handling.',
-    Icon: ({ className }) => <ClipboardCheck className={className} />,
   },
   arrival: {
     label: 'Awaiting arrivals',
     done: 'No registered orders are waiting for their goods to arrive at the warehouse.',
-    Icon: ({ className }) => <PackageCheck className={className} />,
   },
   verify: {
     label: 'Verify packages',
     done: "All packages have been verified — nothing left to process right now.",
-    Icon: ({ className }) => <CheckCircle2 className={className} />,
   },
   holds: {
     label: 'Resolve holds',
     done: "No active holds — all on-hold orders have been resolved.",
-    Icon: ({ className }) => <AlertTriangle className={className} />,
   },
   batch: {
     label: 'Assign to batch',
     done: "All priced & paid orders are assigned to a batch.",
-    Icon: ({ className }) => <Box className={className} />,
   },
   payment: {
     label: 'Collect payment',
     done: "No outstanding payments — all orders are settled.",
-    Icon: ({ className }) => <CreditCard className={className} />,
   },
   escalated: {
     label: 'Supervisor review',
     done: "No escalated orders — all flagged holds have been resolved.",
-    Icon: ({ className }) => <ShieldAlert className={className} />,
   },
 };
 
@@ -78,19 +70,13 @@ export function AllCaughtUp({ queueType, otherQueues, onExit }: AllCaughtUpProps
           </p>
           {pending.map((q) => {
             const qm = QUEUE_META[q.kind];
-            const QIcon = qm.Icon;
             return (
               <button
                 key={q.kind}
                 type="button"
                 onClick={q.onStart}
-                className={cn(
-                  'flex w-full items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-left transition hover:border-brand-300 hover:bg-brand-50',
-                )}
+                className="flex w-full items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-left transition hover:border-brand-300 hover:bg-brand-50"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100">
-                  <QIcon className="h-5 w-5 text-gray-600" />
-                </div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-gray-900">{qm.label}</p>
                   <p className="text-xs text-gray-500">{q.count} order{q.count !== 1 ? 's' : ''} waiting</p>

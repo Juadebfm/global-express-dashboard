@@ -2,8 +2,8 @@ import type { ReactElement, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { formatDate, formatCurrency } from '@/utils';
-import type { OrderView } from '../types';
-import { pricingSourceLabel } from '../types';
+import type { OrderView } from '@/pages/shared/orderStatus';
+import { pricingSourceLabel } from '@/pages/shared/orderStatus';
 
 interface OverviewPanelProps {
   view: OrderView;

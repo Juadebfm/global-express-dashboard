@@ -1,9 +1,9 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
-import { AlertTriangle, CheckCircle2, Clock, Phone, ShieldAlert } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { useUpdateOrderStatus, useEscalateOrder, useClearEscalation, useCan } from '@/hooks';
 import { cn } from '@/utils';
-import type { OrderView } from '../types';
+import type { OrderView } from '@/pages/shared/orderStatus';
 import { QueueShell } from './QueueShell';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { OrderSummaryCard } from './OrderSummaryCard';
@@ -86,8 +86,7 @@ export function HoldQueueStep({
       </div>
       {view.recipientPhone && (
         <div className="flex items-center justify-between px-5 py-3">
-          <div className="flex items-center gap-2 text-sm text-gray-700">
-            <Phone className="h-4 w-4 text-gray-400" />
+          <div className="text-sm text-gray-700">
             {view.recipientPhone}
           </div>
           <a
@@ -110,18 +109,15 @@ export function HoldQueueStep({
   // ── Hold context ──────────────────────────────────────────────────────────
 
   const holdContext = (
-    <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-      <div>
-        <p className="text-sm font-semibold text-amber-800">Order is on hold</p>
-        <p className="mt-0.5 text-sm text-amber-700">
-          Review the shipment details with the customer and confirm the delivery address is correct
-          before releasing.{' '}
-          {view.finalChargeUsd != null
-            ? 'The order will return to Verified & Priced once released.'
-            : 'The order will return to At Warehouse for re-verification once released.'}
-        </p>
-      </div>
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+      <p className="text-sm font-semibold text-amber-800">Order is on hold</p>
+      <p className="mt-0.5 text-sm text-amber-700">
+        Review the shipment details with the customer and confirm the delivery address is correct
+        before releasing.{' '}
+        {view.finalChargeUsd != null
+          ? 'The order will return to Verified & Priced once released.'
+          : 'The order will return to At Warehouse for re-verification once released.'}
+      </p>
     </div>
   );
 
@@ -181,38 +177,31 @@ export function HoldQueueStep({
                 ? 'border-amber-200 bg-amber-50'
                 : 'border-red-200 bg-red-50',
             )}>
-              <div className="flex items-start gap-3">
-                <ShieldAlert className={cn(
-                  'mt-0.5 h-4 w-4 shrink-0',
-                  isRestrictedItemFlag ? 'text-amber-500' : 'text-red-500',
-                )} />
-                <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1">
+                <p className={cn(
+                  'text-sm font-semibold',
+                  isRestrictedItemFlag ? 'text-amber-800' : 'text-red-800',
+                )}>
+                  {isRestrictedItemFlag ? 'Flagged at verification — restricted item' : 'Escalated by staff'}
+                </p>
+                {view.escalatedAt && (
                   <p className={cn(
-                    'text-sm font-semibold',
-                    isRestrictedItemFlag ? 'text-amber-800' : 'text-red-800',
+                    'mt-0.5 text-xs',
+                    isRestrictedItemFlag ? 'text-amber-500' : 'text-red-500',
                   )}>
-                    {isRestrictedItemFlag ? 'Flagged at verification — restricted item' : 'Escalated by staff'}
+                    {new Date(view.escalatedAt).toLocaleString(undefined, {
+                      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                    })}
                   </p>
-                  {view.escalatedAt && (
-                    <p className={cn(
-                      'mt-0.5 text-xs',
-                      isRestrictedItemFlag ? 'text-amber-500' : 'text-red-500',
-                    )}>
-                      <Clock className="mr-1 inline h-3 w-3" />
-                      {new Date(view.escalatedAt).toLocaleString(undefined, {
-                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-                      })}
-                    </p>
-                  )}
-                  {escalationNoteDisplay && (
-                    <p className={cn(
-                      'mt-2 rounded-xl bg-white px-3 py-2 text-sm ring-1',
-                      isRestrictedItemFlag ? 'text-amber-700 ring-amber-200' : 'text-red-700 ring-red-200',
-                    )}>
-                      "{escalationNoteDisplay}"
-                    </p>
-                  )}
-                </div>
+                )}
+                {escalationNoteDisplay && (
+                  <p className={cn(
+                    'mt-2 rounded-xl bg-white px-3 py-2 text-sm ring-1',
+                    isRestrictedItemFlag ? 'text-amber-700 ring-amber-200' : 'text-red-700 ring-red-200',
+                  )}>
+                    "{escalationNoteDisplay}"
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -302,23 +291,20 @@ export function HoldQueueStep({
           {contactCard}
           {holdContext}
 
-          <div className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4">
-            <Clock className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-gray-700">Escalated for supervisor review</p>
-              {view.escalatedAt && (
-                <p className="mt-0.5 text-xs text-gray-400">
-                  {new Date(view.escalatedAt).toLocaleString(undefined, {
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-                  })}
-                </p>
-              )}
-              {escalationNoteDisplay && (
-                <p className="mt-2 rounded-xl bg-white px-3 py-2 text-sm text-gray-600 ring-1 ring-gray-200">
-                  "{escalationNoteDisplay}"
-                </p>
-              )}
-            </div>
+          <div className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4">
+            <p className="text-sm font-semibold text-gray-700">Escalated for supervisor review</p>
+            {view.escalatedAt && (
+              <p className="mt-0.5 text-xs text-gray-400">
+                {new Date(view.escalatedAt).toLocaleString(undefined, {
+                  month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                })}
+              </p>
+            )}
+            {escalationNoteDisplay && (
+              <p className="mt-2 rounded-xl bg-white px-3 py-2 text-sm text-gray-600 ring-1 ring-gray-200">
+                "{escalationNoteDisplay}"
+              </p>
+            )}
           </div>
         </div>
       </QueueShell>
@@ -357,20 +343,17 @@ export function HoldQueueStep({
             'rounded-2xl border px-5 py-4 space-y-3',
             escalateConfirm ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-white',
           )}>
-            <div className="flex items-start gap-2">
-              <ShieldAlert className={cn('mt-0.5 h-4 w-4 shrink-0', escalateConfirm ? 'text-red-500' : 'text-gray-400')} />
-              <div>
-                <p className={cn('text-sm font-semibold', escalateConfirm ? 'text-red-800' : 'text-gray-800')}>
-                  {escalateConfirm
-                    ? 'Confirm — this will flag the order for the supervisor'
-                    : 'Flag for supervisor review'}
-                </p>
-                <p className={cn('mt-0.5 text-xs', escalateConfirm ? 'text-red-600' : 'text-gray-500')}>
-                  {escalateConfirm
-                    ? 'The order will be locked until the supervisor acts on it.'
-                    : 'Use this when you cannot resolve the hold on your own. Add a note explaining the situation.'}
-                </p>
-              </div>
+            <div>
+              <p className={cn('text-sm font-semibold', escalateConfirm ? 'text-red-800' : 'text-gray-800')}>
+                {escalateConfirm
+                  ? 'Confirm — this will flag the order for the supervisor'
+                  : 'Flag for supervisor review'}
+              </p>
+              <p className={cn('mt-0.5 text-xs', escalateConfirm ? 'text-red-600' : 'text-gray-500')}>
+                {escalateConfirm
+                  ? 'The order will be locked until the supervisor acts on it.'
+                  : 'Use this when you cannot resolve the hold on your own. Add a note explaining the situation.'}
+              </p>
             </div>
             <textarea
               value={escalateNote}

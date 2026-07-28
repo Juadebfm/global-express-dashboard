@@ -1,6 +1,8 @@
 import type { ReactElement } from 'react';
+import { Link } from 'react-router-dom';
 import { Clock, DollarSign, Layers, Package, Scale, Truck, type LucideIcon } from 'lucide-react';
 import { useShipmentsDashboard } from '@/hooks';
+import { ROUTES } from '@/constants';
 import type { KpiCard } from '@/types';
 import { cn } from '@/utils';
 
@@ -17,17 +19,27 @@ function getIcon(title: string): LucideIcon {
   return ICON_MAP[title.toLowerCase()] ?? Package;
 }
 
+// Only KPIs with a real drill-down destination navigate — Total Weight and
+// Total Items are pure aggregates with no dedicated page to land on.
+const ROUTE_MAP: Record<string, string> = {
+  totalOrders: ROUTES.ORDERS,
+  pendingOrders: ROUTES.OPERATIONS,
+  activeShipments: ROUTES.SHIPMENTS,
+  revenueMtd: ROUTES.REPORTS,
+};
+
 interface StatCardProps {
   label: string;
   value: string | number;
   icon: LucideIcon;
   loading?: boolean;
   accent?: boolean;
+  to?: string;
 }
 
-function StatCard({ label, value, icon: Icon, loading = false, accent = false }: StatCardProps): ReactElement {
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5">
+function StatCard({ label, value, icon: Icon, loading = false, accent = false, to }: StatCardProps): ReactElement {
+  const content = (
+    <>
       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100">
         <Icon className="h-4 w-4 text-gray-700" strokeWidth={1.75} />
       </div>
@@ -39,6 +51,23 @@ function StatCard({ label, value, icon: Icon, loading = false, accent = false }:
           {value}
         </p>
       )}
+    </>
+  );
+
+  if (to) {
+    return (
+      <Link
+        to={to}
+        className="block rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-brand-200 hover:shadow-sm"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-5">
+      {content}
     </div>
   );
 }
@@ -73,6 +102,7 @@ export function AdminKpiBar({ kpis }: AdminKpiBarProps): ReactElement {
           label={kpi.title}
           value={kpi.display ?? kpi.value}
           icon={getIcon(kpi.title)}
+          to={ROUTE_MAP[kpi.id]}
         />
       ))}
       <StatCard

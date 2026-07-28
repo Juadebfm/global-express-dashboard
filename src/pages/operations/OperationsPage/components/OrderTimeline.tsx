@@ -5,7 +5,7 @@ import { cn } from '@/utils';
 import { formatDate } from '@/utils';
 import { getStatusStyle } from '@/lib/statusUtils';
 import type { OrderTimelineEvent } from '@/services/ordersService';
-import { statusLabel } from '../types';
+import { statusLabel } from '@/pages/shared/orderStatus';
 
 interface OrderTimelineProps {
   events: OrderTimelineEvent[];

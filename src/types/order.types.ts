@@ -48,6 +48,7 @@ export interface ApiOrder {
   sourcingSupplierName: string | null;
   sourcingSupplierPhone: string | null;
   sourcingSupplierEmail: string | null;
+  invoice?: { id: string; invoiceNumber: string; status: string } | null;
   [key: string]: unknown;
 }
 

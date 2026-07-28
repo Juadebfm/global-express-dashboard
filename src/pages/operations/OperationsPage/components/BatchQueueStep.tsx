@@ -1,10 +1,9 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
-import { Plane, Plus, Ship } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useBatches, useAddOrderToBatch, useCreateBatch } from '@/hooks';
 import { cn } from '@/utils';
-import type { OrderView } from '../types';
+import type { OrderView } from '@/pages/shared/orderStatus';
 import { QueueShell } from './QueueShell';
 import { OrderSummaryCard } from './OrderSummaryCard';
 
@@ -128,18 +127,6 @@ export function BatchQueueStep({
                       : 'hover:bg-gray-50',
                   )}
                 >
-                  <div
-                    className={cn(
-                      'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl',
-                      batch.transportMode === 'sea' ? 'bg-blue-100' : 'bg-brand-100',
-                    )}
-                  >
-                    {batch.transportMode === 'sea' ? (
-                      <Ship className="h-4 w-4 text-blue-600" />
-                    ) : (
-                      <Plane className="h-4 w-4 text-brand-600" />
-                    )}
-                  </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-mono text-sm font-semibold text-gray-900">
                       {batch.masterTrackingNumber}
@@ -171,9 +158,6 @@ export function BatchQueueStep({
                 creatingNew ? 'bg-brand-50' : 'hover:bg-gray-50',
               )}
             >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gray-100">
-                <Plus className="h-4 w-4 text-gray-600" />
-              </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-gray-900">Create new batch</p>
                 <p className="text-xs text-gray-500">

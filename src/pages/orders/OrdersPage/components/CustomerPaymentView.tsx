@@ -2,7 +2,7 @@ import type { ChangeEvent, FormEvent, ReactElement } from 'react';
 import { useRef, useState } from 'react';
 import { ArrowLeft, Building2, Check, Copy, Loader2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui';
-import { useBankAccounts, useFxRate } from '@/hooks';
+import { useBankAccounts } from '@/hooks';
 import { useUploadPaymentReceipt } from '@/hooks/usePaymentReceipts';
 import type { BankInfo, ReceiptContentType } from '@/types';
 import { cn } from '@/utils';
@@ -10,6 +10,25 @@ import type { OrderView } from '../types';
 
 const ACCEPTED: ReceiptContentType[] = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
+// Amount is stored as a plain, comma-free numeric string (so parseFloat keeps
+// working unchanged) and only formatted with commas for display.
+function stripAmountInput(raw: string): string {
+  const cleaned = raw.replace(/[^\d.]/g, '');
+  const [whole, ...rest] = cleaned.split('.');
+  return rest.length > 0 ? `${whole}.${rest.join('')}` : whole;
+}
+
+function formatAmountDisplay(raw: string, currency: 'NGN' | 'USD'): string {
+  if (!raw) return '';
+  const num = Number(raw);
+  if (!Number.isFinite(num)) return raw;
+  const formatted = num.toLocaleString('en-US', {
+    maximumFractionDigits: currency === 'NGN' ? 0 : 2,
+  });
+  // Preserve a trailing "." while the customer is still typing a decimal.
+  return raw.endsWith('.') ? `${formatted}.` : formatted;
+}
 
 function CopyRow({ label, value }: { label: string; value: string }): ReactElement {
   const [copied, setCopied] = useState(false);
@@ -106,7 +125,6 @@ interface CustomerPaymentViewProps {
 export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps): ReactElement {
   const { data: bankSettings, isLoading: bankLoading } = useBankAccounts();
   const { mutate: uploadReceipt, isPending, error: uploadError } = useUploadPaymentReceipt();
-  const fxRate = useFxRate();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -114,12 +132,15 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
   const [success, setSuccess] = useState(false);
   const [currency, setCurrency] = useState<'NGN' | 'USD'>('NGN');
   const [manualAmount, setManualAmount] = useState<string | null>(null);
-  const [remitterName, setRemitterName] = useState('');
-  const [paymentDate, setPaymentDate] = useState('');
   const [transactionRef, setTransactionRef] = useState('');
+  const [note, setNote] = useState('');
 
   const amountOwedUsd = view.amountDue ?? view.finalChargeUsd ?? 0;
-  const effectiveRate = fxRate.data?.effectiveRate ?? null;
+  // Sourced from the public bank-accounts settings response, not
+  // GET /settings/fx-rate — that endpoint is staff+-only and customers
+  // can't call it. Null means no rate is currently available (not a
+  // hardcoded fallback) — falls back to manual NGN entry.
+  const effectiveRate = bankSettings?.effectiveRate ?? null;
 
   const autoAmount = (() => {
     if (currency === 'USD') return amountOwedUsd > 0 ? String(amountOwedUsd) : '';
@@ -155,7 +176,7 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
 
   const parsedAmount = parseFloat(amount);
   const amountValid = amount.trim() !== '' && !isNaN(parsedAmount) && parsedAmount > 0;
-  const rateLoading = currency === 'NGN' && fxRate.isLoading;
+  const rateLoading = currency === 'NGN' && bankLoading;
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -171,9 +192,8 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
         amount: parsedAmount,
         currency,
         referenceCode: view.trackingNumber,
-        remitterName: remitterName.trim() || undefined,
-        paymentDate: paymentDate || undefined,
         transactionRef: transactionRef.trim() || undefined,
+        note: note.trim() || undefined,
       },
     });
 
@@ -307,13 +327,12 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
                     <span className="text-sm font-medium text-gray-400">{currency === 'NGN' ? '₦' : '$'}</span>
                   )}
                   <input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setManualAmount(e.target.value)}
+                    type="text"
+                    inputMode="decimal"
+                    value={formatAmountDisplay(amount, currency)}
+                    onChange={(e) => setManualAmount(stripAmountInput(e.target.value))}
                     placeholder={rateLoading ? 'Fetching rate…' : '0.00'}
                     disabled={rateLoading}
-                    min="0"
-                    step={currency === 'NGN' ? '1' : '0.01'}
                     className="flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400 disabled:text-gray-400"
                   />
                 </div>
@@ -327,46 +346,32 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
                 )}
               </div>
 
-              {/* Remitter name */}
+              {/* Bank reference no. */}
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400">
-                  Name of remitter <span className="font-normal normal-case text-gray-400">(account holder name)</span>
+                  Bank reference no. <span className="font-normal normal-case text-gray-400">(optional)</span>
                 </label>
                 <input
                   type="text"
-                  value={remitterName}
-                  onChange={(e) => setRemitterName(e.target.value)}
-                  placeholder="Full name on your bank account"
+                  value={transactionRef}
+                  onChange={(e) => setTransactionRef(e.target.value)}
+                  placeholder="From your receipt"
                   className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-brand-400 focus:bg-white"
                 />
               </div>
 
-              {/* Payment date + transaction ref */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    Transfer date
-                  </label>
-                  <input
-                    type="date"
-                    value={paymentDate}
-                    onChange={(e) => setPaymentDate(e.target.value)}
-                    max={new Date().toISOString().split('T')[0]}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-400 focus:bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    Bank reference no.
-                  </label>
-                  <input
-                    type="text"
-                    value={transactionRef}
-                    onChange={(e) => setTransactionRef(e.target.value)}
-                    placeholder="From your receipt"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-brand-400 focus:bg-white"
-                  />
-                </div>
+              {/* Note */}
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Note <span className="font-normal normal-case text-gray-400">(optional)</span>
+                </label>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  rows={2}
+                  placeholder="Anything else we should know — e.g. paid from a different account, paying in instalments…"
+                  className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-brand-400 focus:bg-white"
+                />
               </div>
 
               <div
