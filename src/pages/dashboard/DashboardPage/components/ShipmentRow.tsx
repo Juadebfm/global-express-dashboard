@@ -19,6 +19,15 @@ export function ShipmentRow({ row, onOpen }: ShipmentRowProps): ReactElement {
     ? formatDate(row.createdAt, { day: 'numeric', month: 'short', year: 'numeric' })
     : null;
 
+  const raw = row.raw as Record<string, unknown>;
+  const rawAmountDue = raw.amountDue != null ? parseFloat(raw.amountDue as string) : null;
+  const due = rawAmountDue != null && rawAmountDue > 0 ? rawAmountDue : null;
+  // amountDue is also null once fully paid, not just "never priced yet" —
+  // check finalChargeUsd to tell those two apart and show "Paid" instead of
+  // nothing at all.
+  const rawFinalCharge = raw.finalChargeUsd != null ? parseFloat(raw.finalChargeUsd as string) : null;
+  const isPaid = due == null && rawFinalCharge != null && rawFinalCharge > 0;
+
   return (
     <button
       type="button"
@@ -62,6 +71,15 @@ export function ShipmentRow({ row, onOpen }: ShipmentRowProps): ReactElement {
             </>
           )}
         </div>
+        {due != null ? (
+          <span className="mt-1.5 inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+            ${due.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} due
+          </span>
+        ) : isPaid ? (
+          <span className="mt-1.5 inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+            Paid
+          </span>
+        ) : null}
       </div>
     </button>
   );

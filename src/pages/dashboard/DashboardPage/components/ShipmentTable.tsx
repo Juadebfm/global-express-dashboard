@@ -24,6 +24,25 @@ function isRowActivation(event: KeyboardEvent<HTMLTableRowElement>): boolean {
   return event.key === 'Enter' || event.key === ' ';
 }
 
+function paymentCell(row: OrderListItem): { label: string; cls: string } | null {
+  const raw = row.raw as Record<string, unknown>;
+  const due = raw.amountDue != null ? parseFloat(raw.amountDue as string) : null;
+  if (due != null && due > 0) {
+    return {
+      label: `$${due.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} due`,
+      cls: 'bg-amber-100 text-amber-700',
+    };
+  }
+  // amountDue is null once fully paid (not just "unset") — but that's the
+  // same signal as "never priced yet", so also check finalChargeUsd to tell
+  // the two apart and show "Paid" instead of a blank-looking dash.
+  const finalCharge = raw.finalChargeUsd != null ? parseFloat(raw.finalChargeUsd as string) : null;
+  if (finalCharge != null && finalCharge > 0) {
+    return { label: 'Paid', cls: 'bg-emerald-100 text-emerald-700' };
+  }
+  return null;
+}
+
 export function ShipmentTable({ orders, onOpen }: ShipmentTableProps): ReactElement {
   return (
     <div className="hidden overflow-x-auto md:block">
@@ -34,7 +53,8 @@ export function ShipmentTable({ orders, onOpen }: ShipmentTableProps): ReactElem
             <th scope="col" className="border-r border-gray-200 px-5 py-3">Tracking number</th>
             <th scope="col" className="border-r border-gray-200 px-5 py-3">Shipment type</th>
             <th scope="col" className="border-r border-gray-200 px-5 py-3">Booked</th>
-            <th scope="col" className="px-5 py-3">Status</th>
+            <th scope="col" className="border-r border-gray-200 px-5 py-3">Status</th>
+            <th scope="col" className="px-5 py-3">Payment</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -45,6 +65,7 @@ export function ShipmentTable({ orders, onOpen }: ShipmentTableProps): ReactElem
             const bookedDate = row.createdAt
               ? formatDate(row.createdAt, { day: 'numeric', month: 'short', year: 'numeric' })
               : '—';
+            const payment = paymentCell(row);
 
             return (
               <tr
@@ -79,7 +100,7 @@ export function ShipmentTable({ orders, onOpen }: ShipmentTableProps): ReactElem
                 <td className="whitespace-nowrap border-r border-gray-100 px-5 py-4 text-gray-500">
                   {bookedDate}
                 </td>
-                <td className="whitespace-nowrap px-5 py-4">
+                <td className="whitespace-nowrap border-r border-gray-100 px-5 py-4">
                   <span
                     className={cn(
                       'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold',
@@ -90,6 +111,15 @@ export function ShipmentTable({ orders, onOpen }: ShipmentTableProps): ReactElem
                     <span className={cn('h-1.5 w-1.5 rounded-full', style.dotClass)} />
                     {row.statusLabel || row.statusV2}
                   </span>
+                </td>
+                <td className="whitespace-nowrap px-5 py-4">
+                  {payment ? (
+                    <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold', payment.cls)}>
+                      {payment.label}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-300">—</span>
+                  )}
                 </td>
               </tr>
             );

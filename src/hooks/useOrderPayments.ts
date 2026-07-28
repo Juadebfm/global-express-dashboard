@@ -41,6 +41,7 @@ export function useVerifyOrderPayment(orderId: string | undefined) {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['order', 'payments', orderId] });
       queryClient.invalidateQueries({ queryKey: ['order', 'detail', orderId] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
       // Skip the generic toast on approve when a warning is present — the
       // warning shown inline is the meaningful feedback in that case.
       if (variables.payload.decision === 'reject' || !data.warning) {

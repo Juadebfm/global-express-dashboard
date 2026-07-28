@@ -117,6 +117,10 @@ export interface BankAccountSettings {
   beneficiaryName: string;
   banks: BankInfo[];
   updatedAt: string | null;
+  /** Same USD→NGN value GET /settings/fx-rate returns — exposed here since
+   *  that endpoint is staff+-only and customers can't call it. Null when no
+   *  rate is currently available (not a hardcoded fallback). */
+  effectiveRate: number | null;
 }
 
 export interface UpdateBankAccountsPayload {

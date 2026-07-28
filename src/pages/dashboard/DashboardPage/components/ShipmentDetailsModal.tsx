@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   CalendarDays,
@@ -14,10 +15,11 @@ import {
   X,
 } from 'lucide-react';
 import { useOrderDetail, useOrderTimeline } from '@/hooks';
-import { ORIGIN_WAREHOUSE } from '@/constants';
+import { ORIGIN_WAREHOUSE, ROUTES } from '@/constants';
 import { cn, formatDate } from '@/utils';
 import type { ApiOrder } from '@/types';
 import type { GoodsBreakdownItem } from '@/services';
+import { toView } from '@/pages/shared';
 
 interface ShipmentDetailsModalProps {
   orderId: string;
@@ -176,6 +178,7 @@ function GoodsCard({ goods, index }: { goods: GoodsBreakdownItem; index: number 
 }
 
 function ModalContent({ orderId }: { orderId: string }): ReactElement {
+  const navigate = useNavigate();
   const orderQuery = useOrderDetail(orderId);
   const timelineQuery = useOrderTimeline(orderId);
   const isLoading = orderQuery.isLoading || timelineQuery.isLoading;
@@ -210,6 +213,8 @@ function ModalContent({ orderId }: { orderId: string }): ReactElement {
     ? warehouseMessage(order.statusV2)
     : null;
   const declaredValue = formatMoney(order.declaredValue);
+  const view = toView(order);
+  const amountDue = view.amountDue;
 
   return (
     <div className="space-y-5 p-6">
@@ -235,6 +240,34 @@ function ModalContent({ orderId }: { orderId: string }): ReactElement {
           </div>
         )}
       </section>
+
+      {amountDue != null && amountDue > 0 ? (
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Balance due</p>
+            <p className="mt-0.5 text-xl font-bold text-amber-900">
+              ${amountDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate(`${ROUTES.ORDERS}?select=${encodeURIComponent(order.id)}&pay=1`)}
+            className="shrink-0 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-700"
+          >
+            Pay now
+          </button>
+        </section>
+      ) : view.finalChargeUsd != null && view.finalChargeUsd > 0 ? (
+        <section className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600">
+            <CheckCircle2 className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Payment status</p>
+            <p className="mt-0.5 text-sm font-semibold text-emerald-900">Paid in full</p>
+          </div>
+        </section>
+      ) : null}
 
       {warehouse && (
         <section className="rounded-2xl border border-brand-100 bg-brand-50 p-4">

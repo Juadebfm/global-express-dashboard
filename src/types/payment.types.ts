@@ -36,6 +36,7 @@ export interface ApiPayment {
   recordedBy?: string;
   createdAt: string;
   updatedAt: string;
+  note?: string | null;
   metadata?: PaymentReceiptMetadata | null;
 }
 

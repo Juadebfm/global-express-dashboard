@@ -20,6 +20,7 @@ export function useSendPaymentRequest() {
         if (!old) return old;
         return { ...old, paymentDetailsSentAt: result.paymentDetailsSentAt };
       });
+      void queryClient.invalidateQueries({ queryKey: ['orders'] });
       pushMessage({
         tone: 'success',
         message: `Payment details sent — $${result.amountUsd} USD (₦${result.amountNgn} NGN)`,
