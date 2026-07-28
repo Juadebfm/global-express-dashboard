@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Boxes, ChevronRight, Plane, Ship } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Boxes, ChevronRight, Package, Plane, Scale, Ship, Users } from 'lucide-react';
 import { useAuth, useBatches } from '@/hooks';
 import { AppLayout } from '@/components/layout';
 import { PageHeader } from '@/pages/shared';
@@ -35,31 +35,61 @@ function modeBadgeClass(mode: BatchListItem['transportMode']): string {
   return 'bg-indigo-50 text-indigo-700';
 }
 
-function BatchRow({ batch }: { batch: BatchListItem }): ReactElement {
+function ModeBadge({ batch }: { batch: BatchListItem }): ReactElement {
+  return (
+    <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium shrink-0', modeBadgeClass(batch.transportMode))}>
+      {batch.transportMode === 'air' ? <Plane className="h-3 w-3" /> : <Ship className="h-3 w-3" />}
+      {batch.transportLabel}
+    </span>
+  );
+}
+
+function StatusBadge({ batch }: { batch: BatchListItem }): ReactElement {
+  return (
+    <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0', statusBadgeClass(batch.status))}>
+      {batch.statusLabel}
+    </span>
+  );
+}
+
+// Mobile: card row
+function BatchCard({ batch }: { batch: BatchListItem }): ReactElement {
   const detailPath = ROUTES.BATCH_DETAIL.replace(':batchId', batch.id);
 
   return (
     <Link
       to={detailPath}
-      className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors group"
+      className="block px-4 py-3.5 hover:bg-gray-50 transition-colors group"
     >
-      <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium shrink-0', modeBadgeClass(batch.transportMode))}>
-        {batch.transportMode === 'air' ? <Plane className="h-3 w-3" /> : <Ship className="h-3 w-3" />}
-        {batch.transportLabel}
-      </span>
-      <p className="font-mono text-sm font-semibold text-gray-900 truncate flex-1 min-w-0">
-        {batch.masterTrackingNumber}
-      </p>
-      <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium shrink-0', statusBadgeClass(batch.status))}>
-        {batch.statusLabel}
-      </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
+      <div className="flex items-center gap-3">
+        <ModeBadge batch={batch} />
+        <p className="font-mono text-sm font-semibold text-gray-900 truncate flex-1 min-w-0">
+          {batch.masterTrackingNumber}
+        </p>
+        <StatusBadge batch={batch} />
+        <ChevronRight className="h-4 w-4 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-x-4 gap-y-2">
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Customers</p>
+          <p className="text-xs text-gray-700">{batch.customerCount}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Orders</p>
+          <p className="text-xs text-gray-700">{batch.orderCount}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Weight</p>
+          <p className="text-xs text-gray-700">{batch.totalWeightKg} kg</p>
+        </div>
+      </div>
     </Link>
   );
 }
 
 export function BatchesPage(): ReactElement {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [modeFilter, setModeFilter] = useState<ModeFilter>('all');
@@ -165,10 +195,70 @@ export function BatchesPage(): ReactElement {
                 </p>
               </Card>
             ) : (
-              <Card className="divide-y divide-gray-100 overflow-hidden p-0">
-                {data.batches.map((batch) => (
-                  <BatchRow key={batch.id} batch={batch} />
-                ))}
+              <Card className="overflow-hidden p-0">
+                {/* Mobile: card list */}
+                <div className="divide-y divide-gray-100 md:hidden">
+                  {data.batches.map((batch) => (
+                    <BatchCard key={batch.id} batch={batch} />
+                  ))}
+                </div>
+
+                {/* Desktop: table */}
+                <div className="hidden overflow-x-auto md:block">
+                  <table className="w-full min-w-[900px] text-left text-sm">
+                    <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      <tr>
+                        <th className="whitespace-nowrap border-r border-gray-200 px-6 py-4">Mode</th>
+                        <th className="whitespace-nowrap border-r border-gray-200 px-6 py-4">Master Tracking #</th>
+                        <th className="whitespace-nowrap border-r border-gray-200 px-6 py-4">Status</th>
+                        <th className="whitespace-nowrap border-r border-gray-200 px-6 py-4">
+                          <span className="inline-flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Customers</span>
+                        </th>
+                        <th className="whitespace-nowrap border-r border-gray-200 px-6 py-4">
+                          <span className="inline-flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> Orders</span>
+                        </th>
+                        <th className="whitespace-nowrap px-6 py-4">
+                          <span className="inline-flex items-center gap-1.5"><Scale className="h-3.5 w-3.5" /> Total Weight</span>
+                        </th>
+                        <th className="w-10 px-4 py-4" aria-hidden />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 bg-white">
+                      {data.batches.map((batch) => {
+                        const detailPath = ROUTES.BATCH_DETAIL.replace(':batchId', batch.id);
+                        return (
+                          <tr
+                            key={batch.id}
+                            className="cursor-pointer transition hover:bg-gray-50"
+                            onClick={() => navigate(detailPath)}
+                          >
+                            <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4">
+                              <ModeBadge batch={batch} />
+                            </td>
+                            <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4 font-mono font-semibold text-gray-900">
+                              {batch.masterTrackingNumber}
+                            </td>
+                            <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4">
+                              <StatusBadge batch={batch} />
+                            </td>
+                            <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4 text-gray-700">
+                              {batch.customerCount}
+                            </td>
+                            <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4 text-gray-700">
+                              {batch.orderCount}
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-gray-700">
+                              {batch.totalWeightKg} kg
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-4">
+                              <ChevronRight className="h-4 w-4 text-gray-400" />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </Card>
             )}
 
