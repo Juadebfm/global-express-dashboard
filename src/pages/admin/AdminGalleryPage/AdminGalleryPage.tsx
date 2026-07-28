@@ -51,6 +51,15 @@ function isAllowedMediaType(value: string): value is GalleryUploadContentType {
   return (ALLOWED_MEDIA_TYPES as string[]).includes(value);
 }
 
+// datetime-local inputs give back "YYYY-MM-DDTHH:mm" in the browser's local
+// time zone, with no seconds or offset — convert to a real ISO/UTC string
+// (what the API expects) at submit time.
+function toIsoOrUndefined(localValue: string | undefined): string | undefined {
+  if (!localValue) return undefined;
+  const date = new Date(localValue);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
 type Tab = 'items' | 'claims';
 
 export default function AdminGalleryPage(): ReactElement {
@@ -263,8 +272,8 @@ function CreateItemModal({ onClose }: CreateItemModalProps): ReactElement {
                 description: trimmedString(values.description),
                 previewImageUrl: previewUrl || trimmedString(values.previewImageUrl),
                 ctaUrl: trimmedString(values.ctaUrl),
-                startsAt: trimmedString(values.startsAt),
-                endsAt: trimmedString(values.endsAt),
+                startsAt: toIsoOrUndefined(values.startsAt),
+                endsAt: toIsoOrUndefined(values.endsAt),
                 isPublished: values.isPublished,
               });
             } else {
@@ -274,8 +283,8 @@ function CreateItemModal({ onClose }: CreateItemModalProps): ReactElement {
                 description: trimmedString(values.description),
                 previewImageUrl: previewUrl || trimmedString(values.previewImageUrl),
                 ctaUrl: trimmedString(values.ctaUrl),
-                startsAt: trimmedString(values.startsAt),
-                endsAt: trimmedString(values.endsAt),
+                startsAt: toIsoOrUndefined(values.startsAt),
+                endsAt: toIsoOrUndefined(values.endsAt),
                 isPublished: values.isPublished,
               };
               if (values.itemType === 'car') {
@@ -353,9 +362,24 @@ function CreateItemModal({ onClose }: CreateItemModalProps): ReactElement {
               />
             </label>
             {(previewUrl || watch('previewImageUrl')) && (
-              <p className="mt-2 truncate text-xs text-gray-500">
-                {previewUrl || watch('previewImageUrl')}
-              </p>
+              <div className="relative mt-3 h-40 w-40 overflow-hidden rounded-xl border border-gray-200 bg-white">
+                <img
+                  src={previewUrl || watch('previewImageUrl')}
+                  alt="Preview"
+                  className="h-full w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewUrl('');
+                    setValue('previewImageUrl', '', { shouldDirty: true });
+                  }}
+                  className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
+                  aria-label="Remove image"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -368,14 +392,14 @@ function CreateItemModal({ onClose }: CreateItemModalProps): ReactElement {
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Input
-            label="Starts at (ISO, optional)"
-            placeholder="2026-06-01T00:00:00Z"
+            label="Starts at (optional)"
+            type="datetime-local"
             error={errors.startsAt?.message}
             {...register('startsAt')}
           />
           <Input
-            label="Ends at (ISO, optional)"
-            placeholder="2026-06-30T00:00:00Z"
+            label="Ends at (optional)"
+            type="datetime-local"
             error={errors.endsAt?.message}
             {...register('endsAt')}
           />
@@ -839,7 +863,6 @@ function Modal({ title, onClose, children }: ModalProps): ReactElement {
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div ref={containerRef} className="max-h-full w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
         <div className="sticky top-0 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
