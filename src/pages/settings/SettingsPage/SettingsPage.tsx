@@ -2,7 +2,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useClerk } from '@clerk/clerk-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AlertBanner, ConfirmModal } from '@/components/ui';
 import { MfaSettingsCard } from '@/components/auth';
 import {
@@ -15,14 +15,12 @@ import {
   useLogisticsSettings,
   useMyNotificationPreferences,
   useNotificationTemplates,
-  useOpenSupportTicketCount,
   usePricingRules,
   useRestrictedGoods,
   useSearch,
   useShipmentTypesCatalog,
   useUpdateShipmentTypesCatalog,
 } from '@/hooks';
-import { SupportListView } from '@/pages/support';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { deleteMyAccount, exportMyAccountData, getOnboardingSettings, sendBroadcast, updateOnboardingSettings } from '@/services';
 import type {
@@ -47,8 +45,7 @@ type SettingsTab =
   | 'restricted-goods'
   | 'shipment-types'
   | 'logistics'
-  | 'notification-templates'
-  | 'support';
+  | 'notification-templates';
 
 const SUPERADMIN_TAB_IDS: SettingsTab[] = [
   'general',
@@ -58,7 +55,6 @@ const SUPERADMIN_TAB_IDS: SettingsTab[] = [
   'shipment-types',
   'logistics',
   'notification-templates',
-  'support',
 ];
 
 const OPERATOR_TAB_IDS: SettingsTab[] = [
@@ -68,10 +64,9 @@ const OPERATOR_TAB_IDS: SettingsTab[] = [
   'restricted-goods',
   'shipment-types',
   'logistics',
-  'support',
 ];
 
-const STAFF_TAB_IDS: SettingsTab[] = ['general', 'support'];
+const STAFF_TAB_IDS: SettingsTab[] = ['general'];
 
 const TAB_FALLBACK_LABEL: Record<SettingsTab, string> = {
   general: 'General',
@@ -81,7 +76,6 @@ const TAB_FALLBACK_LABEL: Record<SettingsTab, string> = {
   'shipment-types': 'Shipment Types',
   logistics: 'Logistics',
   'notification-templates': 'Templates',
-  support: 'Support',
 };
 
 /* ── Shared sub-components ───────────────────────────────────── */
@@ -1249,12 +1243,7 @@ export function SettingsPage(): ReactElement {
   const isAdmin = useCan('app.admin');
   const isSuperadmin = useCan('app.superadmin');
 
-  const [searchParams] = useSearchParams();
-  const openSupportCount = useOpenSupportTicketCount();
-  const requestedTab = searchParams.get('tab') as SettingsTab | null;
-  const [activeTab, setActiveTab] = useState<SettingsTab>(
-    requestedTab === 'support' ? 'support' : 'general',
-  );
+  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
   /* ── Change password ──────────────────────────────────────── */
   const changePasswordMutation = useChangePassword();
@@ -1350,7 +1339,7 @@ export function SettingsPage(): ReactElement {
       <div className="space-y-6">
         <PageHeader title={t('pageTitle')} subtitle={t('subtitle')} />
 
-        {/* Tab bar — superadmins see all tabs; admins see all except templates; staff see General + Support */}
+        {/* Tab bar — superadmins see all tabs; admins see all except templates; staff see General */}
         {isOperator && (
           <div className="flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-gray-50 p-1 scrollbar-none">
             {(isSuperadmin ? SUPERADMIN_TAB_IDS : isAdmin ? OPERATOR_TAB_IDS : STAFF_TAB_IDS).map((tabId) => (
@@ -1364,11 +1353,6 @@ export function SettingsPage(): ReactElement {
                 )}
               >
                 {TAB_FALLBACK_LABEL[tabId]}
-                {tabId === 'support' && openSupportCount > 0 && (
-                  <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
-                    {openSupportCount > 99 ? '99+' : openSupportCount}
-                  </span>
-                )}
               </button>
             ))}
           </div>
@@ -1516,9 +1500,6 @@ export function SettingsPage(): ReactElement {
         {/* ── Notification Templates ───────────────────────── */}
         {isSuperadmin && activeTab === 'notification-templates' && <NotificationTemplatesSection canEdit={true} />}
         {isSuperadmin && activeTab === 'notification-templates' && <BroadcastSection />}
-
-        {/* ── Support ─────────────────────────────────────── */}
-        {isOperator && activeTab === 'support' && <SupportListView />}
       </div>
     </AppShell>
   );

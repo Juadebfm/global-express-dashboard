@@ -22,7 +22,6 @@ interface ClaimReviewPanelProps {
 }
 
 type ReviewMode = 'idle' | 'approving' | 'rejecting';
-type PostAction = 'none' | 'create_shipment';
 
 const IMAGE_EXTS = /\.(jpe?g|png|gif|webp|avif)(\?.*)?$/i;
 const isImageUrl = (url: string): boolean => IMAGE_EXTS.test(url);
@@ -77,14 +76,19 @@ function InfoRow({
 export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps): ReactElement {
   const [mode, setMode] = useState<ReviewMode>('idle');
   const [note, setNote] = useState('');
-  const [postAction, setPostAction] = useState<PostAction>('none');
   const [shipmentType, setShipmentType] = useState<'air' | 'ocean' | 'd2d'>('air');
+  const [d2dDispatchMode, setD2dDispatchMode] = useState<'air' | 'sea'>('air');
   const [shipmentResult, setShipmentResult] = useState<GalleryClaimReviewShipment | null>(null);
 
   const { mutate: reviewClaim, isPending } = useReviewGalleryClaim();
 
   const canReview = ticketStatus !== 'closed';
   const isAnonymous = !claim.claimantUserId;
+  const isCarPurchase = claim.claimType === 'car_purchase';
+  // Shipment creation is only supported for ownership claims tied to a real
+  // account — the backend rejects it for car-purchase claims (no order path
+  // exists there yet) and for anonymous submitters (nothing to assign it to).
+  const canAutoShip = !isCarPurchase && !isAnonymous;
 
   const resetForm = (): void => {
     setMode('idle');
@@ -97,8 +101,12 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
       payload: {
         decision: 'approve',
         note: note.trim() || undefined,
-        ...(postAction === 'create_shipment'
-          ? { postApprovalAction: 'create_shipment', shipmentType }
+        ...(canAutoShip
+          ? {
+              postApprovalAction: 'create_shipment' as const,
+              shipmentType,
+              ...(shipmentType === 'd2d' ? { d2dDispatchMode } : {}),
+            }
           : {}),
       },
     }).then((result) => {
@@ -128,7 +136,9 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
       {/* Header */}
       <div className="flex flex-wrap items-center gap-2 border-b border-amber-100 px-4 py-2.5">
         <AlertTriangle className="h-4 w-4 text-amber-500" />
-        <span className="text-sm font-semibold text-gray-800">Anonymous Goods Claim</span>
+        <span className="text-sm font-semibold text-gray-800">
+          {claim.claimType === 'car_purchase' ? 'Car Purchase Claim' : 'Anonymous Goods Claim'}
+        </span>
         <span className="rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
           Pending review
         </span>
@@ -265,50 +275,68 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
             <div className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
               <p className="text-sm font-semibold text-emerald-800">Approve claim</p>
 
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-gray-600">After approval</p>
-                <label className="flex cursor-pointer items-center gap-2">
-                  <input
-                    type="radio"
-                    name="postAction"
-                    checked={postAction === 'none'}
-                    onChange={() => setPostAction('none')}
-                    className="accent-emerald-600"
-                  />
-                  <span className="text-sm text-gray-700">Approve only — no shipment</span>
-                </label>
-                <label className="flex cursor-pointer items-center gap-2">
-                  <input
-                    type="radio"
-                    name="postAction"
-                    checked={postAction === 'create_shipment'}
-                    onChange={() => setPostAction('create_shipment')}
-                    className="accent-emerald-600"
-                  />
-                  <span className="text-sm text-gray-700">Create shipment order</span>
-                </label>
-              </div>
-
-              {postAction === 'create_shipment' && (
-                <div>
-                  <p className="mb-1.5 text-xs font-medium text-gray-600">Shipment type</p>
-                  <div className="flex flex-wrap gap-2">
-                    {(['air', 'ocean', 'd2d'] as const).map((st) => (
-                      <button
-                        key={st}
-                        type="button"
-                        onClick={() => setShipmentType(st)}
-                        className={`rounded-lg border px-3 py-1.5 text-xs font-semibold capitalize transition ${
-                          shipmentType === st
-                            ? 'border-emerald-400 bg-emerald-600 text-white'
-                            : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {st === 'd2d' ? 'D2D' : st.charAt(0).toUpperCase() + st.slice(1)}
-                      </button>
-                    ))}
+              {canAutoShip && (
+                <>
+                  <p className="text-xs text-gray-600">
+                    Approving will create the shipment order and mark this item claimed.
+                  </p>
+                  <div>
+                    <p className="mb-1.5 text-xs font-medium text-gray-600">Shipment type</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(['air', 'ocean', 'd2d'] as const).map((st) => (
+                        <button
+                          key={st}
+                          type="button"
+                          onClick={() => setShipmentType(st)}
+                          className={`rounded-lg border px-3 py-1.5 text-xs font-semibold capitalize transition ${
+                            shipmentType === st
+                              ? 'border-emerald-400 bg-emerald-600 text-white'
+                              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {st === 'd2d' ? 'D2D' : st.charAt(0).toUpperCase() + st.slice(1)}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+
+                  {shipmentType === 'd2d' && (
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium text-gray-600">Dispatch mode</p>
+                      <div className="flex flex-wrap gap-2">
+                        {(['air', 'sea'] as const).map((mode) => (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => setD2dDispatchMode(mode)}
+                            className={`rounded-lg border px-3 py-1.5 text-xs font-semibold capitalize transition ${
+                              d2dDispatchMode === mode
+                                ? 'border-emerald-400 bg-emerald-600 text-white'
+                                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {isCarPurchase && (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  Order creation for car purchases isn't available yet — approving will mark this
+                  car as sold. Arrange delivery/pickup separately for now.
+                </p>
+              )}
+
+              {!isCarPurchase && isAnonymous && (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  No platform account linked — approving will mark this item claimed, but a
+                  shipment can't be auto-created without an account. Follow up with the claimant
+                  directly.
+                </p>
               )}
 
               <div>

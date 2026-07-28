@@ -1,10 +1,18 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { useAuth, useCan, useDashboardData, useOrders, useRecordShipmentIntake } from '@/hooks';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  useAuth,
+  useCan,
+  useDashboardData,
+  useOpenSupportTicketCount,
+  useOrders,
+  useRecordShipmentIntake,
+} from '@/hooks';
 import { AppShell } from '@/pages/shared';
 import type { DetailTab } from '@/pages/shared';
 import { ShipmentIntakeModal } from '@/pages/shipments/components';
+import { ROUTES } from '@/constants';
 import { BrowsePane } from './components/BrowsePane';
 import { OrderWorkspace } from './components/OrderWorkspace';
 import type { QueueKind } from './components/QueueShell';
@@ -38,6 +46,8 @@ export function OperationsPage(): ReactElement {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showIntake, setShowIntake] = useState(false);
   const recordIntake = useRecordShipmentIntake();
+  const navigate = useNavigate();
+  const openSupportCount = useOpenSupportTicketCount();
 
   const selectedOrderId = searchParams.get('select');
   const queueKind = asQueueKind(searchParams.get('queue'));
@@ -67,6 +77,7 @@ export function OperationsPage(): ReactElement {
     updateParams({ select: next.select, queue: next.queue ?? null });
 
   const handleShowIntake = (): void => setShowIntake(true);
+  const handleShowSupport = (): void => { void navigate(ROUTES.SUPPORT); };
 
   const userName = user?.firstName ?? '';
   const hasSelection = !!selectedOrderId;
@@ -78,7 +89,19 @@ export function OperationsPage(): ReactElement {
       error={appError}
       loadingLabel="Loading orders…"
     >
-      <div className="mb-4 flex items-center justify-end">
+      <div className="mb-4 flex items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={handleShowSupport}
+          className="relative rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+        >
+          Support
+          {openSupportCount > 0 && (
+            <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold leading-none text-white">
+              {openSupportCount > 99 ? '99+' : openSupportCount}
+            </span>
+          )}
+        </button>
         <button
           type="button"
           onClick={handleShowIntake}

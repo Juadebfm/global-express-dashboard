@@ -114,12 +114,14 @@ function SupportDetailView({ ticketId }: { ticketId: string }): ReactElement {
   const sendMessage = useSendSupportMessage({ ticketId });
   const updateStatus = useUpdateTicketStatus({ ticketId });
 
-  // Extract tracking number from "Anonymous goods claim - {trackingNumber}" for a targeted claim lookup
+  // Extract tracking number from a claim ticket's subject ("<label> - {trackingNumber}")
+  // for a targeted claim lookup. Both claim flows create tickets with this shape.
   const claimTrackingNumber = useMemo(() => {
-    const PREFIX = 'Anonymous goods claim - ';
-    return ticket?.subject.startsWith(PREFIX)
-      ? ticket.subject.slice(PREFIX.length).trim()
-      : undefined;
+    const CLAIM_SUBJECT_PREFIXES = ['Anonymous goods claim - ', 'Car purchase attempt - '];
+    const subject = ticket?.subject;
+    if (!subject) return undefined;
+    const prefix = CLAIM_SUBJECT_PREFIXES.find((p) => subject.startsWith(p));
+    return prefix ? subject.slice(prefix.length).trim() : undefined;
   }, [ticket]);
 
   const { claim } = useClaimForTicket({ ticketId, trackingNumber: claimTrackingNumber });
@@ -178,6 +180,11 @@ function SupportDetailView({ ticketId }: { ticketId: string }): ReactElement {
           currentStatus={ticket.status}
           onStatusChange={handleStatusChange}
           isPending={updateStatus.isPending}
+          blockResolveReason={
+            claim?.status === 'pending'
+              ? 'Approve or reject the linked claim above before marking this ticket resolved.'
+              : undefined
+          }
         />
       )}
 

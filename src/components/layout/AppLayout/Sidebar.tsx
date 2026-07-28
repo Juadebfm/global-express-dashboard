@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { SidebarItem } from '@/types';
-import { useAuth, useCurrentUserAvatar, useNotificationCount, useOpenSupportTicketCount, useUndeliveredOrderCount } from '@/hooks';
+import { useAuth, useCurrentUserAvatar, useNotificationCount, useOpenSupportTicketCount, usePendingPaymentsCount, useUndeliveredOrderCount } from '@/hooks';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
 
@@ -74,6 +74,7 @@ export function Sidebar({
   const notificationsCount = useNotificationCount();
   const openSupportCount = useOpenSupportTicketCount();
   const undeliveredOrderCount = useUndeliveredOrderCount();
+  const pendingPaymentsCount = usePendingPaymentsCount();
   const isOperator = !!authUser && authUser.role !== undefined;
 
   const isDashboardLikeRoute =
@@ -106,8 +107,9 @@ export function Sidebar({
     const active = isActive(item.href);
     const icon = iconMap[item.icon] ?? <LayoutDashboard className="h-5 w-5" />;
     const label = t(`items.${item.id}`, item.id);
-    const showSupportBadge = (item.id === 'support' || item.id === 'settings') && isOperator && openSupportCount > 0;
+    const showSupportBadge = item.id === 'support' && isOperator && openSupportCount > 0;
     const showOrdersBadge = item.id === 'orders' && isOperator && undeliveredOrderCount > 0;
+    const showPaymentsBadge = item.id === 'payments' && isOperator && pendingPaymentsCount > 0;
 
     return (
       <Link
@@ -139,6 +141,11 @@ export function Sidebar({
               {undeliveredOrderCount > 99 ? '99+' : undeliveredOrderCount}
             </span>
           )}
+          {showPaymentsBadge && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold text-white leading-none">
+              {pendingPaymentsCount > 99 ? '99+' : pendingPaymentsCount}
+            </span>
+          )}
         </span>
         <span className={cn('leading-tight lg:text-xs', active ? 'text-brand-500' : 'text-gray-700')}>
           {label}
@@ -150,6 +157,11 @@ export function Sidebar({
           {showOrdersBadge && !showSupportBadge && (
             <span className="ml-2 inline-flex items-center rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] font-semibold text-white lg:hidden">
               {undeliveredOrderCount > 99 ? '99+' : undeliveredOrderCount}
+            </span>
+          )}
+          {showPaymentsBadge && (
+            <span className="ml-2 inline-flex items-center rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-semibold text-white lg:hidden">
+              {pendingPaymentsCount > 99 ? '99+' : pendingPaymentsCount}
             </span>
           )}
         </span>
