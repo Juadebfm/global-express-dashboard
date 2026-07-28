@@ -96,8 +96,15 @@ export function useNotifications(): NotificationsState {
   const message =
     error instanceof Error ? error.message : error ? 'Failed to load notifications' : null;
 
+  // Broadcasts go out to every connected user including the superadmin who
+  // sent it — hide the sender's own copy rather than showing them their own
+  // announcement back at them.
+  const notifications = (data?.data ?? []).filter(
+    (n) => !(n.isBroadcast && n.createdBy && n.createdBy === user?.id),
+  );
+
   return {
-    notifications: data?.data ?? [],
+    notifications,
     total: data?.pagination.total ?? 0,
     isLoading,
     error: message,

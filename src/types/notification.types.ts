@@ -11,6 +11,7 @@ export interface ApiNotification {
   isRead: boolean;
   isSaved: boolean;
   isBroadcast?: boolean;
+  createdBy?: string | null;
   createdAt: string;
   updatedAt: string;
   metadata: Record<string, unknown>;
