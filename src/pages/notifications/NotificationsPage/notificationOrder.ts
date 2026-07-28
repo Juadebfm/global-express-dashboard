@@ -29,3 +29,15 @@ export function isNewOrderHandlingActionable(
 export function isPaymentNotificationActionable(notificationType: string): boolean {
   return notificationType === 'payment_event';
 }
+
+/**
+ * 'admin_alert' is a shared bucket type reused for several unrelated staff
+ * alerts (car-purchase attempts, shop interest requests, etc.), so gate on
+ * the metadata shape rather than the type string alone. Returns the interest
+ * request id to deep-link to when this specific alert is a shop interest
+ * request, null otherwise.
+ */
+export function resolveShopInterestRequestId(metadata: Record<string, unknown>): string | null {
+  const id = metadata.interestRequestId;
+  return typeof id === 'string' ? id : null;
+}

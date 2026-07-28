@@ -3,3 +3,4 @@ export { PageHeader } from './PageHeader';
 export { PagePlaceholder } from './PagePlaceholder';
 export type { PlaceholderItem } from './PagePlaceholder';
 export * from './orderStatus';
+export * from './shopInterestStatus';

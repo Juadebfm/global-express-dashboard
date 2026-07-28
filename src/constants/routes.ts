@@ -58,6 +58,9 @@ export const ROUTES = {
   LEADS: '/leads',
   NEWSLETTER_SUBSCRIBERS: '/newsletter/subscribers',
   D2D_MY_REQUESTS: '/d2d/my-requests',
+
+  // Deep-link only — not in any sidebar nav, reached from notifications.
+  SHOP_INTEREST_DETAIL: '/shop/interests/:id',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

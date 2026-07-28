@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useReviewGalleryClaim, useShopInterestRequest, useUpdateShopInterestRequest } from '@/hooks';
 import type { GalleryClaim, GalleryClaimReviewShipment, ShopInterestStatus } from '@/types';
+import { nextShopInterestStatusOptions, shopInterestStatusBadge } from '@/pages/shared';
 import { ImageTile } from './SupportImageTile';
 
 interface ClaimReviewPanelProps {
@@ -138,24 +139,6 @@ function InfoRow({
    of the review controls, so staff can track delivery from the same
    ticket instead of a separate admin page ─────────────────────────── */
 
-function saleStatusBadge(status: ShopInterestStatus): { label: string; cls: string } {
-  if (status === 'delivered') return { label: 'Delivered', cls: 'bg-emerald-100 text-emerald-700' };
-  if (status === 'closed') return { label: 'Closed', cls: 'bg-gray-100 text-gray-600' };
-  if (status === 'converted') return { label: 'Converted — awaiting delivery', cls: 'bg-blue-100 text-blue-700' };
-  return { label: status.replace(/_/g, ' '), cls: 'bg-gray-100 text-gray-600' };
-}
-
-function nextSaleStatusOptions(current: ShopInterestStatus): { value: ShopInterestStatus; label: string }[] {
-  if (current === 'converted') {
-    return [
-      { value: 'delivered', label: 'Mark Delivered' },
-      { value: 'closed', label: 'Close' },
-    ];
-  }
-  if (current === 'delivered') return [{ value: 'closed', label: 'Close' }];
-  return [];
-}
-
 function SaleStatusSection({ interestRequestId }: { interestRequestId: string }): ReactElement {
   const { data: interest, isLoading } = useShopInterestRequest(interestRequestId);
   const { mutate: updateInterest, isPending: isUpdating } = useUpdateShopInterestRequest(interestRequestId);
@@ -170,8 +153,8 @@ function SaleStatusSection({ interestRequestId }: { interestRequestId: string })
     );
   }
 
-  const badge = saleStatusBadge(interest.status);
-  const nextOptions = nextSaleStatusOptions(interest.status);
+  const badge = shopInterestStatusBadge(interest.status);
+  const nextOptions = nextShopInterestStatusOptions(interest.status);
 
   const startEditingNotes = (): void => {
     setNotesDraft(interest.staffNotes ?? '');

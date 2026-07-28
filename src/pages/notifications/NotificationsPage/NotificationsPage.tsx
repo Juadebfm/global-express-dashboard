@@ -16,7 +16,12 @@ import { TableRowsSkeleton } from '@/components/ui';
 import { cn } from '@/utils';
 import { ROUTES } from '@/constants';
 import i18n from '@/i18n/i18n';
-import { isNewOrderHandlingActionable, isPaymentNotificationActionable, resolveNotificationOrderId } from './notificationOrder';
+import {
+  isNewOrderHandlingActionable,
+  isPaymentNotificationActionable,
+  resolveNotificationOrderId,
+  resolveShopInterestRequestId,
+} from './notificationOrder';
 
 interface NotificationItem {
   id: string;
@@ -138,6 +143,7 @@ function NotificationDetailModal({
   onDelete,
   onOpenOrder,
   onOpenPayment,
+  onOpenShopInterest,
   canOpenOrders,
   t,
 }: {
@@ -146,6 +152,7 @@ function NotificationDetailModal({
   onDelete: () => void;
   onOpenOrder: (() => void) | null;
   onOpenPayment: (() => void) | null;
+  onOpenShopInterest: (() => void) | null;
   canOpenOrders: boolean;
   t: (key: string) => string;
 }): ReactElement {
@@ -259,6 +266,16 @@ function NotificationDetailModal({
               <ArrowUpRight className="h-4 w-4" />
             </button>
           )}
+          {onOpenShopInterest && (
+            <button
+              type="button"
+              onClick={onOpenShopInterest}
+              className="mr-auto inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+            >
+              View interest request
+              <ArrowUpRight className="h-4 w-4" />
+            </button>
+          )}
           <button
             type="button"
             onClick={onDelete}
@@ -287,6 +304,8 @@ function CustomerNotificationsView(): ReactElement {
   // Matches ROUTES.PAYMENTS's own role gate (allowedRoles: ['user', 'superadmin'])
   // — staff/admin would just get bounced, so don't offer the link to them.
   const canOpenPayments = useCan('app.superadmin');
+  // Matches ROUTES.SHOP_INTEREST_DETAIL's own role gate (staff and above).
+  const canOpenShopInterests = useCan('app.operator');
   const { data, isLoading, error } = useDashboardData();
   const { query } = useSearch();
   const {
@@ -648,6 +667,16 @@ function CustomerNotificationsView(): ReactElement {
               ? () => {
                   setActiveNotification(null);
                   navigate(ROUTES.PAYMENTS);
+                }
+              : null
+          }
+          onOpenShopInterest={
+            canOpenShopInterests && resolveShopInterestRequestId(activeNotification.metadata)
+              ? () => {
+                  const interestId = resolveShopInterestRequestId(activeNotification.metadata);
+                  if (!interestId) return;
+                  setActiveNotification(null);
+                  navigate(ROUTES.SHOP_INTEREST_DETAIL.replace(':id', encodeURIComponent(interestId)));
                 }
               : null
           }

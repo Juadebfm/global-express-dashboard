@@ -115,6 +115,11 @@ const BatchesPage = lazy(() =>
 const BatchDetailPage = lazy(() =>
   import('@/pages/batches/BatchDetailPage').then((m) => ({ default: m.BatchDetailPage })),
 );
+// Deep-link only (from an admin_alert notification's View button) — no
+// sidebar entry, see ROUTES.SHOP_INTEREST_DETAIL.
+const ShopInterestDetailPage = lazy(() =>
+  import('@/pages/shop/ShopInterestDetailPage/ShopInterestDetailPage').then((m) => ({ default: m.ShopInterestDetailPage })),
+);
 const SupplierNoticesPage = lazy(() =>
   import('@/pages/supplierNotices/SupplierNoticesPage/SupplierNoticesPage').then((m) => ({ default: m.SupplierNoticesPage })),
 );
@@ -445,6 +450,14 @@ function AppRoutes(): ReactElement {
         element={
           <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
             <BatchDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.SHOP_INTEREST_DETAIL}
+        element={
+          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
+            <ShopInterestDetailPage />
           </ProtectedRoute>
         }
       />
