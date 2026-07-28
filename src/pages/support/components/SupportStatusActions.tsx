@@ -54,6 +54,17 @@ const TRANSITIONS: Record<
       hint: '',
     },
   ],
+  // Closed previously had no transitions at all — a dead end with no way back
+  // in, even for a ticket closed by mistake or one that needs a follow-up.
+  closed: [
+    {
+      next: 'in_progress',
+      labelKey: 'statusActions.reopen',
+      buttonClass: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
+      bannerClass: 'border-gray-200 bg-gray-50',
+      hint: 'This ticket is closed. Reopen it to reply or take further action.',
+    },
+  ],
 };
 
 export function SupportStatusActions({

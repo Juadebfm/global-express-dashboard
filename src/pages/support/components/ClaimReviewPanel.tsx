@@ -298,7 +298,11 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
   const { mutate: reviewClaim, isPending } = useReviewGalleryClaim();
 
   const isClaimPending = claim.status === 'pending';
-  const canReview = ticketStatus !== 'closed';
+  // Deciding a claim is independent of the ticket's own status — the backend
+  // review endpoint only checks the claim itself, never the ticket. A closed
+  // ticket must not become a dead end for a still-pending claim (it has no
+  // "reopen and decide" workaround otherwise).
+  const isTicketClosed = ticketStatus === 'closed';
   const isAnonymous = !claim.claimantUserId;
   const isCarPurchase = claim.claimType === 'car_purchase';
   // Shipment creation is only supported for ownership claims tied to a real
@@ -506,8 +510,15 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
             <SaleStatusSection interestRequestId={claim.shopInterestRequestId} />
           )}
 
+          {/* Ticket-closed notice — informational only, doesn't block deciding the claim */}
+          {isClaimPending && isTicketClosed && (
+            <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">
+              This ticket is closed, but the claim is still pending — you can still approve or reject it below.
+            </p>
+          )}
+
           {/* Approve / Reject buttons */}
-          {isClaimPending && canReview && mode === 'idle' && (
+          {isClaimPending && mode === 'idle' && (
             <div className="flex gap-2 pt-1">
               <button
                 type="button"
@@ -527,7 +538,7 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
           )}
 
           {/* Approve form */}
-          {isClaimPending && canReview && mode === 'approving' && (
+          {isClaimPending && mode === 'approving' && (
             <div className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
               <p className="text-sm font-semibold text-emerald-800">Approve claim</p>
 
@@ -691,7 +702,7 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
           )}
 
           {/* Reject form */}
-          {isClaimPending && canReview && mode === 'rejecting' && (
+          {isClaimPending && mode === 'rejecting' && (
             <div className="space-y-3 rounded-xl border border-red-200 bg-red-50 p-4">
               <p className="text-sm font-semibold text-red-800">Reject claim</p>
 
@@ -727,12 +738,6 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
             </div>
           )}
 
-          {/* Ticket closed while claim is still undecided */}
-          {isClaimPending && shipmentResult === null && !canReview && (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-500">
-              Ticket is closed. No further claim actions available.
-            </div>
-          )}
         </div>
       </div>
     </div>
