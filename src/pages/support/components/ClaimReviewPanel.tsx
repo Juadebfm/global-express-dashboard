@@ -13,7 +13,7 @@ import {
   User,
 } from 'lucide-react';
 import { useReviewGalleryClaim } from '@/hooks';
-import type { GalleryClaim, GalleryClaimReviewShipment } from '@/types';
+import type { GalleryClaim, GalleryClaimReviewSale, GalleryClaimReviewShipment } from '@/types';
 import { ImageTile } from './SupportImageTile';
 
 interface ClaimReviewPanelProps {
@@ -25,6 +25,69 @@ type ReviewMode = 'idle' | 'approving' | 'rejecting';
 
 const IMAGE_EXTS = /\.(jpe?g|png|gif|webp|avif)(\?.*)?$/i;
 const isImageUrl = (url: string): boolean => IMAGE_EXTS.test(url);
+
+interface CarSaleForm {
+  salePriceNgn: string;
+  deliveryMethod: 'pickup' | 'delivery';
+  deliveryAddress: string;
+  saleNotes: string;
+  vin: string;
+  make: string;
+  model: string;
+  year: string;
+  mileageKm: string;
+  fuelType: string;
+  transmission: string;
+  location: string;
+  exteriorColor: string;
+}
+
+const EMPTY_SALE_FORM: CarSaleForm = {
+  salePriceNgn: '',
+  deliveryMethod: 'pickup',
+  deliveryAddress: '',
+  saleNotes: '',
+  vin: '',
+  make: '',
+  model: '',
+  year: '',
+  mileageKm: '',
+  fuelType: '',
+  transmission: '',
+  location: '',
+  exteriorColor: '',
+};
+
+/* ── Labeled text input for the car-sale form ───────────────────── */
+
+function LabeledInput({
+  label,
+  value,
+  onChange,
+  type = 'text',
+  placeholder,
+  full = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: 'text' | 'number';
+  placeholder?: string;
+  full?: boolean;
+}): ReactElement {
+  return (
+    <div className={full ? 'col-span-2' : undefined}>
+      <p className="mb-1 text-xs font-medium text-gray-600">{label}</p>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-400"
+      />
+    </div>
+  );
+}
 
 /* ── Copyable info row ──────────────────────────────────────────── */
 
@@ -79,6 +142,8 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
   const [shipmentType, setShipmentType] = useState<'air' | 'ocean' | 'd2d'>('air');
   const [d2dDispatchMode, setD2dDispatchMode] = useState<'air' | 'sea'>('air');
   const [shipmentResult, setShipmentResult] = useState<GalleryClaimReviewShipment | null>(null);
+  const [saleForm, setSaleForm] = useState<CarSaleForm>(EMPTY_SALE_FORM);
+  const [saleResult, setSaleResult] = useState<GalleryClaimReviewSale | null>(null);
 
   const { mutate: reviewClaim, isPending } = useReviewGalleryClaim();
 
@@ -86,13 +151,20 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
   const isAnonymous = !claim.claimantUserId;
   const isCarPurchase = claim.claimType === 'car_purchase';
   // Shipment creation is only supported for ownership claims tied to a real
-  // account — the backend rejects it for car-purchase claims (no order path
-  // exists there yet) and for anonymous submitters (nothing to assign it to).
+  // account — the backend rejects it for car-purchase claims (they finalize
+  // as a Shop sale instead, see below) and for anonymous submitters (nothing
+  // to assign it to).
   const canAutoShip = !isCarPurchase && !isAnonymous;
+  const saleAddressMissing =
+    isCarPurchase && saleForm.deliveryMethod === 'delivery' && !saleForm.deliveryAddress.trim();
+
+  const updateSaleForm = (patch: Partial<CarSaleForm>): void =>
+    setSaleForm((f) => ({ ...f, ...patch }));
 
   const resetForm = (): void => {
     setMode('idle');
     setNote('');
+    setSaleForm(EMPTY_SALE_FORM);
   };
 
   const handleApprove = (): void => {
@@ -108,9 +180,29 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
               ...(shipmentType === 'd2d' ? { d2dDispatchMode } : {}),
             }
           : {}),
+        ...(isCarPurchase
+          ? {
+              postApprovalAction: 'create_sale' as const,
+              salePriceNgn: saleForm.salePriceNgn.trim() ? Number(saleForm.salePriceNgn) : undefined,
+              deliveryMethod: saleForm.deliveryMethod,
+              deliveryAddress:
+                saleForm.deliveryMethod === 'delivery' ? saleForm.deliveryAddress.trim() : undefined,
+              saleNotes: saleForm.saleNotes.trim() || undefined,
+              vin: saleForm.vin.trim() || undefined,
+              make: saleForm.make.trim() || undefined,
+              model: saleForm.model.trim() || undefined,
+              year: saleForm.year.trim() ? Number(saleForm.year) : undefined,
+              mileageKm: saleForm.mileageKm.trim() ? Number(saleForm.mileageKm) : undefined,
+              fuelType: saleForm.fuelType.trim() || undefined,
+              transmission: saleForm.transmission.trim() || undefined,
+              location: saleForm.location.trim() || undefined,
+              exteriorColor: saleForm.exteriorColor.trim() || undefined,
+            }
+          : {}),
       },
     }).then((result) => {
       setShipmentResult(result.shipment);
+      setSaleResult(result.sale ?? null);
       resetForm();
     }).catch(() => {
       // error handled by hook's onError
@@ -250,6 +342,28 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
             </div>
           )}
 
+          {/* Sale recorded result (shown after approve + create_sale) */}
+          {saleResult && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+              <div className="mb-2 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600" />
+                <p className="text-sm font-semibold text-emerald-800">Claim approved · sale recorded</p>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <InfoRow
+                  icon={<Hash className="h-3.5 w-3.5" />}
+                  label="Listing tracking"
+                  value={saleResult.listingTrackingNumber}
+                  copyable
+                />
+                <InfoRow icon={null} label="Interest request" value={saleResult.interestRequestId} copyable />
+              </div>
+              <p className="mt-2 text-xs text-emerald-700">
+                Manage this sale from Shop's interest-requests view, not Orders/Tracking.
+              </p>
+            </div>
+          )}
+
           {/* Approve / Reject buttons */}
           {canReview && mode === 'idle' && (
             <div className="flex gap-2 pt-1">
@@ -325,10 +439,72 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
               )}
 
               {isCarPurchase && (
-                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                  Order creation for car purchases isn't available yet — approving will mark this
-                  car as sold. Arrange delivery/pickup separately for now.
-                </p>
+                <div className="space-y-3">
+                  <p className="text-xs text-gray-600">
+                    Approving finalizes this as a sale — creates a Shop listing (marked sold) and
+                    an interest request recording the buyer. Managed from Shop's interest-requests
+                    view afterward, not Orders/Tracking.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <LabeledInput label="VIN" value={saleForm.vin} onChange={(v) => updateSaleForm({ vin: v })} />
+                    <LabeledInput label="Make" value={saleForm.make} onChange={(v) => updateSaleForm({ make: v })} />
+                    <LabeledInput label="Model" value={saleForm.model} onChange={(v) => updateSaleForm({ model: v })} />
+                    <LabeledInput label="Year" type="number" value={saleForm.year} onChange={(v) => updateSaleForm({ year: v })} />
+                    <LabeledInput label="Mileage (km)" type="number" value={saleForm.mileageKm} onChange={(v) => updateSaleForm({ mileageKm: v })} />
+                    <LabeledInput label="Fuel type" value={saleForm.fuelType} onChange={(v) => updateSaleForm({ fuelType: v })} />
+                    <LabeledInput label="Transmission" value={saleForm.transmission} onChange={(v) => updateSaleForm({ transmission: v })} />
+                    <LabeledInput label="Exterior color" value={saleForm.exteriorColor} onChange={(v) => updateSaleForm({ exteriorColor: v })} />
+                    <LabeledInput label="Location" value={saleForm.location} onChange={(v) => updateSaleForm({ location: v })} />
+                    <LabeledInput
+                      label="Sale price (₦, optional)"
+                      type="number"
+                      placeholder="Defaults to listed price"
+                      value={saleForm.salePriceNgn}
+                      onChange={(v) => updateSaleForm({ salePriceNgn: v })}
+                    />
+                  </div>
+
+                  <div>
+                    <p className="mb-1.5 text-xs font-medium text-gray-600">Delivery</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(['pickup', 'delivery'] as const).map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => updateSaleForm({ deliveryMethod: m })}
+                          className={`rounded-lg border px-3 py-1.5 text-xs font-semibold capitalize transition ${
+                            saleForm.deliveryMethod === m
+                              ? 'border-emerald-400 bg-emerald-600 text-white'
+                              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {m === 'pickup' ? 'Pickup' : 'Delivery'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {saleForm.deliveryMethod === 'delivery' && (
+                    <LabeledInput
+                      label="Delivery address"
+                      full
+                      value={saleForm.deliveryAddress}
+                      onChange={(v) => updateSaleForm({ deliveryAddress: v })}
+                    />
+                  )}
+
+                  <div>
+                    <p className="mb-1 text-xs font-medium text-gray-600">Sale notes (optional)</p>
+                    <textarea
+                      value={saleForm.saleNotes}
+                      onChange={(e) => updateSaleForm({ saleNotes: e.target.value })}
+                      rows={2}
+                      placeholder="Notes specific to this sale…"
+                      className="w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-400"
+                    />
+                  </div>
+                </div>
               )}
 
               {!isCarPurchase && isAnonymous && (
@@ -353,7 +529,8 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
               <div className="flex gap-2">
                 <button
                   type="button"
-                  disabled={isPending}
+                  disabled={isPending || saleAddressMissing}
+                  title={saleAddressMissing ? 'Delivery address is required for delivery' : undefined}
                   onClick={handleApprove}
                   className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                 >
@@ -409,7 +586,7 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
           )}
 
           {/* Rejection result notice (removed via invalidation — component unmounts after review) */}
-          {shipmentResult === null && !canReview && (
+          {shipmentResult === null && saleResult === null && !canReview && (
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-500">
               Ticket is closed. No further claim actions available.
             </div>

@@ -78,10 +78,17 @@ export interface GalleryClaimReviewShipment {
   dispatchMasterTrackingNumber?: string | null;
 }
 
+export interface GalleryClaimReviewSale {
+  listingId: string;
+  listingTrackingNumber: string;
+  interestRequestId: string;
+}
+
 export interface GalleryClaimReviewResult {
   item: GalleryItem;
   claim: GalleryClaim;
   shipment: GalleryClaimReviewShipment | null;
+  sale: GalleryClaimReviewSale | null;
 }
 
 export interface PublicGalleryListings {
@@ -173,7 +180,22 @@ export interface GalleryClaimsPaginatedResult {
 export interface GalleryClaimReviewPayload {
   decision: 'approve' | 'reject';
   note?: string;
-  postApprovalAction?: 'create_shipment' | 'approve_only';
+  postApprovalAction?: 'create_shipment' | 'create_sale' | 'approve_only';
   shipmentType?: 'air' | 'ocean' | 'd2d';
   d2dDispatchMode?: 'air' | 'sea';
+  // create_sale (car-purchase claims only) — sale/delivery details plus
+  // vehicle fields the gallery item itself never captured.
+  salePriceNgn?: number;
+  deliveryMethod?: 'pickup' | 'delivery';
+  deliveryAddress?: string;
+  saleNotes?: string;
+  vin?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  mileageKm?: number;
+  fuelType?: string;
+  transmission?: string;
+  location?: string;
+  exteriorColor?: string;
 }

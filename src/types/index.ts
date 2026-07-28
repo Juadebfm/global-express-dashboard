@@ -292,6 +292,7 @@ export type {
   GalleryTicketStub,
   GalleryClaimSubmissionResult,
   GalleryClaimReviewShipment,
+  GalleryClaimReviewSale,
   GalleryClaimReviewResult,
   PublicGalleryListings,
   AuthedGalleryListings,
