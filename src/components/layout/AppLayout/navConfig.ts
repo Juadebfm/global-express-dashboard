@@ -28,7 +28,6 @@ export const STAFF_NAV: SidebarItem[] = [
   { id: 'leads', icon: 'inbox', href: ROUTES.LEADS },
   { id: 'supplierNotices', icon: 'package', href: ROUTES.SUPPLIER_NOTICES },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
-  { id: 'settings', icon: 'settings', href: ROUTES.SETTINGS },
 ];
 
 export const ADMIN_NAV: SidebarItem[] = [
@@ -42,7 +41,6 @@ export const ADMIN_NAV: SidebarItem[] = [
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
   { id: 'team', icon: 'team', href: ROUTES.TEAM },
   { id: 'reports', icon: 'chart', href: ROUTES.REPORTS },
-  { id: 'settings', icon: 'settings', href: ROUTES.SETTINGS },
 ];
 
 export const SUPERADMIN_NAV: SidebarItem[] = [
@@ -58,7 +56,6 @@ export const SUPERADMIN_NAV: SidebarItem[] = [
   { id: 'team', icon: 'team', href: ROUTES.TEAM },
   { id: 'reports', icon: 'chart', href: ROUTES.REPORTS },
   { id: 'newsletterSubscribers', icon: 'mail', href: ROUTES.NEWSLETTER_SUBSCRIBERS },
-  { id: 'settings', icon: 'settings', href: ROUTES.SETTINGS },
 ];
 
 export const CUSTOMER_FOOTER: SidebarItem[] = [
