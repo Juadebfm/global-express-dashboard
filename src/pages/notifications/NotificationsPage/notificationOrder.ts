@@ -20,3 +20,12 @@ export function isNewOrderHandlingActionable(
 ): boolean {
   return notificationType === 'new_order' && orderStatus === 'PREORDER_SUBMITTED';
 }
+
+/**
+ * Payment-related notifications ("Payment Receipt Submitted", "Payment
+ * Details Ready") link to the Payments page rather than the order workflow —
+ * there's no per-order deep link there, just the flat transactions list.
+ */
+export function isPaymentNotificationActionable(notificationType: string): boolean {
+  return notificationType === 'payment_event';
+}
