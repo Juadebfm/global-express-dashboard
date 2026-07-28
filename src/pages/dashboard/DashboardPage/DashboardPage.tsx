@@ -10,6 +10,7 @@ import { ROUTES } from '@/constants';
 import { ShipmentRow } from './components/ShipmentRow';
 import { ShipmentDetailsModal } from './components/ShipmentDetailsModal';
 import { ShipmentTable } from './components/ShipmentTable';
+import { BroadcastBanners } from './components/BroadcastBanners';
 
 const SKELETON_COUNT = 5;
 
@@ -31,6 +32,8 @@ export function DashboardPage(): ReactElement {
   return (
     <AppLayout user={layoutUser}>
       <div className="space-y-6">
+        <BroadcastBanners />
+
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-2xl font-semibold text-gray-900">My Shipments</h1>

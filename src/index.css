@@ -111,6 +111,21 @@
   animation: pulse-glow 1.8s ease-in-out infinite;
 }
 
+@keyframes banner-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.banner-enter {
+  animation: banner-enter 0.25s ease-out;
+}
+
 .scrollbar-none {
   scrollbar-width: none;
   -ms-overflow-style: none;
