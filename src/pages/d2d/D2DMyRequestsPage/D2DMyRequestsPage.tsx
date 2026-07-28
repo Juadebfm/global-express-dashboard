@@ -15,10 +15,10 @@ const STATUS_LABELS: Record<LeadStatus, string> = {
 };
 
 const STATUS_CLASSES: Record<LeadStatus, string> = {
-  new: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  contacted: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
-  converted: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  closed: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+  new: 'bg-blue-100 text-blue-700',
+  contacted: 'bg-amber-100 text-amber-700',
+  converted: 'bg-emerald-100 text-emerald-700',
+  closed: 'bg-gray-100 text-gray-600',
 };
 
 const EMPTY_FORM = {
@@ -36,20 +36,20 @@ function LeadCard({ lead }: { lead: Lead }) {
   const metadata = lead.metadata as Record<string, unknown> | null;
   const delivery = metadata?.delivery as Record<string, string> | undefined;
   return (
-    <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
+    <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
       <div className="flex items-start justify-between">
         <div>
-          <p className="font-medium text-text">{lead.message}</p>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="font-medium text-gray-900">{lead.message}</p>
+          <p className="text-sm text-gray-500 mt-0.5">
             From {lead.originCountry ?? 'Unknown'} · {new Date(lead.createdAt).toLocaleDateString()}
           </p>
         </div>
-        <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', STATUS_CLASSES[lead.status])}>
+        <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-semibold', STATUS_CLASSES[lead.status])}>
           {STATUS_LABELS[lead.status]}
         </span>
       </div>
       {(!!metadata?.estimatedWeightKg || !!delivery?.addressLine1) && (
-        <div className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
+        <div className="grid gap-1 text-sm text-gray-500 sm:grid-cols-2">
           {!!metadata?.estimatedWeightKg && (
             <span>Est. weight: {String(metadata.estimatedWeightKg)} kg</span>
           )}
@@ -104,7 +104,7 @@ export function D2DMyRequestsPage(): ReactElement {
         />
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent/90"
+          className="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
         >
           <Plus className="h-4 w-4" />
           New Request
@@ -114,69 +114,69 @@ export function D2DMyRequestsPage(): ReactElement {
       {/* New request modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-surface p-6 shadow-xl">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-text">Submit D2D Request</h2>
-              <button onClick={() => setShowForm(false)} className="text-muted-foreground hover:text-text">
+              <h2 className="text-lg font-semibold text-gray-900">Submit D2D Request</h2>
+              <button onClick={() => setShowForm(false)} className="text-gray-500 hover:text-gray-900">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-text mb-1">Full Name *</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Full Name *</label>
                   <input name="fullName" value={form.fullName} onChange={handleChange} required
-                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-accent" />
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-brand-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text mb-1">Phone</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Phone</label>
                   <input name="phone" value={form.phone} onChange={handleChange}
-                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-accent" />
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-brand-500" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Origin Country *</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Origin Country *</label>
                 <input name="originCountry" value={form.originCountry} onChange={handleChange} required
                   placeholder="e.g. South Korea"
-                  className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-accent" />
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-brand-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Goods Description *</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Goods Description *</label>
                 <textarea name="goodsDescription" value={form.goodsDescription} onChange={handleChange} required
                   rows={3}
                   placeholder="Describe the goods you want shipped"
-                  className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-accent resize-none" />
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-brand-500 resize-none" />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-text mb-1">Est. Weight (kg)</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Est. Weight (kg)</label>
                   <input name="estimatedWeightKg" type="number" min="0" step="0.1" value={form.estimatedWeightKg} onChange={handleChange}
-                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-accent" />
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-brand-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text mb-1">Delivery Address</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Delivery Address</label>
                   <input name="deliveryAddressLine1" value={form.deliveryAddressLine1} onChange={handleChange}
                     placeholder="Street address"
-                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-accent" />
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-brand-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text mb-1">City</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">City</label>
                   <input name="deliveryCity" value={form.deliveryCity} onChange={handleChange}
-                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-accent" />
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-brand-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text mb-1">State</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">State</label>
                   <input name="deliveryState" value={form.deliveryState} onChange={handleChange}
-                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-accent" />
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-brand-500" />
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowForm(false)}
-                  className="flex-1 rounded-lg border border-border py-2 text-sm font-medium text-text hover:bg-muted">
+                  className="flex-1 rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
                   Cancel
                 </button>
                 <button type="submit" disabled={submitMutation.isPending}
-                  className="flex-1 rounded-lg bg-accent py-2 text-sm font-semibold text-white hover:bg-accent/90 disabled:opacity-60">
+                  className="flex-1 rounded-lg bg-brand-500 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60">
                   {submitMutation.isPending ? 'Submitting…' : 'Submit Request'}
                 </button>
               </div>
@@ -186,7 +186,7 @@ export function D2DMyRequestsPage(): ReactElement {
       )}
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">
+        <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
           {error}
         </div>
       )}
@@ -194,15 +194,15 @@ export function D2DMyRequestsPage(): ReactElement {
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />
+            <div key={i} className="h-24 rounded-xl bg-gray-100 animate-pulse" />
           ))}
         </div>
       ) : leads.length === 0 ? (
-        <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border text-center">
-          <Package className="h-10 w-10 text-muted-foreground/40" />
-          <p className="text-sm text-muted-foreground">No D2D requests yet.</p>
+        <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-gray-200 text-center">
+          <Package className="h-10 w-10 text-gray-300" />
+          <p className="text-sm text-gray-500">No D2D requests yet.</p>
           <button onClick={() => setShowForm(true)}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent/90">
+            className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600">
             Submit your first request
           </button>
         </div>

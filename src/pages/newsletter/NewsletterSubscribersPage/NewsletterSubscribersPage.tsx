@@ -4,13 +4,21 @@ import { Download, Trash2, UserX } from 'lucide-react';
 import { useNewsletterSubscribers, useDeactivateSubscriber, useDeleteSubscriber, useExportSubscribers } from '@/hooks/useNewsletter';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { Pagination } from '@/components/ui';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useFeedbackStore } from '@/store';
 
 const PAGE_SIZE = 50;
 
+interface PendingAction {
+  type: 'deactivate' | 'delete';
+  id: string;
+  email: string;
+}
+
 export function NewsletterSubscribersPage(): ReactElement {
   const [page, setPage] = useState(1);
   const [activeOnly, setActiveOnly] = useState<boolean | undefined>(undefined);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
   const { subscribers, pagination, isLoading } = useNewsletterSubscribers(page, PAGE_SIZE, activeOnly);
   const deactivate = useDeactivateSubscriber();
@@ -18,23 +26,22 @@ export function NewsletterSubscribersPage(): ReactElement {
   const exportCsv = useExportSubscribers();
   const pushMessage = useFeedbackStore((s) => s.pushMessage);
 
-  const handleDeactivate = async (id: string, email: string) => {
-    if (!confirm(`Deactivate ${email}? They will no longer receive emails.`)) return;
-    try {
-      await deactivate.mutateAsync(id);
-      pushMessage({ tone: 'success', message: 'Subscriber deactivated.' });
-    } catch {
-      pushMessage({ tone: 'error', message: 'Failed to deactivate.' });
-    }
-  };
+  const isConfirming = deactivate.isPending || remove.isPending;
 
-  const handleDelete = async (id: string, email: string) => {
-    if (!confirm(`Permanently delete ${email}? This cannot be undone.`)) return;
+  const handleConfirm = async (): Promise<void> => {
+    if (!pendingAction) return;
+    const { type, id } = pendingAction;
     try {
-      await remove.mutateAsync(id);
-      pushMessage({ tone: 'success', message: 'Subscriber deleted.' });
+      if (type === 'deactivate') {
+        await deactivate.mutateAsync(id);
+        pushMessage({ tone: 'success', message: 'Subscriber deactivated.' });
+      } else {
+        await remove.mutateAsync(id);
+        pushMessage({ tone: 'success', message: 'Subscriber deleted.' });
+      }
+      setPendingAction(null);
     } catch {
-      pushMessage({ tone: 'error', message: 'Failed to delete.' });
+      pushMessage({ tone: 'error', message: type === 'deactivate' ? 'Failed to deactivate.' : 'Failed to delete.' });
     }
   };
 
@@ -57,7 +64,7 @@ export function NewsletterSubscribersPage(): ReactElement {
         <button
           onClick={handleExport}
           disabled={exportCsv.isPending}
-          className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-text hover:bg-muted disabled:opacity-60"
+          className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
         >
           <Download className="h-4 w-4" />
           Export CSV
@@ -73,7 +80,7 @@ export function NewsletterSubscribersPage(): ReactElement {
             setActiveOnly(v === '' ? undefined : v === 'true');
             setPage(1);
           }}
-          className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text"
+          className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700"
         >
           <option value="">All subscribers</option>
           <option value="true">Active only</option>
@@ -84,17 +91,17 @@ export function NewsletterSubscribersPage(): ReactElement {
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-12 rounded-lg bg-muted animate-pulse" />
+            <div key={i} className="h-12 rounded-lg bg-gray-100 animate-pulse" />
           ))}
         </div>
       ) : subscribers.length === 0 ? (
-        <div className="flex h-48 items-center justify-center rounded-xl border border-dashed border-border text-muted-foreground text-sm">
+        <div className="flex h-48 items-center justify-center rounded-xl border border-dashed border-gray-200 text-gray-500 text-sm">
           No subscribers found.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border">
+        <div className="overflow-x-auto rounded-xl border border-gray-200">
           <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
+            <thead className="bg-gray-50 text-left text-xs uppercase text-gray-400">
               <tr>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Status</th>
@@ -102,22 +109,22 @@ export function NewsletterSubscribersPage(): ReactElement {
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-gray-100">
               {subscribers.map((sub) => (
-                <tr key={sub.id} className="hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3 font-medium text-text">{sub.email}</td>
+                <tr key={sub.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 font-medium text-gray-900">{sub.email}</td>
                   <td className="px-4 py-3">
                     <span
                       className={
                         sub.isActive
-                          ? 'rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                          : 'rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                          ? 'rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700'
+                          : 'rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600'
                       }
                     >
                       {sub.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
+                  <td className="px-4 py-3 text-gray-500">
                     {new Date(sub.subscribedAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -125,16 +132,16 @@ export function NewsletterSubscribersPage(): ReactElement {
                       {sub.isActive && (
                         <button
                           title="Deactivate"
-                          onClick={() => handleDeactivate(sub.id, sub.email)}
-                          className="rounded p-1 text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900/30"
+                          onClick={() => setPendingAction({ type: 'deactivate', id: sub.id, email: sub.email })}
+                          className="rounded p-1 text-amber-600 hover:bg-amber-50"
                         >
                           <UserX className="h-4 w-4" />
                         </button>
                       )}
                       <button
                         title="Delete permanently"
-                        onClick={() => handleDelete(sub.id, sub.email)}
-                        className="rounded p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30"
+                        onClick={() => setPendingAction({ type: 'delete', id: sub.id, email: sub.email })}
+                        className="rounded p-1 text-red-500 hover:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -157,6 +164,25 @@ export function NewsletterSubscribersPage(): ReactElement {
           />
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={pendingAction !== null}
+        tone={pendingAction?.type === 'delete' ? 'danger' : 'warning'}
+        title={
+          pendingAction?.type === 'delete'
+            ? `Permanently delete ${pendingAction.email}?`
+            : `Deactivate ${pendingAction?.email}?`
+        }
+        message={
+          pendingAction?.type === 'delete'
+            ? 'This cannot be undone.'
+            : 'They will no longer receive emails.'
+        }
+        confirmLabel={pendingAction?.type === 'delete' ? 'Delete' : 'Deactivate'}
+        isLoading={isConfirming}
+        onConfirm={() => void handleConfirm()}
+        onCancel={() => setPendingAction(null)}
+      />
     </AppShell>
   );
 }
