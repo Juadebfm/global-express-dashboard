@@ -1,12 +1,14 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Plane, Ship, Truck } from 'lucide-react';
 import { Button } from '@/components/ui';
-import { useAuthToken, useBankAccounts, useFxRate, useSendPaymentRequest } from '@/hooks';
+import { useAuthToken, useBankAccounts, useFxRate, useGalleryClaims, useSendPaymentRequest } from '@/hooks';
 import { getUserById } from '@/services';
 import { useFeedbackStore } from '@/store';
 import { cn } from '@/utils';
+import { ROUTES } from '@/constants';
 import { STALE_TIME } from '@/lib/queryDefaults';
 import { formatTrackingDisplay } from '@/lib/trackingUtils';
 import type { BankInfo, OrderListItem } from '@/types';
@@ -275,6 +277,12 @@ export function BrowsePane({
   userName,
   onStartQueue,
 }: BrowsePaneProps): ReactElement {
+  const navigate = useNavigate();
+  // Pending claims have no order yet (one only gets created on approval), so
+  // they can't join the order-based queue counts below — surfaced as its own
+  // chip instead, deep-linking to Support since that's where they're reviewed.
+  const pendingClaimsCount = useGalleryClaims({ status: 'pending' }).data?.total ?? 0;
+
   const counts = useMemo<Record<QueueKind, number>>(
     () => ({
       preorder: getQueueOrders(allOrders, 'preorder').length,
@@ -353,6 +361,7 @@ export function BrowsePane({
         <ActionChip label="On hold" count={counts.holds} onClick={() => handleStartQueue('holds')} />
         <ActionChip label="Assign to batch" count={counts.batch} onClick={() => handleStartQueue('batch')} />
         <ActionChip label="Collect payment" count={counts.payment} onClick={() => handleStartQueue('payment')} />
+        <ActionChip label="Claims to review" count={pendingClaimsCount} onClick={() => navigate(ROUTES.SUPPORT)} />
         {isSuperAdmin && (
           <ActionChip label="Needs your review" count={counts.escalated} onClick={() => handleStartQueue('escalated')} />
         )}

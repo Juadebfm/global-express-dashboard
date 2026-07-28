@@ -131,7 +131,9 @@ export interface RowActionMeta {
 }
 
 export function getRowActionMeta(order: OrderListItem): RowActionMeta | null {
-  if (order.statusV2 === 'WAREHOUSE_RECEIVED') return { label: 'Add measurements →', tab: 'warehouse' };
+  if (order.statusV2 === 'WAREHOUSE_RECEIVED' || order.statusV2 === 'CLAIM_APPROVED_PENDING_BULK_PROCESSING') {
+    return { label: 'Add measurements →', tab: 'warehouse' };
+  }
   if (order.statusV2 === 'WAREHOUSE_VERIFIED_PRICED') return { label: 'Add to batch →' };
   if (order.statusV2 === 'ON_HOLD') return { label: 'Review hold →' };
   if (order.flaggedForAdminReview) return { label: 'Review flag →' };

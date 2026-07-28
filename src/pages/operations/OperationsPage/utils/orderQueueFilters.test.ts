@@ -149,6 +149,13 @@ describe('getRowActionMeta', () => {
     });
   });
 
+  it('returns the warehouse tab hint for claim-approved orders too', () => {
+    expect(getRowActionMeta(makeOrder({ statusV2: 'CLAIM_APPROVED_PENDING_BULK_PROCESSING' }))).toEqual({
+      label: 'Add measurements →',
+      tab: 'warehouse',
+    });
+  });
+
   it('returns null when there is no actionable state', () => {
     expect(getRowActionMeta(makeOrder({ statusV2: 'DELIVERED_TO_RECIPIENT' }))).toBeNull();
   });
