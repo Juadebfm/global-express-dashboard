@@ -53,6 +53,7 @@ export interface GalleryClaim {
   uploadToken?: string | null;
   proofUrls?: string[] | null;
   supportTicketId?: string | null;
+  shopInterestRequestId?: string | null;
   reviewNote?: string | null;
   reviewedBy?: string | null;
   reviewedAt?: string | null;

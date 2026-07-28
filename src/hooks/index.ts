@@ -158,6 +158,7 @@ export {
   useGalleryClaims,
   useReviewGalleryClaim,
 } from './useGallery';
+export { useShopInterestRequest, useUpdateShopInterestRequest } from './useShop';
 export type {
   UploadGalleryMediaInput,
 } from './useGallery';

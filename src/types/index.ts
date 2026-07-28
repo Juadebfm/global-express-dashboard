@@ -310,6 +310,14 @@ export type {
 } from './gallery.types';
 
 export type {
+  ShopInterestStatus,
+  ShopDeliveryMethod,
+  ShopInterestListingSummary,
+  ShopInterestRequest,
+  UpdateShopInterestRequestPayload,
+} from './shop.types';
+
+export type {
   PublicCalculatorShipmentType,
   PublicEstimatePayload,
   PublicShippingEstimate,

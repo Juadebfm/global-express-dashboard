@@ -171,7 +171,10 @@ function SupportDetailView({ ticketId }: { ticketId: string }): ReactElement {
         isStaff={isStaff}
       />
 
-      {isStaff && claim?.status === 'pending' && (
+      {/* Stays mounted post-approval for car-purchase claims so staff can track
+          the resulting sale (contacted → delivered → closed) from the same
+          ticket, instead of it disappearing the moment the claim is decided. */}
+      {isStaff && claim && (claim.status === 'pending' || (claim.claimType === 'car_purchase' && claim.shopInterestRequestId)) && (
         <ClaimReviewPanel claim={claim} ticketStatus={ticket.status} />
       )}
 

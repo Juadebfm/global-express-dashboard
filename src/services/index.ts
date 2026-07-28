@@ -99,6 +99,7 @@ export {
   getGalleryClaims,
   reviewGalleryClaim,
 } from './galleryService';
+export { getShopInterestRequest, updateShopInterestRequest } from './shopService';
 export { verifyOrder } from './warehouseService';
 export {
   initializePayment,

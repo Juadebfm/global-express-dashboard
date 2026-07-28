@@ -89,4 +89,8 @@ export const FEEDBACK_MESSAGES = {
     claimReviewError: 'Unable to record your decision. Please try again.',
     mediaUploadError: 'Unable to upload that file. Please try again.',
   },
+  shop: {
+    interestUpdateSuccess: 'Sale status updated.',
+    interestUpdateError: 'Unable to update the sale status. Please try again.',
+  },
 } as const;

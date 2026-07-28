@@ -12,8 +12,8 @@ import {
   Phone,
   User,
 } from 'lucide-react';
-import { useReviewGalleryClaim } from '@/hooks';
-import type { GalleryClaim, GalleryClaimReviewSale, GalleryClaimReviewShipment } from '@/types';
+import { useReviewGalleryClaim, useShopInterestRequest, useUpdateShopInterestRequest } from '@/hooks';
+import type { GalleryClaim, GalleryClaimReviewShipment, ShopInterestStatus } from '@/types';
 import { ImageTile } from './SupportImageTile';
 
 interface ClaimReviewPanelProps {
@@ -134,7 +134,158 @@ function InfoRow({
   );
 }
 
-/* ── Main panel — only rendered when claim is pending ───────────── */
+/* ── Sale status — shown after a car-purchase claim is approved, in place
+   of the review controls, so staff can track delivery from the same
+   ticket instead of a separate admin page ─────────────────────────── */
+
+function saleStatusBadge(status: ShopInterestStatus): { label: string; cls: string } {
+  if (status === 'delivered') return { label: 'Delivered', cls: 'bg-emerald-100 text-emerald-700' };
+  if (status === 'closed') return { label: 'Closed', cls: 'bg-gray-100 text-gray-600' };
+  if (status === 'converted') return { label: 'Converted — awaiting delivery', cls: 'bg-blue-100 text-blue-700' };
+  return { label: status.replace(/_/g, ' '), cls: 'bg-gray-100 text-gray-600' };
+}
+
+function nextSaleStatusOptions(current: ShopInterestStatus): { value: ShopInterestStatus; label: string }[] {
+  if (current === 'converted') {
+    return [
+      { value: 'delivered', label: 'Mark Delivered' },
+      { value: 'closed', label: 'Close' },
+    ];
+  }
+  if (current === 'delivered') return [{ value: 'closed', label: 'Close' }];
+  return [];
+}
+
+function SaleStatusSection({ interestRequestId }: { interestRequestId: string }): ReactElement {
+  const { data: interest, isLoading } = useShopInterestRequest(interestRequestId);
+  const { mutate: updateInterest, isPending: isUpdating } = useUpdateShopInterestRequest(interestRequestId);
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState('');
+
+  if (isLoading || !interest) {
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-400">
+        Loading sale status…
+      </div>
+    );
+  }
+
+  const badge = saleStatusBadge(interest.status);
+  const nextOptions = nextSaleStatusOptions(interest.status);
+
+  const startEditingNotes = (): void => {
+    setNotesDraft(interest.staffNotes ?? '');
+    setEditingNotes(true);
+  };
+
+  const handleSaveNotes = (): void => {
+    void updateInterest({ staffNotes: notesDraft.trim() || null })
+      .then(() => setEditingNotes(false))
+      .catch(() => {
+        // error handled by hook's onError
+      });
+  };
+
+  const handleStatusChange = (status: ShopInterestStatus): void => {
+    void updateInterest({ status }).catch(() => {
+      // error handled by hook's onError
+    });
+  };
+
+  return (
+    <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-gray-800">Sale status</p>
+        <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.cls}`}>{badge.label}</span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {interest.listing?.trackingNumber && (
+          <InfoRow
+            icon={<Hash className="h-3.5 w-3.5" />}
+            label="Listing tracking"
+            value={interest.listing.trackingNumber}
+            copyable
+          />
+        )}
+        {interest.deliveryMethod && (
+          <InfoRow
+            icon={null}
+            label="Delivery"
+            value={interest.deliveryMethod === 'delivery' ? 'Delivery' : 'Pickup'}
+          />
+        )}
+        {interest.deliveryAddress && (
+          <InfoRow icon={null} label="Delivery address" value={interest.deliveryAddress} copyable />
+        )}
+      </div>
+
+      <div>
+        <p className="mb-1 text-xs font-medium text-gray-600">Staff notes</p>
+        {editingNotes ? (
+          <div className="space-y-2">
+            <textarea
+              value={notesDraft}
+              onChange={(e) => setNotesDraft(e.target.value)}
+              rows={2}
+              placeholder="Add a note…"
+              className="w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-400"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={isUpdating}
+                onClick={handleSaveNotes}
+                className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
+              >
+                {isUpdating ? 'Saving…' : 'Save'}
+              </button>
+              <button
+                type="button"
+                disabled={isUpdating}
+                onClick={() => setEditingNotes(false)}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={startEditingNotes}
+            className="w-full rounded-lg border border-dashed border-gray-200 px-3 py-2 text-left text-sm text-gray-600 transition hover:border-gray-300 hover:bg-gray-50"
+          >
+            {interest.staffNotes || <span className="text-gray-400">Add a note…</span>}
+          </button>
+        )}
+      </div>
+
+      {nextOptions.length > 0 && (
+        <div className="flex flex-wrap gap-2 pt-1">
+          {nextOptions.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              disabled={isUpdating}
+              onClick={() => handleStatusChange(opt.value)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${
+                opt.value === 'closed'
+                  ? 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Main panel — pending review controls, or (once decided, for a
+   car-purchase claim that finalized as a sale) the sale-status view ── */
 
 export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps): ReactElement {
   const [mode, setMode] = useState<ReviewMode>('idle');
@@ -143,10 +294,10 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
   const [d2dDispatchMode, setD2dDispatchMode] = useState<'air' | 'sea'>('air');
   const [shipmentResult, setShipmentResult] = useState<GalleryClaimReviewShipment | null>(null);
   const [saleForm, setSaleForm] = useState<CarSaleForm>(EMPTY_SALE_FORM);
-  const [saleResult, setSaleResult] = useState<GalleryClaimReviewSale | null>(null);
 
   const { mutate: reviewClaim, isPending } = useReviewGalleryClaim();
 
+  const isClaimPending = claim.status === 'pending';
   const canReview = ticketStatus !== 'closed';
   const isAnonymous = !claim.claimantUserId;
   const isCarPurchase = claim.claimType === 'car_purchase';
@@ -202,7 +353,6 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
       },
     }).then((result) => {
       setShipmentResult(result.shipment);
-      setSaleResult(result.sale ?? null);
       resetForm();
     }).catch(() => {
       // error handled by hook's onError
@@ -231,8 +381,16 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
         <span className="text-sm font-semibold text-gray-800">
           {claim.claimType === 'car_purchase' ? 'Car Purchase Claim' : 'Anonymous Goods Claim'}
         </span>
-        <span className="rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-          Pending review
+        <span
+          className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+            isClaimPending
+              ? 'border-amber-200 bg-amber-100 text-amber-700'
+              : claim.status === 'approved'
+                ? 'border-emerald-200 bg-emerald-100 text-emerald-700'
+                : 'border-red-200 bg-red-100 text-red-700'
+          }`}
+        >
+          {isClaimPending ? 'Pending review' : claim.status === 'approved' ? 'Approved' : 'Rejected'}
         </span>
       </div>
 
@@ -254,7 +412,7 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
           </div>
 
           {/* Anonymous claimant notice */}
-          {isAnonymous && (
+          {isClaimPending && isAnonymous && (
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
               <div>
@@ -309,7 +467,7 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
           )}
 
           {/* Shipment created result (shown after approve + create_shipment) */}
-          {shipmentResult && (
+          {isClaimPending && shipmentResult && (
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
               <div className="mb-2 flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600" />
@@ -342,30 +500,14 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
             </div>
           )}
 
-          {/* Sale recorded result (shown after approve + create_sale) */}
-          {saleResult && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-              <div className="mb-2 flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600" />
-                <p className="text-sm font-semibold text-emerald-800">Claim approved · sale recorded</p>
-              </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <InfoRow
-                  icon={<Hash className="h-3.5 w-3.5" />}
-                  label="Listing tracking"
-                  value={saleResult.listingTrackingNumber}
-                  copyable
-                />
-                <InfoRow icon={null} label="Interest request" value={saleResult.interestRequestId} copyable />
-              </div>
-              <p className="mt-2 text-xs text-emerald-700">
-                Manage this sale from Shop's interest-requests view, not Orders/Tracking.
-              </p>
-            </div>
+          {/* Sale status — persists after approval so staff can track delivery
+              from the same ticket (see SaleStatusSection above) */}
+          {!isClaimPending && isCarPurchase && claim.shopInterestRequestId && (
+            <SaleStatusSection interestRequestId={claim.shopInterestRequestId} />
           )}
 
           {/* Approve / Reject buttons */}
-          {canReview && mode === 'idle' && (
+          {isClaimPending && canReview && mode === 'idle' && (
             <div className="flex gap-2 pt-1">
               <button
                 type="button"
@@ -385,7 +527,7 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
           )}
 
           {/* Approve form */}
-          {canReview && mode === 'approving' && (
+          {isClaimPending && canReview && mode === 'approving' && (
             <div className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
               <p className="text-sm font-semibold text-emerald-800">Approve claim</p>
 
@@ -549,7 +691,7 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
           )}
 
           {/* Reject form */}
-          {canReview && mode === 'rejecting' && (
+          {isClaimPending && canReview && mode === 'rejecting' && (
             <div className="space-y-3 rounded-xl border border-red-200 bg-red-50 p-4">
               <p className="text-sm font-semibold text-red-800">Reject claim</p>
 
@@ -585,8 +727,8 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
             </div>
           )}
 
-          {/* Rejection result notice (removed via invalidation — component unmounts after review) */}
-          {shipmentResult === null && saleResult === null && !canReview && (
+          {/* Ticket closed while claim is still undecided */}
+          {isClaimPending && shipmentResult === null && !canReview && (
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-500">
               Ticket is closed. No further claim actions available.
             </div>
