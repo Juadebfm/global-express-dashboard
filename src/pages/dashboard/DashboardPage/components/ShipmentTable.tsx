@@ -8,6 +8,7 @@ import type { OrderListItem } from '@/types';
 interface ShipmentTableProps {
   orders: OrderListItem[];
   onOpen: (orderId: string) => void;
+  onTrack: (orderId: string) => void;
 }
 
 function shipmentMode(row: OrderListItem): { label: string; icon: ReactElement } {
@@ -43,7 +44,7 @@ function paymentCell(row: OrderListItem): { label: string; cls: string } | null 
   return null;
 }
 
-export function ShipmentTable({ orders, onOpen }: ShipmentTableProps): ReactElement {
+export function ShipmentTable({ orders, onOpen, onTrack }: ShipmentTableProps): ReactElement {
   return (
     <div className="hidden overflow-x-auto md:block">
       <table className="w-full min-w-[760px] text-left text-sm">
@@ -54,7 +55,8 @@ export function ShipmentTable({ orders, onOpen }: ShipmentTableProps): ReactElem
             <th scope="col" className="border-r border-gray-200 px-5 py-3">Shipment type</th>
             <th scope="col" className="border-r border-gray-200 px-5 py-3">Booked</th>
             <th scope="col" className="border-r border-gray-200 px-5 py-3">Status</th>
-            <th scope="col" className="px-5 py-3">Payment</th>
+            <th scope="col" className="border-r border-gray-200 px-5 py-3">Payment</th>
+            <th scope="col" className="px-5 py-3 text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -112,7 +114,7 @@ export function ShipmentTable({ orders, onOpen }: ShipmentTableProps): ReactElem
                     {row.statusLabel || row.statusV2}
                   </span>
                 </td>
-                <td className="whitespace-nowrap px-5 py-4">
+                <td className="whitespace-nowrap border-r border-gray-100 px-5 py-4">
                   {payment ? (
                     <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold', payment.cls)}>
                       {payment.label}
@@ -120,6 +122,24 @@ export function ShipmentTable({ orders, onOpen }: ShipmentTableProps): ReactElem
                   ) : (
                     <span className="text-xs text-gray-300">—</span>
                   )}
+                </td>
+                <td className="whitespace-nowrap px-5 py-4 text-right" onClick={(event) => event.stopPropagation()}>
+                  <div className="inline-flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onOpen(row.id)}
+                      className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+                    >
+                      View
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onTrack(row.id)}
+                      className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 transition-colors hover:bg-brand-100"
+                    >
+                      Track
+                    </button>
+                  </div>
                 </td>
               </tr>
             );

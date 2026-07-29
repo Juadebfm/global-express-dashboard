@@ -408,6 +408,7 @@ export function ProfilePage(): ReactElement {
       lastName: authUser?.lastName ?? '',
       email: authUser?.email ?? '',
       roleLabel: t(`identity.roles.${authUser?.role ?? 'staff'}`, t('identity.internalRole')),
+      position: authUser?.position ?? null,
     };
   }, [authUser, externalForm.email, externalForm.firstName, externalForm.lastName, mode, t]);
 
@@ -653,6 +654,9 @@ export function ProfilePage(): ReactElement {
                 <p className="mt-2 inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
                   {identity.roleLabel}
                 </p>
+                {identity.position && (
+                  <p className="mt-2 text-sm text-gray-500">{identity.position}</p>
+                )}
               </div>
             </div>
           </Card>

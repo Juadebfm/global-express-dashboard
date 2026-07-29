@@ -10,6 +10,7 @@ export interface UpdateUserPayload {
   lastName?: string;
   isActive?: boolean;
   preferredLanguage?: string;
+  position?: string;
 }
 
 export interface ChangeUserRolePayload {

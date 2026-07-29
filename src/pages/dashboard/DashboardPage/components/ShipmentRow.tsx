@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import type { KeyboardEvent, ReactElement } from 'react';
 import { Plane, Ship } from 'lucide-react';
 import { cn, formatDate } from '@/utils';
 import { formatTrackingDisplay, isInternalTracking } from '@/lib/trackingUtils';
@@ -8,9 +8,14 @@ import type { OrderListItem } from '@/types';
 interface ShipmentRowProps {
   row: OrderListItem;
   onOpen: (orderId: string) => void;
+  onTrack: (orderId: string) => void;
 }
 
-export function ShipmentRow({ row, onOpen }: ShipmentRowProps): ReactElement {
+function isRowActivation(event: KeyboardEvent<HTMLDivElement>): boolean {
+  return event.key === 'Enter' || event.key === ' ';
+}
+
+export function ShipmentRow({ row, onOpen, onTrack }: ShipmentRowProps): ReactElement {
   const isSea = row.transportMode === 'sea';
   const style = getStatusStyle(row.statusV2);
   const internal = isInternalTracking(row.trackingNumber);
@@ -29,10 +34,17 @@ export function ShipmentRow({ row, onOpen }: ShipmentRowProps): ReactElement {
   const isPaid = due == null && rawFinalCharge != null && rawFinalCharge > 0;
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`View shipment ${row.trackingNumber}`}
       onClick={() => onOpen(row.id)}
-      className="flex w-full items-center gap-3 px-4 py-3.5 text-left hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500"
+      onKeyDown={(event) => {
+        if (!isRowActivation(event)) return;
+        event.preventDefault();
+        onOpen(row.id);
+      }}
+      className="flex w-full cursor-pointer items-center gap-3 px-4 py-3.5 text-left hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500"
     >
       <span className="shrink-0 text-gray-400">
         {isSea ? <Ship className="h-4 w-4" /> : <Plane className="h-4 w-4" />}
@@ -81,6 +93,16 @@ export function ShipmentRow({ row, onOpen }: ShipmentRowProps): ReactElement {
           </span>
         ) : null}
       </div>
-    </button>
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onTrack(row.id);
+        }}
+        className="shrink-0 rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700 transition-colors hover:bg-brand-100"
+      >
+        Track
+      </button>
+    </div>
   );
 }

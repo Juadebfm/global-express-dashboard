@@ -9,6 +9,7 @@ import { AppLayout } from '@/components/layout';
 import { ROUTES } from '@/constants';
 import { ShipmentRow } from './components/ShipmentRow';
 import { ShipmentDetailsModal } from './components/ShipmentDetailsModal';
+import { ShipmentTrackingModal } from './components/ShipmentTrackingModal';
 import { ShipmentTable } from './components/ShipmentTable';
 import { BroadcastBanners } from './components/BroadcastBanners';
 
@@ -19,6 +20,7 @@ export function DashboardPage(): ReactElement {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null);
+  const [trackingShipmentId, setTrackingShipmentId] = useState<string | null>(null);
   const { orders, pagination, isLoading, error } = useOrders(page);
 
   const layoutUser = {
@@ -104,10 +106,15 @@ export function DashboardPage(): ReactElement {
               <>
                 <div className="md:hidden">
                   {orders.map((row) => (
-                    <ShipmentRow key={row.id} row={row} onOpen={setSelectedShipmentId} />
+                    <ShipmentRow
+                      key={row.id}
+                      row={row}
+                      onOpen={setSelectedShipmentId}
+                      onTrack={setTrackingShipmentId}
+                    />
                   ))}
                 </div>
-                <ShipmentTable orders={orders} onOpen={setSelectedShipmentId} />
+                <ShipmentTable orders={orders} onOpen={setSelectedShipmentId} onTrack={setTrackingShipmentId} />
               </>
             )}
           </Card>
@@ -127,6 +134,12 @@ export function DashboardPage(): ReactElement {
         <ShipmentDetailsModal
           orderId={selectedShipmentId}
           onClose={() => setSelectedShipmentId(null)}
+        />
+      )}
+      {trackingShipmentId && (
+        <ShipmentTrackingModal
+          orderId={trackingShipmentId}
+          onClose={() => setTrackingShipmentId(null)}
         />
       )}
     </AppLayout>

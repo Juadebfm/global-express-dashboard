@@ -26,12 +26,13 @@ interface ShipmentDetailsModalProps {
   onClose: () => void;
 }
 
+// `order.statusV2` here is the customer-facing taxonomy (GET /orders/:id
+// maps it server-side) — never raw internal statusV2 codes.
 const WAREHOUSE_STATUSES = new Set([
-  'PREORDER_SUBMITTED',
-  'AWAITING_WAREHOUSE_RECEIPT',
+  'PROCESSING_AT_ORIGIN',
   'WAREHOUSE_RECEIVED',
-  'CLAIM_APPROVED_PENDING_BULK_PROCESSING',
-  'WAREHOUSE_VERIFIED_PRICED',
+  'VERIFIED_AND_PRICED',
+  'PREPARING_FOR_DEPARTURE',
 ]);
 
 function displayValue(value: string | null | undefined): string {
@@ -61,16 +62,10 @@ function shipmentMode(order: ApiOrder): { label: string; icon: ReactElement } {
 
 function warehouseMessage(status: string): { title: string; description: string; complete: boolean } {
   switch (status) {
-    case 'PREORDER_SUBMITTED':
+    case 'PROCESSING_AT_ORIGIN':
       return {
         title: 'Preparing for warehouse receipt',
-        description: 'Your booking has been received and is being prepared for warehouse handling.',
-        complete: false,
-      };
-    case 'AWAITING_WAREHOUSE_RECEIPT':
-      return {
-        title: 'Awaiting warehouse receipt',
-        description: 'Your goods are expected at the Global Express Korea warehouse.',
+        description: 'Your booking has been received. We’re expecting your goods at the Global Express Korea warehouse.',
         complete: false,
       };
     case 'WAREHOUSE_RECEIVED':
@@ -79,16 +74,16 @@ function warehouseMessage(status: string): { title: string; description: string;
         description: 'Your goods have arrived and are being checked by our warehouse team.',
         complete: false,
       };
-    case 'CLAIM_APPROVED_PENDING_BULK_PROCESSING':
-      return {
-        title: 'Pending bulk processing',
-        description: 'Your goods have been received and are queued for the next warehouse process.',
-        complete: false,
-      };
-    case 'WAREHOUSE_VERIFIED_PRICED':
+    case 'VERIFIED_AND_PRICED':
       return {
         title: 'Verified at warehouse',
         description: 'Your goods have been measured and priced at our warehouse.',
+        complete: true,
+      };
+    case 'PREPARING_FOR_DEPARTURE':
+      return {
+        title: 'Preparing for departure',
+        description: 'Your shipment is packed and being prepared to leave our Korea hub.',
         complete: true,
       };
     default:

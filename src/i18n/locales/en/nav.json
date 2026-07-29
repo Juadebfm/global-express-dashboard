@@ -41,6 +41,7 @@
     "languageAriaLabel": "Language",
     "accountMenuAriaLabel": "Account menu",
     "roleLabel": "Role",
+    "positionLabel": "Position",
     "memberSince": "Member since",
     "signOut": "Sign out"
   }

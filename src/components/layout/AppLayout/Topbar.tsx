@@ -153,6 +153,12 @@ export function Topbar({
                       </span>
                     </div>
                   )}
+                  {authUser?.position && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">{t('topbar.positionLabel')}</span>
+                      <span className="text-xs font-medium text-gray-700">{authUser.position}</span>
+                    </div>
+                  )}
                   {memberSince && (
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-gray-500">{t('topbar.memberSince')}</span>

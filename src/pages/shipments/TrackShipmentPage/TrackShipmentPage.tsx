@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   Calendar,
-  Check,
   Clock,
   Loader2,
   MapPin,
@@ -13,16 +12,16 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { AppShell } from '@/pages/shared';
+import { AppShell, ShipmentTimeline } from '@/pages/shared';
 import { useDashboardData, useOrderTimeline } from '@/hooks';
 import { trackShipment } from '@/services';
-import type { TrackingResult, TimelineEvent } from '@/services/trackingService';
+import type { TrackingResult } from '@/services/trackingService';
 import { ROUTES } from '@/constants';
-import { getStatusStyle, getStatusCategory } from '@/lib/statusUtils';
+import { getCustomerTrackingStyle } from '@/lib/statusUtils';
 import { cn, resolveLocation } from '@/utils';
 
 function getTrackingStatusStyle(status: string) {
-  const style = getStatusStyle(status);
+  const style = getCustomerTrackingStyle(status);
   return {
     bg: `${style.bgClass} ${style.textClass}`,
     label: status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
@@ -162,7 +161,7 @@ export function TrackShipmentPage(): ReactElement {
                   <span className="inline-flex items-center gap-2">
                     <Package className="h-4 w-4 text-gray-400" />
                     {effectiveStatus
-                      ? t(`shipments:statusV2.${effectiveStatus}`, { defaultValue: effectiveStatusLabel })
+                      ? t(`shipments:customerTrackingStatus.${effectiveStatus}`, { defaultValue: effectiveStatusLabel })
                       : effectiveStatusLabel}
                   </span>
                 </div>
@@ -183,7 +182,7 @@ export function TrackShipmentPage(): ReactElement {
                       )}
                     >
                       {effectiveStatus
-                        ? t(`shipments:statusV2.${effectiveStatus}`, { defaultValue: effectiveStatusLabel || s.label })
+                        ? t(`shipments:customerTrackingStatus.${effectiveStatus}`, { defaultValue: effectiveStatusLabel || s.label })
                         : (effectiveStatusLabel || s.label)}
                     </span>
                   );
@@ -233,7 +232,7 @@ export function TrackShipmentPage(): ReactElement {
                   <div className="flex items-center gap-2 text-xs font-semibold uppercase text-gray-400">
                     <ShieldCheck className="h-4 w-4" />
                     {effectiveStatus
-                      ? t(`shipments:statusV2.${effectiveStatus}`, { defaultValue: effectiveStatusLabel || t('internal.inTransit') })
+                      ? t(`shipments:customerTrackingStatus.${effectiveStatus}`, { defaultValue: effectiveStatusLabel || t('internal.inTransit') })
                       : (effectiveStatusLabel || t('internal.inTransit'))}
                   </div>
                   <div>
@@ -250,80 +249,11 @@ export function TrackShipmentPage(): ReactElement {
 
             {/* Timeline */}
             <div className="mt-6 border-t border-gray-100 pt-5">
-              <h3 className="text-sm font-semibold text-gray-900">{t('internal.timeline')}</h3>
-              {effectiveTimeline.length > 0 ? (
-                <ol className="mt-4 space-y-0">
-                  {effectiveTimeline.map((event: TimelineEvent, idx: number) => {
-                    const isLast = idx === effectiveTimeline.length - 1;
-                    const isCurrent = event.status === effectiveStatus;
-                    const category = getStatusCategory(event.status);
-                    const dotColor: Record<string, string> = {
-                      pending: 'bg-amber-500',
-                      active: 'bg-blue-500',
-                      completed: 'bg-emerald-500',
-                      exception: 'bg-rose-500',
-                    };
-                    const ringColor: Record<string, string> = {
-                      pending: 'ring-amber-200',
-                      active: 'ring-blue-200',
-                      completed: 'ring-emerald-200',
-                      exception: 'ring-rose-200',
-                    };
-
-                    const formattedTime = (() => {
-                      const d = new Date(event.timestamp);
-                      if (Number.isNaN(d.getTime())) return event.timestamp;
-                      return d.toLocaleDateString(undefined, {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      });
-                    })();
-
-                    return (
-                      <li key={event.status} className="relative flex gap-4">
-                        {/* Vertical line + dot */}
-                        <div className="flex flex-col items-center">
-                          <div
-                            className={cn(
-                              'flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
-                              isCurrent
-                                ? `${dotColor[category]} ring-4 ${ringColor[category]}`
-                                : dotColor[category]
-                            )}
-                          >
-                            <Check className="h-3.5 w-3.5 text-white" />
-                          </div>
-                          {!isLast && (
-                            <div className="w-0.5 grow bg-gray-200" />
-                          )}
-                        </div>
-
-                        {/* Content */}
-                        <div className={cn('pb-6', isLast && 'pb-0')}>
-                          <p
-                            className={cn(
-                              'text-sm font-semibold leading-7',
-                              isCurrent ? 'text-gray-900' : 'text-gray-700'
-                            )}
-                          >
-                            {t(`shipments:statusV2.${event.status}`, { defaultValue: event.statusLabel })}
-                          </p>
-                          <p className="mt-0.5 text-xs text-gray-400">
-                            {formattedTime}
-                          </p>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ol>
-              ) : timelineLoading ? (
-                <p className="mt-3 text-sm text-gray-400">{t('internal.tracking')}</p>
-              ) : (
-                <p className="mt-3 text-sm text-gray-400">{t('internal.timelineEmpty')}</p>
-              )}
+              <ShipmentTimeline
+                timeline={effectiveTimeline}
+                currentStatus={effectiveStatus}
+                isLoading={timelineLoading}
+              />
             </div>
           </section>
         )}

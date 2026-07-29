@@ -15,6 +15,7 @@ export function useUpdateUser() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      void queryClient.invalidateQueries({ queryKey: ['team'] });
     },
   });
 }

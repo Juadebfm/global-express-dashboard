@@ -7,7 +7,7 @@ import type {
   ApiTeamMember,
   ApiTeamResponse,
 } from '@/types';
-import { getTeam, approveTeamMember, createTeamMember } from '@/services';
+import { getTeam, approveTeamMember, createTeamMember, getPositions } from '@/services';
 import type { CreateTeamMemberPayload } from '@/services';
 import { STALE_TIME } from '@/lib/queryDefaults';
 import { can } from '@/lib/permissions';
@@ -31,6 +31,7 @@ function mapApiTeamMember(m: ApiTeamMember): TeamMember {
     fullName: displayName,
     email: m.email,
     role: m.role as TeamRole,
+    position: m.position ?? null,
     permissions: derivePermissions(m),
     approvalStatus: m.isActive ? 'approved' : 'pending',
   };
@@ -118,4 +119,26 @@ export function useTeam(params: UseTeamParams = {}): TeamState {
     inviteMember: (payload: CreateTeamMemberPayload) => inviteMutation.mutateAsync(payload),
     isInviting: inviteMutation.isPending,
   };
+}
+
+// Staff-or-above only (matches other /internal/* calls) — powers the
+// position dropdown-with-"Others" on the invite/edit forms. Not a fixed
+// enum: grows automatically as staff type new "Others" values, so we keep
+// this reasonably fresh rather than caching it for the whole session.
+export function usePositions(): { positions: string[]; isLoading: boolean } {
+  const { user } = useAuth();
+  const enabled = can(user?.role, 'team.view');
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['team', 'positions'],
+    queryFn: async () => {
+      const token = sessionStorage.getItem(TOKEN_KEY);
+      if (!token) throw new Error('Not authenticated');
+      return getPositions(token);
+    },
+    enabled,
+    staleTime: STALE_TIME.SLOW_MOVING,
+  });
+
+  return { positions: data ?? [], isLoading };
 }

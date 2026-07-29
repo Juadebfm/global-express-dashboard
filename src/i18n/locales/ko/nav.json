@@ -41,6 +41,7 @@
     "languageAriaLabel": "언어",
     "accountMenuAriaLabel": "계정 메뉴",
     "roleLabel": "역할",
+    "positionLabel": "직책",
     "memberSince": "가입일",
     "signOut": "로그아웃"
   }

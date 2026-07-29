@@ -11,23 +11,21 @@ export interface ProgressStep {
   date: string | null;
 }
 
-const TRANSIT_STATUSES = [
-  'DISPATCHED_TO_ORIGIN_AIRPORT', 'AT_ORIGIN_AIRPORT', 'BOARDED_ON_FLIGHT', 'FLIGHT_DEPARTED',
-  'DISPATCHED_TO_ORIGIN_PORT', 'AT_ORIGIN_PORT', 'LOADED_ON_VESSEL', 'VESSEL_DEPARTED',
-];
-const ARRIVAL_STATUSES = [
-  'FLIGHT_LANDED_LAGOS', 'VESSEL_ARRIVED_LAGOS_PORT',
-  'CUSTOMS_CLEARED_LAGOS', 'IN_TRANSIT_TO_LAGOS_OFFICE', 'READY_FOR_PICKUP',
-];
-const WAREHOUSE_STATUSES = ['WAREHOUSE_RECEIVED', 'WAREHOUSE_VERIFIED_PRICED'];
+// `statusV2` here is always the customer-facing taxonomy (PROCESSING_AT_ORIGIN,
+// WAREHOUSE_RECEIVED, VERIFIED_AND_PRICED, PREPARING_FOR_DEPARTURE, IN_TRANSIT,
+// ARRIVED_IN_NIGERIA, OUT_FOR_DELIVERY, READY_FOR_PICKUP, DELIVERED, ON_HOLD,
+// CANCELLED, ACTION_REQUIRED) — the backend maps raw internal statusV2 codes
+// to this set before a customer-role response ever reaches the FE.
+const HUB_STATUSES = ['WAREHOUSE_RECEIVED', 'VERIFIED_AND_PRICED', 'PREPARING_FOR_DEPARTURE'];
+const ARRIVAL_STATUSES = ['ARRIVED_IN_NIGERIA', 'OUT_FOR_DELIVERY', 'READY_FOR_PICKUP'];
 
 // Returns 0-4 for the currently active step index.
 export function getActiveStep(statusV2: string): number {
   const s = statusV2.toUpperCase();
-  if (s === 'PICKED_UP_COMPLETED') return 4;
+  if (s === 'DELIVERED') return 4;
   if (ARRIVAL_STATUSES.includes(s)) return 3;
-  if (TRANSIT_STATUSES.includes(s)) return 2;
-  if (WAREHOUSE_STATUSES.includes(s)) return 1;
+  if (s === 'IN_TRANSIT') return 2;
+  if (HUB_STATUSES.includes(s)) return 1;
   return 0;
 }
 
@@ -59,10 +57,10 @@ export function buildProgressSteps(
 
   return [
     { label: 'Order placed', state: active > 0 ? 'complete' : 'active', date: fmtDate(view.createdAt) },
-    { label: 'At Korea hub', state: active > 1 ? 'complete' : active === 1 ? 'active' : 'pending', date: stepDate(1, WAREHOUSE_STATUSES) },
-    { label: 'In transit', state: active > 2 ? 'complete' : active === 2 ? 'active' : 'pending', date: stepDate(2, TRANSIT_STATUSES) },
+    { label: 'At Korea hub', state: active > 1 ? 'complete' : active === 1 ? 'active' : 'pending', date: stepDate(1, HUB_STATUSES) },
+    { label: 'In transit', state: active > 2 ? 'complete' : active === 2 ? 'active' : 'pending', date: stepDate(2, ['IN_TRANSIT']) },
     { label: 'Arrived Lagos', state: active > 3 ? 'complete' : active === 3 ? 'active' : 'pending', date: stepDate(3, ARRIVAL_STATUSES) },
-    { label: 'Delivered', state: active === 4 ? 'active' : 'pending', date: stepDate(4, ['PICKED_UP_COMPLETED']) },
+    { label: 'Delivered', state: active === 4 ? 'active' : 'pending', date: stepDate(4, ['DELIVERED']) },
   ];
 }
 
@@ -76,33 +74,49 @@ export interface HeroInfo {
 export function getHeroInfo(statusV2: string): HeroInfo {
   const s = statusV2.toUpperCase();
 
-  if (s === 'PICKED_UP_COMPLETED') return {
-    headline: 'Delivered — collected in Lagos',
-    subtitle: 'Your shipment has been collected. Thanks for choosing Global Express.',
+  if (s === 'DELIVERED') return {
+    headline: 'Delivered',
+    subtitle: 'Your shipment has been delivered. Thanks for choosing Global Express.',
+  };
+  if (s === 'OUT_FOR_DELIVERY') return {
+    headline: 'Out for delivery',
+    subtitle: "Your shipment is on its way to the delivery address. We'll notify you once it arrives.",
   };
   if (s === 'READY_FOR_PICKUP') return {
     headline: 'Ready to collect in Lagos',
     subtitle: 'At our Ajao Estate office. Bring ID, or send your pickup rep.',
   };
-  if (['FLIGHT_LANDED_LAGOS', 'VESSEL_ARRIVED_LAGOS_PORT', 'CUSTOMS_CLEARED_LAGOS', 'IN_TRANSIT_TO_LAGOS_OFFICE'].includes(s)) return {
+  if (s === 'ARRIVED_IN_NIGERIA') return {
     headline: 'Arrived in Lagos — clearing customs',
-    subtitle: 'Your shipment has landed and is being processed. We\'ll notify you when it\'s ready to collect.',
+    subtitle: "Your shipment has landed and is being processed. We'll notify you when it's ready to collect.",
   };
-  if (['FLIGHT_DEPARTED', 'BOARDED_ON_FLIGHT', 'AT_ORIGIN_AIRPORT', 'DISPATCHED_TO_ORIGIN_AIRPORT'].includes(s)) return {
-    headline: 'In the air, on its way to Lagos',
-    subtitle: "Your shipment has left the Korea hub and is heading to our Lagos office. We'll notify you the moment it lands.",
+  if (s === 'IN_TRANSIT') return {
+    headline: 'On its way to Lagos',
+    subtitle: "Your shipment has left the Korea hub and is heading to Lagos. We'll notify you the moment it lands.",
   };
-  if (['VESSEL_DEPARTED', 'LOADED_ON_VESSEL', 'AT_ORIGIN_PORT', 'DISPATCHED_TO_ORIGIN_PORT'].includes(s)) return {
-    headline: 'On the sea, heading to Lagos',
-    subtitle: 'Your shipment is at sea and on its way to Lagos port.',
+  if (s === 'PREPARING_FOR_DEPARTURE') return {
+    headline: 'Preparing for departure',
+    subtitle: 'Your shipment is packed and being prepared to leave our Korea hub.',
   };
-  if (WAREHOUSE_STATUSES.includes(s)) return {
+  if (s === 'VERIFIED_AND_PRICED') return {
+    headline: 'Verified, weighed & priced',
+    subtitle: "Your goods have been checked and priced at our Korea hub. They're ready to ship.",
+  };
+  if (s === 'WAREHOUSE_RECEIVED') return {
     headline: 'At the Korea hub — being processed',
     subtitle: "Your items have arrived at our Korea warehouse. We're weighing and pricing them now.",
   };
-  if (s === 'AWAITING_WAREHOUSE_RECEIPT') return {
-    headline: 'Waiting to arrive at the Korea hub',
-    subtitle: "We're expecting your shipment at our Korea warehouse. It should arrive soon.",
+  if (s === 'ON_HOLD') return {
+    headline: 'On hold',
+    subtitle: 'Your shipment is currently on hold. Contact support for more information.',
+  };
+  if (s === 'CANCELLED') return {
+    headline: 'Cancelled',
+    subtitle: 'This shipment has been cancelled.',
+  };
+  if (s === 'ACTION_REQUIRED') return {
+    headline: 'Action required',
+    subtitle: "There's an issue with your shipment that needs your attention. Please contact support.",
   };
   return {
     headline: 'Order placed',

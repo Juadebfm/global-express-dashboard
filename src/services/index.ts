@@ -45,7 +45,7 @@ export { sendOtp, verifyOtp, resetPassword } from './forgotPasswordService';
 export { trackShipment } from './trackingService';
 export type { TrackingResult } from './trackingService';
 export { getNotifications, getUnreadCount, markNotificationRead, markAllNotificationsRead, toggleNotificationSave, deleteNotification, deleteNotificationsBulk, sendBroadcast } from './notificationsService';
-export { getTeam, approveTeamMember, createTeamMember } from './teamService';
+export { getTeam, approveTeamMember, createTeamMember, getPositions } from './teamService';
 export type { CreateTeamMemberPayload } from './teamService';
 export {
   getClients,

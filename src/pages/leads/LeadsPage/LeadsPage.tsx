@@ -28,6 +28,7 @@ const STATUS_CLASSES: Record<LeadStatus, string> = {
 const TYPE_LABELS: Record<LeadType, string> = {
   d2d_intake: 'D2D Intake',
   shop_inquiry: 'Shop Inquiry',
+  general_inquiry: 'General Inquiry',
 };
 
 function StatusDropdown({ lead, onUpdate }: { lead: Lead; onUpdate: (id: string, status: LeadStatus) => void }) {
@@ -114,6 +115,7 @@ export function LeadsPage(): ReactElement {
           <option value="">All types</option>
           <option value="d2d_intake">D2D Intake</option>
           <option value="shop_inquiry">Shop Inquiry</option>
+          <option value="general_inquiry">General Inquiry</option>
         </select>
         <select
           value={statusFilter ?? ''}

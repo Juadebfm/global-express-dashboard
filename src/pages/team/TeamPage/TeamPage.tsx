@@ -7,11 +7,14 @@ import {
   useAdminUserDetail,
   useAuth,
   useCan,
+  useChangeUserRole,
   useDashboardData,
+  usePositions,
   useSearch,
   useTeam,
   useUpdateClientLoginPermission,
   useUpdateShipmentBatchPermission,
+  useUpdateUser,
 } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { Pagination } from '@/components/ui';
@@ -27,6 +30,7 @@ interface TeamFormState {
   lastName: string;
   email: string;
   role: TeamRole;
+  position: string;
 }
 
 const emptyForm: TeamFormState = {
@@ -34,6 +38,7 @@ const emptyForm: TeamFormState = {
   lastName: '',
   email: '',
   role: 'staff',
+  position: '',
 };
 
 const roleLabels: Record<TeamRole, string> = {
@@ -102,6 +107,9 @@ export function TeamPage(): ReactElement {
     isInviting,
   } = useTeam({ page });
   const pushMessage = useFeedbackStore((state) => state.pushMessage);
+  const { positions, isLoading: positionsLoading } = usePositions();
+  const updateUserMutation = useUpdateUser();
+  const changeRoleMutation = useChangeUserRole();
   const [activeTab, setActiveTab] = useState<TeamTab>('all');
   const [membersOverride, setMembersOverride] = useState<TeamMember[] | null>(null);
   const members = membersOverride ?? apiMembers;
@@ -117,6 +125,7 @@ export function TeamPage(): ReactElement {
 
   const isSuperAdmin = useCan('app.superadmin');
   const hasAccess = useCan('team.view');
+  const isSavingForm = isInviting || updateUserMutation.isPending || changeRoleMutation.isPending;
 
   const roleOptions: TeamRole[] = isSuperAdmin ? ['staff', 'superadmin'] : ['staff'];
 
@@ -159,6 +168,7 @@ export function TeamPage(): ReactElement {
       lastName: nameParts.slice(1).join(' '),
       email: member.email,
       role: member.role,
+      position: member.position ?? '',
     });
     setFormError(null);
     setActiveModal('edit');
@@ -210,6 +220,7 @@ export function TeamPage(): ReactElement {
           lastName: formState.lastName.trim(),
           email: formState.email.trim().toLowerCase(),
           role: formState.role,
+          position: formState.position.trim() || undefined,
         });
         pushMessage({ tone: 'success', message: t('modals.invite.inviteSuccess') });
         setActiveTab('all');
@@ -222,20 +233,36 @@ export function TeamPage(): ReactElement {
     }
 
     if (activeModal === 'edit' && selectedMember) {
-      const fullName = `${formState.firstName.trim()} ${formState.lastName.trim()}`.trim();
-      updateMembers((prev) =>
-        prev.map((member) =>
-          member.id === selectedMember.id
-            ? {
-                ...member,
-                fullName,
-                email: formState.email.trim().toLowerCase(),
-                role: formState.role,
-              }
-            : member
-        )
-      );
-      closeModal();
+      const trimmedPosition = formState.position.trim();
+      try {
+        await updateUserMutation.mutateAsync({
+          id: selectedMember.id,
+          payload: {
+            firstName: formState.firstName.trim(),
+            lastName: formState.lastName.trim(),
+            position: trimmedPosition || undefined,
+          },
+        });
+        if (formState.role !== selectedMember.role) {
+          await changeRoleMutation.mutateAsync({
+            id: selectedMember.id,
+            payload: { role: formState.role },
+          });
+        }
+        const fullName = `${formState.firstName.trim()} ${formState.lastName.trim()}`.trim();
+        updateMembers((prev) =>
+          prev.map((member) =>
+            member.id === selectedMember.id
+              ? { ...member, fullName, role: formState.role, position: trimmedPosition || null }
+              : member
+          )
+        );
+        pushMessage({ tone: 'success', message: t('modals.edit.editSuccess') });
+        closeModal();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : t('modals.edit.editError');
+        setFormError(msg);
+      }
     }
   };
 
@@ -373,11 +400,15 @@ export function TeamPage(): ReactElement {
                               <p className="text-xs text-gray-500 truncate">{member.email}</p>
                             </div>
                           </div>
-                          {/* Role + permissions */}
+                          {/* Role + position + permissions */}
                           <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
                             <div>
                               <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{t('table.columns.role')}</p>
                               <p className="text-xs font-medium text-gray-700">{roleLabels[member.role]}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{t('table.columns.position')}</p>
+                              <p className="text-xs text-gray-700">{member.position ?? '—'}</p>
                             </div>
                             <div>
                               <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{t('table.columns.permission')}</p>
@@ -432,6 +463,7 @@ export function TeamPage(): ReactElement {
                       <th className="px-6 py-4">{t('table.columns.name')}</th>
                       <th className="px-6 py-4">{t('table.columns.email')}</th>
                       <th className="px-6 py-4">{t('table.columns.role')}</th>
+                      <th className="px-6 py-4">{t('table.columns.position')}</th>
                       <th className="px-6 py-4">{t('table.columns.permission')}</th>
                       <th className="px-6 py-4"></th>
                     </tr>
@@ -465,6 +497,7 @@ export function TeamPage(): ReactElement {
                           <td className="px-6 py-4 font-medium text-gray-700">
                             {roleLabels[member.role]}
                           </td>
+                          <td className="px-6 py-4 text-gray-500">{member.position ?? '—'}</td>
                           <td className="px-6 py-4 text-gray-500">{permissionSummary(member)}</td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
@@ -564,6 +597,10 @@ export function TeamPage(): ReactElement {
                     <span className="font-medium">{t('modals.profile.teammateRole')}</span>
                     <span>{roleLabels[selectedMember.role]}</span>
                   </div>
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <span className="font-medium">{t('modals.profile.position')}</span>
+                    <span>{selectedMember.position ?? '—'}</span>
+                  </div>
                   <div className="flex items-center justify-between">
                     <span className="font-medium">{t('modals.profile.permission')}</span>
                     <span>{permissionSummary(selectedMember)}</span>
@@ -652,11 +689,13 @@ export function TeamPage(): ReactElement {
                     <input
                       type="email"
                       value={formState.email}
+                      disabled={activeModal === 'edit'}
+                      title={activeModal === 'edit' ? t('modals.edit.emailLocked') : undefined}
                       onChange={(event) =>
                         setFormState((prev) => ({ ...prev, email: event.target.value }))
                       }
                       placeholder={t('modals.invite.emailPlaceholder')}
-                      className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-500"
+                      className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
                     />
                   </div>
                   <div className="relative">
@@ -692,6 +731,14 @@ export function TeamPage(): ReactElement {
                       </ul>
                     )}
                   </div>
+                  <div>
+                    <PositionSelect
+                      value={formState.position}
+                      onChange={(next) => setFormState((prev) => ({ ...prev, position: next }))}
+                      positions={positions}
+                      isLoading={positionsLoading}
+                    />
+                  </div>
                 </div>
 
                 {formError && <p className="mt-4 text-sm text-red-500">{formError}</p>}
@@ -700,7 +747,7 @@ export function TeamPage(): ReactElement {
                   <button
                     type="button"
                     onClick={closeModal}
-                    disabled={isInviting}
+                    disabled={isSavingForm}
                     className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-200 disabled:opacity-50"
                   >
                     {t('modals.cancelButton')}
@@ -708,10 +755,10 @@ export function TeamPage(): ReactElement {
                   <button
                     type="button"
                     onClick={() => void handleSave()}
-                    disabled={isInviting}
+                    disabled={isSavingForm}
                     className="flex-1 rounded-2xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
                   >
-                    {isInviting ? '...' : t('modals.saveButton')}
+                    {isSavingForm ? '...' : t('modals.saveButton')}
                   </button>
                 </div>
               </div>
@@ -855,5 +902,65 @@ function PermissionToggle({
         onChange={(event) => onChange(event.target.checked)}
       />
     </label>
+  );
+}
+
+interface PositionSelectProps {
+  value: string;
+  onChange: (next: string) => void;
+  positions: string[];
+  isLoading: boolean;
+}
+
+// Preset dropdown + free-text "Others" fallback. The preset list comes from
+// GET /internal/positions — not a fixed enum, it grows automatically as
+// staff type new "Others" values, so this never hardcodes the option list.
+const OTHERS_SENTINEL = '__others__';
+
+function PositionSelect({ value, onChange, positions, isLoading }: PositionSelectProps): ReactElement {
+  const { t } = useTranslation('team');
+  const [othersMode, setOthersMode] = useState<boolean>(
+    () => value !== '' && !positions.includes(value),
+  );
+
+  return (
+    <div className="space-y-2">
+      <div className="relative">
+        <select
+          value={othersMode ? OTHERS_SENTINEL : value}
+          disabled={isLoading}
+          onChange={(event) => {
+            const next = event.target.value;
+            if (next === OTHERS_SENTINEL) {
+              setOthersMode(true);
+              onChange('');
+              return;
+            }
+            setOthersMode(false);
+            onChange(next);
+          }}
+          className="w-full appearance-none rounded-2xl border border-gray-200 bg-white py-3 pl-4 pr-10 text-sm text-gray-700 outline-none transition focus:border-brand-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
+        >
+        <option value="">
+          {isLoading ? t('modals.positionLoading') : t('modals.positionPlaceholder')}
+        </option>
+        {positions.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+        <option value={OTHERS_SENTINEL}>{t('modals.positionOthersOption')}</option>
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+      </div>
+      {othersMode && (
+        <input
+          type="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={t('modals.positionOthersPlaceholder')}
+          autoFocus
+          className="w-full rounded-2xl border border-gray-200 bg-white py-3 px-4 text-sm text-gray-700 outline-none transition focus:border-brand-500"
+        />
+      )}
+    </div>
   );
 }

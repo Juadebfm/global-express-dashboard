@@ -70,6 +70,33 @@ export function getStatusStyle(statusV2: string): StatusConfig {
   return STYLE_MAP[category];
 }
 
+// The `/orders/:id/timeline` endpoint (and public tracking-by-number) returns
+// its own collapsed 9-value customer-facing taxonomy, never raw statusV2
+// codes — see backend's `toCustomerTrackingStatus`. Needs its own category
+// map; the statusV2 one above doesn't recognize these codes.
+const CUSTOMER_TRACKING_CATEGORY_MAP: Record<string, StatusCategory> = {
+  PROCESSING_AT_ORIGIN: 'pending',
+  IN_TRANSIT: 'active',
+  ARRIVED_IN_NIGERIA: 'active',
+  READY_FOR_PICKUP: 'active',
+  OUT_FOR_DELIVERY: 'active',
+  DELIVERED: 'completed',
+  ON_HOLD: 'exception',
+  CANCELLED: 'exception',
+  ACTION_REQUIRED: 'exception',
+};
+
+/** Map a customer-facing tracking status (from order/tracking timelines) to a UI category. */
+export function getCustomerTrackingCategory(status: string): StatusCategory {
+  return CUSTOMER_TRACKING_CATEGORY_MAP[status] ?? 'pending';
+}
+
+/** Get Tailwind styling config for a given customer-facing tracking status. */
+export function getCustomerTrackingStyle(status: string): StatusConfig {
+  const category = getCustomerTrackingCategory(status);
+  return STYLE_MAP[category];
+}
+
 /** Filter tab options for shipment list views. */
 export const STATUS_FILTER_OPTIONS: Array<{
   id: StatusCategory | 'all';

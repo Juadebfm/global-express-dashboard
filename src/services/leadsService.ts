@@ -1,4 +1,4 @@
-import type { Lead, LeadsListResult } from '@/types';
+import type { Lead, LeadsListResult, LeadType, LeadStatus } from '@/types';
 import { apiGetData, apiPatchData, apiPostData, apiDelete } from '@/lib/apiClient';
 
 export function listLeads(
@@ -6,8 +6,8 @@ export function listLeads(
   params: {
     page?: number;
     limit?: number;
-    leadType?: 'd2d_intake' | 'shop_inquiry';
-    status?: 'new' | 'contacted' | 'converted' | 'closed';
+    leadType?: LeadType;
+    status?: LeadStatus;
   } = {},
 ): Promise<LeadsListResult> {
   const qs = new URLSearchParams();

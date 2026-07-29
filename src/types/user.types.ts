@@ -19,6 +19,7 @@ export interface User {
   mustEnrollMfa?: boolean;
   canProvisionClientLogin?: boolean;
   canManageShipmentBatches?: boolean;
+  position?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -51,6 +52,7 @@ export interface CreateInternalUserPayload {
   role: 'staff' | 'admin' | 'superadmin';
   firstName: string;
   lastName: string;
+  position?: string;
 }
 
 export interface CustomerProfile {

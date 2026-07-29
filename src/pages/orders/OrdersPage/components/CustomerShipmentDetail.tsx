@@ -130,14 +130,12 @@ function avatarColor(name: string): string {
   return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length] ?? 'bg-gray-400';
 }
 
+// `view.statusV2` is the customer-facing taxonomy (backend maps raw internal
+// statusV2 codes before a customer-role response reaches the FE).
 const ARRIVED_SET = new Set([
-  'FLIGHT_LANDED_LAGOS', 'VESSEL_ARRIVED_LAGOS_PORT', 'CUSTOMS_CLEARED_LAGOS',
-  'IN_TRANSIT_TO_LAGOS_OFFICE', 'READY_FOR_PICKUP', 'PICKED_UP_COMPLETED',
+  'ARRIVED_IN_NIGERIA', 'OUT_FOR_DELIVERY', 'READY_FOR_PICKUP', 'DELIVERED',
 ]);
-const TRANSIT_SET = new Set([
-  'DISPATCHED_TO_ORIGIN_AIRPORT', 'AT_ORIGIN_AIRPORT', 'BOARDED_ON_FLIGHT', 'FLIGHT_DEPARTED',
-  'DISPATCHED_TO_ORIGIN_PORT', 'AT_ORIGIN_PORT', 'LOADED_ON_VESSEL', 'VESSEL_DEPARTED',
-]);
+const TRANSIT_SET = new Set(['PREPARING_FOR_DEPARTURE', 'IN_TRANSIT']);
 
 function statusDotColor(statusV2: string): string {
   const s = statusV2.toUpperCase();

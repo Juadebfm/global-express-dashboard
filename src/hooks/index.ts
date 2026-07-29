@@ -13,7 +13,7 @@ export { useCurrentUserAvatar, useSetCurrentUserAvatar } from './useCurrentUserA
 export { useNotifications } from './useNotifications';
 export { useNotificationCount } from './useNotificationCount';
 export { useWebSocket } from './useWebSocket';
-export { useTeam } from './useTeam';
+export { useTeam, usePositions } from './useTeam';
 export { useClients } from './useClients';
 export { useSupportTickets } from './useSupportTickets';
 export { useOpenSupportTicketCount } from './useOpenSupportTicketCount';

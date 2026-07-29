@@ -30,6 +30,7 @@
       "name": "이름",
       "email": "이메일",
       "role": "역할",
+      "position": "직책",
       "permission": "권한"
     },
     "pendingApproval": "승인 대기 중",
@@ -46,6 +47,7 @@
     "profile": {
       "title": "팀 프로필 보기",
       "teammateRole": "팀원 역할",
+      "position": "직책",
       "permission": "권한",
       "removeButton": "제거",
       "editButton": "수정",
@@ -63,8 +65,15 @@
     "edit": {
       "title": "팀원 수정",
       "namePlaceholder": "팀원 이름 입력",
-      "emailPlaceholder": "팀원 이메일 입력"
+      "emailPlaceholder": "팀원 이메일 입력",
+      "emailLocked": "이메일은 여기서 변경할 수 없습니다.",
+      "editSuccess": "팀원 정보가 성공적으로 업데이트되었습니다.",
+      "editError": "팀원 정보 업데이트에 실패했습니다."
     },
+    "positionPlaceholder": "직책 선택 (선택 사항)",
+    "positionLoading": "직책 목록 불러오는 중…",
+    "positionOthersOption": "기타",
+    "positionOthersPlaceholder": "직책 입력",
     "permissions": {
       "sectionTitle": "권한",
       "makeAdmin": "관리자로 지정",

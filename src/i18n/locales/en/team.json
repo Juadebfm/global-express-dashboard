@@ -30,6 +30,7 @@
       "name": "Name",
       "email": "Email",
       "role": "Role",
+      "position": "Position",
       "permission": "Permission"
     },
     "pendingApproval": "Pending approval",
@@ -46,6 +47,7 @@
     "profile": {
       "title": "View team profile",
       "teammateRole": "Teammate role",
+      "position": "Position",
       "permission": "Permission",
       "removeButton": "Remove",
       "editButton": "Edit",
@@ -63,8 +65,15 @@
     "edit": {
       "title": "Edit Team member",
       "namePlaceholder": "Enter teammate name",
-      "emailPlaceholder": "Enter teammate email"
+      "emailPlaceholder": "Enter teammate email",
+      "emailLocked": "Email can't be changed here.",
+      "editSuccess": "Team member updated successfully.",
+      "editError": "Failed to update team member."
     },
+    "positionPlaceholder": "Select a position (optional)",
+    "positionLoading": "Loading positions…",
+    "positionOthersOption": "Others",
+    "positionOthersPlaceholder": "Enter position",
     "permissions": {
       "sectionTitle": "Permissions",
       "makeAdmin": "Make as an Admin",

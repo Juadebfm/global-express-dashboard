@@ -87,6 +87,17 @@
     "RESTRICTED_ITEM_REJECTED": "제한 품목 거부됨",
     "RESTRICTED_ITEM_OVERRIDE_APPROVED": "예외 승인됨"
   },
+  "customerTrackingStatus": {
+    "PROCESSING_AT_ORIGIN": "출발지에서 처리 중",
+    "IN_TRANSIT": "운송 중",
+    "ARRIVED_IN_NIGERIA": "나이지리아 도착",
+    "READY_FOR_PICKUP": "수령 준비 완료",
+    "OUT_FOR_DELIVERY": "배송 중",
+    "DELIVERED": "배송 완료",
+    "ON_HOLD": "보류 중",
+    "CANCELLED": "취소됨",
+    "ACTION_REQUIRED": "조치 필요"
+  },
   "locations": {
     "South Korea": "대한민국",
     "Korea": "한국",

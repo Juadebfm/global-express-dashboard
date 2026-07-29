@@ -87,6 +87,17 @@
     "RESTRICTED_ITEM_REJECTED": "Restricted Item Rejected",
     "RESTRICTED_ITEM_OVERRIDE_APPROVED": "Override Approved"
   },
+  "customerTrackingStatus": {
+    "PROCESSING_AT_ORIGIN": "Processing at Origin",
+    "IN_TRANSIT": "In Transit",
+    "ARRIVED_IN_NIGERIA": "Arrived in Nigeria",
+    "READY_FOR_PICKUP": "Ready for Pickup",
+    "OUT_FOR_DELIVERY": "Out for Delivery",
+    "DELIVERED": "Delivered",
+    "ON_HOLD": "On Hold",
+    "CANCELLED": "Cancelled",
+    "ACTION_REQUIRED": "Action Required"
+  },
   "locations": {
     "South Korea": "South Korea",
     "Korea": "Korea",

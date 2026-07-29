@@ -1,4 +1,4 @@
-export type LeadType = 'd2d_intake' | 'shop_inquiry';
+export type LeadType = 'd2d_intake' | 'shop_inquiry' | 'general_inquiry';
 export type LeadStatus = 'new' | 'contacted' | 'converted' | 'closed';
 
 export interface Lead {

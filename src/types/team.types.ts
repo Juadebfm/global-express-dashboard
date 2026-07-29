@@ -13,6 +13,7 @@ export interface TeamMember {
   fullName: string;
   email: string;
   role: TeamRole;
+  position: string | null;
   permissions: TeamPermissions;
   approvalStatus: 'approved' | 'pending';
 }
@@ -24,6 +25,7 @@ export interface ApiTeamMember {
   displayName?: string;
   email: string;
   role: TeamRole;
+  position?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

@@ -6,6 +6,7 @@ export interface CreateTeamMemberPayload {
   role: string;
   firstName: string;
   lastName: string;
+  position?: string;
 }
 
 export async function createTeamMember(
@@ -13,6 +14,14 @@ export async function createTeamMember(
   payload: CreateTeamMemberPayload
 ): Promise<void> {
   await apiPost('/internal/users', payload, token);
+}
+
+// Canonical list of position strings staff have used so far — not a fixed
+// enum, not validated server-side. Grows automatically whenever someone
+// picks "Others" and types a new title; this is just what populates the
+// dropdown, never a source of truth for validation.
+export function getPositions(token: string): Promise<string[]> {
+  return apiGetData<string[]>('/internal/positions', token);
 }
 
 export function getTeam(
