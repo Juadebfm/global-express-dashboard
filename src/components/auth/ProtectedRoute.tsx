@@ -23,7 +23,17 @@ export function ProtectedRoute({
   const { isSignedIn: isClerkSignedIn, isLoaded: isClerkLoaded } = useClerkAuth();
   const location = useLocation();
 
-  if (isLoading || !isClerkLoaded) {
+  // Staff/admin/superadmin never authenticate via Clerk (internal JWT only),
+  // so a route restricted to those roles has no reason to wait on Clerk's
+  // SDK — which, running on a development instance, can take 10+ seconds to
+  // finish its dev-browser handshake. Only skip the wait when the route is
+  // provably staff-only (allowedRoles set, and excludes 'user'/'supplier',
+  // the two Clerk-authenticated roles); any ambiguous/unrestricted route
+  // keeps the original behavior.
+  const isStaffOnlyRoute =
+    !!allowedRoles?.length && allowedRoles.every((role) => role !== 'user' && role !== 'supplier');
+
+  if (isLoading || (!isClerkLoaded && !isStaffOnlyRoute)) {
     return <PageLoader label="Loading..." />;
   }
 
