@@ -42,6 +42,13 @@ export interface ChangePasswordPayload {
   newPassword: string;
 }
 
+export interface PasswordChangeResult {
+  message: string;
+  isActive: boolean;
+  mustChangePassword: boolean;
+  mustCompleteProfile: boolean;
+}
+
 export interface AdminResetPasswordPayload {
   newPassword: string;
 }

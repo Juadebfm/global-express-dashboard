@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClerk, useUser as useClerkUser } from '@clerk/clerk-react';
-import type { LoginCredentials, User } from '@/types';
+import type { LoginCredentials, PasswordChangeResult, User } from '@/types';
 import { login as apiLogin, getMe, getInternalMe, logout as apiLogout } from '@/services/authService';
 import { useLanguageStore } from '@/store/language';
 import { queryClient } from '@/lib/queryClient';
@@ -68,6 +68,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   // visibilitychange / 403 handlers (registered once) can pick the right
   // endpoint for each refresh.
   const currentRoleRef = useRef<string | undefined>(undefined);
+  const refreshUserPromiseRef = useRef<Promise<void> | null>(null);
   useEffect(() => {
     currentRoleRef.current = state.user?.role;
   }, [state.user?.role]);
@@ -114,6 +115,42 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     checkAuth();
   }, [checkAuth]);
 
+  // All account-status refresh paths (the pending-approval button, a tab
+  // refocus, and a role-change 403) share one in-flight request. Without
+  // this, a forbidden operational request could fan out into concurrent
+  // status probes and make the UI flicker between stale states.
+  const refreshUser = useCallback((): Promise<void> => {
+    if (refreshUserPromiseRef.current) return refreshUserPromiseRef.current;
+
+    const token = sessionStorage.getItem(TOKEN_KEY);
+    if (!token) return Promise.resolve();
+
+    const refresh = (async (): Promise<void> => {
+      try {
+        const user = await fetchUser(token, currentRoleRef.current);
+        if (!user?.role) return;
+        syncLanguageFromUser(user);
+        lastSyncedAtRef.current = Date.now();
+        setState({
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+      } catch {
+        /* Keep the current state when the status probe itself fails. */
+      }
+    })();
+
+    refreshUserPromiseRef.current = refresh;
+    void refresh.finally(() => {
+      if (refreshUserPromiseRef.current === refresh) {
+        refreshUserPromiseRef.current = null;
+      }
+    });
+    return refresh;
+  }, []);
+
   // Periodic role refresh on tab refocus. If the user came back after
   // being idle ≥5 min, refetch /auth/me so a mid-session role upgrade
   // (staff → admin, permission flag flipped, etc.) propagates without
@@ -122,31 +159,14 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     if (typeof document === 'undefined') return;
     const handler = async (): Promise<void> => {
       if (document.visibilityState !== 'visible') return;
-      const token = sessionStorage.getItem(TOKEN_KEY);
-      if (!token) return;
       const elapsed = Date.now() - lastSyncedAtRef.current;
       if (elapsed < REFRESH_ON_FOCUS_IDLE_MS) return;
-      try {
-        const user = await fetchUser(token, currentRoleRef.current);
-        if (!user?.role) return;
-        syncLanguageFromUser(user);
-        lastSyncedAtRef.current = Date.now();
-        setState((prev) => ({
-          ...prev,
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        }));
-      } catch {
-        /* If the refresh itself 401s, the apiClient handler clears
-           state. Don't double-handle here. */
-      }
+      await refreshUser();
     };
     const wrapper = (): void => { void handler(); };
     document.addEventListener('visibilitychange', wrapper);
     return () => document.removeEventListener('visibilitychange', wrapper);
-  }, []);
+  }, [refreshUser]);
 
   // Single 403 handler — apiClient dispatches `auth:forbidden` whenever
   // any non-boot-probe request gets a 403. Could mean (a) the user is
@@ -155,34 +175,11 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   // we refetch /auth/me to catch case (b). If the role didn't actually
   // change, this is a cheap no-op.
   //
-  // Inlined rather than calling refreshUser() (defined later) to avoid the
-  // useEffect dep / ref dance.
   useEffect(() => {
-    const handler = async (): Promise<void> => {
-      const token = sessionStorage.getItem(TOKEN_KEY);
-      // Only refresh if we still think we're logged in — otherwise this
-      // races into the 401 handler below.
-      if (!token) return;
-      try {
-        const user = await fetchUser(token, currentRoleRef.current);
-        if (!user?.role) return;
-        syncLanguageFromUser(user);
-        lastSyncedAtRef.current = Date.now();
-        setState((prev) => ({
-          ...prev,
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        }));
-      } catch {
-        /* If the me probe fails too, the 401 handler will pick it up. */
-      }
-    };
-    const wrapper = (): void => { void handler(); };
+    const wrapper = (): void => { void refreshUser(); };
     window.addEventListener('auth:forbidden', wrapper);
     return () => window.removeEventListener('auth:forbidden', wrapper);
-  }, []);
+  }, [refreshUser]);
 
   // Single 401 handler — apiClient dispatches `auth:unauthorized` whenever
   // any request gets a 401 (this also covers the backend's "session has been
@@ -339,23 +336,22 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
-  const refreshUser = useCallback(async () => {
-    const token = sessionStorage.getItem(TOKEN_KEY);
-    if (!token) return;
-    try {
-      const user = await fetchUser(token, currentRoleRef.current);
-      if (!user?.role) return;
-      syncLanguageFromUser(user);
-      lastSyncedAtRef.current = Date.now();
-      setState({
-        user,
-        isAuthenticated: true,
+  const completePasswordChange = useCallback((result: PasswordChangeResult): void => {
+    lastSyncedAtRef.current = Date.now();
+    setState((prev) => {
+      if (!prev.user) return prev;
+      return {
+        ...prev,
+        user: {
+          ...prev.user,
+          isActive: result.isActive,
+          mustChangePassword: result.mustChangePassword,
+          mustCompleteProfile: result.mustCompleteProfile,
+        },
         isLoading: false,
         error: null,
-      });
-    } catch {
-      /* keep current state on failure */
-    }
+      };
+    });
   }, []);
 
   const value = useMemo<AuthContextValue>(
@@ -366,8 +362,9 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       logout,
       clearError,
       refreshUser,
+      completePasswordChange,
     }),
-    [state, login, completeMfaChallenge, logout, clearError, refreshUser]
+    [state, login, completeMfaChallenge, logout, clearError, refreshUser, completePasswordChange]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

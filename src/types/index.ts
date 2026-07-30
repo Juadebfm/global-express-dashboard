@@ -13,6 +13,7 @@ export type {
   NotificationPreferencesUpdateInput,
   AccountExportFile,
   ChangePasswordPayload,
+  PasswordChangeResult,
   AdminResetPasswordPayload,
   CreateInternalUserPayload,
   StaffProfilePayload,

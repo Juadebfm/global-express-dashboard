@@ -300,3 +300,74 @@ describe('AuthContext — role refresh on tab refocus', () => {
     expect(vi.mocked(authService.getMe).mock.calls.length).toBe(callsAfterBoot);
   });
 });
+
+describe('AuthContext — staff onboarding state', () => {
+  const pendingStaff = {
+    id: 'pending-staff',
+    email: 'pending@example.com',
+    firstName: 'Pending',
+    lastName: 'Staff',
+    role: 'staff' as const,
+    isActive: false,
+    mustChangePassword: true,
+    mustCompleteProfile: false,
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-01',
+  };
+
+  it('applies the password-change response without a follow-up status request', async () => {
+    sessionStorage.setItem(TOKEN_KEY, 'pending-staff-token');
+    vi.mocked(authService.getMe).mockResolvedValue(pendingStaff as never);
+
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    act(() => {
+      result.current.completePasswordChange({
+        message: 'Password updated successfully',
+        isActive: false,
+        mustChangePassword: false,
+        mustCompleteProfile: false,
+      });
+    });
+
+    expect(result.current.user).toMatchObject({
+      isActive: false,
+      mustChangePassword: false,
+      mustCompleteProfile: false,
+    });
+    expect(authService.getInternalMe).not.toHaveBeenCalled();
+  });
+
+  it('deduplicates concurrent status refreshes', async () => {
+    sessionStorage.setItem(TOKEN_KEY, 'pending-staff-token');
+    vi.mocked(authService.getMe).mockResolvedValue(pendingStaff as never);
+
+    let resolveStatus: ((value: typeof pendingStaff) => void) | undefined;
+    vi.mocked(authService.getInternalMe).mockImplementation(
+      () => new Promise((resolve) => { resolveStatus = resolve; }) as never,
+    );
+
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const firstRefresh = result.current.refreshUser();
+    const secondRefresh = result.current.refreshUser();
+
+    expect(firstRefresh).toBe(secondRefresh);
+    expect(authService.getInternalMe).toHaveBeenCalledTimes(1);
+
+    resolveStatus?.({ ...pendingStaff, mustChangePassword: false });
+    await act(async () => {
+      await firstRefresh;
+    });
+  });
+});
