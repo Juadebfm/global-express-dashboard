@@ -179,13 +179,15 @@ export function ProfilePage(): ReactElement {
   const currentAvatarUrl = useCurrentUserAvatar();
   const setCurrentUserAvatar = useSetCurrentUserAvatar();
   const pushMessage = useFeedbackStore((s) => s.pushMessage);
+  const internalUserId = authUser?.id;
+  const internalUserRole = authUser?.role;
 
   const mode: ProfileMode = useMemo(() => {
-    if (authUser && ['staff', 'admin', 'superadmin'].includes(authUser.role)) {
+    if (internalUserRole && ['staff', 'admin', 'superadmin'].includes(internalUserRole)) {
       return 'internal';
     }
     return 'external';
-  }, [authUser]);
+  }, [internalUserRole]);
 
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -271,15 +273,15 @@ export function ProfilePage(): ReactElement {
   }, [clerkUser, mode]);
 
   useEffect(() => {
-    const isInternalSessionReady = Boolean(authUser);
-    const isExternalSessionReady = !authUser && isClerkLoaded && isClerkSignedIn;
+    const isInternalSessionReady = Boolean(internalUserId);
+    const isExternalSessionReady = !internalUserId && isClerkLoaded && isClerkSignedIn;
 
     if (!isInternalSessionReady && !isExternalSessionReady) {
       return;
     }
 
     const bootstrapKey = mode === 'internal'
-      ? `internal:${authUser?.id ?? ''}`
+      ? `internal:${internalUserId ?? ''}`
       : `external:${clerkUser?.id ?? ''}`;
 
     if (lastBootstrapKeyRef.current === bootstrapKey) {
@@ -364,7 +366,7 @@ export function ProfilePage(): ReactElement {
       // re-runs the bootstrap rather than being silently skipped by the guard above.
       lastBootstrapKeyRef.current = null;
     };
-  }, [authUser, clerkUser?.id, getToken, isClerkLoaded, isClerkSignedIn, mode]);
+  }, [clerkUser?.id, getToken, internalUserId, isClerkLoaded, isClerkSignedIn, mode]);
 
   const handleExternalChange = <K extends keyof ExternalFormState>(
     key: K,
