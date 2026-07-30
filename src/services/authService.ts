@@ -11,6 +11,7 @@ import type {
   NotificationPreferencesUpdateInput,
   AccountExportFile,
   ChangePasswordPayload,
+  PasswordChangeResult,
   AdminResetPasswordPayload,
   CreateInternalUserPayload,
   StaffProfilePayload,
@@ -25,6 +26,7 @@ import {
   apiGetBlob,
   apiGetData,
   apiPatch,
+  apiPatchData,
   apiPost,
   apiPostData,
 } from '@/lib/apiClient';
@@ -245,8 +247,8 @@ export async function deleteMyAccount(token: string): Promise<{ message: string 
 export async function changeMyPassword(
   token: string,
   payload: ChangePasswordPayload
-): Promise<void> {
-  await apiPatch('/internal/me/password', payload, token);
+): Promise<PasswordChangeResult> {
+  return apiPatchData<PasswordChangeResult>('/internal/me/password', payload, token);
 }
 
 export async function adminResetPassword(

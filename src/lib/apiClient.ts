@@ -131,6 +131,7 @@ function showRateLimitToast(retryAfterSeconds: number | null): void {
 // in a parallel tab.
 const SKIP_UNAUTHORIZED_DISPATCH = new Set([
   '/auth/me',
+  '/internal/me',
   '/users/me',
   '/supplier/auth/login',
 ]);

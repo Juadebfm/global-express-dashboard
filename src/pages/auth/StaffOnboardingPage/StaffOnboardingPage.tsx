@@ -14,7 +14,13 @@ const TOKEN_KEY = 'globalxpress_token';
 export function StaffOnboardingPage(): ReactElement {
   const { t } = useTranslation('auth');
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading: authLoading, refreshUser } = useAuth();
+  const {
+    user,
+    isAuthenticated,
+    isLoading: authLoading,
+    refreshUser,
+    completePasswordChange,
+  } = useAuth();
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -55,15 +61,18 @@ export function StaffOnboardingPage(): ReactElement {
 
     setPwLoading(true);
     try {
-      await changeMyPassword(token, { currentPassword, newPassword });
-      await refreshUser();
-      // Redirect is handled by the effect above once user state updates
+      const result = await changeMyPassword(token, { currentPassword, newPassword });
+      // The account becomes pending approval after its first password change.
+      // Use the authoritative mutation response instead of probing an
+      // operationally restricted endpoint, so this screen transitions
+      // immediately and deterministically.
+      completePasswordChange(result);
     } catch (err) {
       setPwError(err instanceof Error ? err.message : 'Failed to change password');
     } finally {
       setPwLoading(false);
     }
-  }, [currentPassword, newPassword, confirmPassword, t, refreshUser]);
+  }, [currentPassword, newPassword, confirmPassword, t, completePasswordChange]);
 
   if (authLoading) return <AuthLayout><div /></AuthLayout>;
 

@@ -1,4 +1,4 @@
-import type { User, LoginCredentials } from '@/types';
+import type { User, LoginCredentials, PasswordChangeResult } from '@/types';
 
 export interface AuthState {
   user: User | null;
@@ -22,4 +22,5 @@ export interface AuthContextValue extends AuthState {
   logout: () => Promise<void>;
   clearError: () => void;
   refreshUser: () => Promise<void>;
+  completePasswordChange: (result: PasswordChangeResult) => void;
 }
