@@ -117,17 +117,18 @@ export function TeamPage(): ReactElement {
   const updateUserMutation = useUpdateUser();
   const changeRoleMutation = useChangeUserRole();
   const [activeTab, setActiveTab] = useState<TeamTab>('all');
-  const [membersOverride, setMembersOverride] = useState<TeamMember[] | null>(null);
-  const members = membersOverride ?? apiMembers;
+  // All four mutations below (invite/edit/remove/approve) invalidate the
+  // ['team'] query on success, so apiMembers is always the fresh source of
+  // truth — no local override needed. (A prior version of this page mirrored
+  // edits into local state because edit/remove were fake, local-only
+  // mutations; that override was never cleared, so it permanently masked
+  // fresh data — including brand-new invites — after the first edit/remove.)
+  const members = apiMembers;
   const [activeModal, setActiveModal] = useState<ActiveModal>(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [formState, setFormState] = useState<TeamFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
-
-  const updateMembers = (updater: (current: TeamMember[]) => TeamMember[]): void => {
-    setMembersOverride((prev) => updater(prev ?? apiMembers));
-  };
 
   const isSuperAdmin = useCan('app.superadmin');
   const hasAccess = useCan('team.view');
@@ -260,14 +261,6 @@ export function TeamPage(): ReactElement {
             payload: { role: formState.role },
           });
         }
-        const fullName = `${formState.firstName.trim()} ${formState.lastName.trim()}`.trim();
-        updateMembers((prev) =>
-          prev.map((member) =>
-            member.id === selectedMember.id
-              ? { ...member, fullName, role: formState.role, position: trimmedPosition || null }
-              : member
-          )
-        );
         pushMessage({ tone: 'success', message: t('modals.edit.editSuccess') });
         closeModal();
       } catch (err) {
@@ -289,7 +282,6 @@ export function TeamPage(): ReactElement {
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
       const result = await deleteUser(token, selectedMember.id);
-      updateMembers((prev) => prev.filter((member) => member.id !== selectedMember.id));
       void queryClient.invalidateQueries({ queryKey: ['team'] });
       pushMessage({ tone: 'success', message: result.message });
       closeModal();
@@ -302,11 +294,6 @@ export function TeamPage(): ReactElement {
 
   const approveMember = (member: TeamMember): void => {
     approveApi(member.id);
-    updateMembers((prev) =>
-      prev.map((item) =>
-        item.id === member.id ? { ...item, approvalStatus: 'approved' } : item
-      )
-    );
   };
 
   const handleApprove = (): void => {
