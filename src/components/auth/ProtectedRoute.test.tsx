@@ -213,6 +213,29 @@ describe('ProtectedRoute', () => {
     expect(getByText('staff-onboarding-page')).toBeTruthy();
   });
 
+  it('renders the staff-onboarding route instead of redirecting to itself', () => {
+    mockAuth({
+      user: makeUser({ role: 'staff', mustChangePassword: true }),
+    });
+
+    const { getByText } = render(
+      <MemoryRouter initialEntries={[ROUTES.STAFF_ONBOARDING]}>
+        <Routes>
+          <Route
+            path={ROUTES.STAFF_ONBOARDING}
+            element={
+              <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
+                <span>{PROTECTED_CONTENT}</span>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(getByText(PROTECTED_CONTENT)).toBeTruthy();
+  });
+
   it('allows access when mustCompleteProfile is true (soft gate)', () => {
     mockAuth({
       user: makeUser({ role: 'staff', mustCompleteProfile: true }),
