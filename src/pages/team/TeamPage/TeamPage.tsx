@@ -1,9 +1,13 @@
-import type { ReactElement } from 'react';
+import type { ComponentType, ReactElement } from 'react';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Mail, Search, User, UserPlus, X } from 'lucide-react';
+import type { Country } from 'react-phone-number-input';
+import { getCountries, getCountryCallingCode } from 'react-phone-number-input';
+import flags from 'react-phone-number-input/flags';
+import en from 'react-phone-number-input/locale/en';
 import {
   useAdminUserDetail,
   useAuth,
@@ -21,9 +25,15 @@ import {
 import { AppShell, PageHeader } from '@/pages/shared';
 import { Pagination } from '@/components/ui';
 import { deleteUser } from '@/services';
+import { ApiError } from '@/lib/apiClient';
 import type { TeamMember, TeamRole } from '@/types';
 import { cn } from '@/utils';
 import { useFeedbackStore } from '@/store';
+import {
+  buildE164,
+  isPossibleE164,
+  type PhoneCountryOption,
+} from '@/pages/profile/ProfilePage/internalPhone';
 
 type TeamTab = 'all' | 'admin' | 'non-admin';
 type ActiveModal = 'invite' | 'edit' | 'profile' | 'remove' | null;
@@ -35,6 +45,14 @@ interface TeamFormState {
   role: TeamRole;
   position: string;
 }
+
+const PHONE_COUNTRY_OPTIONS: PhoneCountryOption[] = getCountries()
+  .map((code) => ({
+    code,
+    name: (en as Record<string, string>)[code] || code,
+    dialCode: `+${getCountryCallingCode(code)}`,
+  }))
+  .sort((a, b) => a.name.localeCompare(b.name));
 
 const emptyForm: TeamFormState = {
   firstName: '',
@@ -76,6 +94,104 @@ const buildInitials = (name: string): string => {
   if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? '';
   return `${parts[0][0] ?? ''}${parts[parts.length - 1][0] ?? ''}`.toUpperCase();
 };
+
+interface InvitePhoneFieldProps {
+  label: string;
+  example: string;
+  placeholder: string;
+  value: string;
+  selectedCountry: PhoneCountryOption;
+  onCountryChange: (code: Country) => void;
+  onChange: (value: string) => void;
+  error?: string;
+  disabled?: boolean;
+}
+
+function InvitePhoneField({
+  label,
+  example,
+  placeholder,
+  value,
+  selectedCountry,
+  onCountryChange,
+  onChange,
+  error,
+  disabled = false,
+}: InvitePhoneFieldProps): ReactElement {
+  const FlagIcon = flags[selectedCountry.code] as ComponentType<{
+    title?: string;
+    className?: string;
+  }> | undefined;
+
+  return (
+    <div className="w-full">
+      <label htmlFor="invite-phone" className="mb-1.5 block text-sm font-medium text-gray-700">
+        {label} <span className="text-red-500">*</span>
+      </label>
+      <div className="flex gap-2">
+        <div className="relative w-[128px] shrink-0">
+          {FlagIcon && (
+            <FlagIcon
+              title={selectedCountry.name}
+              className="pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-5 -translate-y-1/2 rounded-sm"
+            />
+          )}
+          <select
+            aria-label={`${label} country code`}
+            value={selectedCountry.code}
+            onChange={(event) => onCountryChange(event.target.value as Country)}
+            disabled={disabled}
+            className={cn(
+              'w-full appearance-none rounded-2xl border bg-white py-3 pl-10 pr-9 text-sm text-transparent outline-none transition focus:ring-2',
+              error
+                ? 'border-red-500 focus:ring-red-500'
+                : 'border-gray-200 focus:border-brand-500 focus:ring-brand-500',
+              disabled && 'cursor-not-allowed bg-gray-50',
+            )}
+          >
+            {PHONE_COUNTRY_OPTIONS.map((country) => (
+              <option key={country.code} value={country.code} className="text-gray-900">
+                {country.name} ({country.dialCode})
+              </option>
+            ))}
+          </select>
+          <span
+            className="pointer-events-none absolute left-10 top-1/2 -translate-y-1/2 text-sm text-gray-900"
+            aria-hidden="true"
+          >
+            {selectedCountry.dialCode}
+          </span>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 z-[1] h-4 w-4 text-gray-400" />
+        </div>
+        <input
+          id="invite-phone"
+          type="tel"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          disabled={disabled}
+          placeholder={placeholder}
+          aria-invalid={error ? 'true' : 'false'}
+          aria-describedby={error ? 'invite-phone-error invite-phone-example' : 'invite-phone-example'}
+          className={cn(
+            'min-w-0 flex-1 rounded-2xl border bg-white px-4 py-3 text-sm text-gray-700 outline-none transition placeholder:text-gray-400 focus:ring-2',
+            error
+              ? 'border-red-500 focus:ring-red-500'
+              : 'border-gray-200 focus:border-brand-500 focus:ring-brand-500',
+            disabled && 'cursor-not-allowed bg-gray-50',
+          )}
+        />
+      </div>
+      <p id="invite-phone-example" className="mt-1.5 text-xs text-gray-500">
+        {example}
+      </p>
+      {error && (
+        <p id="invite-phone-error" className="mt-1.5 text-sm text-red-600" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function TeamPage(): ReactElement {
   const { t } = useTranslation(['team', 'shipments']);
@@ -128,6 +244,9 @@ export function TeamPage(): ReactElement {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [formState, setFormState] = useState<TeamFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [invitePhone, setInvitePhone] = useState('');
+  const [invitePhoneCountryCode, setInvitePhoneCountryCode] = useState<Country>('NG');
+  const [invitePhoneError, setInvitePhoneError] = useState<string | null>(null);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
 
   const isSuperAdmin = useCan('app.superadmin');
@@ -135,6 +254,12 @@ export function TeamPage(): ReactElement {
   const isSavingForm = isInviting || updateUserMutation.isPending || changeRoleMutation.isPending;
 
   const roleOptions: TeamRole[] = isSuperAdmin ? ['staff', 'superadmin'] : ['staff'];
+  const selectedInvitePhoneCountry = useMemo(
+    () =>
+      PHONE_COUNTRY_OPTIONS.find((country) => country.code === invitePhoneCountryCode) ??
+      PHONE_COUNTRY_OPTIONS[0],
+    [invitePhoneCountryCode],
+  );
 
   const resolvedMembers = useMemo(() => {
     if (!user || user.role !== 'superadmin') return members;
@@ -163,6 +288,9 @@ export function TeamPage(): ReactElement {
   const openInvite = (): void => {
     setFormState(emptyForm);
     setFormError(null);
+    setInvitePhone('');
+    setInvitePhoneCountryCode('NG');
+    setInvitePhoneError(null);
     setSelectedMember(null);
     setActiveModal('invite');
   };
@@ -194,6 +322,7 @@ export function TeamPage(): ReactElement {
   const closeModal = (): void => {
     setActiveModal(null);
     setFormError(null);
+    setInvitePhoneError(null);
     setRoleDropdownOpen(false);
   };
 
@@ -220,17 +349,32 @@ export function TeamPage(): ReactElement {
     isSuperAdmin && member.approvalStatus === 'pending';
 
   const handleSave = async (): Promise<void> => {
-    if (!formState.firstName.trim() || !formState.email.trim()) {
-      setFormError(t('modals.formError'));
-      return;
-    }
-
     if (activeModal === 'invite') {
+      if (
+        !formState.firstName.trim() ||
+        !formState.lastName.trim() ||
+        !formState.email.trim()
+      ) {
+        setFormError(t('modals.formError'));
+        return;
+      }
+      if (!invitePhone.trim()) {
+        setFormError(null);
+        setInvitePhoneError(t('modals.invite.phoneRequired'));
+        return;
+      }
+      if (!isPossibleE164(invitePhone, selectedInvitePhoneCountry)) {
+        setFormError(null);
+        setInvitePhoneError(t('modals.invite.phoneInvalid'));
+        return;
+      }
+
       try {
         await inviteMember({
           firstName: formState.firstName.trim(),
           lastName: formState.lastName.trim(),
           email: formState.email.trim().toLowerCase(),
+          phone: buildE164(invitePhone, selectedInvitePhoneCountry),
           role: formState.role,
           position: formState.position.trim() || undefined,
         });
@@ -238,9 +382,30 @@ export function TeamPage(): ReactElement {
         setActiveTab('all');
         closeModal();
       } catch (err) {
+        if (
+          err instanceof ApiError &&
+          (err.status === 422 ||
+            (err.status === 409 &&
+              err.problem?.code === 'PHONE_ALREADY_REGISTERED' &&
+              err.problem?.field === 'phone')) &&
+          err.problem?.detail
+        ) {
+          setFormError(null);
+          setInvitePhoneError(err.problem.detail);
+          return;
+        }
         const msg = err instanceof Error ? err.message : t('modals.invite.inviteError');
         setFormError(msg);
       }
+      return;
+    }
+
+    if (
+      !formState.firstName.trim() ||
+      !formState.lastName.trim() ||
+      !formState.email.trim()
+    ) {
+      setFormError(t('modals.formError'));
       return;
     }
 
@@ -713,6 +878,25 @@ export function TeamPage(): ReactElement {
                       className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
                     />
                   </div>
+                  {activeModal === 'invite' && (
+                    <InvitePhoneField
+                      label={t('modals.invite.phoneLabel')}
+                      example={t('modals.invite.phoneExample')}
+                      placeholder={t('modals.invite.phonePlaceholder')}
+                      value={invitePhone}
+                      selectedCountry={selectedInvitePhoneCountry}
+                      onCountryChange={(code) => {
+                        setInvitePhoneCountryCode(code);
+                        setInvitePhoneError(null);
+                      }}
+                      onChange={(value) => {
+                        setInvitePhone(value);
+                        setInvitePhoneError(null);
+                      }}
+                      error={invitePhoneError ?? undefined}
+                      disabled={isSavingForm}
+                    />
+                  )}
                   <div className="relative">
                     <button
                       type="button"

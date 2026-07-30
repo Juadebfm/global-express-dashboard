@@ -55,8 +55,8 @@ export interface AdminResetPasswordPayload {
 
 export interface CreateInternalUserPayload {
   email: string;
-  password: string;
-  role: 'staff' | 'admin' | 'superadmin';
+  phone: string;
+  role: 'staff' | 'superadmin';
   firstName: string;
   lastName: string;
   position?: string;

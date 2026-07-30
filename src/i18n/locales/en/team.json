@@ -58,6 +58,11 @@
       "firstNamePlaceholder": "First name",
       "lastNamePlaceholder": "Last name",
       "emailPlaceholder": "Enter teammate email",
+      "phoneLabel": "Phone number",
+      "phonePlaceholder": "e.g. 906 000 0193",
+      "phoneExample": "Example: +234 906 000 0193",
+      "phoneRequired": "Phone number is required.",
+      "phoneInvalid": "Enter a valid phone number with the country code.",
       "passwordPlaceholder": "Temporary password",
       "inviteSuccess": "Team member invited successfully.",
       "inviteError": "Failed to invite team member."
@@ -81,7 +86,7 @@
       "viewOnly": "Can view only",
       "adminApprovalNote": "Staff created by Admin require Super Admin approval."
     },
-    "formError": "Name and email are required.",
+    "formError": "First name, last name, and email are required.",
     "cancelButton": "Cancel",
     "saveButton": "Save",
     "remove": {

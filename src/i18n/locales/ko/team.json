@@ -58,6 +58,11 @@
       "firstNamePlaceholder": "이름",
       "lastNamePlaceholder": "성",
       "emailPlaceholder": "팀원 이메일 입력",
+      "phoneLabel": "전화번호",
+      "phonePlaceholder": "예: 906 000 0193",
+      "phoneExample": "예: +234 906 000 0193",
+      "phoneRequired": "전화번호는 필수 항목입니다.",
+      "phoneInvalid": "국가번호를 포함한 유효한 전화번호를 입력하세요.",
       "passwordPlaceholder": "임시 비밀번호",
       "inviteSuccess": "팀원이 성공적으로 초대되었습니다.",
       "inviteError": "팀원 초대에 실패했습니다."
@@ -81,7 +86,7 @@
       "viewOnly": "조회만 가능",
       "adminApprovalNote": "관리자가 생성한 직원은 최고 관리자의 승인이 필요합니다."
     },
-    "formError": "이름과 이메일은 필수 항목입니다.",
+    "formError": "이름, 성, 이메일은 필수 항목입니다.",
     "cancelButton": "취소",
     "saveButton": "저장",
     "remove": {

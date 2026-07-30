@@ -3,7 +3,8 @@ import { apiGetData, apiPatch, apiPost } from '@/lib/apiClient';
 
 export interface CreateTeamMemberPayload {
   email: string;
-  role: string;
+  phone: string;
+  role: 'staff' | 'superadmin';
   firstName: string;
   lastName: string;
   position?: string;

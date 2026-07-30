@@ -465,23 +465,23 @@ Last updated: 2026-07-27
 **Pattern notes:**
 This is the durable staff holding area for a booking whose goods are not yet physically at the warehouse. Its only action moves the exact order into the existing verification workspace, where package dimensions, weight, images and pricing are handled.
 
-### Staff profile phone and select controls
+### Staff profile and team invite phone/select controls
 
-File: `src/pages/profile/ProfilePage/ProfilePage.tsx`
+Files: `src/pages/profile/ProfilePage/ProfilePage.tsx`, `src/pages/team/TeamPage/TeamPage.tsx`
 Last updated: 2026-07-30
 
 | Property | Class |
 |---|---|
 | Control background | `bg-white` |
 | Control border | `border border-gray-200` |
-| Control radius | `rounded-lg` (legacy profile form) |
+| Control radius | `rounded-2xl` in team invite modal; `rounded-lg` in legacy profile form |
 | Control text | `text-sm text-gray-900` |
 | Focus state | `focus:ring-2 focus:ring-brand-500` |
 | Select chevron | `h-4 w-4 text-gray-400`, positioned inside the right padding |
 | Phone country marker | `h-4 w-5 rounded-sm` flag with dial code selector |
 
 **Pattern notes:**
-Profile selects use `appearance-none` with a positioned Lucide chevron so the arrow does not sit against the browser control edge. Phone country selectors show the flag and dial code in the compact control; country names remain available in the native option list.
+Profile and team invite selects use `appearance-none` with a positioned Lucide chevron so the arrow does not sit against the browser control edge. Phone country selectors show the flag and dial code in the compact control; country names remain available in the native option list. Team invites validate and submit canonical E.164 phone numbers, with field-level API errors for phone conflicts and invalid formats.
 
 ---
 

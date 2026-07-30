@@ -241,12 +241,28 @@ function buildApiError(
     payload && typeof payload === 'object' && 'message' in payload
       ? ((payload as { message?: unknown }).message as string | undefined)
       : undefined;
+  const legacyDetail =
+    payload && typeof payload === 'object' && 'detail' in payload
+      ? ((payload as { detail?: unknown }).detail as string | undefined)
+      : undefined;
+  const legacyProblem =
+    legacyDetail && payload && typeof payload === 'object'
+      ? ({
+          ...(payload as Record<string, unknown>),
+          type: `/problems/${response.status === 422 ? 'unprocessable' : 'conflict'}`,
+          title: fallback,
+          status: response.status,
+          detail: legacyDetail,
+          instance: response.url,
+          requestId: headerRequestId ?? '',
+        } as Problem)
+      : null;
   return new ApiError(
-    sanitizeMessage(legacyMessage, fallback),
+    sanitizeMessage(legacyMessage || legacyDetail, fallback),
     response.status,
     retryAfterSeconds,
     headerRequestId,
-    null,
+    legacyProblem,
   );
 }
 

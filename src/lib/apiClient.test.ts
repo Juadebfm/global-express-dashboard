@@ -371,6 +371,27 @@ describe('RFC 7807 Problem Details parsing', () => {
       expect(apiErr.problem).toBeNull();
     }
   });
+
+  it('preserves legacy conflict detail and extensions for field-level handling', async () => {
+    mockFetch(
+      {
+        code: 'PHONE_ALREADY_REGISTERED',
+        field: 'phone',
+        detail: 'An account with that phone number already exists',
+      },
+      409,
+    );
+    try {
+      await apiGet('/internal/users', 'token');
+      throw new Error('should not resolve');
+    } catch (err) {
+      const apiErr = err as ApiError;
+      expect(apiErr.message).toBe('An account with that phone number already exists');
+      expect(apiErr.problem?.code).toBe('PHONE_ALREADY_REGISTERED');
+      expect(apiErr.problem?.field).toBe('phone');
+      expect(apiErr.problem?.detail).toBe('An account with that phone number already exists');
+    }
+  });
 });
 
 describe('Content-Type header', () => {
