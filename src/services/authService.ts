@@ -20,7 +20,6 @@ import type {
   AvatarUpdateResult,
 } from '@/types';
 import {
-  apiDelete,
   apiDeleteData,
   apiGet,
   apiGetBlob,
@@ -239,8 +238,8 @@ export async function updateMyProfile(
   return response.data;
 }
 
-export async function deleteMyAccount(token: string): Promise<void> {
-  await apiDelete('/users/me', token);
+export async function deleteMyAccount(token: string): Promise<{ message: string }> {
+  return apiDeleteData<{ message: string }>('/users/me', token);
 }
 
 export async function changeMyPassword(

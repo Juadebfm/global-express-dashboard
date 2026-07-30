@@ -581,13 +581,13 @@ export function ClientsPage(): ReactElement {
     try {
       const token = await getAuthToken();
       if (!token) throw new Error('Not authenticated');
-      await deleteUser(token, deleteTarget.id);
+      const result = await deleteUser(token, deleteTarget.id);
       await queryClient.invalidateQueries({ queryKey: ['clients'] });
-      setActionMessage(t('deleteSuccess', { name: getClientName(deleteTarget) }));
+      setActionMessage(result.message);
       setDeleteTarget(null);
       setActiveClient(null);
-    } catch {
-      setActionMessage(t('deleteFailed'));
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : t('deleteFailed'));
     } finally {
       setDeleteLoading(false);
     }

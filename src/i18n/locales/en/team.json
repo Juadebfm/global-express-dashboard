@@ -86,8 +86,9 @@
     "saveButton": "Save",
     "remove": {
       "title": "Remove user account",
-      "message": "Are you sure you want to remove {{name}}'s account? They will lose their access to login back",
+      "message": "Permanently delete {{name}}'s account immediately? Their access is revoked instantly and this cannot be undone.",
       "removeButton": "Remove",
+      "removeError": "Failed to remove team member.",
       "cancelButton": "Cancel"
     }
   }

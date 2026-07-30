@@ -75,5 +75,17 @@
     "conflictError": "Shipping mark is already locked. Contact support to change it.",
     "saved": "Shipping mark saved successfully.",
     "noneYet": "Not assigned yet"
+  },
+  "deleteAccount": {
+    "title": "Delete account",
+    "subtitle": "Deactivate your account and schedule your data for deletion.",
+    "deleteButton": "Delete account",
+    "failedMessage": "Failed to delete account. Please try again.",
+    "modal": {
+      "title": "Delete account?",
+      "message": "Your account will be deactivated immediately. Your personal data will be permanently deleted after seven days unless you reactivate your account.",
+      "confirmLabel": "Delete account",
+      "cancelLabel": "Cancel"
+    }
   }
 }

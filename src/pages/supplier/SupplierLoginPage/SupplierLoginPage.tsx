@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthLayout } from '@/components/layout';
 import { Button, Input, Card } from '@/components/ui';
 import { ROUTES } from '@/constants';
+import { ApiError } from '@/lib/apiClient';
 import { useSupplierAuthStore } from '@/store/supplierAuth';
 import { supplierLogin, getSupplierMe } from '@/services/supplierPortalService';
 
@@ -38,6 +39,13 @@ export function SupplierLoginPage(): ReactElement {
       setAuth(accessToken, user);
       navigate(ROUTES.SUPPLIER_DASHBOARD, { replace: true });
     } catch (err) {
+      if (err instanceof ApiError && err.status === 409 && err.problem?.code === 'pending_reactivation') {
+        navigate(
+          `${ROUTES.REACTIVATE_ACCOUNT}?portal=supplier&email=${encodeURIComponent(email.trim())}`,
+          { replace: true },
+        );
+        return;
+      }
       const msg = err instanceof Error ? err.message : '';
       if (msg.toLowerCase().includes('locked') || msg.includes('423')) {
         setError('Your account has been locked after too many failed attempts. Please try again later.');

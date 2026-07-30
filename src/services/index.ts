@@ -83,6 +83,8 @@ export {
   checkAccountAvailability,
   subscribeToNewsletter,
   submitPublicD2dIntake,
+  requestAccountReactivationCode,
+  verifyAccountReactivationCode,
 } from './publicService';
 export {
   getPublicGallery,

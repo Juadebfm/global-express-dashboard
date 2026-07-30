@@ -1,9 +1,9 @@
 import type { ReactElement, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAuth as useClerkAuth, useClerk } from '@clerk/clerk-react';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
-import { AlertBanner, ConfirmModal } from '@/components/ui';
+import { AlertBanner } from '@/components/ui';
 import { MfaSettingsCard } from '@/components/auth';
 import {
   useAuth,
@@ -22,7 +22,7 @@ import {
   useUpdateShipmentTypesCatalog,
 } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
-import { deleteMyAccount, exportMyAccountData, getOnboardingSettings, sendBroadcast, updateOnboardingSettings } from '@/services';
+import { exportMyAccountData, getOnboardingSettings, sendBroadcast, updateOnboardingSettings } from '@/services';
 import type {
   CustomerPricingOverride,
   EtaNotes,
@@ -1224,8 +1224,6 @@ export function SettingsPage(): ReactElement {
   useSearch();
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
-  const { signOut } = useClerk();
-  const navigate = useNavigate();
 
   const {
     preferences, isLoading: prefsLoading, error: prefsError,
@@ -1234,9 +1232,6 @@ export function SettingsPage(): ReactElement {
 
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const isCustomer = isClerkSignedIn && !user;
   const isOperator = useCan('app.operator');
@@ -1315,22 +1310,6 @@ export function SettingsPage(): ReactElement {
     } catch (err) {
       setExportError(err instanceof Error ? err.message : t('accountDataExport.failedMessage'));
     } finally { setIsExporting(false); }
-  };
-
-  const handleDeleteAccount = async (): Promise<void> => {
-    setDeleteError(null);
-    setIsDeleting(true);
-    try {
-      const token = await getToken();
-      if (!token) throw new Error('Authentication token is missing.');
-      await deleteMyAccount(token);
-      sessionStorage.removeItem('globalxpress_token');
-      sessionStorage.removeItem('globalxpress_refresh');
-      await signOut();
-      navigate(ROUTES.HOME, { replace: true });
-    } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : t('deleteAccount.failedMessage'));
-    } finally { setIsDeleting(false); setShowDeleteConfirm(false); }
   };
 
   /* ── Render ───────────────────────────────────────────────── */
@@ -1422,26 +1401,11 @@ export function SettingsPage(): ReactElement {
                       <h3 className="text-sm font-semibold text-gray-900">{t('accountDataExport.title')}</h3>
                       <p className="mt-1 text-xs text-gray-500">{t('accountDataExport.subtitle')}</p>
                     </div>
-                    <button type="button" onClick={() => void handleExport()} disabled={isExporting || isDeleting} className={cn('shrink-0 rounded-xl px-4 py-2 text-sm font-semibold text-white transition', isExporting ? 'cursor-not-allowed bg-gray-400' : 'bg-brand-500 hover:bg-brand-600')}>
+                    <button type="button" onClick={() => void handleExport()} disabled={isExporting} className={cn('shrink-0 rounded-xl px-4 py-2 text-sm font-semibold text-white transition', isExporting ? 'cursor-not-allowed bg-gray-400' : 'bg-brand-500 hover:bg-brand-600')}>
                       {isExporting ? t('accountDataExport.exportingButton') : t('accountDataExport.exportButton')}
                     </button>
                   </div>
                   {exportError && <div className="mt-4"><AlertBanner tone="error" message={exportError} /></div>}
-                </div>
-
-                {/* Delete account */}
-                <div className="rounded-2xl border border-red-200 bg-white p-4 shadow-sm sm:p-6">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-sm font-semibold text-red-700">{t('deleteAccount.title')}</h3>
-                      <p className="mt-1 text-xs text-gray-500">{t('deleteAccount.subtitle')}</p>
-                    </div>
-                    <button type="button" onClick={() => setShowDeleteConfirm(true)} disabled={isDeleting || isExporting} className={cn('shrink-0 rounded-xl px-4 py-2 text-sm font-semibold text-white transition', isDeleting ? 'cursor-not-allowed bg-gray-400' : 'bg-red-600 hover:bg-red-700')}>
-                      {t('deleteAccount.deleteButton')}
-                    </button>
-                  </div>
-                  {deleteError && <div className="mt-4"><AlertBanner tone="error" message={deleteError} /></div>}
-                  <ConfirmModal isOpen={showDeleteConfirm} title={t('deleteAccount.modal.title')} message={t('deleteAccount.modal.message')} confirmLabel={t('deleteAccount.modal.confirmLabel')} cancelLabel={t('deleteAccount.modal.cancelLabel')} tone="danger" isLoading={isDeleting} onConfirm={() => void handleDeleteAccount()} onCancel={() => setShowDeleteConfirm(false)} />
                 </div>
 
                 {/* Notification preferences */}

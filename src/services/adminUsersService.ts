@@ -1,6 +1,6 @@
 import type { AdminUserListParams, UpdateUserPayload, ChangeUserRolePayload } from '@/types';
 import type { User } from '@/types';
-import { apiDelete, apiGetData, apiPatch, apiPatchData } from '@/lib/apiClient';
+import { apiDeleteData, apiGetData, apiPatch, apiPatchData } from '@/lib/apiClient';
 
 export interface UsersListData {
   data: User[];
@@ -45,8 +45,8 @@ export async function changeUserRole(
   await apiPatch(`/users/${id}/role`, payload, token);
 }
 
-export async function deleteUser(token: string, id: string): Promise<void> {
-  await apiDelete(`/users/${id}`, token);
+export async function deleteUser(token: string, id: string): Promise<{ message: string }> {
+  return apiDeleteData<{ message: string }>(`/users/${id}`, token);
 }
 
 export function updateClientLoginPermission(

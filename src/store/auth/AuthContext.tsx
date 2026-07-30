@@ -7,10 +7,13 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useClerk, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { LoginCredentials, User } from '@/types';
 import { login as apiLogin, getMe, getInternalMe, logout as apiLogout } from '@/services/authService';
 import { useLanguageStore } from '@/store/language';
 import { queryClient } from '@/lib/queryClient';
+import { ROUTES } from '@/constants';
 import type { AuthContextValue, AuthState, LoginResult } from './auth.types';
 import { AuthContext } from './auth.context';
 
@@ -53,6 +56,9 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const [state, setState] = useState<AuthState>(initialState);
+  const navigate = useNavigate();
+  const { signOut: clerkSignOut } = useClerk();
+  const { user: clerkUser } = useClerkUser();
 
   // Timestamp of the last successful me-probe. The visibilitychange effect
   // uses this to decide whether a tab refocus should re-sync or skip.
@@ -179,13 +185,22 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   }, []);
 
   // Single 401 handler — apiClient dispatches `auth:unauthorized` whenever
-  // any request gets a 401. Clear in-house session state; ProtectedRoute
-  // sees isAuthenticated=false on the next render and redirects to /login.
+  // any request gets a 401 (this also covers the backend's "session has been
+  // revoked" 401, sent when a token predates a delete-triggered
+  // sessionInvalidatedAt — there's no distinct code for that case, it's just
+  // a 401, so any 401 here is treated as a forced sign-out). Clears whichever
+  // auth surface was actually in use — internal JWT, Clerk, or both — and
+  // routes to the matching sign-in page.
   useEffect(() => {
     const handler = (): void => {
-      if (!sessionStorage.getItem(TOKEN_KEY)) return;
-      sessionStorage.removeItem(TOKEN_KEY);
-      sessionStorage.removeItem('globalxpress_refresh');
+      const hadInternalSession = !!sessionStorage.getItem(TOKEN_KEY);
+      const hadClerkSession = !!clerkUser;
+      if (!hadInternalSession && !hadClerkSession) return;
+
+      if (hadInternalSession) {
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem('globalxpress_refresh');
+      }
       // Wipe cached server state too — a revoked token means everything
       // we have is from the now-invalid session. Without this, a user-B
       // login on the same browser could briefly read user-A's cached
@@ -197,10 +212,40 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
         isLoading: false,
         error: null,
       });
+
+      if (hadClerkSession) {
+        void clerkSignOut().catch(() => { /* best-effort — still navigating regardless */ });
+        navigate(ROUTES.SIGN_IN, { replace: true });
+      } else {
+        navigate(ROUTES.LOGIN, { replace: true });
+      }
     };
     window.addEventListener('auth:unauthorized', handler);
     return () => window.removeEventListener('auth:unauthorized', handler);
-  }, []);
+  }, [navigate, clerkSignOut, clerkUser]);
+
+  // Deleted-but-reactivatable customer account — apiClient dispatches
+  // `auth:pending-reactivation` on any 409 with code `pending_reactivation`.
+  // For Clerk customers this most often surfaces on the first authenticated
+  // backend call after sign-in (not the login form itself), so it's handled
+  // centrally here rather than per-caller. Clear both auth surfaces and send
+  // them to the reactivation page, prefilling the email if Clerk knows it.
+  useEffect(() => {
+    const handler = (): void => {
+      sessionStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem('globalxpress_refresh');
+      queryClient.clear();
+      setState({ user: null, isAuthenticated: false, isLoading: false, error: null });
+      const email = clerkUser?.primaryEmailAddress?.emailAddress;
+      void clerkSignOut().catch(() => { /* best-effort — still navigating regardless */ });
+      navigate(
+        email ? `${ROUTES.REACTIVATE_ACCOUNT}?email=${encodeURIComponent(email)}` : ROUTES.REACTIVATE_ACCOUNT,
+        { replace: true },
+      );
+    };
+    window.addEventListener('auth:pending-reactivation', handler);
+    return () => window.removeEventListener('auth:pending-reactivation', handler);
+  }, [navigate, clerkSignOut, clerkUser]);
 
   const login = useCallback(async (credentials: LoginCredentials): Promise<LoginResult> => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));

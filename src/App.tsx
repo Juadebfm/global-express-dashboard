@@ -18,6 +18,7 @@ import {
   ExternalSignUpPage,
   StaffOnboardingPage,
   ForgotPasswordPage,
+  ReactivateAccountPage,
   MfaChallengePage,
   MfaEnrollmentPage,
   ForbiddenPage,
@@ -208,6 +209,7 @@ function AppRoutes(): ReactElement {
       <Route path={ROUTES.SIGN_UP} element={<ExternalSignUpPage />} />
       <Route path="/signup" element={<ExternalSignUpPage />} />
       <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+      <Route path={ROUTES.REACTIVATE_ACCOUNT} element={<ReactivateAccountPage />} />
       <Route path={ROUTES.MFA_CHALLENGE} element={<MfaChallengePage />} />
       <Route
         path={ROUTES.MFA_ENROLL}

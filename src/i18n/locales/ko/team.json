@@ -86,8 +86,9 @@
     "saveButton": "저장",
     "remove": {
       "title": "사용자 계정 제거",
-      "message": "{{name}}의 계정을 제거하시겠습니까? 로그인 접근 권한이 삭제됩니다.",
+      "message": "{{name}}의 계정을 즉시 영구적으로 삭제하시겠습니까? 접근 권한이 즉시 취소되며 되돌릴 수 없습니다.",
       "removeButton": "제거",
+      "removeError": "팀원 제거에 실패했습니다.",
       "cancelButton": "취소"
     }
   }

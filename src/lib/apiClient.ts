@@ -173,6 +173,22 @@ function dispatchAccountLocked(payload: unknown): void {
   );
 }
 
+// 409 with `code: "pending_reactivation"` — a deleted-but-not-yet-purged
+// customer/supplier account. This can surface from a login endpoint OR from
+// the authenticate middleware on the very first authenticated request after
+// a Clerk sign-in (there's no single "login" call site for Clerk customers),
+// so it's handled centrally here rather than per-caller. AuthContext listens
+// and routes to the reactivation page.
+function dispatchPendingReactivation(payload: unknown): void {
+  if (typeof window === 'undefined') return;
+  const code =
+    payload && typeof payload === 'object' && 'code' in payload
+      ? (payload as { code?: unknown }).code
+      : undefined;
+  if (code !== 'pending_reactivation') return;
+  window.dispatchEvent(new CustomEvent('auth:pending-reactivation'));
+}
+
 // Build an ApiError from a non-OK Response + its already-parsed body.
 // Picks the best human-readable message (problem.detail → problem.title →
 // per-status HTTP fallback) and the best requestId (problem.requestId →
@@ -281,6 +297,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     if (response.status === 401) dispatchUnauthorized(path);
     if (response.status === 403) dispatchForbidden(path);
     if (response.status === 423) dispatchAccountLocked(payload);
+    if (response.status === 409) dispatchPendingReactivation(payload);
     const retryAfter =
       response.status === 429 ? parseRetryAfter(response.headers.get('Retry-After')) : null;
     if (response.status === 429) showRateLimitToast(retryAfter);

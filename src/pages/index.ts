@@ -2,6 +2,7 @@ export {
   LandingPage,
   LoginPage,
   ForgotPasswordPage,
+  ReactivateAccountPage,
   CompleteProfilePage,
   ExternalSignInPage,
   ExternalSignUpPage,

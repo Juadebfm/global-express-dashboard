@@ -1,6 +1,7 @@
 export { LandingPage } from './LandingPage';
 export { LoginPage } from './LoginPage';
 export { ForgotPasswordPage } from './ForgotPasswordPage';
+export { ReactivateAccountPage } from './ReactivateAccountPage';
 export { CompleteProfilePage } from './CompleteProfilePage';
 export { ExternalSignInPage } from './ExternalSignInPage';
 export { ExternalSignUpPage } from './ExternalSignUpPage';

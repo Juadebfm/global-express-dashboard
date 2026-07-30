@@ -1,12 +1,12 @@
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Copy, Lock } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
+import { useAuth as useClerkAuth, useClerk, useUser as useClerkUser } from '@clerk/clerk-react';
 import { AppLayout } from '@/components/layout';
 import { AvatarUploader } from '@/components/profile';
-import { AlertBanner, Button, Card, Input } from '@/components/ui';
+import { AlertBanner, Button, Card, ConfirmModal, Input } from '@/components/ui';
 import {
   useAuth,
   useAuthToken,
@@ -20,12 +20,14 @@ import { PageHeader } from '@/pages/shared';
 import { ROUTES, STAFF_COUNTRIES, RELATIONSHIP_OPTIONS, COUNTRY_LABELS, getStates, getCities } from '@/constants';
 import { ApiError } from '@/lib/apiClient';
 import {
+  deleteMyAccount,
   getInternalProfileRequirements,
   getMyProfile,
   getMyProfileCompleteness,
   updateInternalProfile,
   updateMyProfile,
 } from '@/services';
+import { useFeedbackStore } from '@/store';
 import type {
   CustomerProfile,
   ProfileCompleteness,
@@ -168,12 +170,15 @@ function DetailRow({ label, value }: DetailRowProps): ReactElement {
 
 export function ProfilePage(): ReactElement {
   const { t } = useTranslation('profile');
+  const navigate = useNavigate();
   const getToken = useAuthToken();
   const { user: authUser, refreshUser } = useAuth();
   const { isLoaded: isClerkLoaded, isSignedIn: isClerkSignedIn } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
+  const { signOut: clerkSignOut } = useClerk();
   const currentAvatarUrl = useCurrentUserAvatar();
   const setCurrentUserAvatar = useSetCurrentUserAvatar();
+  const pushMessage = useFeedbackStore((s) => s.pushMessage);
 
   const mode: ProfileMode = useMemo(() => {
     if (authUser && ['staff', 'admin', 'superadmin'].includes(authUser.role)) {
@@ -209,6 +214,10 @@ export function ProfilePage(): ReactElement {
     requireNationalId: false,
   });
   const lastBootstrapKeyRef = useRef<string | null>(null);
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const extCountries = useCountries();
   const extStates = useCountryStates(externalForm.addressCountry);
@@ -440,6 +449,29 @@ export function ProfilePage(): ReactElement {
       setInternalForm(internalBaseline);
     }
     setIsEditing(false);
+  };
+
+  // Self-service delete — customers/suppliers only (mode === 'external').
+  // Never optimistic: only clears session/cache and routes to sign-in after
+  // the API call actually succeeds.
+  const handleDeleteAccount = async (): Promise<void> => {
+    setDeleteError(null);
+    setIsDeleting(true);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error('Authentication token is missing.');
+      const result = await deleteMyAccount(token);
+      sessionStorage.removeItem('globalxpress_token');
+      sessionStorage.removeItem('globalxpress_refresh');
+      if (isClerkSignedIn) await clerkSignOut();
+      pushMessage({ tone: 'success', message: result.message });
+      navigate(ROUTES.SIGN_IN, { replace: true });
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : t('deleteAccount.failedMessage'));
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleExternalSave = async (): Promise<void> => {
@@ -1164,6 +1196,37 @@ export function ProfilePage(): ReactElement {
               </div>
             )}
           </Card>
+
+          {mode === 'external' && (
+            <Card className="rounded-3xl border-red-200 bg-white p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-semibold text-red-700">{t('deleteAccount.title')}</h3>
+                  <p className="mt-1 text-xs text-gray-500">{t('deleteAccount.subtitle')}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={isDeleting}
+                  className="shrink-0 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {t('deleteAccount.deleteButton')}
+                </button>
+              </div>
+              {deleteError && <div className="mt-4"><AlertBanner tone="error" message={deleteError} /></div>}
+              <ConfirmModal
+                isOpen={showDeleteConfirm}
+                title={t('deleteAccount.modal.title')}
+                message={t('deleteAccount.modal.message')}
+                confirmLabel={t('deleteAccount.modal.confirmLabel')}
+                cancelLabel={t('deleteAccount.modal.cancelLabel')}
+                tone="danger"
+                isLoading={isDeleting}
+                onConfirm={() => void handleDeleteAccount()}
+                onCancel={() => setShowDeleteConfirm(false)}
+              />
+            </Card>
+          )}
         </div>
       </div>
     </AppLayout>

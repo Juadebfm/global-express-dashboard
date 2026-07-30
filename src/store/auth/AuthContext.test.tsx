@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render, renderHook } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 // vi.mock must come BEFORE any imports that transitively import authService —
 // otherwise the real getMe runs in checkAuth() on mount and we can't control
@@ -12,6 +13,13 @@ vi.mock('@/services/authService', () => ({
   logout: vi.fn(),
 }));
 
+// AuthProvider also drives Clerk sign-out on a revoked/pending-reactivation
+// session — mock it out; these tests aren't exercising the Clerk-aware path.
+vi.mock('@clerk/clerk-react', () => ({
+  useClerk: () => ({ signOut: vi.fn() }),
+  useUser: () => ({ user: null }),
+}));
+
 import { AuthProvider } from './AuthContext';
 import { useAuth } from '@/hooks';
 import { queryClient } from '@/lib/queryClient';
@@ -20,7 +28,11 @@ import * as authService from '@/services/authService';
 const TOKEN_KEY = 'globalxpress_token';
 
 function Wrapper({ children }: { children: ReactNode }): ReactElement {
-  return <AuthProvider>{children}</AuthProvider>;
+  return (
+    <MemoryRouter>
+      <AuthProvider>{children}</AuthProvider>
+    </MemoryRouter>
+  );
 }
 
 function ProviderConsumer(): null {

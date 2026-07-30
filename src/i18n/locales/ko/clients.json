@@ -49,6 +49,13 @@
   "noClientsFound": "고객을 찾을 수 없습니다.",
   "noClientsMatch": "필터와 일치하는 고객이 없습니다.",
   "more": "더보기",
+  "deleteAccount": "계정 삭제",
+  "deleteConfirmTitle": "이 계정을 삭제하시겠습니까?",
+  "deleteConfirmBody": "지금 비활성화됩니다. 7일 이내에 재활성화하지 않으면 개인 데이터가 영구적으로 삭제됩니다. 사용자는 로그아웃되며 그때까지 다시 로그인할 수 없습니다.",
+  "deleteConfirm": "예, 삭제합니다",
+  "deleting": "삭제 중…",
+  "cancel": "취소",
+  "deleteFailed": "계정을 삭제하지 못했습니다. 다시 시도해 주세요.",
   "pagination": {
     "pageOf": "{{totalPages}}페이지 중 {{page}}페이지",
     "total_one": "{{count}}명의 고객",

@@ -1,11 +1,13 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Mail, Search, User, UserPlus, X } from 'lucide-react';
 import {
   useAdminUserDetail,
   useAuth,
+  useAuthToken,
   useCan,
   useChangeUserRole,
   useDashboardData,
@@ -18,6 +20,7 @@ import {
 } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { Pagination } from '@/components/ui';
+import { deleteUser } from '@/services';
 import type { TeamMember, TeamRole } from '@/types';
 import { cn } from '@/utils';
 import { useFeedbackStore } from '@/store';
@@ -107,6 +110,9 @@ export function TeamPage(): ReactElement {
     isInviting,
   } = useTeam({ page });
   const pushMessage = useFeedbackStore((state) => state.pushMessage);
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+  const [isRemoving, setIsRemoving] = useState(false);
   const { positions, isLoading: positionsLoading } = usePositions();
   const updateUserMutation = useUpdateUser();
   const changeRoleMutation = useChangeUserRole();
@@ -199,9 +205,14 @@ export function TeamPage(): ReactElement {
   // in the backend), so editing has only ever been a superadmin action.
   const canEditMember = (): boolean => isSuperAdmin;
 
+  // Backend is the source of truth for the two real guards (can't delete
+  // yourself, can't delete the last active superadmin — both surfaced via
+  // handleRemove's error handling). Client-side we only block the obvious
+  // self-delete case up front; a superadmin removing another superadmin is
+  // legitimate as long as one remains.
   const canRemoveMember = (member: TeamMember): boolean => {
     if (!isSuperAdmin) return false;
-    return member.role !== 'superadmin';
+    return member.id !== user?.id;
   };
 
   const canApproveMember = (member: TeamMember): boolean =>
@@ -266,10 +277,27 @@ export function TeamPage(): ReactElement {
     }
   };
 
-  const handleRemove = (): void => {
+  // Staff/superadmin deletion is immediate and permanent (erased, not the
+  // 7-day soft-delete customers/suppliers get) — backend enforces the two
+  // 409 cases below (self-delete, last remaining superadmin) and returns
+  // its own precise message for both, which we just surface as-is.
+  const handleRemove = async (): Promise<void> => {
     if (!selectedMember) return;
-    updateMembers((prev) => prev.filter((member) => member.id !== selectedMember.id));
-    closeModal();
+    setFormError(null);
+    setIsRemoving(true);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error('Not authenticated');
+      const result = await deleteUser(token, selectedMember.id);
+      updateMembers((prev) => prev.filter((member) => member.id !== selectedMember.id));
+      void queryClient.invalidateQueries({ queryKey: ['team'] });
+      pushMessage({ tone: 'success', message: result.message });
+      closeModal();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : t('modals.remove.removeError'));
+    } finally {
+      setIsRemoving(false);
+    }
   };
 
   const approveMember = (member: TeamMember): void => {
@@ -782,24 +810,26 @@ export function TeamPage(): ReactElement {
                     {permissionSummary(selectedMember)}
                   </span>
                 </div>
+                {formError && <p className="mt-4 text-sm text-red-500">{formError}</p>}
                 <div className="mt-8 flex items-center gap-4">
                   <button
                     type="button"
-                    onClick={handleRemove}
-                    disabled={!canRemoveMember(selectedMember)}
+                    onClick={() => void handleRemove()}
+                    disabled={!canRemoveMember(selectedMember) || isRemoving}
                     className={cn(
-                      'flex-1 rounded-2xl px-4 py-3 text-sm font-semibold text-white',
+                      'flex-1 rounded-2xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-50',
                       canRemoveMember(selectedMember)
                         ? 'bg-red-500 hover:bg-red-600'
                         : 'cursor-not-allowed bg-gray-200 text-gray-400'
                     )}
                   >
-                    {t('modals.remove.removeButton')}
+                    {isRemoving ? '...' : t('modals.remove.removeButton')}
                   </button>
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-200"
+                    disabled={isRemoving}
+                    className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-200 disabled:opacity-50"
                   >
                     {t('modals.remove.cancelButton')}
                   </button>
