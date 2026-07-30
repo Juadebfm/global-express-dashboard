@@ -55,6 +55,7 @@
     "notProvided": "아직 입력되지 않음",
     "completeRequiredFields": "저장하기 전에 필수 항목을 모두 입력해주세요.",
     "requiredField": "필수 입력 항목입니다.",
+    "invalidPhone": "국가번호를 포함한 유효한 전화번호를 입력해주세요.",
     "externalSaved": "프로필이 성공적으로 업데이트되었습니다.",
     "internalSaved": "내부 프로필이 성공적으로 업데이트되었습니다."
   },

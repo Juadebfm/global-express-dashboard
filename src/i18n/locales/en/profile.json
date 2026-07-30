@@ -55,6 +55,7 @@
     "notProvided": "Not provided yet",
     "completeRequiredFields": "Please complete all required fields before saving.",
     "requiredField": "This field is required.",
+    "invalidPhone": "Enter a valid phone number with the country code.",
     "externalSaved": "Profile updated successfully.",
     "internalSaved": "Internal profile updated successfully."
   },

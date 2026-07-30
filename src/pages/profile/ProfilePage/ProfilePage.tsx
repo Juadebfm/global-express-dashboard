@@ -4,9 +4,12 @@ import { Check, Copy, Lock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useClerk, useUser as useClerkUser } from '@clerk/clerk-react';
+import type { Country } from 'react-phone-number-input';
+import { getCountries, getCountryCallingCode } from 'react-phone-number-input';
+import en from 'react-phone-number-input/locale/en';
 import { AppLayout } from '@/components/layout';
 import { AvatarUploader } from '@/components/profile';
-import { AlertBanner, Button, Card, ConfirmModal, Input } from '@/components/ui';
+import { Button, Card, ConfirmModal, Input } from '@/components/ui';
 import {
   useAuth,
   useAuthToken,
@@ -32,6 +35,13 @@ import {
   getMissingInternalProfileFields,
   type InternalRequiredField,
 } from './internalProfileValidation';
+import {
+  buildE164,
+  findPhoneCountry,
+  getLocalPhoneValue,
+  isPossibleE164,
+  type PhoneCountryOption,
+} from './internalPhone';
 import type {
   CustomerProfile,
   ProfileCompleteness,
@@ -91,6 +101,18 @@ const initialInternalForm: StaffProfilePayload = {
   emergencyContactRelationship: '',
   nationalId: '',
 };
+
+const PHONE_COUNTRY_OPTIONS: PhoneCountryOption[] = getCountries()
+  .map((code) => ({
+    code,
+    name: (en as Record<string, string>)[code] || code,
+    dialCode: `+${getCountryCallingCode(code)}`,
+  }))
+  .sort((a, b) => a.name.localeCompare(b.name));
+
+function getFallbackPhoneCountry(addressCountry: StaffProfilePayload['addressCountry']): Country {
+  return addressCountry === 'SK' ? 'KR' : 'NG';
+}
 
 function toText(value: string | null | undefined): string {
   return value ?? '';
@@ -171,6 +193,77 @@ function DetailRow({ label, value }: DetailRowProps): ReactElement {
   );
 }
 
+interface StaffPhoneFieldProps {
+  id: string;
+  label: string;
+  value: string;
+  selectedCountry: PhoneCountryOption;
+  onCountryChange: (code: Country) => void;
+  onChange: (value: string) => void;
+  error?: string;
+  disabled?: boolean;
+}
+
+function StaffPhoneField({
+  id,
+  label,
+  value,
+  selectedCountry,
+  onCountryChange,
+  onChange,
+  error,
+  disabled = false,
+}: StaffPhoneFieldProps): ReactElement {
+  return (
+    <div className="w-full">
+      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-gray-700">
+        {label}
+      </label>
+      <div className="flex gap-2">
+        <select
+          aria-label={`${label} country code`}
+          value={selectedCountry.code}
+          onChange={(event) => onCountryChange(event.target.value as Country)}
+          className={cn(
+            'auth-form-control w-[150px] shrink-0 rounded-lg border bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2',
+            error
+              ? 'border-red-500 focus:ring-red-500'
+              : 'border-gray-200 focus:border-transparent focus:ring-brand-500',
+          )}
+          disabled={disabled}
+        >
+          {PHONE_COUNTRY_OPTIONS.map((country) => (
+            <option key={country.code} value={country.code}>
+              {country.name} ({country.dialCode})
+            </option>
+          ))}
+        </select>
+        <input
+          id={id}
+          type="tel"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={cn(
+            'ui-input-field min-w-0 flex-1 rounded-lg border px-4 py-2.5 text-sm text-gray-900 placeholder:text-sm placeholder:text-gray-400 bg-white transition-colors focus:outline-none focus:ring-2 focus:border-transparent',
+            error
+              ? 'border-red-500 focus:ring-red-500'
+              : 'border-gray-200 hover:border-gray-400 focus:ring-brand-500',
+          )}
+          disabled={disabled}
+          aria-invalid={error ? 'true' : 'false'}
+          aria-describedby={error ? `${id}-error` : undefined}
+          placeholder="e.g. 8012345678"
+        />
+      </div>
+      {error && (
+        <p id={`${id}-error`} className="mt-1.5 text-sm text-red-600" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function ProfilePage(): ReactElement {
   const { t } = useTranslation('profile');
   const navigate = useNavigate();
@@ -195,9 +288,6 @@ export function ProfilePage(): ReactElement {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [profileError, setProfileError] = useState<string | null>(null);
-  const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
 
   const [externalForm, setExternalForm] = useState<ExternalFormState>(initialExternalForm);
   const [externalBaseline, setExternalBaseline] = useState<ExternalFormState>(initialExternalForm);
@@ -208,13 +298,17 @@ export function ProfilePage(): ReactElement {
   // form so the lock UI can stay obvious.
   const [isEditingShippingMark, setIsEditingShippingMark] = useState(false);
   const [shippingMarkInput, setShippingMarkInput] = useState('');
-  const [shippingMarkError, setShippingMarkError] = useState<string | null>(null);
-  const [shippingMarkSuccess, setShippingMarkSuccess] = useState<string | null>(null);
   const [isSavingShippingMark, setIsSavingShippingMark] = useState(false);
   const [markCopied, setMarkCopied] = useState(false);
 
   const [internalForm, setInternalForm] = useState<StaffProfilePayload>(initialInternalForm);
   const [internalBaseline, setInternalBaseline] = useState<StaffProfilePayload>(initialInternalForm);
+  const [phoneCountryCode, setPhoneCountryCode] = useState<Country>('NG');
+  const [emergencyPhoneCountryCode, setEmergencyPhoneCountryCode] = useState<Country>('NG');
+  const internalPhoneCountryBaselineRef = useRef<{ phone: Country; emergency: Country }>({
+    phone: 'NG',
+    emergency: 'NG',
+  });
   const [internalFieldErrors, setInternalFieldErrors] = useState<
     Partial<Record<InternalRequiredField, string>>
   >({});
@@ -222,7 +316,6 @@ export function ProfilePage(): ReactElement {
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const extCountries = useCountries();
   const extStates = useCountryStates(externalForm.addressCountry);
@@ -296,8 +389,6 @@ export function ProfilePage(): ReactElement {
 
     const bootstrap = async (): Promise<void> => {
       setIsBootstrapping(true);
-      setProfileError(null);
-      setValidationError(null);
 
       try {
         const token = await getToken();
@@ -340,12 +431,37 @@ export function ProfilePage(): ReactElement {
         if (!isMounted) return;
 
         const mappedInternal = mapInternalToForm(profileResponse);
-        setInternalForm(mappedInternal);
-        setInternalBaseline(mappedInternal);
+        const fallbackPhoneCountry = getFallbackPhoneCountry(mappedInternal.addressCountry);
+        const selectedPhoneCountry = findPhoneCountry(
+          mappedInternal.phone,
+          PHONE_COUNTRY_OPTIONS,
+          fallbackPhoneCountry,
+        );
+        const selectedEmergencyPhoneCountry = findPhoneCountry(
+          mappedInternal.emergencyContactPhone,
+          PHONE_COUNTRY_OPTIONS,
+          fallbackPhoneCountry,
+        );
+        setPhoneCountryCode(selectedPhoneCountry.code);
+        setEmergencyPhoneCountryCode(selectedEmergencyPhoneCountry.code);
+        internalPhoneCountryBaselineRef.current = {
+          phone: selectedPhoneCountry.code,
+          emergency: selectedEmergencyPhoneCountry.code,
+        };
+        const displayInternal = {
+          ...mappedInternal,
+          phone: getLocalPhoneValue(mappedInternal.phone, selectedPhoneCountry),
+          emergencyContactPhone: getLocalPhoneValue(
+            mappedInternal.emergencyContactPhone,
+            selectedEmergencyPhoneCountry,
+          ),
+        };
+        setInternalForm(displayInternal);
+        setInternalBaseline(displayInternal);
         setIsEditing(false);
       } catch (bootstrapError) {
         if (!isMounted) return;
-        setProfileError(getErrorMessage(bootstrapError));
+        pushMessage({ tone: 'error', message: getErrorMessage(bootstrapError) });
       } finally {
         if (isMounted) setIsBootstrapping(false);
       }
@@ -359,7 +475,7 @@ export function ProfilePage(): ReactElement {
       // re-runs the bootstrap rather than being silently skipped by the guard above.
       lastBootstrapKeyRef.current = null;
     };
-  }, [clerkUser?.id, getToken, internalUserId, isClerkLoaded, isClerkSignedIn, mode]);
+  }, [clerkUser?.id, getToken, internalUserId, isClerkLoaded, isClerkSignedIn, mode, pushMessage]);
 
   const handleExternalChange = <K extends keyof ExternalFormState>(
     key: K,
@@ -375,8 +491,6 @@ export function ProfilePage(): ReactElement {
       }
       return next;
     });
-    setValidationError(null);
-    setProfileSuccess(null);
   };
 
   const handleInternalChange = <K extends keyof StaffProfilePayload>(
@@ -399,8 +513,6 @@ export function ProfilePage(): ReactElement {
       delete next[key as InternalRequiredField];
       return next;
     });
-    setValidationError(null);
-    setProfileSuccess(null);
   };
 
   const identity = useMemo(() => {
@@ -423,12 +535,18 @@ export function ProfilePage(): ReactElement {
   }, [authUser, externalForm.email, externalForm.firstName, externalForm.lastName, mode, t]);
 
   const initials = getInitials(identity.firstName, identity.lastName, identity.email);
+  const selectedPhoneCountry = useMemo(
+    () => PHONE_COUNTRY_OPTIONS.find((country) => country.code === phoneCountryCode) ?? PHONE_COUNTRY_OPTIONS[0],
+    [phoneCountryCode],
+  );
+  const selectedEmergencyPhoneCountry = useMemo(
+    () => PHONE_COUNTRY_OPTIONS.find((country) => country.code === emergencyPhoneCountryCode) ?? PHONE_COUNTRY_OPTIONS[0],
+    [emergencyPhoneCountryCode],
+  );
   const displayValue = (value: string | null | undefined): string =>
     value && value.trim().length > 0 ? value : t('messages.notProvided');
 
   const handleStartEditing = () => {
-    setProfileSuccess(null);
-    setValidationError(null);
     setInternalFieldErrors({});
     setIsEditing(true);
   };
@@ -442,14 +560,13 @@ export function ProfilePage(): ReactElement {
   };
 
   const handleCancelEditing = () => {
-    setValidationError(null);
-    setProfileError(null);
-    setProfileSuccess(null);
     setInternalFieldErrors({});
     if (mode === 'external') {
       setExternalForm(externalBaseline);
     } else {
       setInternalForm(internalBaseline);
+      setPhoneCountryCode(internalPhoneCountryBaselineRef.current.phone);
+      setEmergencyPhoneCountryCode(internalPhoneCountryBaselineRef.current.emergency);
     }
     setIsEditing(false);
   };
@@ -458,7 +575,6 @@ export function ProfilePage(): ReactElement {
   // Never optimistic: only clears session/cache and routes to sign-in after
   // the API call actually succeeds.
   const handleDeleteAccount = async (): Promise<void> => {
-    setDeleteError(null);
     setIsDeleting(true);
     try {
       const token = await getToken();
@@ -470,7 +586,10 @@ export function ProfilePage(): ReactElement {
       pushMessage({ tone: 'success', message: result.message });
       navigate(ROUTES.SIGN_IN, { replace: true });
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : t('deleteAccount.failedMessage'));
+      pushMessage({
+        tone: 'error',
+        message: err instanceof Error ? err.message : t('deleteAccount.failedMessage'),
+      });
       setShowDeleteConfirm(false);
     } finally {
       setIsDeleting(false);
@@ -488,14 +607,11 @@ export function ProfilePage(): ReactElement {
     ];
 
     if (requiredFields.some((field) => !field.trim())) {
-      setValidationError(t('messages.completeRequiredFields'));
+      pushMessage({ tone: 'warning', message: t('messages.completeRequiredFields') });
       return;
     }
 
     setIsSaving(true);
-    setProfileError(null);
-    setValidationError(null);
-    setProfileSuccess(null);
 
     try {
       const token = await getToken();
@@ -518,10 +634,10 @@ export function ProfilePage(): ReactElement {
 
       const profileCompleteness = await getMyProfileCompleteness(token);
       setCompleteness(profileCompleteness);
-      setProfileSuccess(t('messages.externalSaved'));
+      pushMessage({ tone: 'success', message: t('messages.externalSaved') });
       setIsEditing(false);
     } catch (saveError) {
-      setProfileError(getErrorMessage(saveError));
+      pushMessage({ tone: 'error', message: getErrorMessage(saveError) });
     } finally {
       setIsSaving(false);
     }
@@ -535,7 +651,6 @@ export function ProfilePage(): ReactElement {
         {},
       );
       setInternalFieldErrors(errors);
-      setValidationError(null);
       const firstField = missingFields[0];
       requestAnimationFrame(() => {
         const input = document.getElementById(`staff-profile-${firstField}`);
@@ -545,11 +660,34 @@ export function ProfilePage(): ReactElement {
       return;
     }
 
+    const selectedPhoneCountry =
+      PHONE_COUNTRY_OPTIONS.find((country) => country.code === phoneCountryCode) ?? PHONE_COUNTRY_OPTIONS[0];
+    const selectedEmergencyPhoneCountry =
+      PHONE_COUNTRY_OPTIONS.find((country) => country.code === emergencyPhoneCountryCode) ?? PHONE_COUNTRY_OPTIONS[0];
+    const invalidPhoneFields: InternalRequiredField[] = [];
+    if (!isPossibleE164(internalForm.phone, selectedPhoneCountry)) {
+      invalidPhoneFields.push('phone');
+    }
+    if (!isPossibleE164(internalForm.emergencyContactPhone, selectedEmergencyPhoneCountry)) {
+      invalidPhoneFields.push('emergencyContactPhone');
+    }
+    if (invalidPhoneFields.length > 0) {
+      const errors = invalidPhoneFields.reduce<Partial<Record<InternalRequiredField, string>>>(
+        (next, field) => ({ ...next, [field]: t('messages.invalidPhone') }),
+        {},
+      );
+      setInternalFieldErrors(errors);
+      const firstField = invalidPhoneFields[0];
+      requestAnimationFrame(() => {
+        const input = document.getElementById(`staff-profile-${firstField}`);
+        input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (input instanceof HTMLElement) input.focus();
+      });
+      return;
+    }
+
     setIsSaving(true);
-    setProfileError(null);
-    setValidationError(null);
     setInternalFieldErrors({});
-    setProfileSuccess(null);
 
     try {
       const token = await getToken();
@@ -557,6 +695,11 @@ export function ProfilePage(): ReactElement {
 
       const sanitizedInternal: StaffProfilePayload = {
         ...internalForm,
+        phone: buildE164(internalForm.phone, selectedPhoneCountry),
+        emergencyContactPhone: buildE164(
+          internalForm.emergencyContactPhone,
+          selectedEmergencyPhoneCountry,
+        ),
         nationalId: internalForm.nationalId?.trim() || '',
       };
 
@@ -568,10 +711,10 @@ export function ProfilePage(): ReactElement {
       setInternalForm(sanitizedInternal);
       setInternalBaseline(sanitizedInternal);
       await refreshUser();
-      setProfileSuccess(t('messages.internalSaved'));
+      pushMessage({ tone: 'success', message: t('messages.internalSaved') });
       setIsEditing(false);
     } catch (saveError) {
-      setProfileError(getErrorMessage(saveError));
+      pushMessage({ tone: 'error', message: getErrorMessage(saveError) });
     } finally {
       setIsSaving(false);
     }
@@ -588,14 +731,11 @@ export function ProfilePage(): ReactElement {
   }, [externalForm.shippingMark]);
 
   const handleStartEditShippingMark = () => {
-    setShippingMarkError(null);
-    setShippingMarkSuccess(null);
     setShippingMarkInput(externalForm.shippingMark);
     setIsEditingShippingMark(true);
   };
 
   const handleCancelEditShippingMark = () => {
-    setShippingMarkError(null);
     setShippingMarkInput('');
     setIsEditingShippingMark(false);
   };
@@ -603,7 +743,7 @@ export function ProfilePage(): ReactElement {
   const handleSaveShippingMark = async (): Promise<void> => {
     const normalised = shippingMarkInput.trim();
     if (normalised.length < 1 || normalised.length > 100) {
-      setShippingMarkError(t('shippingMark.formatError'));
+      pushMessage({ tone: 'warning', message: t('shippingMark.formatError') });
       return;
     }
 
@@ -615,8 +755,6 @@ export function ProfilePage(): ReactElement {
     }
 
     setIsSavingShippingMark(true);
-    setShippingMarkError(null);
-    setShippingMarkSuccess(null);
 
     try {
       const token = await getToken();
@@ -627,7 +765,7 @@ export function ProfilePage(): ReactElement {
       setExternalForm(mappedProfile);
       setExternalBaseline(mappedProfile);
       setIsEditingShippingMark(false);
-      setShippingMarkSuccess(t('shippingMark.saved'));
+      pushMessage({ tone: 'success', message: t('shippingMark.saved') });
     } catch (saveError) {
       // 409 means another tab / a stale local state tried to consume the edit
       // after it was already used. Refetch so the lock UI reflects reality.
@@ -645,10 +783,10 @@ export function ProfilePage(): ReactElement {
           // next page load. Don't mask the original conflict message.
         }
         setIsEditingShippingMark(false);
-        setShippingMarkError(t('shippingMark.conflictError'));
+        pushMessage({ tone: 'error', message: t('shippingMark.conflictError') });
         return;
       }
-      setShippingMarkError(getErrorMessage(saveError));
+      pushMessage({ tone: 'error', message: getErrorMessage(saveError) });
     } finally {
       setIsSavingShippingMark(false);
     }
@@ -661,10 +799,6 @@ export function ProfilePage(): ReactElement {
           title={t('title')}
           subtitle={mode === 'external' ? t('subtitleExternal') : t('subtitleInternal')}
         />
-
-        {profileError && <AlertBanner tone="error" message={profileError} />}
-        {validationError && <AlertBanner tone="warning" message={validationError} />}
-        {profileSuccess && <AlertBanner tone="success" message={profileSuccess} />}
 
         <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
           <Card className="rounded-3xl bg-white p-8">
@@ -721,17 +855,6 @@ export function ProfilePage(): ReactElement {
                     </p>
                   </div>
                 </div>
-
-                {shippingMarkError && (
-                  <div className="mb-3">
-                    <AlertBanner tone="error" message={shippingMarkError} />
-                  </div>
-                )}
-                {shippingMarkSuccess && (
-                  <div className="mb-3">
-                    <AlertBanner tone="success" message={shippingMarkSuccess} />
-                  </div>
-                )}
 
                 {!isEditingShippingMark ? (
                   <div className="flex flex-col gap-2">
@@ -1057,12 +1180,13 @@ export function ProfilePage(): ReactElement {
                       {internalFieldErrors.dateOfBirth && <p id="staff-profile-dateOfBirth-error" className="mt-1.5 text-sm text-red-600" role="alert">{internalFieldErrors.dateOfBirth}</p>}
                     </div>
 
-                    <Input
+                    <StaffPhoneField
                       id="staff-profile-phone"
                       label={`${t('fields.phone')} *`}
                       value={internalForm.phone}
-                      onChange={(event) => handleInternalChange('phone', event.target.value)}
-                      className="auth-form-control text-sm"
+                      selectedCountry={selectedPhoneCountry}
+                      onCountryChange={setPhoneCountryCode}
+                      onChange={(value) => handleInternalChange('phone', value)}
                       disabled={isBootstrapping}
                       error={internalFieldErrors.phone}
                     />
@@ -1159,12 +1283,13 @@ export function ProfilePage(): ReactElement {
                     />
 
                     <div className="grid gap-4 md:grid-cols-2">
-                      <Input
+                      <StaffPhoneField
                         id="staff-profile-emergencyContactPhone"
                         label={`${t('fields.emergencyPhone')} *`}
                         value={internalForm.emergencyContactPhone}
-                        onChange={(event) => handleInternalChange('emergencyContactPhone', event.target.value)}
-                        className="auth-form-control text-sm"
+                        selectedCountry={selectedEmergencyPhoneCountry}
+                        onCountryChange={setEmergencyPhoneCountryCode}
+                        onChange={(value) => handleInternalChange('emergencyContactPhone', value)}
                         disabled={isBootstrapping}
                         error={internalFieldErrors.emergencyContactPhone}
                       />
@@ -1241,7 +1366,6 @@ export function ProfilePage(): ReactElement {
                   {t('deleteAccount.deleteButton')}
                 </button>
               </div>
-              {deleteError && <div className="mt-4"><AlertBanner tone="error" message={deleteError} /></div>}
               <ConfirmModal
                 isOpen={showDeleteConfirm}
                 title={t('deleteAccount.modal.title')}
