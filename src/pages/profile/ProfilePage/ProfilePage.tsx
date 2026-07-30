@@ -19,6 +19,7 @@ import {
 import { PageHeader } from '@/pages/shared';
 import { ROUTES, STAFF_COUNTRIES, RELATIONSHIP_OPTIONS, COUNTRY_LABELS, getStates, getCities } from '@/constants';
 import { ApiError } from '@/lib/apiClient';
+import { cn } from '@/utils';
 import {
   deleteMyAccount,
   getMyProfile,
@@ -27,6 +28,10 @@ import {
   updateMyProfile,
 } from '@/services';
 import { useFeedbackStore } from '@/store';
+import {
+  getMissingInternalProfileFields,
+  type InternalRequiredField,
+} from './internalProfileValidation';
 import type {
   CustomerProfile,
   ProfileCompleteness,
@@ -210,6 +215,9 @@ export function ProfilePage(): ReactElement {
 
   const [internalForm, setInternalForm] = useState<StaffProfilePayload>(initialInternalForm);
   const [internalBaseline, setInternalBaseline] = useState<StaffProfilePayload>(initialInternalForm);
+  const [internalFieldErrors, setInternalFieldErrors] = useState<
+    Partial<Record<InternalRequiredField, string>>
+  >({});
   const lastBootstrapKeyRef = useRef<string | null>(null);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -385,6 +393,12 @@ export function ProfilePage(): ReactElement {
       }
       return next;
     });
+    setInternalFieldErrors((prev) => {
+      if (!prev[key as InternalRequiredField]) return prev;
+      const next = { ...prev };
+      delete next[key as InternalRequiredField];
+      return next;
+    });
     setValidationError(null);
     setProfileSuccess(null);
   };
@@ -415,6 +429,7 @@ export function ProfilePage(): ReactElement {
   const handleStartEditing = () => {
     setProfileSuccess(null);
     setValidationError(null);
+    setInternalFieldErrors({});
     setIsEditing(true);
   };
 
@@ -430,6 +445,7 @@ export function ProfilePage(): ReactElement {
     setValidationError(null);
     setProfileError(null);
     setProfileSuccess(null);
+    setInternalFieldErrors({});
     if (mode === 'external') {
       setExternalForm(externalBaseline);
     } else {
@@ -512,28 +528,27 @@ export function ProfilePage(): ReactElement {
   };
 
   const handleInternalSave = async (): Promise<void> => {
-    const requiredValues = [
-      internalForm.gender,
-      internalForm.dateOfBirth,
-      internalForm.phone,
-      internalForm.addressStreet,
-      internalForm.addressCity,
-      internalForm.addressState,
-      internalForm.addressCountry,
-      internalForm.addressPostalCode,
-      internalForm.emergencyContactName,
-      internalForm.emergencyContactPhone,
-      internalForm.emergencyContactRelationship,
-    ];
-
-    if (requiredValues.some((field) => !field.trim())) {
-      setValidationError(t('messages.completeRequiredFields'));
+    const missingFields = getMissingInternalProfileFields(internalForm);
+    if (missingFields.length > 0) {
+      const errors = missingFields.reduce<Partial<Record<InternalRequiredField, string>>>(
+        (next, field) => ({ ...next, [field]: t('messages.requiredField') }),
+        {},
+      );
+      setInternalFieldErrors(errors);
+      setValidationError(null);
+      const firstField = missingFields[0];
+      requestAnimationFrame(() => {
+        const input = document.getElementById(`staff-profile-${firstField}`);
+        input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (input instanceof HTMLElement) input.focus();
+      });
       return;
     }
 
     setIsSaving(true);
     setProfileError(null);
     setValidationError(null);
+    setInternalFieldErrors({});
     setProfileSuccess(null);
 
     try {
@@ -1010,136 +1025,171 @@ export function ProfilePage(): ReactElement {
                     </div>
 
                     <div>
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.gender')}</label>
+                      <label htmlFor="staff-profile-gender" className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.gender')} <span className="text-red-600">*</span></label>
                       <select
+                        id="staff-profile-gender"
                         value={internalForm.gender}
                         onChange={(event) => handleInternalChange('gender', event.target.value as StaffProfilePayload['gender'])}
-                        className="auth-form-control w-full rounded-lg border border-gray-200 bg-white px-4 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400"
+                        className={cn('auth-form-control w-full rounded-lg border bg-white px-4 text-sm text-gray-900 focus:outline-none focus:ring-2 hover:border-gray-400', internalFieldErrors.gender ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-brand-500')}
                         disabled={isBootstrapping}
+                        aria-invalid={!!internalFieldErrors.gender}
+                        aria-describedby={internalFieldErrors.gender ? 'staff-profile-gender-error' : undefined}
                       >
                         <option value="male">{t('internal.genders.male')}</option>
                         <option value="female">{t('internal.genders.female')}</option>
                         <option value="other">{t('internal.genders.other')}</option>
                       </select>
+                      {internalFieldErrors.gender && <p id="staff-profile-gender-error" className="mt-1.5 text-sm text-red-600" role="alert">{internalFieldErrors.gender}</p>}
                     </div>
 
                     <div>
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.dateOfBirth')}</label>
+                      <label htmlFor="staff-profile-dateOfBirth" className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.dateOfBirth')} <span className="text-red-600">*</span></label>
                       <input
+                        id="staff-profile-dateOfBirth"
                         type="date"
                         value={internalForm.dateOfBirth}
                         onChange={(event) => handleInternalChange('dateOfBirth', event.target.value)}
-                        className="auth-form-control w-full rounded-lg border border-gray-200 bg-white px-4 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400"
+                        className={cn('auth-form-control w-full rounded-lg border bg-white px-4 text-sm text-gray-900 focus:outline-none focus:ring-2 hover:border-gray-400', internalFieldErrors.dateOfBirth ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-brand-500')}
                         disabled={isBootstrapping}
+                        aria-invalid={!!internalFieldErrors.dateOfBirth}
+                        aria-describedby={internalFieldErrors.dateOfBirth ? 'staff-profile-dateOfBirth-error' : undefined}
                       />
+                      {internalFieldErrors.dateOfBirth && <p id="staff-profile-dateOfBirth-error" className="mt-1.5 text-sm text-red-600" role="alert">{internalFieldErrors.dateOfBirth}</p>}
                     </div>
 
                     <Input
-                      label={t('fields.phone')}
+                      id="staff-profile-phone"
+                      label={`${t('fields.phone')} *`}
                       value={internalForm.phone}
                       onChange={(event) => handleInternalChange('phone', event.target.value)}
                       className="auth-form-control text-sm"
                       disabled={isBootstrapping}
+                      error={internalFieldErrors.phone}
                     />
 
                     <Input
-                      label={t('fields.streetAddress')}
+                      id="staff-profile-addressStreet"
+                      label={`${t('fields.streetAddress')} *`}
                       value={internalForm.addressStreet}
                       onChange={(event) => handleInternalChange('addressStreet', event.target.value)}
                       className="auth-form-control text-sm"
                       disabled={isBootstrapping}
+                      error={internalFieldErrors.addressStreet}
                     />
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <div>
-                        <label className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.country')}</label>
+                        <label htmlFor="staff-profile-addressCountry" className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.country')} <span className="text-red-600">*</span></label>
                         <select
+                          id="staff-profile-addressCountry"
                           value={internalForm.addressCountry}
                           onChange={(e) => handleInternalChange('addressCountry', e.target.value as 'SK' | 'Nigeria' | '')}
-                          className={SELECT_CLASS}
+                          className={cn(SELECT_CLASS, internalFieldErrors.addressCountry && 'border-red-500 focus:border-red-500 focus:ring-red-500')}
                           disabled={isBootstrapping}
+                          aria-invalid={!!internalFieldErrors.addressCountry}
+                          aria-describedby={internalFieldErrors.addressCountry ? 'staff-profile-addressCountry-error' : undefined}
                         >
                           <option value="">Select country</option>
                           {STAFF_COUNTRIES.map((c) => (
                             <option key={c.value} value={c.value}>{c.label}</option>
                           ))}
                         </select>
+                        {internalFieldErrors.addressCountry && <p id="staff-profile-addressCountry-error" className="mt-1.5 text-sm text-red-600" role="alert">{internalFieldErrors.addressCountry}</p>}
                       </div>
                       <Input
-                        label={t('fields.postalCode')}
+                        id="staff-profile-addressPostalCode"
+                        label={`${t('fields.postalCode')} *`}
                         value={internalForm.addressPostalCode}
                         onChange={(event) => handleInternalChange('addressPostalCode', event.target.value)}
                         className="auth-form-control text-sm"
                         disabled={isBootstrapping}
+                        error={internalFieldErrors.addressPostalCode}
                       />
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <div>
-                        <label className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.state')}</label>
+                        <label htmlFor="staff-profile-addressState" className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.state')} <span className="text-red-600">*</span></label>
                         <select
+                          id="staff-profile-addressState"
                           value={internalForm.addressState}
                           onChange={(e) => handleInternalChange('addressState', e.target.value)}
-                          className={SELECT_CLASS}
+                          className={cn(SELECT_CLASS, internalFieldErrors.addressState && 'border-red-500 focus:border-red-500 focus:ring-red-500')}
                           disabled={isBootstrapping || !internalForm.addressCountry}
+                          aria-invalid={!!internalFieldErrors.addressState}
+                          aria-describedby={internalFieldErrors.addressState ? 'staff-profile-addressState-error' : undefined}
                         >
                           <option value="">Select state / province</option>
                           {getStates(internalForm.addressCountry).map((s) => (
                             <option key={s} value={s}>{s}</option>
                           ))}
                         </select>
+                        {internalFieldErrors.addressState && <p id="staff-profile-addressState-error" className="mt-1.5 text-sm text-red-600" role="alert">{internalFieldErrors.addressState}</p>}
                       </div>
                       <div>
-                        <label className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.city')}</label>
+                        <label htmlFor="staff-profile-addressCity" className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.city')} <span className="text-red-600">*</span></label>
                         <select
+                          id="staff-profile-addressCity"
                           value={internalForm.addressCity}
                           onChange={(e) => handleInternalChange('addressCity', e.target.value)}
-                          className={SELECT_CLASS}
+                          className={cn(SELECT_CLASS, internalFieldErrors.addressCity && 'border-red-500 focus:border-red-500 focus:ring-red-500')}
                           disabled={isBootstrapping || !internalForm.addressState}
+                          aria-invalid={!!internalFieldErrors.addressCity}
+                          aria-describedby={internalFieldErrors.addressCity ? 'staff-profile-addressCity-error' : undefined}
                         >
                           <option value="">Select city</option>
                           {getCities(internalForm.addressCountry, internalForm.addressState).map((c) => (
                             <option key={c} value={c}>{c}</option>
                           ))}
                         </select>
+                        {internalFieldErrors.addressCity && <p id="staff-profile-addressCity-error" className="mt-1.5 text-sm text-red-600" role="alert">{internalFieldErrors.addressCity}</p>}
                       </div>
                     </div>
 
                     <h3 className="pt-2 text-sm font-semibold text-gray-900">{t('internal.emergencyTitle')}</h3>
 
                     <Input
-                      label={t('fields.emergencyName')}
+                      id="staff-profile-emergencyContactName"
+                      label={`${t('fields.emergencyName')} *`}
                       value={internalForm.emergencyContactName}
                       onChange={(event) => handleInternalChange('emergencyContactName', event.target.value)}
                       className="auth-form-control text-sm"
                       disabled={isBootstrapping}
+                      error={internalFieldErrors.emergencyContactName}
                     />
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <Input
-                        label={t('fields.emergencyPhone')}
+                        id="staff-profile-emergencyContactPhone"
+                        label={`${t('fields.emergencyPhone')} *`}
                         value={internalForm.emergencyContactPhone}
                         onChange={(event) => handleInternalChange('emergencyContactPhone', event.target.value)}
                         className="auth-form-control text-sm"
                         disabled={isBootstrapping}
+                        error={internalFieldErrors.emergencyContactPhone}
                       />
                       <div>
-                        <label className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.emergencyRelationship')}</label>
+                        <label htmlFor="staff-profile-emergencyContactRelationship" className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.emergencyRelationship')} <span className="text-red-600">*</span></label>
                         <select
+                          id="staff-profile-emergencyContactRelationship"
                           value={internalForm.emergencyContactRelationship}
                           onChange={(e) => handleInternalChange('emergencyContactRelationship', e.target.value)}
-                          className={SELECT_CLASS}
+                          className={cn(SELECT_CLASS, internalFieldErrors.emergencyContactRelationship && 'border-red-500 focus:border-red-500 focus:ring-red-500')}
                           disabled={isBootstrapping}
+                          aria-invalid={!!internalFieldErrors.emergencyContactRelationship}
+                          aria-describedby={internalFieldErrors.emergencyContactRelationship ? 'staff-profile-emergencyContactRelationship-error' : undefined}
                         >
                           <option value="">Select relationship</option>
                           {RELATIONSHIP_OPTIONS.map((r) => (
                             <option key={r} value={r}>{r}</option>
                           ))}
                         </select>
+                        {internalFieldErrors.emergencyContactRelationship && <p id="staff-profile-emergencyContactRelationship-error" className="mt-1.5 text-sm text-red-600" role="alert">{internalFieldErrors.emergencyContactRelationship}</p>}
                       </div>
                     </div>
 
                     <Input
+                      id="staff-profile-nationalId"
                       label={t('fields.nationalId')}
                       value={internalForm.nationalId ?? ''}
                       onChange={(event) => handleInternalChange('nationalId', event.target.value)}
