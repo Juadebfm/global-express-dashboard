@@ -2,7 +2,7 @@
 // Mirrors the backend /gallery (authenticated) and /public/gallery (read-only) responses.
 // See global-express-backend/API_ENDPOINTS.md §Gallery + §Public.
 
-export type GalleryItemType = 'anonymous_goods' | 'car' | 'advert';
+export type GalleryItemType = 'anonymous_goods' | 'car' | 'advert' | 'for_sale';
 
 export type GalleryItemStatus =
   | 'draft'
@@ -30,6 +30,8 @@ export interface GalleryItem {
   isPublished: boolean;
   // The API transports NGN prices as decimal strings to preserve precision.
   carPriceNgn?: string | null;
+  // The API transports USD prices as decimal strings to preserve precision.
+  priceUsd?: string | null;
   priceCurrency?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -97,6 +99,7 @@ export interface PublicGalleryListings {
   anonymousGoods: GalleryItem[];
   sales: GalleryItem[];
   cars: GalleryItem[];
+  forSale: GalleryItem[];
   adverts: GalleryItem[];
 }
 
@@ -144,10 +147,15 @@ export interface GalleryItemCreatePayload {
   isPublished?: boolean;
   status?: GalleryItemStatus;
   carPriceNgn?: string;
+  priceUsd?: string;
   metadata?: Record<string, unknown>;
 }
 
-export type GalleryItemUpdatePayload = Partial<GalleryItemCreatePayload>;
+export interface GalleryItemUpdatePayload
+  extends Partial<Omit<GalleryItemCreatePayload, 'carPriceNgn' | 'priceUsd'>> {
+  carPriceNgn?: string | null;
+  priceUsd?: string | null;
+}
 
 export interface GalleryAdvertCreatePayload {
   title: string;

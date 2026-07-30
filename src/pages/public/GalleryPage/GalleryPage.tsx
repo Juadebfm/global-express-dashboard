@@ -69,7 +69,7 @@ export default function GalleryPage(): ReactElement {
     const allItems = [
       ...data.anonymousGoods,
       ...data.cars,
-      ...data.sales,
+      ...data.forSale,
       ...data.adverts,
     ];
     const matchedItem = allItems.find((item) => item.id === itemId);
@@ -171,7 +171,7 @@ export default function GalleryPage(): ReactElement {
               title="Sales"
               description="Items currently on offer. Tap 'Inquire' to express interest and a team member will follow up."
               icon={<ImageIcon className="h-5 w-5" />}
-              items={data.sales}
+              items={data.forSale}
               emptyLabel="No sale items right now."
               renderActions={(item) => (
                 <Button
@@ -383,6 +383,11 @@ function GallerySection({
                   {item.itemType === 'car' && item.carPriceNgn && Number.isFinite(Number(item.carPriceNgn)) && (
                     <p className="text-sm font-semibold text-brand-700">
                       NGN {Number(item.carPriceNgn).toLocaleString()}
+                    </p>
+                  )}
+                  {item.itemType === 'for_sale' && item.priceUsd && Number.isFinite(Number(item.priceUsd)) && (
+                    <p className="text-sm font-semibold text-brand-700">
+                      USD {Number(item.priceUsd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   )}
                 </div>

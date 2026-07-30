@@ -37,6 +37,7 @@ import type {
   GalleryClaimsQuery,
   GalleryItem,
   GalleryItemCreatePayload,
+  GalleryItemUpdatePayload,
   GalleryUploadContentType,
 } from '@/types';
 
@@ -145,7 +146,7 @@ function ItemsTab(): ReactElement {
   const allItems = [
     ...data.anonymousGoods,
     ...data.cars,
-    ...data.sales,
+    ...data.forSale,
     ...data.adverts,
   ];
 
@@ -250,6 +251,7 @@ function CreateItemModal({ onClose }: CreateItemModalProps): ReactElement {
       endsAt: '',
       isPublished: false,
       carPriceNgn: '',
+      priceUsd: '',
     },
   });
 
@@ -288,7 +290,12 @@ function CreateItemModal({ onClose }: CreateItemModalProps): ReactElement {
                 isPublished: values.isPublished,
               };
               if (values.itemType === 'car') {
-                payload.carPriceNgn = (values.carPriceNgn ?? '').trim();
+                const carPriceNgn = (values.carPriceNgn ?? '').trim();
+                if (carPriceNgn) payload.carPriceNgn = carPriceNgn;
+              }
+              if (values.itemType === 'for_sale') {
+                const priceUsd = (values.priceUsd ?? '').trim();
+                if (priceUsd) payload.priceUsd = priceUsd;
               }
               await createItem.mutate(payload);
             }
@@ -311,6 +318,7 @@ function CreateItemModal({ onClose }: CreateItemModalProps): ReactElement {
             <option value="advert">Advert</option>
             <option value="anonymous_goods">Anonymous goods</option>
             <option value="car">Car</option>
+            <option value="for_sale">For sale</option>
           </select>
         </div>
 
@@ -416,6 +424,17 @@ function CreateItemModal({ onClose }: CreateItemModalProps): ReactElement {
           />
         )}
 
+        {itemType === 'for_sale' && (
+          <Input
+            label="Price (USD)"
+            type="number"
+            step="0.01"
+            min="0.01"
+            error={errors.priceUsd?.message}
+            {...register('priceUsd')}
+          />
+        )}
+
         <label className="flex items-center gap-2 text-sm text-gray-700">
           <input type="checkbox" className="h-4 w-4" {...register('isPublished')} />
           Publish immediately
@@ -438,7 +457,7 @@ function CreateItemModal({ onClose }: CreateItemModalProps): ReactElement {
   );
 }
 
-// ── Edit modal (reuses same schema; only title + publish state are editable here) ─
+// ── Edit modal ──────────────────────────────────────────────────────────────
 
 interface EditItemModalProps {
   item: GalleryItem;
@@ -449,10 +468,14 @@ function EditItemModal({ item, onClose }: EditItemModalProps): ReactElement {
   const updateItem = useUpdateGalleryItem();
   const updateAdvert = useUpdateGalleryAdvert();
   const isAdvert = item.itemType === 'advert';
+  const isCar = item.itemType === 'car';
+  const isForSale = item.itemType === 'for_sale';
 
   const [title, setTitle] = useState(item.title);
   const [description, setDescription] = useState(item.description ?? '');
   const [isPublished, setIsPublished] = useState(item.isPublished);
+  const [price, setPrice] = useState(isCar ? (item.carPriceNgn ?? '') : (item.priceUsd ?? ''));
+  const [priceError, setPriceError] = useState<string | null>(null);
 
   const isPending = isAdvert ? updateAdvert.isPending : updateItem.isPending;
 
@@ -462,11 +485,21 @@ function EditItemModal({ item, onClose }: EditItemModalProps): ReactElement {
         onSubmit={async (event) => {
           event.preventDefault();
           try {
-            const payload = {
+            const payload: GalleryItemUpdatePayload = {
               title: title.trim() || undefined,
               description: description.trim() || undefined,
               isPublished,
             };
+            if (isCar || isForSale) {
+              const normalizedPrice = price.trim();
+              if (isPublished && (!/^\d+(\.\d+)?$/.test(normalizedPrice) || Number(normalizedPrice) <= 0)) {
+                setPriceError(isCar ? 'Enter a positive price in NGN before publishing.' : 'Enter a positive price in USD before publishing.');
+                return;
+              }
+              setPriceError(null);
+              if (isCar) payload.carPriceNgn = normalizedPrice || null;
+              if (isForSale) payload.priceUsd = normalizedPrice || null;
+            }
             if (isAdvert) {
               await updateAdvert.mutate({ itemId: item.id, payload });
             } else {
@@ -493,6 +526,28 @@ function EditItemModal({ item, onClose }: EditItemModalProps): ReactElement {
             onChange={(e) => setDescription(e.target.value)}
           />
         </div>
+        {isCar && (
+          <Input
+            label="Car price (NGN)"
+            type="number"
+            min="0.01"
+            step="1000"
+            value={price}
+            onChange={(event) => setPrice(event.target.value)}
+            error={priceError ?? undefined}
+          />
+        )}
+        {isForSale && (
+          <Input
+            label="Price (USD)"
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={price}
+            onChange={(event) => setPrice(event.target.value)}
+            error={priceError ?? undefined}
+          />
+        )}
         <label className="flex items-center gap-2 text-sm text-gray-700">
           <input
             type="checkbox"

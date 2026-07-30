@@ -12,7 +12,7 @@ export type AuthenticatedClaimFormData = z.infer<typeof authenticatedClaimSchema
 // previewImageUrl is captured separately after media presign returns the URL.
 export const galleryItemSchema = z
   .object({
-    itemType: z.enum(['anonymous_goods', 'car', 'advert']),
+    itemType: z.enum(['anonymous_goods', 'car', 'advert', 'for_sale']),
     title: z.string().min(2, 'Title must be at least 2 characters'),
     description: z.string().max(5000).optional().or(z.literal('')),
     previewImageUrl: z.string().url('Enter a valid URL').optional().or(z.literal('')),
@@ -26,15 +26,31 @@ export const galleryItemSchema = z
       .regex(/^$|^\d+(\.\d+)?$/, 'Enter a positive number')
       .optional()
       .or(z.literal('')),
+    priceUsd: z
+      .string()
+      .max(20)
+      .regex(/^$|^\d+(\.\d+)?$/, 'Enter a positive number')
+      .optional()
+      .or(z.literal('')),
   })
   .superRefine((v, ctx) => {
-    if (v.itemType === 'car') {
+    if (v.itemType === 'car' && v.isPublished) {
       const hasPrice = typeof v.carPriceNgn === 'string' && v.carPriceNgn.trim().length > 0;
-      if (!hasPrice) {
+      if (!hasPrice || Number(v.carPriceNgn) <= 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['carPriceNgn'],
           message: 'Car listings need a price in NGN',
+        });
+      }
+    }
+    if (v.itemType === 'for_sale' && v.isPublished) {
+      const hasPrice = typeof v.priceUsd === 'string' && v.priceUsd.trim().length > 0;
+      if (!hasPrice || Number(v.priceUsd) <= 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['priceUsd'],
+          message: 'For-sale listings need a price in USD',
         });
       }
     }

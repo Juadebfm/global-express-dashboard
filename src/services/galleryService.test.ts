@@ -44,7 +44,7 @@ describe('public gallery reads', () => {
   it('getPublicGallery does not send Authorization', async () => {
     mockFetch({
       success: true,
-      data: { anonymousGoods: [], sales: [], cars: [], adverts: [] },
+      data: { anonymousGoods: [], sales: [], cars: [], forSale: [], adverts: [] },
     });
     await getPublicGallery();
     const { url, init } = lastCall();
@@ -53,7 +53,7 @@ describe('public gallery reads', () => {
   });
 
   it('getPublicGallery forwards limitPerSection', async () => {
-    mockFetch({ success: true, data: { anonymousGoods: [], sales: [], cars: [], adverts: [] } });
+    mockFetch({ success: true, data: { anonymousGoods: [], sales: [], cars: [], forSale: [], adverts: [] } });
     await getPublicGallery(8);
     expect(lastCall().url).toContain('limitPerSection=8');
   });
@@ -77,7 +77,7 @@ describe('authed gallery reads', () => {
   it('getAuthedGallery sends Authorization', async () => {
     mockFetch({
       success: true,
-      data: { anonymousGoods: [], sales: [], cars: [], adverts: [], myClaims: [] },
+      data: { anonymousGoods: [], sales: [], cars: [], forSale: [], adverts: [], myClaims: [] },
     });
     await getAuthedGallery('token');
     const { url, init } = lastCall();
@@ -129,6 +129,19 @@ describe('staff gallery items + adverts', () => {
     expect(JSON.parse(init.body as string)).toEqual({ itemType: 'advert', title: 'X' });
   });
 
+  it('preserves a car price as the API decimal string', async () => {
+    mockFetch({ success: true, data: { id: 'g-car', title: 'Car' } });
+    await createGalleryItem('token', {
+      itemType: 'car',
+      title: 'Car',
+      carPriceNgn: '8500000.00',
+    });
+    expect(JSON.parse(lastCall().init.body as string)).toMatchObject({
+      itemType: 'car',
+      carPriceNgn: '8500000.00',
+    });
+  });
+
   it('createGalleryAdvert POSTs the advert payload', async () => {
     mockFetch({ success: true, data: { id: 'g2', title: 'Ad' } });
     await createGalleryAdvert('token', { title: 'Ad' });
@@ -141,6 +154,12 @@ describe('staff gallery items + adverts', () => {
     const { url, init } = lastCall();
     expect(url).toContain('/gallery/items/g1');
     expect(init.method).toBe('PATCH');
+  });
+
+  it('preserves a for-sale price as the API decimal string', async () => {
+    mockFetch({ success: true, data: { id: 'g-sale' } });
+    await updateGalleryItem('token', 'g-sale', { priceUsd: '120.00' });
+    expect(JSON.parse(lastCall().init.body as string)).toEqual({ priceUsd: '120.00' });
   });
 
   it('updateGalleryAdvert PATCHes by id', async () => {

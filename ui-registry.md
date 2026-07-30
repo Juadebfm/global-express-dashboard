@@ -485,6 +485,24 @@ Profile and team invite selects use `appearance-none` with a positioned Lucide c
 
 ---
 
+### Gallery price controls
+
+Files: `src/pages/admin/AdminGalleryPage/AdminGalleryPage.tsx`, `src/pages/public/GalleryPage/GalleryPage.tsx`
+Last updated: 2026-07-30
+
+| Property | Class |
+|---|---|
+| Price input | Shared `<Input>` — `rounded-xl border border-gray-200 bg-white px-4 py-2.5` |
+| Label | `text-sm font-medium text-gray-700` (from `<Input>`) |
+| Validation | Shared inline input error — `text-sm text-red-600 mt-1.5` |
+| Public price | `text-sm font-semibold text-brand-700` |
+| Spacing | Create form `space-y-4`; edit form `space-y-3` |
+
+**Pattern notes:**
+Car prices use NGN and for-sale prices use USD. Both are decimal strings at the API boundary to preserve precision. Price fields stay visible and editable for every Gallery-management role; drafts may omit a price, while client validation appears beside the field before a listing can be published.
+
+---
+
 ## Known Tech Debt
 
 - `src/components/forms/SupportTicketForm/SupportTicketForm.tsx` — raw `border-[#DDE5E9]` hex inputs
