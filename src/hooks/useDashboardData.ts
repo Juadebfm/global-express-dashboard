@@ -15,7 +15,11 @@ interface DashboardDataState {
   error: string | null;
 }
 
-export function useDashboardData(): DashboardDataState {
+interface UseDashboardDataOptions {
+  enabled?: boolean;
+}
+
+export function useDashboardData({ enabled: isPageEnabled = true }: UseDashboardDataOptions = {}): DashboardDataState {
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
   const { i18n } = useTranslation();
@@ -36,7 +40,7 @@ export function useDashboardData(): DashboardDataState {
 
       return fetchDashboardRaw(token);
     },
-    enabled,
+    enabled: enabled && isPageEnabled,
     staleTime: STALE_TIME.REAL_TIME,
   });
 

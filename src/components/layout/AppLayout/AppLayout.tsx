@@ -38,7 +38,7 @@ export function AppLayout({ children, user }: AppLayoutProps): ReactElement {
   const isCustomer = effectiveRole === 'user';
 
   // ── Onboarding (customers only) ──────────────────────────────────────────────
-  const { data: dashboardData, isLoading: dashboardLoading } = useDashboardData();
+  const { data: dashboardData, isLoading: dashboardLoading } = useDashboardData({ enabled: isCustomer });
   // Treat loading as "has data" to avoid a welcome popup flash for returning users
   const hasData =
     !isCustomer ||
