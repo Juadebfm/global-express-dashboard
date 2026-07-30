@@ -60,7 +60,11 @@ export function ProtectedRoute({
   // Internal staff with a forced password change must complete it first.
   // mustCompleteProfile is no longer a hard gate — the dashboard shows a soft
   // banner for accounts where an admin has manually set that flag.
-  if (isAuthenticated && user && user.mustChangePassword) {
+  if (
+    isAuthenticated &&
+    user?.mustChangePassword &&
+    location.pathname !== ROUTES.STAFF_ONBOARDING
+  ) {
     return <Navigate to={ROUTES.STAFF_ONBOARDING} replace />;
   }
 
