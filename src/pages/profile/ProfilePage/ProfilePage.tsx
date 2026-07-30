@@ -1,11 +1,12 @@
-import type { ReactElement } from 'react';
+import type { ComponentType, ReactElement, SelectHTMLAttributes } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Copy, Lock } from 'lucide-react';
+import { Check, ChevronDown, Copy, Lock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useClerk, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { Country } from 'react-phone-number-input';
 import { getCountries, getCountryCallingCode } from 'react-phone-number-input';
+import flags from 'react-phone-number-input/flags';
 import en from 'react-phone-number-input/locale/en';
 import { AppLayout } from '@/components/layout';
 import { AvatarUploader } from '@/components/profile';
@@ -180,7 +181,8 @@ interface DetailRowProps {
   value: string;
 }
 
-const SELECT_CLASS = 'auth-form-control w-full rounded-lg border border-gray-200 bg-white px-4 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed';
+const SELECT_CLASS = 'auth-form-control w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 pr-10 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed';
+const DATALIST_INPUT_CLASS = 'auth-form-control w-full rounded-lg border border-gray-200 bg-white px-4 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed';
 
 function DetailRow({ label, value }: DetailRowProps): ReactElement {
   return (
@@ -189,6 +191,28 @@ function DetailRow({ label, value }: DetailRowProps): ReactElement {
       <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-700">
         {value}
       </p>
+    </div>
+  );
+}
+
+interface ProfileSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  hasError?: boolean;
+}
+
+function ProfileSelect({ className, hasError = false, children, ...props }: ProfileSelectProps): ReactElement {
+  return (
+    <div className="relative">
+      <select
+        {...props}
+        className={cn(
+          SELECT_CLASS,
+          hasError && 'border-red-500 focus:border-red-500 focus:ring-red-500',
+          className,
+        )}
+      >
+        {children}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
     </div>
   );
 }
@@ -214,30 +238,47 @@ function StaffPhoneField({
   error,
   disabled = false,
 }: StaffPhoneFieldProps): ReactElement {
+  const FlagIcon = flags[selectedCountry.code] as ComponentType<{
+    title?: string;
+    className?: string;
+  }> | undefined;
+
   return (
     <div className="w-full">
       <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-gray-700">
         {label}
       </label>
       <div className="flex gap-2">
-        <select
-          aria-label={`${label} country code`}
-          value={selectedCountry.code}
-          onChange={(event) => onCountryChange(event.target.value as Country)}
-          className={cn(
-            'auth-form-control w-[150px] shrink-0 rounded-lg border bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2',
-            error
-              ? 'border-red-500 focus:ring-red-500'
-              : 'border-gray-200 focus:border-transparent focus:ring-brand-500',
+        <div className="relative w-[112px] shrink-0">
+          {FlagIcon && (
+            <FlagIcon
+              title={selectedCountry.name}
+              className="pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-5 -translate-y-1/2 rounded-sm"
+            />
           )}
-          disabled={disabled}
-        >
-          {PHONE_COUNTRY_OPTIONS.map((country) => (
-            <option key={country.code} value={country.code}>
-              {country.name} ({country.dialCode})
-            </option>
-          ))}
-        </select>
+          <select
+            aria-label={`${label} country code`}
+            value={selectedCountry.code}
+            onChange={(event) => onCountryChange(event.target.value as Country)}
+            className={cn(
+              'auth-form-control w-full appearance-none rounded-lg border bg-white py-2.5 pl-10 pr-8 text-sm text-transparent focus:outline-none focus:ring-2',
+              error
+                ? 'border-red-500 focus:ring-red-500'
+                : 'border-gray-200 focus:border-transparent focus:ring-brand-500',
+            )}
+            disabled={disabled}
+          >
+            {PHONE_COUNTRY_OPTIONS.map((country) => (
+              <option key={country.code} value={country.code} className="text-gray-900">
+                {country.name} ({country.dialCode})
+              </option>
+            ))}
+          </select>
+          <span className="pointer-events-none absolute left-10 top-1/2 -translate-y-1/2 text-sm text-gray-900" aria-hidden="true">
+            {selectedCountry.dialCode}
+          </span>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-gray-400" />
+        </div>
         <input
           id={id}
           type="tel"
@@ -1029,7 +1070,7 @@ export function ProfilePage(): ReactElement {
                           value={externalForm.addressCountry}
                           onChange={(e) => handleExternalChange('addressCountry', e.target.value)}
                           placeholder="Type or select"
-                          className={SELECT_CLASS}
+                          className={DATALIST_INPUT_CLASS}
                           disabled={isBootstrapping}
                           autoComplete="off"
                         />
@@ -1055,7 +1096,7 @@ export function ProfilePage(): ReactElement {
                           value={externalForm.addressState}
                           onChange={(e) => handleExternalChange('addressState', e.target.value)}
                           placeholder="Type or select"
-                          className={SELECT_CLASS}
+                          className={DATALIST_INPUT_CLASS}
                           disabled={isBootstrapping}
                           autoComplete="off"
                         />
@@ -1071,7 +1112,7 @@ export function ProfilePage(): ReactElement {
                           value={externalForm.addressCity}
                           onChange={(e) => handleExternalChange('addressCity', e.target.value)}
                           placeholder="Type or select"
-                          className={SELECT_CLASS}
+                          className={DATALIST_INPUT_CLASS}
                           disabled={isBootstrapping}
                           autoComplete="off"
                         />
@@ -1149,11 +1190,11 @@ export function ProfilePage(): ReactElement {
 
                     <div>
                       <label htmlFor="staff-profile-gender" className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.gender')} <span className="text-red-600">*</span></label>
-                      <select
+                      <ProfileSelect
                         id="staff-profile-gender"
                         value={internalForm.gender}
                         onChange={(event) => handleInternalChange('gender', event.target.value as StaffProfilePayload['gender'])}
-                        className={cn('auth-form-control w-full rounded-lg border bg-white px-4 text-sm text-gray-900 focus:outline-none focus:ring-2 hover:border-gray-400', internalFieldErrors.gender ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-brand-500')}
+                        hasError={!!internalFieldErrors.gender}
                         disabled={isBootstrapping}
                         aria-invalid={!!internalFieldErrors.gender}
                         aria-describedby={internalFieldErrors.gender ? 'staff-profile-gender-error' : undefined}
@@ -1161,7 +1202,7 @@ export function ProfilePage(): ReactElement {
                         <option value="male">{t('internal.genders.male')}</option>
                         <option value="female">{t('internal.genders.female')}</option>
                         <option value="other">{t('internal.genders.other')}</option>
-                      </select>
+                      </ProfileSelect>
                       {internalFieldErrors.gender && <p id="staff-profile-gender-error" className="mt-1.5 text-sm text-red-600" role="alert">{internalFieldErrors.gender}</p>}
                     </div>
 
@@ -1204,11 +1245,11 @@ export function ProfilePage(): ReactElement {
                     <div className="grid gap-4 md:grid-cols-2">
                       <div>
                         <label htmlFor="staff-profile-addressCountry" className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.country')} <span className="text-red-600">*</span></label>
-                        <select
+                        <ProfileSelect
                           id="staff-profile-addressCountry"
                           value={internalForm.addressCountry}
                           onChange={(e) => handleInternalChange('addressCountry', e.target.value as 'SK' | 'Nigeria' | '')}
-                          className={cn(SELECT_CLASS, internalFieldErrors.addressCountry && 'border-red-500 focus:border-red-500 focus:ring-red-500')}
+                          hasError={!!internalFieldErrors.addressCountry}
                           disabled={isBootstrapping}
                           aria-invalid={!!internalFieldErrors.addressCountry}
                           aria-describedby={internalFieldErrors.addressCountry ? 'staff-profile-addressCountry-error' : undefined}
@@ -1217,7 +1258,7 @@ export function ProfilePage(): ReactElement {
                           {STAFF_COUNTRIES.map((c) => (
                             <option key={c.value} value={c.value}>{c.label}</option>
                           ))}
-                        </select>
+                        </ProfileSelect>
                         {internalFieldErrors.addressCountry && <p id="staff-profile-addressCountry-error" className="mt-1.5 text-sm text-red-600" role="alert">{internalFieldErrors.addressCountry}</p>}
                       </div>
                       <Input
@@ -1234,11 +1275,11 @@ export function ProfilePage(): ReactElement {
                     <div className="grid gap-4 md:grid-cols-2">
                       <div>
                         <label htmlFor="staff-profile-addressState" className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.state')} <span className="text-red-600">*</span></label>
-                        <select
+                        <ProfileSelect
                           id="staff-profile-addressState"
                           value={internalForm.addressState}
                           onChange={(e) => handleInternalChange('addressState', e.target.value)}
-                          className={cn(SELECT_CLASS, internalFieldErrors.addressState && 'border-red-500 focus:border-red-500 focus:ring-red-500')}
+                          hasError={!!internalFieldErrors.addressState}
                           disabled={isBootstrapping || !internalForm.addressCountry}
                           aria-invalid={!!internalFieldErrors.addressState}
                           aria-describedby={internalFieldErrors.addressState ? 'staff-profile-addressState-error' : undefined}
@@ -1247,16 +1288,16 @@ export function ProfilePage(): ReactElement {
                           {getStates(internalForm.addressCountry).map((s) => (
                             <option key={s} value={s}>{s}</option>
                           ))}
-                        </select>
+                        </ProfileSelect>
                         {internalFieldErrors.addressState && <p id="staff-profile-addressState-error" className="mt-1.5 text-sm text-red-600" role="alert">{internalFieldErrors.addressState}</p>}
                       </div>
                       <div>
                         <label htmlFor="staff-profile-addressCity" className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.city')} <span className="text-red-600">*</span></label>
-                        <select
+                        <ProfileSelect
                           id="staff-profile-addressCity"
                           value={internalForm.addressCity}
                           onChange={(e) => handleInternalChange('addressCity', e.target.value)}
-                          className={cn(SELECT_CLASS, internalFieldErrors.addressCity && 'border-red-500 focus:border-red-500 focus:ring-red-500')}
+                          hasError={!!internalFieldErrors.addressCity}
                           disabled={isBootstrapping || !internalForm.addressState}
                           aria-invalid={!!internalFieldErrors.addressCity}
                           aria-describedby={internalFieldErrors.addressCity ? 'staff-profile-addressCity-error' : undefined}
@@ -1265,7 +1306,7 @@ export function ProfilePage(): ReactElement {
                           {getCities(internalForm.addressCountry, internalForm.addressState).map((c) => (
                             <option key={c} value={c}>{c}</option>
                           ))}
-                        </select>
+                        </ProfileSelect>
                         {internalFieldErrors.addressCity && <p id="staff-profile-addressCity-error" className="mt-1.5 text-sm text-red-600" role="alert">{internalFieldErrors.addressCity}</p>}
                       </div>
                     </div>
@@ -1295,11 +1336,11 @@ export function ProfilePage(): ReactElement {
                       />
                       <div>
                         <label htmlFor="staff-profile-emergencyContactRelationship" className="mb-1.5 block text-sm font-medium text-gray-700">{t('fields.emergencyRelationship')} <span className="text-red-600">*</span></label>
-                        <select
+                        <ProfileSelect
                           id="staff-profile-emergencyContactRelationship"
                           value={internalForm.emergencyContactRelationship}
                           onChange={(e) => handleInternalChange('emergencyContactRelationship', e.target.value)}
-                          className={cn(SELECT_CLASS, internalFieldErrors.emergencyContactRelationship && 'border-red-500 focus:border-red-500 focus:ring-red-500')}
+                          hasError={!!internalFieldErrors.emergencyContactRelationship}
                           disabled={isBootstrapping}
                           aria-invalid={!!internalFieldErrors.emergencyContactRelationship}
                           aria-describedby={internalFieldErrors.emergencyContactRelationship ? 'staff-profile-emergencyContactRelationship-error' : undefined}
@@ -1308,7 +1349,7 @@ export function ProfilePage(): ReactElement {
                           {RELATIONSHIP_OPTIONS.map((r) => (
                             <option key={r} value={r}>{r}</option>
                           ))}
-                        </select>
+                        </ProfileSelect>
                         {internalFieldErrors.emergencyContactRelationship && <p id="staff-profile-emergencyContactRelationship-error" className="mt-1.5 text-sm text-red-600" role="alert">{internalFieldErrors.emergencyContactRelationship}</p>}
                       </div>
                     </div>
