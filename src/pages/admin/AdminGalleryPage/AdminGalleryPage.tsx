@@ -288,7 +288,7 @@ function CreateItemModal({ onClose }: CreateItemModalProps): ReactElement {
                 isPublished: values.isPublished,
               };
               if (values.itemType === 'car') {
-                payload.carPriceNgn = Number(values.carPriceNgn);
+                payload.carPriceNgn = (values.carPriceNgn ?? '').trim();
               }
               await createItem.mutate(payload);
             }

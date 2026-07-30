@@ -380,9 +380,9 @@ function GallerySection({
                   {item.description && (
                     <p className="text-sm text-gray-600 line-clamp-3">{item.description}</p>
                   )}
-                  {item.itemType === 'car' && typeof item.carPriceNgn === 'number' && (
+                  {item.itemType === 'car' && item.carPriceNgn && Number.isFinite(Number(item.carPriceNgn)) && (
                     <p className="text-sm font-semibold text-brand-700">
-                      NGN {item.carPriceNgn.toLocaleString()}
+                      NGN {Number(item.carPriceNgn).toLocaleString()}
                     </p>
                   )}
                 </div>

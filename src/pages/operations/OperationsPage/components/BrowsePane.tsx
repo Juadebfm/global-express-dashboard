@@ -403,15 +403,15 @@ export function BrowsePane({
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Recently sorted</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[760px] text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-left">
-                  <th className="px-4 py-2.5 text-xs font-semibold text-gray-400">Customer</th>
-                  <th className="px-4 py-2.5 text-xs font-semibold text-gray-400">Destination</th>
-                  <th className="px-4 py-2.5 text-xs font-semibold text-gray-400">Status</th>
-                  <th className="px-4 py-2.5 text-xs font-semibold text-gray-400">Payment</th>
-                  <th className="px-4 py-2.5 text-xs font-semibold text-gray-400">Batch</th>
-                  <th className="px-4 py-2.5 text-xs font-semibold text-gray-400 text-right">Age</th>
+                  <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold text-gray-400">Customer</th>
+                  <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold text-gray-400">Destination</th>
+                  <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold text-gray-400">Status</th>
+                  <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold text-gray-400">Payment</th>
+                  <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold text-gray-400">Batch</th>
+                  <th className="whitespace-nowrap px-4 py-2.5 text-right text-xs font-semibold text-gray-400">Age</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -436,23 +436,23 @@ export function BrowsePane({
                       <td className="px-4 py-3 text-gray-600 max-w-30">
                         <span className="truncate block">{order.destination || '—'}</span>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold', statusBadgeClass(order.statusV2))}>
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <span className={cn('inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold', statusBadgeClass(order.statusV2))}>
                           {order.statusLabel || STATUS_LABELS[order.statusV2] || order.statusV2.replace(/_/g, ' ')}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="whitespace-nowrap px-4 py-3">
                         {order.paymentCollectionStatus ? (
-                          <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold', paymentBadge(order.paymentCollectionStatus).cls)}>
+                          <span className={cn('inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold', paymentBadge(order.paymentCollectionStatus).cls)}>
                             {paymentBadge(order.paymentCollectionStatus).label}
                           </span>
                         ) : (
                           <span className="text-xs text-gray-300">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="whitespace-nowrap px-4 py-3">
                         {(order.raw as Record<string, unknown>).dispatchBatchId ? (
-                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">
+                          <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">
                             Batched
                           </span>
                         ) : (

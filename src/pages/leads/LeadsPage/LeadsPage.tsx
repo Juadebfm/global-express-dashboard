@@ -107,26 +107,36 @@ export function LeadsPage(): ReactElement {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">
-        <select
-          value={typeFilter ?? ''}
-          onChange={(e) => { setTypeFilter((e.target.value as LeadType) || undefined); setPage(1); }}
-          className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700"
-        >
-          <option value="">All types</option>
-          <option value="d2d_intake">D2D Intake</option>
-          <option value="shop_inquiry">Shop Inquiry</option>
-          <option value="general_inquiry">General Inquiry</option>
-        </select>
-        <select
-          value={statusFilter ?? ''}
-          onChange={(e) => { setStatusFilter((e.target.value as LeadStatus) || undefined); setPage(1); }}
-          className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700"
-        >
-          <option value="">All statuses</option>
-          {Object.entries(STATUS_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            value={typeFilter ?? ''}
+            onChange={(e) => { setTypeFilter((e.target.value as LeadType) || undefined); setPage(1); }}
+            className="appearance-none rounded-md border border-gray-200 bg-white px-3 py-1.5 pr-9 text-sm text-gray-700"
+          >
+            <option value="">All types</option>
+            <option value="d2d_intake">D2D Intake</option>
+            <option value="shop_inquiry">Shop Inquiry</option>
+            <option value="general_inquiry">General Inquiry</option>
+          </select>
+          <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+            <ChevronDown className="h-4 w-4 text-gray-400" />
+          </span>
+        </div>
+        <div className="relative">
+          <select
+            value={statusFilter ?? ''}
+            onChange={(e) => { setStatusFilter((e.target.value as LeadStatus) || undefined); setPage(1); }}
+            className="appearance-none rounded-md border border-gray-200 bg-white px-3 py-1.5 pr-9 text-sm text-gray-700"
+          >
+            <option value="">All statuses</option>
+            {Object.entries(STATUS_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </select>
+          <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+            <ChevronDown className="h-4 w-4 text-gray-400" />
+          </span>
+        </div>
       </div>
 
       {isLoading ? (

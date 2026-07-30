@@ -128,8 +128,8 @@ function InvitePhoneField({
       <label htmlFor="invite-phone" className="mb-1.5 block text-sm font-medium text-gray-700">
         {label} <span className="text-red-500">*</span>
       </label>
-      <div className="flex gap-2">
-        <div className="relative w-[128px] shrink-0">
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="relative w-full shrink-0 sm:w-[128px]">
           {FlagIcon && (
             <FlagIcon
               title={selectedCountry.name}
@@ -161,7 +161,9 @@ function InvitePhoneField({
           >
             {selectedCountry.dialCode}
           </span>
-          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 z-[1] h-4 w-4 text-gray-400" />
+          <span className="pointer-events-none absolute inset-y-0 right-2.5 z-[1] flex items-center">
+            <ChevronDown className="h-4 w-4 text-gray-400" />
+          </span>
         </div>
         <input
           id="invite-phone"
@@ -507,7 +509,7 @@ export function TeamPage(): ReactElement {
             </p>
           </div>
         ) : (
-          <div className="rounded-2xl border border-gray-200 bg-white p-6">
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
             <div className="flex flex-wrap items-center gap-6 border-b border-gray-100 pb-4">
               {([
                 { id: 'all', label: t('tabs.all') },
@@ -746,12 +748,12 @@ export function TeamPage(): ReactElement {
       </div>
 
       {activeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-5 shadow-xl sm:p-8">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/30 px-3 py-4 sm:items-center sm:px-4 sm:py-8">
+          <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-4 shadow-xl sm:max-h-[90vh] sm:p-8">
             <button
               type="button"
               onClick={closeModal}
-              className="absolute right-6 top-6 text-gray-400 transition hover:text-gray-600"
+              className="absolute right-4 top-4 text-gray-400 transition hover:text-gray-600 sm:right-6 sm:top-6"
               aria-label="Close"
             >
               <X className="h-5 w-5" />
@@ -791,13 +793,13 @@ export function TeamPage(): ReactElement {
                   <UserPermissionsPanel userId={selectedMember.id} />
                 )}
 
-                <div className="mt-8 flex items-center justify-center gap-4">
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center sm:gap-4">
                   <button
                     type="button"
                     onClick={() => openRemove(selectedMember)}
                     disabled={!canRemoveMember(selectedMember)}
                     className={cn(
-                      'rounded-xl border px-6 py-2.5 text-sm font-semibold',
+                      'w-full rounded-xl border px-6 py-2.5 text-sm font-semibold sm:w-auto',
                       canRemoveMember(selectedMember)
                         ? 'border-red-500 text-red-500 hover:bg-red-50'
                         : 'cursor-not-allowed border-gray-200 text-gray-300'
@@ -810,7 +812,7 @@ export function TeamPage(): ReactElement {
                     onClick={() => openEdit(selectedMember)}
                     disabled={!canEditMember()}
                     className={cn(
-                      'rounded-xl px-6 py-2.5 text-sm font-semibold text-white',
+                      'w-full rounded-xl px-6 py-2.5 text-sm font-semibold text-white sm:w-auto',
                       canEditMember()
                         ? 'bg-brand-500 hover:bg-brand-600'
                         : 'cursor-not-allowed bg-gray-200 text-gray-400'
@@ -833,12 +835,12 @@ export function TeamPage(): ReactElement {
 
             {(activeModal === 'invite' || activeModal === 'edit') && (
               <div>
-                <h2 className="text-center text-xl font-semibold text-gray-800">
+                <h2 className="px-8 text-center text-lg font-semibold text-gray-800 sm:text-xl">
                   {activeModal === 'invite' ? t('modals.invite.title') : t('modals.edit.title')}
                 </h2>
 
                 <div className="mt-6 space-y-4">
-                  <div className="flex gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row">
                     <div className="relative flex-1">
                       <User className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                       <input
@@ -942,12 +944,12 @@ export function TeamPage(): ReactElement {
 
                 {formError && <p className="mt-4 text-sm text-red-500">{formError}</p>}
 
-                <div className="mt-8 flex items-center justify-between gap-4">
+                <div className="mt-6 flex flex-col-reverse gap-3 sm:mt-8 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                   <button
                     type="button"
                     onClick={closeModal}
                     disabled={isSavingForm}
-                    className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-200 disabled:opacity-50"
+                    className="w-full flex-1 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-200 disabled:opacity-50 sm:w-auto"
                   >
                     {t('modals.cancelButton')}
                   </button>
@@ -955,7 +957,7 @@ export function TeamPage(): ReactElement {
                     type="button"
                     onClick={() => void handleSave()}
                     disabled={isSavingForm}
-                    className="flex-1 rounded-2xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+                    className="w-full flex-1 rounded-2xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50 sm:w-auto"
                   >
                     {isSavingForm ? '...' : t('modals.saveButton')}
                   </button>
@@ -969,7 +971,7 @@ export function TeamPage(): ReactElement {
                 <p className="mt-4 text-sm text-gray-500">
                   {t('modals.remove.message', { name: selectedMember.fullName })}
                 </p>
-                <div className="mt-6 flex items-center gap-4 rounded-2xl bg-gray-50 px-4 py-4 text-left">
+                <div className="mt-6 flex flex-wrap items-center gap-4 rounded-2xl bg-gray-50 px-4 py-4 text-left">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-600">
                     {buildInitials(selectedMember.fullName)}
                   </div>
@@ -982,13 +984,13 @@ export function TeamPage(): ReactElement {
                   </span>
                 </div>
                 {formError && <p className="mt-4 text-sm text-red-500">{formError}</p>}
-                <div className="mt-8 flex items-center gap-4">
+                <div className="mt-6 flex flex-col-reverse gap-3 sm:mt-8 sm:flex-row sm:items-center sm:gap-4">
                   <button
                     type="button"
                     onClick={() => void handleRemove()}
                     disabled={!canRemoveMember(selectedMember) || isRemoving}
                     className={cn(
-                      'flex-1 rounded-2xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-50',
+                      'w-full flex-1 rounded-2xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-50 sm:w-auto',
                       canRemoveMember(selectedMember)
                         ? 'bg-red-500 hover:bg-red-600'
                         : 'cursor-not-allowed bg-gray-200 text-gray-400'
@@ -1000,7 +1002,7 @@ export function TeamPage(): ReactElement {
                     type="button"
                     onClick={closeModal}
                     disabled={isRemoving}
-                    className="flex-1 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-200 disabled:opacity-50"
+                    className="w-full flex-1 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-200 disabled:opacity-50 sm:w-auto"
                   >
                     {t('modals.remove.cancelButton')}
                   </button>

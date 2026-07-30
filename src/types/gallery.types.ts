@@ -28,7 +28,8 @@ export interface GalleryItem {
   endsAt?: string | null;
   status: GalleryItemStatus;
   isPublished: boolean;
-  carPriceNgn?: number | null;
+  // The API transports NGN prices as decimal strings to preserve precision.
+  carPriceNgn?: string | null;
   priceCurrency?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -142,7 +143,7 @@ export interface GalleryItemCreatePayload {
   endsAt?: string;
   isPublished?: boolean;
   status?: GalleryItemStatus;
-  carPriceNgn?: number;
+  carPriceNgn?: string;
   metadata?: Record<string, unknown>;
 }
 
