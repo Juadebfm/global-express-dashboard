@@ -15,7 +15,6 @@ import type {
   AdminResetPasswordPayload,
   CreateInternalUserPayload,
   StaffProfilePayload,
-  ProfileRequirements,
   AvatarPresignRequest,
   AvatarPresignResponse,
   AvatarUpdateResult,
@@ -272,36 +271,4 @@ export async function updateInternalProfile(
   payload: StaffProfilePayload
 ): Promise<void> {
   await apiPatch('/internal/me/profile', payload, token);
-}
-
-export async function getInternalProfileRequirements(
-  token: string
-): Promise<ProfileRequirements> {
-  const response = await apiGet<{ success: boolean; data: ProfileRequirements }>(
-    '/internal/me/profile-requirements',
-    token
-  );
-  return response.data;
-}
-
-export async function getOnboardingSettings(
-  token: string
-): Promise<ProfileRequirements> {
-  const response = await apiGet<{ success: boolean; data: ProfileRequirements }>(
-    '/internal/settings/require-national-id',
-    token
-  );
-  return response.data;
-}
-
-export async function updateOnboardingSettings(
-  token: string,
-  payload: Partial<ProfileRequirements>
-): Promise<ProfileRequirements> {
-  const response = await apiPatch<{ success: boolean; data: ProfileRequirements }>(
-    '/internal/settings/require-national-id',
-    { enabled: payload.requireNationalId },
-    token
-  );
-  return response.data;
 }

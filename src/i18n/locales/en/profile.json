@@ -44,7 +44,7 @@
     "emergencyName": "Emergency Contact Name",
     "emergencyPhone": "Emergency Contact Phone",
     "emergencyRelationship": "Emergency Contact Relationship",
-    "nationalId": "National ID"
+    "nationalId": "National ID / Passport (optional)"
   },
   "actions": {
     "updateProfile": "Update Profile",
@@ -54,7 +54,6 @@
   "messages": {
     "notProvided": "Not provided yet",
     "completeRequiredFields": "Please complete all required fields before saving.",
-    "nationalIdRequired": "National ID is required for your organization settings.",
     "externalSaved": "Profile updated successfully.",
     "internalSaved": "Internal profile updated successfully."
   },

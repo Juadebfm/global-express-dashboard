@@ -28,9 +28,6 @@ export {
   adminResetPassword,
   createInternalUser,
   updateInternalProfile,
-  getInternalProfileRequirements,
-  getOnboardingSettings,
-  updateOnboardingSettings,
 } from './authService';
 export {
   verifyMfaChallenge,

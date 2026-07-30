@@ -21,7 +21,6 @@ import { ROUTES, STAFF_COUNTRIES, RELATIONSHIP_OPTIONS, COUNTRY_LABELS, getState
 import { ApiError } from '@/lib/apiClient';
 import {
   deleteMyAccount,
-  getInternalProfileRequirements,
   getMyProfile,
   getMyProfileCompleteness,
   updateInternalProfile,
@@ -31,7 +30,6 @@ import { useFeedbackStore } from '@/store';
 import type {
   CustomerProfile,
   ProfileCompleteness,
-  ProfileRequirements,
   StaffProfilePayload,
   DashboardUser,
 } from '@/types';
@@ -212,9 +210,6 @@ export function ProfilePage(): ReactElement {
 
   const [internalForm, setInternalForm] = useState<StaffProfilePayload>(initialInternalForm);
   const [internalBaseline, setInternalBaseline] = useState<StaffProfilePayload>(initialInternalForm);
-  const [requirements, setRequirements] = useState<ProfileRequirements>({
-    requireNationalId: false,
-  });
   const lastBootstrapKeyRef = useRef<string | null>(null);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -333,20 +328,10 @@ export function ProfilePage(): ReactElement {
           return;
         }
 
-        const [requirementsResponse, profileResponse] = await Promise.allSettled([
-          getInternalProfileRequirements(token),
-          getMyProfile(token),
-        ]);
+        const profileResponse = await getMyProfile(token);
         if (!isMounted) return;
 
-        if (requirementsResponse.status === 'fulfilled') {
-          setRequirements(requirementsResponse.value);
-        }
-
-        const mappedInternal: StaffProfilePayload =
-          profileResponse.status === 'fulfilled'
-            ? mapInternalToForm(profileResponse.value)
-            : { ...initialInternalForm };
+        const mappedInternal = mapInternalToForm(profileResponse);
         setInternalForm(mappedInternal);
         setInternalBaseline(mappedInternal);
         setIsEditing(false);
@@ -543,11 +528,6 @@ export function ProfilePage(): ReactElement {
 
     if (requiredValues.some((field) => !field.trim())) {
       setValidationError(t('messages.completeRequiredFields'));
-      return;
-    }
-
-    if (requirements.requireNationalId && !(internalForm.nationalId ?? '').trim()) {
-      setValidationError(t('messages.nationalIdRequired'));
       return;
     }
 
@@ -1007,9 +987,7 @@ export function ProfilePage(): ReactElement {
                       <DetailRow label={t('fields.emergencyName')} value={displayValue(internalForm.emergencyContactName)} />
                       <DetailRow label={t('fields.emergencyPhone')} value={displayValue(internalForm.emergencyContactPhone)} />
                       <DetailRow label={t('fields.emergencyRelationship')} value={displayValue(internalForm.emergencyContactRelationship)} />
-                      {requirements.requireNationalId && (
-                        <DetailRow label={t('fields.nationalId')} value={displayValue(internalForm.nationalId)} />
-                      )}
+                      <DetailRow label={t('fields.nationalId')} value={displayValue(internalForm.nationalId)} />
                     </div>
                     <div className="pt-2">
                       <Button
@@ -1161,15 +1139,13 @@ export function ProfilePage(): ReactElement {
                       </div>
                     </div>
 
-                    {requirements.requireNationalId && (
-                      <Input
-                        label={t('fields.nationalId')}
-                        value={internalForm.nationalId ?? ''}
-                        onChange={(event) => handleInternalChange('nationalId', event.target.value)}
-                        className="auth-form-control text-sm"
-                        disabled={isBootstrapping}
-                      />
-                    )}
+                    <Input
+                      label={t('fields.nationalId')}
+                      value={internalForm.nationalId ?? ''}
+                      onChange={(event) => handleInternalChange('nationalId', event.target.value)}
+                      className="auth-form-control text-sm"
+                      disabled={isBootstrapping}
+                    />
 
                     <div className="mt-2 flex flex-wrap gap-3">
                       <Button

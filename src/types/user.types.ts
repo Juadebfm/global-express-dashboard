@@ -159,10 +159,6 @@ export interface StaffProfilePayload {
   nationalId?: string | null;
 }
 
-export interface ProfileRequirements {
-  requireNationalId: boolean;
-}
-
 export interface AvatarPresignRequest {
   contentType: 'image/jpeg' | 'image/png' | 'image/webp';
 }

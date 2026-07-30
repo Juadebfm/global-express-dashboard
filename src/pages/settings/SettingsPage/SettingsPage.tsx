@@ -1,5 +1,5 @@
 import type { ReactElement, ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
@@ -22,14 +22,13 @@ import {
   useUpdateShipmentTypesCatalog,
 } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
-import { exportMyAccountData, getOnboardingSettings, sendBroadcast, updateOnboardingSettings } from '@/services';
+import { exportMyAccountData, sendBroadcast } from '@/services';
 import type {
   CustomerPricingOverride,
   EtaNotes,
   NotificationTemplate,
   OfficeInfo,
   PricingRule,
-  ProfileRequirements,
   RestrictedGood,
   ShipmentTypeCatalogItem,
 } from '@/types';
@@ -1256,34 +1255,6 @@ export function SettingsPage(): ReactElement {
     } catch { /* error on mutation state */ }
   };
 
-  /* ── Onboarding settings (superadmin) ─────────────────────── */
-  const [onboardingReqs, setOnboardingReqs] = useState<ProfileRequirements | null>(null);
-  const [onboardingLoading, setOnboardingLoading] = useState(false);
-  const [onboardingError, setOnboardingError] = useState<string | null>(null);
-  const [onboardingSaving, setOnboardingSaving] = useState(false);
-
-  useEffect(() => {
-    if (!isSuperadmin) return;
-    const token = sessionStorage.getItem('globalxpress_token');
-    if (!token) return;
-    setOnboardingLoading(true);
-    getOnboardingSettings(token)
-      .then(setOnboardingReqs)
-      .catch(() => setOnboardingError(t('onboarding.failedMessage')))
-      .finally(() => setOnboardingLoading(false));
-  }, [isSuperadmin, t]);
-
-  const handleToggleNationalId = async (): Promise<void> => {
-    const token = sessionStorage.getItem('globalxpress_token');
-    if (!token || !onboardingReqs) return;
-    setOnboardingSaving(true);
-    try {
-      const updated = await updateOnboardingSettings(token, { requireNationalId: !onboardingReqs.requireNationalId });
-      setOnboardingReqs(updated);
-    } catch { setOnboardingError(t('onboarding.failedMessage')); }
-    finally { setOnboardingSaving(false); }
-  };
-
   /* ── Notification channels ────────────────────────────────── */
   const channelRows: Array<{ key: keyof NonNullable<typeof preferences>['channels']; label: string }> = [
     { key: 'notifyEmailAlerts', label: t('notificationPreferences.channels.notifyEmailAlerts') },
@@ -1365,32 +1336,6 @@ export function SettingsPage(): ReactElement {
             )}
 
             {isOperator && <MfaSettingsCard />}
-
-            {isOperator && isSuperadmin && (
-              <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
-                <h3 className="text-sm font-semibold text-gray-900">{t('onboarding.title')}</h3>
-                <p className="mt-1 text-xs text-gray-500">{t('onboarding.subtitle')}</p>
-                {onboardingLoading && <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">{t('onboarding.loadingText')}</div>}
-                {onboardingError && <div className="mt-4"><AlertBanner tone="error" message={onboardingError} /></div>}
-                {!onboardingLoading && !onboardingError && onboardingReqs && (
-                  <div className="mt-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900">{t('onboarding.requireNationalId')}</p>
-                        <p className="mt-0.5 text-xs text-gray-500">{t('onboarding.requireNationalIdDescription')}</p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-3">
-                        <span className={cn('rounded-full px-3 py-1 text-[11px] font-semibold', onboardingReqs.requireNationalId ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500')}>
-                          {onboardingReqs.requireNationalId ? t('onboarding.enabled') : t('onboarding.disabled')}
-                        </span>
-                        <Toggle checked={onboardingReqs.requireNationalId} onChange={() => void handleToggleNationalId()} disabled={onboardingSaving} label="Toggle national ID requirement" />
-                      </div>
-                    </div>
-                    {onboardingSaving && <p className="mt-2 text-xs text-gray-500">{t('onboarding.savingText')}</p>}
-                  </div>
-                )}
-              </section>
-            )}
 
             {isCustomer && (
               <section className="space-y-6">
