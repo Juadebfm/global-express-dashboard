@@ -25,7 +25,7 @@ export interface ApiTeamMember {
   displayName?: string;
   email: string;
   role: TeamRole;
-  position?: string | null;
+  position: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
