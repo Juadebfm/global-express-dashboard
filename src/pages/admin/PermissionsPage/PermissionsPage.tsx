@@ -65,9 +65,6 @@ function CapabilityRow({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-sm font-semibold text-gray-900">{capability.name}</p>
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 font-mono text-[11px] text-gray-500">
-            {capability.key}
-          </span>
           {!capability.eligible && (
             <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
               Requires {ROLE_LABEL[capability.minimumRole] ?? capability.minimumRole}
@@ -181,9 +178,9 @@ export function PermissionsPage(): ReactElement {
           subtitle="Grant or revoke capabilities for staff and admin accounts. Super Admins hold every capability implicitly."
         />
 
-        <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+        <div className="grid gap-6 lg:h-[calc(100dvh-13rem)] lg:min-h-[32rem] lg:grid-cols-[320px_minmax(0,1fr)]">
           {/* ── Operator list ──────────────────────────────────────────── */}
-          <div className="rounded-2xl border border-gray-200 bg-white">
+          <div className="flex min-h-0 flex-col rounded-2xl border border-gray-200 bg-white lg:overflow-hidden">
             <div className="border-b border-gray-100 p-4">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -197,7 +194,7 @@ export function PermissionsPage(): ReactElement {
               </div>
             </div>
 
-            <div className="max-h-[32rem] divide-y divide-gray-100 overflow-y-auto">
+            <div className="min-h-0 divide-y divide-gray-100 lg:flex-1 lg:overflow-y-auto">
               {filtered.length === 0 ? (
                 <p className="px-5 py-8 text-center text-sm text-gray-400">
                   No operators match that search.
@@ -227,21 +224,21 @@ export function PermissionsPage(): ReactElement {
           </div>
 
           {/* ── Capability matrix ──────────────────────────────────────── */}
-          <div className="rounded-2xl border border-gray-200 bg-white">
+          <div className="flex min-h-0 flex-col rounded-2xl border border-gray-200 bg-white lg:overflow-hidden">
             {!selectedId ? (
-              <div className="flex flex-col items-center justify-center gap-3 px-6 py-20 text-center">
+              <div className="flex flex-col items-center justify-center gap-3 px-6 py-20 text-center lg:flex-1">
                 <ShieldCheck className="h-10 w-10 text-gray-300" />
                 <p className="text-sm text-gray-500">
                   Select an operator to review and change their capabilities.
                 </p>
               </div>
             ) : targetQuery.isLoading ? (
-              <div className="flex items-center justify-center gap-2 px-6 py-20 text-sm text-gray-500">
+              <div className="flex items-center justify-center gap-2 px-6 py-20 text-sm text-gray-500 lg:flex-1">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Loading capabilities...
               </div>
             ) : targetQuery.error ? (
-              <div className="px-6 py-20 text-center text-sm text-red-700">
+              <div className="px-6 py-20 text-center text-sm text-red-700 lg:flex-1">
                 {targetQuery.error instanceof Error
                   ? targetQuery.error.message
                   : 'Could not load this operator&rsquo;s capabilities.'}
@@ -270,7 +267,7 @@ export function PermissionsPage(): ReactElement {
                   </div>
                 )}
 
-                <div className="divide-y divide-gray-100">
+                <div className="min-h-0 divide-y divide-gray-100 lg:flex-1 lg:overflow-y-auto">
                   {target.capabilities.map((capability) => (
                     <CapabilityRow
                       key={capability.key}
