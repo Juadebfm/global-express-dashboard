@@ -21,7 +21,8 @@
     "leads": "문의",
     "newsletterSubscribers": "뉴스레터",
     "d2dRequests": "D2D 요청",
-    "support": "지원"
+    "support": "지원",
+    "permissions": "권한"
   },
   "rolePanel": "{{role}} 패널",
   "sidebar": {

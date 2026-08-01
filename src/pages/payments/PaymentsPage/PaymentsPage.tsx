@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Receipt, ShieldCheck, X } from 'lucide-react';
 import { AppShell, PageHeader } from '@/pages/shared';
-import { useCan, useDashboardData, useOrders, usePayments, useSearch, useVerifyOrderPayment } from '@/hooks';
+import { useCapability, useDashboardData, useOrders, usePayments, useSearch, useVerifyOrderPayment } from '@/hooks';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
 import type { ApiPayment, OrderListItem } from '@/types';
@@ -128,7 +128,13 @@ function statusStyle(payment: DisplayPayment): { label: string; bgClass: string;
 export function PaymentsPage(): ReactElement {
   const { t } = useTranslation('payments');
   const navigate = useNavigate();
-  const isSuperadmin = useCan('app.superadmin');
+  // GET /payments (all users) requires finance.reports.view — the same grant
+  // usePayments uses to pick the all-users endpoint over /payments/me. Anyone
+  // without it sees the customer view, including their amount-due banner.
+  const canViewAllPayments = useCapability('finance.reports.view');
+  // Approving/rejecting a receipt is a separate grant from reading payments:
+  // PATCH /payments/receipts/:id/verify requires payments.verify.
+  const canVerifyPayments = useCapability('payments.verify');
   const { data, isLoading, error } = useDashboardData();
   const { query, setQuery } = useSearch();
   const [activeStatus, setActiveStatus] = useState<(typeof PAYMENT_STATUSES)[number]>('all');
@@ -138,29 +144,29 @@ export function PaymentsPage(): ReactElement {
 
   // Amount-due banner is customer-only — superadmin sees every user's
   // transactions here, not a personal balance.
-  const { orders: myOrders } = useOrders(1, 100, undefined, { enabled: !isSuperadmin });
+  const { orders: myOrders } = useOrders(1, 100, undefined, { enabled: !canViewAllPayments });
   const dueOrders = useMemo(
-    () => (isSuperadmin ? [] : myOrders.filter((o) => amountDue(o) != null)),
-    [myOrders, isSuperadmin],
+    () => (canViewAllPayments ? [] : myOrders.filter((o) => amountDue(o) != null)),
+    [myOrders, canViewAllPayments],
   );
 
   const paymentsQuery = usePayments({
     status: activeStatus === 'all' ? undefined : activeStatus,
-    userId: isSuperadmin && userIdFilter.trim() ? userIdFilter.trim() : undefined,
+    userId: canViewAllPayments && userIdFilter.trim() ? userIdFilter.trim() : undefined,
   });
 
   // Only surface synthetic "awaiting payment" rows on the tabs a real pending
   // payment would also appear under — not successful/failed/abandoned, which
   // describe an attempt that already happened.
   const awaitingPayments = useMemo<DisplayPayment[]>(() => {
-    if (isSuperadmin || (activeStatus !== 'all' && activeStatus !== 'pending')) return [];
+    if (canViewAllPayments || (activeStatus !== 'all' && activeStatus !== 'pending')) return [];
     const alreadyPending = new Set(
       paymentsQuery.payments.filter((p) => p.status === 'pending').map((p) => p.orderId),
     );
     return dueOrders
       .filter((o) => !alreadyPending.has(o.id))
       .map((o) => toAwaitingPayment(o, amountDue(o)!));
-  }, [dueOrders, paymentsQuery.payments, activeStatus, isSuperadmin]);
+  }, [dueOrders, paymentsQuery.payments, activeStatus, canViewAllPayments]);
 
   const filteredPayments = useMemo<DisplayPayment[]>(
     () => [...awaitingPayments, ...paymentsQuery.payments].filter((payment) => matchesQuery(payment, query)),
@@ -249,7 +255,7 @@ export function PaymentsPage(): ReactElement {
                 placeholder="Search tracking number or amount..."
                 className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500"
               />
-              {isSuperadmin && (
+              {canViewAllPayments && (
                 <input
                   type="text"
                   value={userIdFilter}
@@ -331,7 +337,7 @@ export function PaymentsPage(): ReactElement {
                           Pay now
                         </button>
                       </div>
-                    ) : payment.status === 'pending' ? (
+                    ) : payment.status === 'pending' && canVerifyPayments ? (
                       <div className="mt-3">
                         <button
                           type="button"
@@ -425,7 +431,7 @@ export function PaymentsPage(): ReactElement {
                           >
                             Pay now
                           </button>
-                        ) : payment.status === 'pending' ? (
+                        ) : payment.status === 'pending' && canVerifyPayments ? (
                           <button
                             type="button"
                             onClick={() => setReviewPayment(payment)}

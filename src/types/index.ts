@@ -365,3 +365,13 @@ export type {
   NewsletterSubscriber,
   NewsletterSubscribersResult,
 } from './leads.types';
+
+export type {
+  InternalRole,
+  CapabilityKey,
+  CapabilityDefinition,
+  Capability,
+  PermissionsMatrix,
+  CapabilityDeniedDetail,
+} from './permissions.types';
+export { CAPABILITY_REQUIRED } from './permissions.types';

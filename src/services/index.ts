@@ -176,3 +176,11 @@ export {
   deleteSubscriber,
   downloadSubscribersCsv,
 } from './newsletterService';
+
+export {
+  getMyPermissions,
+  getCapabilityCatalogue,
+  getUserPermissions,
+  setUserCapability,
+  grantedKeys,
+} from './permissionsService';

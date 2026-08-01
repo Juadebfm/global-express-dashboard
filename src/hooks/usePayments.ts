@@ -3,9 +3,9 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { ApiPayment } from '@/types';
 import { getPayments } from '@/services';
 import { STALE_TIME } from '@/lib/queryDefaults';
-import { can } from '@/lib/permissions';
 import { useAuth } from './useAuth';
 import { useAuthToken } from './useAuthToken';
+import { useCapability } from './usePermissions';
 
 interface PaymentsState {
   payments: ApiPayment[];
@@ -20,9 +20,11 @@ export function usePayments(params: { page?: number; limit?: number; userId?: st
   const getToken = useAuthToken();
 
   const enabled = isClerkSignedIn || !!user;
-  // Superadmin sees every user's payments (admin BE endpoint);
-  // anyone else is scoped to their own via /payments/me.
-  const canViewAllPayments = can(user?.role, 'app.superadmin');
+  // GET /payments (the all-users view) is guarded by
+  // requireCapability('finance.reports.view'); anyone without that grant —
+  // including a plain admin — is scoped to their own via /payments/me. Picking
+  // the endpoint off the capability keeps the request itself behind the gate.
+  const canViewAllPayments = useCapability('finance.reports.view');
   const isCustomerScope = !canViewAllPayments;
   const normalizedParams = {
     page: params.page ?? 1,

@@ -1,5 +1,6 @@
 import { getHttpFallbackMessage, sanitizeMessage } from './feedback';
 import { useFeedbackStore } from '@/store/feedback/feedback.store';
+import { CAPABILITY_REQUIRED, type CapabilityDeniedDetail } from '@/types/permissions.types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS ?? 15000);
@@ -159,6 +160,33 @@ function dispatchForbidden(path: string): void {
   window.dispatchEvent(new CustomEvent('auth:forbidden'));
 }
 
+// 403 raised specifically by a backend capability guard, identified by the
+// extension field `code: "CAPABILITY_REQUIRED"` (the backend's error schema is
+// `.passthrough()`, so `code` and `capability` survive serialization).
+//
+// This is a narrower signal than a plain role 403: the user's *grant* was
+// revoked, not their role, so the fix is to refresh the capability matrix
+// rather than re-probe /auth/me. usePermissionsSync listens and does exactly
+// that, then drops the denied control. The request is never retried — the
+// grant is gone and a retry would only fail again.
+//
+// Dispatched IN ADDITION to auth:forbidden, so a demotion that revokes both a
+// role and a capability still refreshes the user record too.
+function dispatchCapabilityDenied(path: string, payload: unknown): void {
+  if (isAuthBootProbe(path)) return;
+  if (typeof window === 'undefined') return;
+  if (!payload || typeof payload !== 'object') return;
+  const body = payload as { code?: unknown; capability?: unknown };
+  if (body.code !== CAPABILITY_REQUIRED) return;
+  window.dispatchEvent(
+    new CustomEvent<CapabilityDeniedDetail>('auth:capability-denied', {
+      detail: {
+        capability: typeof body.capability === 'string' ? body.capability : null,
+      },
+    }),
+  );
+}
+
 // 423 Locked — backend's Problem body has `lockedUntil: <ISO 8601>` as an
 // extension field at the top level. Dispatch a global event so the login
 // screen can show a countdown without each form re-parsing the response.
@@ -312,7 +340,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!response.ok) {
     if (response.status === 401) dispatchUnauthorized(path);
-    if (response.status === 403) dispatchForbidden(path);
+    if (response.status === 403) {
+      dispatchForbidden(path);
+      dispatchCapabilityDenied(path, payload);
+    }
     if (response.status === 423) dispatchAccountLocked(payload);
     if (response.status === 409) dispatchPendingReactivation(payload);
     const retryAfter =

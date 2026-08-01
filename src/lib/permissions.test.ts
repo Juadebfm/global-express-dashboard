@@ -10,21 +10,21 @@ const ALL_ROLES: Role[] = ['user', 'supplier', 'staff', 'admin', 'superadmin'];
 // policy map — duplicate spec on purpose. If the policy drifts from
 // intent, the test fails loudly instead of silently rubber-stamping it.
 //
-// 'admin' role is included in ALL_ROLES for defensive coverage (confirming
-// it grants nothing beyond what 'staff' gets), but never appears in an
-// EXPECTED allow-list — there is no 'admin' role in the backend (user_role
-// enum: superadmin | staff | user | supplier), so every 'app.admin'-gated
-// action is effectively superadmin-only in practice.
+// 'admin' is a real, assignable role (user_role enum: superadmin | admin |
+// staff | user | supplier) and the backend's requireAdminOrAbove admits it,
+// so every ADMIN_PLUS action lists it. This table covers ROLE gating only —
+// capability grants are a separate control with its own checker and tests
+// (see hooks/usePermissions.test.ts); no entry here implies a capability.
 const EXPECTED: Record<Action, Role[]> = {
   // App scopes
   'app.operator': ['staff', 'admin', 'superadmin'],
-  'app.admin': ['superadmin'],
+  'app.admin': ['admin', 'superadmin'],
   'app.superadmin': ['superadmin'],
 
   // Orders
-  'orders.deleteImage': ['superadmin'],
+  'orders.deleteImage': ['admin', 'superadmin'],
   'orders.approveOverride': ['superadmin'],
-  'orders.delete': ['superadmin'],
+  'orders.delete': ['admin', 'superadmin'],
   'orders.updateStatus': ['staff', 'admin', 'superadmin'],
   'orders.warehouseVerify': ['staff', 'admin', 'superadmin'],
   'orders.escalate': ['staff', 'admin', 'superadmin'],
@@ -32,7 +32,7 @@ const EXPECTED: Record<Action, Role[]> = {
 
   // Shipments
   'shipments.viewDetail': ['staff', 'admin', 'superadmin'],
-  'shipments.intake': ['superadmin'],
+  'shipments.intake': ['admin', 'superadmin'],
   'shipments.batchManage': ['staff', 'admin', 'superadmin'],
   'shipments.batchApprove': ['superadmin'],
 
@@ -41,17 +41,17 @@ const EXPECTED: Record<Action, Role[]> = {
   'clients.invite': ['staff', 'admin', 'superadmin'],
 
   // Team
-  'team.view': ['superadmin'],
-  'team.invite': ['superadmin'],
+  'team.view': ['admin', 'superadmin'],
+  'team.invite': ['admin', 'superadmin'],
   'team.approve': ['superadmin'],
-  'team.changeRole': ['superadmin'],
+  'team.changeRole': ['admin', 'superadmin'],
 
   // Settings
   'settings.viewFx': ['staff', 'admin', 'superadmin'],
   'settings.editFx': ['superadmin'],
   'settings.editPricing': ['superadmin'],
   'settings.editShipmentTypes': ['superadmin'],
-  'settings.editRestrictedGoods': ['superadmin'],
+  'settings.editRestrictedGoods': ['admin', 'superadmin'],
   'settings.editPackaging': ['superadmin'],
 };
 

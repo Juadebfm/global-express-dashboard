@@ -28,7 +28,7 @@ import {
   useRemoveOrderFromBatch,
   useSetBatchMovementStatus,
   useCloseBatch,
-  useCan,
+  useCapability,
 } from '@/hooks';
 import { useBatchDocuments, useUploadBatchDocument } from '@/hooks/useBatchDocuments';
 import type { AvailableOrder } from '@/services';
@@ -441,9 +441,13 @@ export function BatchDetailPage(): ReactElement {
   const navigate = useNavigate();
   const pushMessage = useFeedbackStore((s) => s.pushMessage);
 
-  const isSuperadmin = useCan('app.superadmin');
-  const isAdmin = useCan('app.admin');
-  const canManage = isAdmin || !!(user?.canManageShipmentBatches);
+  // Roster edits (add/remove order, movement status) are guarded by
+  // requireCapability('batches.manage'); closing a batch is a separate,
+  // stronger grant, batches.finalise. The legacy user.canManageShipmentBatches
+  // flag is the pre-capability mechanism for the same thing — kept as a
+  // fallback so an account whose grant has not been migrated is not locked out.
+  const canManage = useCapability('batches.manage') || !!user?.canManageShipmentBatches;
+  const canFinalise = useCapability('batches.finalise');
 
   const { data: roster, isLoading, error, refetch } = useBatchRoster(batchId);
   const { data: statusLabels } = useBatchStatusLabels();
@@ -615,7 +619,7 @@ export function BatchDetailPage(): ReactElement {
                     Update status
                   </Button>
                 )}
-                {isOpen && isSuperadmin && (
+                {isOpen && canFinalise && (
                   <Button
                     onClick={() => setShowCloseConfirm(true)}
                     disabled={!summary.canClose || closeBatchMutation.isPending}

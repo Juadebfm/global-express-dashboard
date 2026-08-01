@@ -1,21 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
-import type { User } from '@/types';
 import { STALE_TIME } from '@/lib/queryDefaults';
 import { getPayments } from '@/services';
-import { useAuth } from './useAuth';
+import { useCapability } from './usePermissions';
 
 const TOKEN_KEY = 'globalxpress_token';
 
-// The all-payments endpoint is superadmin-only. Keeping this policy at the
-// query boundary prevents regular staff from repeatedly polling an endpoint
-// they can never read.
-export function canFetchPendingPaymentsCount(role: User['role'] | undefined): boolean {
-  return role === 'superadmin';
-}
-
 export function usePendingPaymentsCount(): number {
-  const { user } = useAuth();
-  const enabled = canFetchPendingPaymentsCount(user?.role);
+  // GET /payments (all users) is guarded by
+  // requireCapability('finance.reports.view') — the same grant usePayments
+  // uses to pick the all-users endpoint. Keeping the policy at the query
+  // boundary stops an operator without the grant from polling an endpoint
+  // they can never read, every 30 seconds.
+  const enabled = useCapability('finance.reports.view');
 
   const { data } = useQuery({
     queryKey: ['payments', 'pending-count'],

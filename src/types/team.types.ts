@@ -1,5 +1,8 @@
-// Backend only ever assigns 'staff' or 'superadmin' — there is no 'admin'
-// role in the database (user_role enum: superadmin | staff | user | supplier).
+// The Team page creates and lists 'staff' and 'superadmin' only — the backend
+// team routes constrain their role field to those two. 'admin' exists in the
+// wider user_role enum (superadmin | admin | staff | user | supplier) and is
+// assignable elsewhere, so don't treat this narrower union as the full set of
+// internal roles; use InternalRole from permissions.types.ts for that.
 export type TeamRole = 'staff' | 'superadmin';
 
 export interface TeamPermissions {

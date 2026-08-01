@@ -179,3 +179,7 @@ export { useEscalateOrder } from './useEscalateOrder';
 export { useClearEscalation } from './useClearEscalation';
 export { useLeads, useUpdateLead, useDeleteLead, useMyD2dLeads, useSubmitD2dIntake, useSubmitShopInquiry } from './useLeads';
 export { useNewsletterSubscribers, useDeactivateSubscriber, useDeleteSubscriber, useExportSubscribers } from './useNewsletter';
+export { usePermissions, useCapability, usePermissionsSync, MY_PERMISSIONS_KEY } from './usePermissions';
+export type { PermissionsState } from './usePermissions';
+export { useCapabilityCatalogue, useUserPermissions, useSetUserCapability } from './useCapabilityAdmin';
+export type { SetCapabilityInput } from './useCapabilityAdmin';

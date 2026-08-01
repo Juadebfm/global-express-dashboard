@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { useWarehouseVerify, useOrderImages, useOrderTimeline, useUpload, useCan } from '@/hooks';
+import { useWarehouseVerify, useOrderImages, useOrderTimeline, useUpload, useCapability } from '@/hooks';
 import { cn } from '@/utils';
 import type { OrderView } from '@/pages/shared/orderStatus';
 import { canReVerifyPackages } from '@/pages/shared/orderStatus';
@@ -29,7 +29,10 @@ export function VerifyQueueStep({
   onSkip,
   onExit,
 }: VerifyQueueStepProps): ReactElement {
-  const canApproveOverride = useCan('orders.approveOverride');
+  // Capability-gated, not role-gated: the warehouse-verify controller rejects
+  // a payload carrying restrictedOverrideApproved unless the caller holds
+  // restricted_items.override, regardless of role.
+  const canApproveOverride = useCapability('restricted_items.override');
   const [showImages, setShowImages] = useState(false);
   const [verified, setVerified] = useState(false);
   const [resultStatus, setResultStatus] = useState<'verified' | 'on_hold' | null>(null);

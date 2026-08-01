@@ -53,12 +53,14 @@ export type Action =
   | 'settings.editPackaging';
 
 const STAFF_PLUS: ReadonlySet<Role> = new Set(['staff', 'admin', 'superadmin']);
-// There is no 'admin' role in the backend (user_role enum: superadmin |
-// staff | user | supplier) — 'admin' can never be a real user's role, so
-// this is equivalent to SUPER_ONLY in practice. Kept as a separate action
-// name (app.admin) rather than merged, in case a real admin tier gets
-// added later; the role set itself must not include the phantom value.
-const ADMIN_PLUS: ReadonlySet<Role> = new Set(['superadmin']);
+// 'admin' is a real, assignable role — user_role is
+// (superadmin | admin | staff | user | supplier) and the backend's
+// requireAdminOrAbove admits it. These sets mirror the backend ROLE guards
+// only. They deliberately grant nothing capability-gated: an admin is
+// eligible for admin-level capabilities but holds none by virtue of the
+// role, so anything behind requireCapability() must be checked with
+// useCapability(), never with app.admin.
+const ADMIN_PLUS: ReadonlySet<Role> = new Set(['admin', 'superadmin']);
 const SUPER_ONLY: ReadonlySet<Role> = new Set(['superadmin']);
 
 /**
@@ -109,9 +111,15 @@ const policy: Record<Action, ReadonlySet<Role>> = {
 };
 
 /**
- * Pure role-based capability check. Returns false for null/undefined
- * roles — never default to a permissive answer when the caller is
- * uncertain about identity.
+ * Pure ROLE-based check, mirroring the backend's requireStaffOrAbove /
+ * requireAdminOrAbove / requireSuperAdmin guards. Returns false for
+ * null/undefined roles — never default to a permissive answer when the
+ * caller is uncertain about identity.
+ *
+ * NOT a capability check. Routes behind `requireCapability()` need an
+ * explicit grant that no role confers on its own; gate those with
+ * `useCapability(key)` from hooks/usePermissions.ts. Using `app.admin` as a
+ * stand-in would show controls the backend then rejects with 403.
  *
  * The backend remains the source of truth. `can()` is FE chrome only
  * — a user who bypasses the UI hits a 403 anyway.

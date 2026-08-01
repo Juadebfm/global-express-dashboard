@@ -27,6 +27,9 @@ export const ROUTES = {
   ORDERS: '/orders',
   NOTIFICATIONS: '/notifications',
   TEAM: '/team',
+  // Superadmin-only capability administration. Backed by the
+  // requireSuperAdmin /permissions routes, not by a capability grant.
+  PERMISSIONS: '/admin/permissions',
   SETTINGS: '/settings',
   SUPPORT: '/support',
   SUPPORT_TICKET: '/support/:ticketId',

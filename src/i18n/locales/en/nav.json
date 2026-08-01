@@ -21,7 +21,8 @@
     "d2dRequests": "My D2D Requests",
     "profile": "Profile",
     "settings": "Settings",
-    "support": "Support"
+    "support": "Support",
+    "permissions": "Permissions"
   },
   "rolePanel": "{{role}} Panel",
   "sidebar": {

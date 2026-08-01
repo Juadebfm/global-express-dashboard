@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Routes, Route, useSearchParams } from 'react-router-dom';
 import { AuthProvider } from '@/store';
-import { useCan } from '@/hooks';
+import { useCan, usePermissionsSync } from '@/hooks';
 import { ProtectedRoute } from '@/components/auth';
 import { SupplierRoute } from '@/components/supplier/SupplierRoute';
 import { RouteErrorBoundary } from '@/components/errors';
@@ -65,6 +65,9 @@ const NotificationsPage = lazy(() =>
 );
 const TeamPage = lazy(() =>
   import('@/pages/team/TeamPage').then((m) => ({ default: m.TeamPage })),
+);
+const PermissionsPage = lazy(() =>
+  import('@/pages/admin/PermissionsPage').then((m) => ({ default: m.PermissionsPage })),
 );
 const SettingsPage = lazy(() =>
   import('@/pages/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })),
@@ -178,6 +181,10 @@ function OrdersRoleRouter(): ReactElement {
 
 function AppRoutes(): ReactElement {
   const [launchGateActive, setLaunchGateActive] = useState<boolean>(() => isLaunchGateActive());
+  // App-wide reaction to a backend capability denial. Mounted here (inside
+  // AuthProvider, above every route) so it survives navigation and there is
+  // exactly one listener.
+  usePermissionsSync();
 
   useEffect(() => {
     if (!launchGateActive) {
@@ -352,6 +359,17 @@ function AppRoutes(): ReactElement {
         element={
           <ProtectedRoute allowedRoles={['superadmin']} redirectTo={ROUTES.DASHBOARD}>
             <TeamPage />
+          </ProtectedRoute>
+        }
+      />
+      {/* Capability administration. Superadmin-only at the route AND inside
+          the page, mirroring requireSuperAdmin on /permissions/catalogue,
+          /permissions/users/:id and the grant toggle. */}
+      <Route
+        path={ROUTES.PERMISSIONS}
+        element={
+          <ProtectedRoute allowedRoles={['superadmin']} redirectTo={ROUTES.DASHBOARD}>
+            <PermissionsPage />
           </ProtectedRoute>
         }
       />

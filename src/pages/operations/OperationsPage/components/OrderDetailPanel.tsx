@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import {
-  useCan,
+  useCapability,
   useDeleteOrderImage,
   useOrderDetail,
   useOrderImages,
@@ -148,7 +148,10 @@ function PaymentTab({
 }
 
 function ImagesTab({ orderId }: { orderId: string }): ReactElement {
-  const canDelete = useCan('orders.deleteImage');
+  // DELETE /uploads/images/:imageId is guarded by requireCapability(
+  // 'operations.escalation.resolve') — the same grant that covers clearing an
+  // escalation, not a role tier.
+  const canDelete = useCapability('operations.escalation.resolve');
   const imagesQuery = useOrderImages(orderId);
   const uploadImage = useUpload();
   const deleteImage = useDeleteOrderImage();

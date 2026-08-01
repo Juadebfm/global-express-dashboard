@@ -9,6 +9,7 @@ import {
   useAuth,
   useAuthToken,
   useCan,
+  useCapability,
   useChangePassword,
   useDashboardData,
   useFxRate,
@@ -1235,7 +1236,23 @@ export function SettingsPage(): ReactElement {
   const isCustomer = isClerkSignedIn && !user;
   const isOperator = useCan('app.operator');
   const isAdmin = useCan('app.admin');
-  const isSuperadmin = useCan('app.superadmin');
+  // Every settings WRITE is capability-gated on the backend, so `canEdit`
+  // comes from a grant rather than a role tier. Reads are not capability
+  // guarded, so tab visibility stays role-based — a user can look at FX
+  // without holding fx_rates.manage, they just get a read-only panel.
+  const canManageFx = useCapability('fx_rates.manage');
+  const canManagePricing = useCapability('pricing.rules.manage');
+  const canManageBusiness = useCapability('business_settings.manage');
+  const canManageBroadcasts = useCapability('broadcasts.manage');
+
+  // Read-only tabs stay role-based (their GETs are not capability guarded),
+  // but the notification-templates tab has no read-only mode — everything on
+  // it writes — so it appears only for a holder of one of its two grants.
+  const canSeeTemplatesTab = canManageBusiness || canManageBroadcasts;
+  const visibleTabIds = useMemo<SettingsTab[]>(() => {
+    if (!isAdmin) return STAFF_TAB_IDS;
+    return canSeeTemplatesTab ? SUPERADMIN_TAB_IDS : OPERATOR_TAB_IDS;
+  }, [isAdmin, canSeeTemplatesTab]);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
@@ -1292,7 +1309,7 @@ export function SettingsPage(): ReactElement {
         {/* Tab bar — superadmins see all tabs; admins see all except templates; staff see General */}
         {isOperator && (
           <div className="flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-gray-50 p-1 scrollbar-none">
-            {(isSuperadmin ? SUPERADMIN_TAB_IDS : isAdmin ? OPERATOR_TAB_IDS : STAFF_TAB_IDS).map((tabId) => (
+            {visibleTabIds.map((tabId) => (
               <button
                 key={tabId}
                 type="button"
@@ -1392,23 +1409,23 @@ export function SettingsPage(): ReactElement {
         )}
 
         {/* ── FX Rate ─────────────────────────────────────── */}
-        {isAdmin && activeTab === 'fx' && <FxRateSection canEdit={isSuperadmin} />}
+        {isAdmin && activeTab === 'fx' && <FxRateSection canEdit={canManageFx} />}
 
         {/* ── Pricing ─────────────────────────────────────── */}
-        {isAdmin && activeTab === 'pricing' && <PricingSection canEdit={isSuperadmin} />}
+        {isAdmin && activeTab === 'pricing' && <PricingSection canEdit={canManagePricing} />}
 
         {/* ── Restricted Goods ────────────────────────────── */}
-        {isAdmin && activeTab === 'restricted-goods' && <RestrictedGoodsSection canEdit={isAdmin} />}
+        {isAdmin && activeTab === 'restricted-goods' && <RestrictedGoodsSection canEdit={canManageBusiness} />}
 
         {/* ── Shipment Types ───────────────────────────────── */}
-        {isAdmin && activeTab === 'shipment-types' && <ShipmentTypesSection canEdit={isSuperadmin} />}
+        {isAdmin && activeTab === 'shipment-types' && <ShipmentTypesSection canEdit={canManageBusiness} />}
 
         {/* ── Logistics ───────────────────────────────────── */}
-        {isAdmin && activeTab === 'logistics' && <LogisticsSection canEdit={isAdmin} canEditOffices={isSuperadmin} />}
+        {isAdmin && activeTab === 'logistics' && <LogisticsSection canEdit={canManageBusiness} canEditOffices={canManageBusiness} />}
 
         {/* ── Notification Templates ───────────────────────── */}
-        {isSuperadmin && activeTab === 'notification-templates' && <NotificationTemplatesSection canEdit={true} />}
-        {isSuperadmin && activeTab === 'notification-templates' && <BroadcastSection />}
+        {canManageBusiness && activeTab === 'notification-templates' && <NotificationTemplatesSection canEdit={canManageBusiness} />}
+        {canManageBroadcasts && activeTab === 'notification-templates' && <BroadcastSection />}
       </div>
     </AppShell>
   );

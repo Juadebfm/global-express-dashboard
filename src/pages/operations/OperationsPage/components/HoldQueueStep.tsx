@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
-import { useUpdateOrderStatus, useEscalateOrder, useClearEscalation, useCan } from '@/hooks';
+import { useUpdateOrderStatus, useEscalateOrder, useClearEscalation, useCapability } from '@/hooks';
 import { cn } from '@/utils';
 import type { OrderView } from '@/pages/shared/orderStatus';
 import { QueueShell } from './QueueShell';
@@ -25,7 +25,11 @@ export function HoldQueueStep({
   onSkip,
   onExit,
 }: HoldQueueStepProps): ReactElement {
-  const isSuperAdmin = useCan('app.superadmin');
+  // The escalation-resolution view, not a role tier. PATCH
+  // /orders/:id/clear-escalation is guarded by requireCapability(
+  // 'operations.escalation.resolve'), so an admin holding that grant gets this
+  // path and a superadmin still does implicitly.
+  const canResolveEscalations = useCapability('operations.escalation.resolve');
   const [escalateOpen, setEscalateOpen] = useState(false);
   const [escalateNote, setEscalateNote] = useState('');
   const [escalateConfirm, setEscalateConfirm] = useState(false);
@@ -149,9 +153,9 @@ export function HoldQueueStep({
     );
   }
 
-  // ── PATH A: Superadmin view ───────────────────────────────────────────────
+  // ── PATH A: escalation-resolver view ──────────────────────────────────────
 
-  if (isSuperAdmin) {
+  if (canResolveEscalations) {
     return (
       <QueueShell
         queueType={isEscalated ? 'escalated' : 'holds'}

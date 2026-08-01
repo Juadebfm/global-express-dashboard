@@ -27,7 +27,7 @@ import {
   Ship,
   TrendingUp,
 } from 'lucide-react';
-import { useCan, useDashboardData } from '@/hooks';
+import { useCapability, useDashboardData } from '@/hooks';
 import { useReportSummary } from '@/hooks/useReports';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { Skeleton } from '@/components/ui';
@@ -98,11 +98,18 @@ export function ReportsPage(): ReactElement {
   const { data, isLoading, error } = useDashboardData();
   const { data: summary, isLoading: summaryLoading } = useReportSummary();
 
-  const isSuperAdmin = useCan('app.superadmin');
-  const isAdminPlus = useCan('app.admin');
+  // Capability-gated, not role-gated. /reports/* splits three ways on the
+  // backend: revenue + payment-breakdown + summary need finance.reports.view,
+  // the volume/customers/performance/pipeline/comparison set needs
+  // reports.operational.view, and the audit tab needs audit_logs.view. Each
+  // gate below covers BOTH the rendered section and the request that feeds it,
+  // so a user without the grant never fires a call that would 403.
+  const canViewFinance = useCapability('finance.reports.view');
+  const canViewOperational = useCapability('reports.operational.view');
+  const canViewAuditLogs = useCapability('audit_logs.view');
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeReportTab = (searchParams.get('tab') === 'audit' && isSuperAdmin) ? 'audit' : 'analytics';
+  const activeReportTab = (searchParams.get('tab') === 'audit' && canViewAuditLogs) ? 'audit' : 'analytics';
   const setActiveReportTab = (tab: string): void => {
     setSearchParams(
       (prev) => {
@@ -141,25 +148,25 @@ export function ReportsPage(): ReactElement {
 
     try {
       const results = await Promise.allSettled([
-        isSuperAdmin
+        canViewFinance
           ? getRevenueAnalytics(token, { groupBy: 'month', compareToLastPeriod: true, ...dateParams })
           : Promise.resolve(null),
-        isAdminPlus
+        canViewOperational
           ? getShipmentVolume(token, { groupBy: 'month', ...dateParams })
           : Promise.resolve(null),
-        isAdminPlus
+        canViewOperational
           ? getTopCustomers(token, { sortBy: 'orderCount', limit: 10 })
           : Promise.resolve(null),
-        isAdminPlus
+        canViewOperational
           ? getDeliveryPerformance(token, dateParams)
           : Promise.resolve(null),
-        isAdminPlus
+        canViewOperational
           ? getStatusPipeline(token)
           : Promise.resolve(null),
-        isSuperAdmin
+        canViewFinance
           ? getPaymentBreakdown(token, dateParams)
           : Promise.resolve(null),
-        isAdminPlus
+        canViewOperational
           ? getShipmentComparison(token, dateParams)
           : Promise.resolve(null),
       ]);
@@ -177,7 +184,7 @@ export function ReportsPage(): ReactElement {
     } finally {
       setReportsLoading(false);
     }
-  }, [dateFrom, dateTo, isSuperAdmin, isAdminPlus]);
+  }, [dateFrom, dateTo, canViewFinance, canViewOperational]);
 
   useEffect(() => {
     void fetchReports();
@@ -222,8 +229,8 @@ export function ReportsPage(): ReactElement {
           )}
         </div>
 
-        {/* Tab strip — superadmin sees Analytics + Audit Logs */}
-        {isSuperAdmin && (
+        {/* Tab strip — shown to holders of audit_logs.view */}
+        {canViewAuditLogs && (
           <div className="flex gap-1 w-fit rounded-xl border border-gray-200 bg-gray-50 p-1">
             {(['analytics', 'audit'] as const).map((tab) => (
               <button
@@ -273,13 +280,13 @@ export function ReportsPage(): ReactElement {
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <KpiCard label={t('kpis.totalOrders')} value={String(summary.totalOrders)} />
             <KpiCard label={t('kpis.totalUsers')} value={String(summary.totalUsers)} />
-            {isSuperAdmin && (
+            {canViewFinance && (
               <KpiCard
                 label={t('kpis.totalRevenue')}
                 value={`${summary.currency === 'NGN' ? '₦' : summary.currency ?? '₦'} ${nairaFormatter.format(parseFloat(summary.totalRevenue || '0') || 0)}`}
               />
             )}
-            {revenue?.comparison?.revenueChange && isSuperAdmin && (
+            {revenue?.comparison?.revenueChange && canViewFinance && (
               <div className="rounded-2xl border border-gray-200 bg-white p-5">
                 <p className="text-sm text-gray-500">{t('kpis.revenueChange')}</p>
                 <div className="mt-2 flex items-center gap-2">
@@ -306,7 +313,7 @@ export function ReportsPage(): ReactElement {
         )}
 
         {/* ── Revenue Chart (superadmin) ──────────────────── */}
-        {isSuperAdmin && revenue && revenue.periods.length > 0 && (
+        {canViewFinance && revenue && revenue.periods.length > 0 && (
           <div className="rounded-2xl border border-gray-200 bg-white p-6">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-brand-500" />
@@ -335,7 +342,7 @@ export function ReportsPage(): ReactElement {
         )}
 
         {/* ── Shipment Volume (admin+) ────────────────────── */}
-        {isAdminPlus && shipmentVol && shipmentVol.periods.length > 0 && (
+        {canViewOperational && shipmentVol && shipmentVol.periods.length > 0 && (
           <div className="rounded-2xl border border-gray-200 bg-white p-6">
             <h3 className="text-sm font-semibold text-gray-900">{t('shipmentVolume.title')}</h3>
             <div className="mt-2 flex gap-6 text-sm text-gray-500">
@@ -360,7 +367,7 @@ export function ReportsPage(): ReactElement {
         )}
 
         {/* ── Two-column: Pipeline + Air vs Sea ───────────── */}
-        {isAdminPlus && (
+        {canViewOperational && (
           <div className="grid gap-6 md:grid-cols-2">
             {/* Status Pipeline */}
             {pipeline && pipeline.pipeline.length > 0 && (
@@ -435,7 +442,7 @@ export function ReportsPage(): ReactElement {
                           <span>{t('airVsSea.avgDelivery')}</span>
                           <span className="font-semibold text-gray-900">{t('airVsSea.avgDeliveryValue', { value: fmtNum(mode.avgDeliveryDays) })}</span>
                         </div>
-                        {isSuperAdmin && mode.totalRevenue && (
+                        {canViewFinance && mode.totalRevenue && (
                           <div className="flex justify-between border-t border-gray-200 pt-1">
                             <span>{t('airVsSea.revenue')}</span>
                             <span className="font-semibold text-gray-900">{fmtUsd(mode.totalRevenue)}</span>
@@ -451,7 +458,7 @@ export function ReportsPage(): ReactElement {
         )}
 
         {/* ── Two-column: Top Customers + Delivery Perf ──── */}
-        {isAdminPlus && (
+        {canViewOperational && (
           <div className="grid gap-6 md:grid-cols-2">
             {/* Top Customers */}
             {topCust && topCust.length > 0 && (
@@ -465,7 +472,7 @@ export function ReportsPage(): ReactElement {
                         <th className="px-3 py-2">{t('topCustomers.columns.customer')}</th>
                         <th className="px-3 py-2 text-right">{t('topCustomers.columns.orders')}</th>
                         <th className="px-3 py-2 text-right">{t('topCustomers.columns.weight')}</th>
-                        {isSuperAdmin && <th className="px-3 py-2 text-right">{t('topCustomers.columns.revenue')}</th>}
+                        {canViewFinance && <th className="px-3 py-2 text-right">{t('topCustomers.columns.revenue')}</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -478,7 +485,7 @@ export function ReportsPage(): ReactElement {
                           </td>
                           <td className="px-3 py-2 text-right font-medium text-gray-900">{c.orderCount}</td>
                           <td className="px-3 py-2 text-right text-gray-600">{fmtNum(c.totalWeight)} kg</td>
-                          {isSuperAdmin && (
+                          {canViewFinance && (
                             <td className="px-3 py-2 text-right font-medium text-gray-900">
                               {c.revenue ? fmtUsd(c.revenue) : '—'}
                             </td>
@@ -570,7 +577,7 @@ export function ReportsPage(): ReactElement {
         )}
 
         {/* ── Payment Breakdown (superadmin) ──────────────── */}
-        {isSuperAdmin && payBreakdown && (
+        {canViewFinance && payBreakdown && (
           <div className="rounded-2xl border border-gray-200 bg-white p-6">
             <h3 className="text-sm font-semibold text-gray-900">{t('paymentBreakdown.title')}</h3>
 
@@ -669,8 +676,8 @@ export function ReportsPage(): ReactElement {
 
         </>)}
 
-        {/* Audit Logs content — superadmin only */}
-        {activeReportTab === 'audit' && isSuperAdmin && <AuditLogsContent />}
+        {/* Audit Logs content — requires audit_logs.view */}
+        {activeReportTab === 'audit' && canViewAuditLogs && <AuditLogsContent />}
       </div>
     </AppShell>
   );
