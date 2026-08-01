@@ -388,7 +388,7 @@ export function useUpdateGalleryAdvert(): {
 
 // ── Staff claim review ───────────────────────────────────────────────────────
 
-export function useGalleryClaims(query: GalleryClaimsQuery = {}): {
+export function useGalleryClaims(query: GalleryClaimsQuery = {}, enabled = true): {
   data: GalleryClaimsPaginatedResult | undefined;
   isLoading: boolean;
   error: Error | null;
@@ -401,6 +401,7 @@ export function useGalleryClaims(query: GalleryClaimsQuery = {}): {
       if (!token) throw new Error('Not authenticated');
       return getGalleryClaims(token, query);
     },
+    enabled,
     staleTime: STALE_TIME.REAL_TIME,
   });
   return { data: q.data, isLoading: q.isLoading, error: q.error };

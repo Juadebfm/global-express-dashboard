@@ -1,25 +1,55 @@
 import type { ReactElement, ReactNode } from 'react';
+import { useEffect, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { useAuth } from '@/hooks';
+import { useAuth, usePermissions } from '@/hooks';
 import { ROUTES } from '@/constants';
 import { PageLoader } from '@/components/ui';
-import type { User } from '@/types';
+import { useFeedbackStore } from '@/store/feedback/feedback.store';
+import type { CapabilityKey, User } from '@/types';
 
 interface ProtectedRouteProps {
   children: ReactNode;
   allowedRoles?: User['role'][];
   blockedRoles?: User['role'][];
+  /**
+   * Backend capability keys required by this route. The matrix is the only
+   * authority for these checks: an admin role alone never satisfies one.
+   */
+  requiredCapabilities?: CapabilityKey[];
+  capabilityMode?: 'all' | 'any';
+  /**
+   * A route may be shared with a Clerk customer surface (Payments). Those
+   * roles use their own backend contract and must not call /permissions/me.
+   */
+  skipCapabilityRoles?: User['role'][];
   redirectTo?: string;
+}
+
+function CapabilityDeniedRedirect({ to }: { to: string }): ReactElement {
+  const pushMessage = useFeedbackStore((state) => state.pushMessage);
+  const hasNotified = useRef(false);
+
+  useEffect(() => {
+    if (hasNotified.current) return;
+    hasNotified.current = true;
+    pushMessage({ tone: 'error', message: 'Access no longer available.' });
+  }, [pushMessage]);
+
+  return <Navigate to={to} replace />;
 }
 
 export function ProtectedRoute({
   children,
   allowedRoles,
   blockedRoles,
+  requiredCapabilities,
+  capabilityMode = 'all',
+  skipCapabilityRoles,
   redirectTo,
 }: ProtectedRouteProps): ReactElement {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const permissions = usePermissions();
   const { isSignedIn: isClerkSignedIn, isLoaded: isClerkLoaded } = useClerkAuth();
   const location = useLocation();
 
@@ -85,6 +115,26 @@ export function ProtectedRoute({
 
   if (allowedRoles && !allowedRoles.includes(effectiveRole)) {
     return <Navigate to={redirectTo ?? ROUTES.FORBIDDEN} replace />;
+  }
+
+  const shouldCheckCapabilities =
+    !!requiredCapabilities?.length && !skipCapabilityRoles?.includes(effectiveRole);
+
+  if (shouldCheckCapabilities) {
+    // Do not show a protected route until the server-provided matrix has
+    // resolved. If it fails, deny rather than guessing from the role.
+    if (!permissions.isReady && !permissions.isError) {
+      return <PageLoader label="Loading access..." />;
+    }
+
+    const hasRequiredCapabilities = requiredCapabilities &&
+      (capabilityMode === 'any'
+        ? requiredCapabilities.some((capability) => permissions.can(capability))
+        : requiredCapabilities.every((capability) => permissions.can(capability)));
+
+    if (!hasRequiredCapabilities) {
+      return <CapabilityDeniedRedirect to={redirectTo ?? ROUTES.ADMIN_DASHBOARD} />;
+    }
   }
 
   return <>{children}</>;

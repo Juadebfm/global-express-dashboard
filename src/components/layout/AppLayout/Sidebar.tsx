@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
 import type { SidebarItem } from '@/types';
-import { useAuth, useCurrentUserAvatar, useNotificationCount, usePendingPaymentsCount } from '@/hooks';
+import { useAuth, useCapability, useCurrentUserAvatar, useNotificationCount, usePendingPaymentsCount } from '@/hooks';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
 
@@ -73,6 +73,7 @@ export function Sidebar({
   const { user: clerkUser } = useClerkUser();
   const notificationsCount = useNotificationCount();
   const pendingPaymentsCount = usePendingPaymentsCount();
+  const canViewAllPayments = useCapability('finance.reports.view');
 
   const isDashboardLikeRoute =
     location.pathname === ROUTES.DASHBOARD || location.pathname === ROUTES.ADMIN_DASHBOARD;
@@ -104,7 +105,7 @@ export function Sidebar({
     const active = isActive(item.href);
     const icon = iconMap[item.icon] ?? <LayoutDashboard className="h-5 w-5" />;
     const label = t(`items.${item.id}`, item.id);
-    const showPaymentsBadge = item.id === 'payments' && authUser?.role === 'superadmin' && pendingPaymentsCount > 0;
+    const showPaymentsBadge = item.id === 'payments' && canViewAllPayments && pendingPaymentsCount > 0;
 
     return (
       <Link

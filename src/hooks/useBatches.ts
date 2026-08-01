@@ -60,11 +60,13 @@ export function useBatchStatusLabels() {
   });
 }
 
-export function useAvailableOrdersForBatch(batchId: string | undefined) {
+export function useAvailableOrdersForBatch(batchId: string | undefined, enabled = true) {
   return useQuery({
     queryKey: ['batches', 'available-orders', batchId],
     queryFn: () => getAvailableOrdersForBatch(getToken(), batchId!),
-    enabled: !!batchId,
+    // This endpoint itself is capability-protected. Keep its request behind
+    // the same gate as the manual "Add order" control.
+    enabled: !!batchId && enabled,
     staleTime: STALE_TIME.REAL_TIME,
   });
 }

@@ -6,7 +6,7 @@ import {
   useVerifyOrderPayment,
   usePingSupervisor,
   useRecordOfflinePayment,
-  useCan,
+  useCapability,
 } from '@/hooks';
 import { cn } from '@/utils';
 import { formatCurrency } from '@/utils';
@@ -310,7 +310,7 @@ export function PaymentQueueStep({
   onSkip,
   onExit,
 }: PaymentQueueStepProps): ReactElement {
-  const isSuperAdmin = useCan('app.superadmin');
+  const canVerifyPayments = useCapability('payments.verify');
   const [showCash, setShowCash] = useState(false);
 
   const paymentsQuery = useOrderPayments(view.id);
@@ -332,9 +332,9 @@ export function PaymentQueueStep({
     );
   }
 
-  // ── Superadmin: direct approve/reject ─────────────────────────────────────
+  // ── Receipt verifier: direct approve/reject ───────────────────────────────
 
-  if (isSuperAdmin) {
+  if (canVerifyPayments) {
     return (
       <QueueShell
         queueType="payment"

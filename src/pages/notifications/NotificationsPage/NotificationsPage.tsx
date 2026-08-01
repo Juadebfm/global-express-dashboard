@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowUpRight, Bookmark, Info, RotateCcw, Trash2 } from 'lucide-react';
 import {
   useCan,
+  useCapability,
   useDashboardData,
   useNotifications,
   useOrderDetail,
@@ -301,11 +302,8 @@ function CustomerNotificationsView(): ReactElement {
   const { t } = useTranslation('notifications');
   const navigate = useNavigate();
   const canOpenOrders = useCan('app.operator');
-  // Matches ROUTES.PAYMENTS's own role gate (allowedRoles: ['user', 'superadmin'])
-  // — staff/admin would just get bounced, so don't offer the link to them.
-  const canOpenPayments = useCan('app.superadmin');
-  // Matches ROUTES.SHOP_INTEREST_DETAIL's own role gate (staff and above).
-  const canOpenShopInterests = useCan('app.operator');
+  const canOpenPayments = useCapability('finance.reports.view');
+  const canOpenShopInterests = useCapability('catalogue.manage');
   const { data, isLoading, error } = useDashboardData();
   const { query } = useSearch();
   const {

@@ -9,7 +9,7 @@ import { ROUTES } from '@/constants';
 import {
   useActivateClient,
   useAddClientSupplier,
-  useCan,
+  useCapability,
   useClientWorkbench,
   useCreateClientGoodsIntake,
   useDashboardData,
@@ -58,7 +58,7 @@ export function ClientWorkbenchPage(): ReactElement {
   const createIntake = useCreateClientGoodsIntake(clientId);
   const updateClient = useUpdateClient(clientId);
   const activateClient = useActivateClient();
-  const isSuperadmin = useCan('app.superadmin');
+  const canManagePricing = useCapability('pricing.rules.manage');
 
   const [showAddSupplier, setShowAddSupplier] = useState(false);
   const [showIntake, setShowIntake] = useState(false);
@@ -234,7 +234,7 @@ export function ClientWorkbenchPage(): ReactElement {
             <RecentOrdersSection orders={data.recentOrders} />
 
             {clientId && (
-              <ClientPricingOverrides clientId={clientId} canEdit={isSuperadmin} />
+              <ClientPricingOverrides clientId={clientId} canEdit={canManagePricing} />
             )}
           </>
         )}

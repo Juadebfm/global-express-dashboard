@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useBatches, useAddOrderToBatch, useCreateBatch } from '@/hooks';
+import { useBatches, useAddOrderToBatch, useCapability, useCreateBatch } from '@/hooks';
 import { cn } from '@/utils';
 import type { OrderView } from '@/pages/shared/orderStatus';
 import { QueueShell } from './QueueShell';
@@ -26,6 +26,7 @@ export function BatchQueueStep({
 }: BatchQueueStepProps): ReactElement {
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [creatingNew, setCreatingNew] = useState(false);
+  const canManageBatches = useCapability('batches.manage');
 
   const transportMode = (view.transportMode || view.shipmentType) === 'sea' ? 'sea' : 'air';
 
@@ -75,6 +76,31 @@ export function BatchQueueStep({
   const error = addOrderToBatch.error || createBatch.error;
 
   const canAssign = (selectedBatchId !== null && !creatingNew) || creatingNew;
+
+  // Verified orders are automatically assigned by the backend. Routine staff
+  // may advance this operational step but must not be offered manual batch
+  // allocation or creation without the explicit batches.manage grant.
+  if (!canManageBatches) {
+    return (
+      <QueueShell
+        queueType="batch"
+        currentIndex={currentIndex}
+        totalCount={totalCount}
+        onExit={onExit}
+        onSkip={onSkip}
+        hint="Verified orders are assigned to the appropriate batch automatically."
+        primaryLabel="Continue →"
+        onPrimary={onNext}
+      >
+        <div className="space-y-4">
+          <OrderSummaryCard view={view} />
+          <div className="rounded-2xl border border-gray-200 bg-white px-5 py-6 text-sm text-gray-600">
+            Batch allocation is automatic for this order. A manager can make a manual adjustment if one is needed.
+          </div>
+        </div>
+      </QueueShell>
+    );
+  }
 
   return (
     <QueueShell

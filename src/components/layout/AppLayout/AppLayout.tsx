@@ -9,7 +9,7 @@ import { Topbar } from './Topbar';
 import { getFooterItems, getNavItems } from './navConfig';
 import { WelcomePopup, OnboardingTour, useOnboarding } from '@/components/onboarding';
 import { cn } from '@/utils';
-import { useAuth, useCurrentUserAvatar, useDashboardData, usePushNotifications, useWebSocket } from '@/hooks';
+import { useAuth, useCurrentUserAvatar, useDashboardData, usePermissions, usePushNotifications, useWebSocket } from '@/hooks';
 import { ROUTES } from '@/constants';
 
 interface AppLayoutProps {
@@ -22,6 +22,7 @@ interface AppLayoutProps {
 export function AppLayout({ children, user }: AppLayoutProps): ReactElement {
   const { t } = useTranslation('nav');
   const { user: authUser } = useAuth();
+  const { can } = usePermissions();
   const currentAvatarUrl = useCurrentUserAvatar();
   const { isSignedIn: isClerkSignedIn } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
@@ -48,7 +49,7 @@ export function AppLayout({ children, user }: AppLayoutProps): ReactElement {
   const { showWelcome, runTour, dismissWelcome, completeTour } =
     useOnboarding(isCustomer, hasData, isDashboard);
 
-  const navItems = getNavItems(effectiveRole);
+  const navItems = getNavItems(effectiveRole, can);
   const footerItems = getFooterItems(effectiveRole);
 
   const effectiveUser: DashboardUser = (() => {

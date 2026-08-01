@@ -4,9 +4,10 @@ import { useGalleryClaims } from './useGallery';
 interface UseClaimForTicketInput {
   ticketId: string;
   trackingNumber?: string;
+  enabled?: boolean;
 }
 
-export function useClaimForTicket({ ticketId, trackingNumber }: UseClaimForTicketInput): {
+export function useClaimForTicket({ ticketId, trackingNumber, enabled = true }: UseClaimForTicketInput): {
   claim: GalleryClaim | null;
   isLoading: boolean;
   error: Error | null;
@@ -14,6 +15,7 @@ export function useClaimForTicket({ ticketId, trackingNumber }: UseClaimForTicke
   // If we have a tracking number, use a targeted query. Otherwise fetch all and filter.
   const { data, isLoading, error } = useGalleryClaims(
     trackingNumber ? { itemTrackingNumber: trackingNumber } : {},
+    enabled,
   );
 
   // Prefer exact supportTicketId match; fall back to first result from the targeted query.

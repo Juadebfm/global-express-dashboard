@@ -443,10 +443,10 @@ export function BatchDetailPage(): ReactElement {
 
   // Roster edits (add/remove order, movement status) are guarded by
   // requireCapability('batches.manage'); closing a batch is a separate,
-  // stronger grant, batches.finalise. The legacy user.canManageShipmentBatches
-  // flag is the pre-capability mechanism for the same thing — kept as a
-  // fallback so an account whose grant has not been migrated is not locked out.
-  const canManage = useCapability('batches.manage') || !!user?.canManageShipmentBatches;
+  // stronger grant, batches.finalise. Do not fall back to the retired
+  // canManageShipmentBatches profile flag: only the live matrix may open
+  // capability-gated batch controls.
+  const canManage = useCapability('batches.manage');
   const canFinalise = useCapability('batches.finalise');
 
   const { data: roster, isLoading, error, refetch } = useBatchRoster(batchId);
@@ -456,7 +456,7 @@ export function BatchDetailPage(): ReactElement {
   const removeOrder = useRemoveOrderFromBatch();
   const updateStatus = useSetBatchMovementStatus();
   const closeBatchMutation = useCloseBatch();
-  const availableOrders = useAvailableOrdersForBatch(batchId);
+  const availableOrders = useAvailableOrdersForBatch(batchId, canManage);
 
   // Combobox state for "Add order"
   const [query, setQuery] = useState('');

@@ -420,7 +420,12 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.PAYMENTS}
         element={
-          <ProtectedRoute allowedRoles={['user', 'superadmin']} redirectTo={ROUTES.ADMIN_DASHBOARD}>
+          <ProtectedRoute
+            allowedRoles={['user', 'staff', 'admin', 'superadmin']}
+            requiredCapabilities={['finance.reports.view']}
+            skipCapabilityRoles={['user']}
+            redirectTo={ROUTES.ADMIN_DASHBOARD}
+          >
             <PaymentsPage />
           </ProtectedRoute>
         }
@@ -432,7 +437,16 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.REPORTS}
         element={
-          <ProtectedRoute allowedRoles={['superadmin']}>
+          <ProtectedRoute
+            allowedRoles={['staff', 'admin', 'superadmin']}
+            requiredCapabilities={[
+              'finance.reports.view',
+              'reports.operational.view',
+              'audit_logs.view',
+            ]}
+            capabilityMode="any"
+            redirectTo={ROUTES.ADMIN_DASHBOARD}
+          >
             <ReportsPage />
           </ProtectedRoute>
         }
@@ -444,7 +458,11 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.ADMIN_GALLERY}
         element={
-          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
+          <ProtectedRoute
+            allowedRoles={['staff', 'admin', 'superadmin']}
+            requiredCapabilities={['catalogue.manage']}
+            redirectTo={ROUTES.ADMIN_DASHBOARD}
+          >
             <AdminGalleryPage />
           </ProtectedRoute>
         }
@@ -476,7 +494,11 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.SHOP_INTEREST_DETAIL}
         element={
-          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
+          <ProtectedRoute
+            allowedRoles={['staff', 'admin', 'superadmin']}
+            requiredCapabilities={['catalogue.manage']}
+            redirectTo={ROUTES.ADMIN_DASHBOARD}
+          >
             <ShopInterestDetailPage />
           </ProtectedRoute>
         }
@@ -512,7 +534,11 @@ function AppRoutes(): ReactElement {
       <Route
         path={ROUTES.NEWSLETTER_SUBSCRIBERS}
         element={
-          <ProtectedRoute allowedRoles={['superadmin']} redirectTo={ROUTES.ADMIN_DASHBOARD}>
+          <ProtectedRoute
+            allowedRoles={['staff', 'admin', 'superadmin']}
+            requiredCapabilities={['newsletter.manage']}
+            redirectTo={ROUTES.ADMIN_DASHBOARD}
+          >
             <NewsletterSubscribersPage />
           </ProtectedRoute>
         }

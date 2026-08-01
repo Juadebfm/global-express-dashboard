@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useDashboardData, useCan } from '@/hooks';
+import { useCapability, useDashboardData } from '@/hooks';
 import type { UiAction } from '@/types';
 import { DashboardHeader } from '@/pages/dashboard/components';
 import { AppShell } from '@/pages/shared';
@@ -15,7 +15,9 @@ export function AdminDashboardPage(): ReactElement {
   const { t } = useTranslation('dashboard');
   const { data, isLoading, error } = useDashboardData();
   const navigate = useNavigate();
-  const isAdmin = useCan('app.admin');
+  // Top customers is fed by the operational reports endpoint; a role alone
+  // must not expose it to an admin who has not been granted that capability.
+  const canViewTopCustomers = useCapability('reports.operational.view');
 
   const handleAction = (action: UiAction): void => {
     if (action.id === 'trackShipment') navigate(ROUTES.SHIPMENT_TRACK);
@@ -43,7 +45,7 @@ export function AdminDashboardPage(): ReactElement {
               <OpenBatchesSummary />
             </section>
 
-            {isAdmin && (
+            {canViewTopCustomers && (
               <section>
                 <TopCustomers />
               </section>

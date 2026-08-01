@@ -14,11 +14,12 @@ vi.mock('@/hooks', async () => {
   return {
     ...actual,
     useAuth: vi.fn(),
+    usePermissions: vi.fn(),
   };
 });
 
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { useAuth } from '@/hooks';
+import { useAuth, usePermissions } from '@/hooks';
 import { ProtectedRoute } from './ProtectedRoute';
 import { ROUTES } from '@/constants';
 import type { User } from '@/types';
@@ -87,6 +88,21 @@ function mockAuth({
   } as unknown as ReturnType<typeof useClerkAuth>);
 }
 
+function mockPermissions(granted: string[] = [], options: { isReady?: boolean; isError?: boolean } = {}): void {
+  const { isReady = true, isError = false } = options;
+  vi.mocked(usePermissions).mockReturnValue({
+    matrix: null,
+    capabilities: [],
+    role: null,
+    can: (capability) => granted.includes(capability),
+    isReady,
+    isLoading: !isReady && !isError,
+    isError,
+    isSuperadmin: false,
+    refresh: async () => undefined,
+  });
+}
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
@@ -94,9 +110,64 @@ afterEach(() => {
 
 beforeEach(() => {
   mockAuth({}); // default = unauthenticated, not Clerk-signed-in
+  mockPermissions();
 });
 
 describe('ProtectedRoute', () => {
+  it('renders a capability-gated route only when the matrix grants it', () => {
+    mockAuth({ user: makeUser({ role: 'admin' }) });
+    mockPermissions(['finance.reports.view']);
+
+    const { getByText } = render(
+      withRouter(
+        <ProtectedRoute
+          allowedRoles={['staff', 'admin', 'superadmin']}
+          requiredCapabilities={['finance.reports.view']}
+          redirectTo={ROUTES.ADMIN_DASHBOARD}
+        >
+          <span>{PROTECTED_CONTENT}</span>
+        </ProtectedRoute>,
+      ),
+    );
+
+    expect(getByText(PROTECTED_CONTENT)).toBeTruthy();
+  });
+
+  it('fails closed for an internal user whose matrix does not grant a route capability', () => {
+    mockAuth({ user: makeUser({ role: 'admin' }) });
+    mockPermissions([]);
+
+    const { getByText, queryByText } = render(
+      withRouter(
+        <ProtectedRoute
+          allowedRoles={['staff', 'admin', 'superadmin']}
+          requiredCapabilities={['finance.reports.view']}
+          redirectTo={ROUTES.ADMIN_DASHBOARD}
+        >
+          <span>{PROTECTED_CONTENT}</span>
+        </ProtectedRoute>,
+      ),
+    );
+
+    expect(queryByText(PROTECTED_CONTENT)).toBeNull();
+    expect(getByText('admin-dashboard')).toBeTruthy();
+  });
+
+  it('waits for the permissions matrix before rendering a capability-gated route', () => {
+    mockAuth({ user: makeUser({ role: 'admin' }) });
+    mockPermissions([], { isReady: false });
+
+    const { getByText } = render(
+      withRouter(
+        <ProtectedRoute requiredCapabilities={['finance.reports.view']}>
+          <span>{PROTECTED_CONTENT}</span>
+        </ProtectedRoute>,
+      ),
+    );
+
+    expect(getByText('Loading access...')).toBeTruthy();
+  });
+
   it('renders children for an authenticated user whose role is allowed', () => {
     mockAuth({ user: makeUser({ role: 'staff' }) });
     const { getByText } = render(

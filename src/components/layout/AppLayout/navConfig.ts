@@ -1,4 +1,4 @@
-import type { SidebarItem, User } from '@/types';
+import type { CapabilityKey, SidebarItem, User } from '@/types';
 import { ROUTES } from '@/constants';
 
 type Role = User['role'];
@@ -27,7 +27,10 @@ export const STAFF_NAV: SidebarItem[] = [
   { id: 'adminGallery', icon: 'image', href: ROUTES.ADMIN_GALLERY },
   { id: 'leads', icon: 'inbox', href: ROUTES.LEADS },
   { id: 'supplierNotices', icon: 'package', href: ROUTES.SUPPLIER_NOTICES },
+  { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
+  { id: 'reports', icon: 'chart', href: ROUTES.REPORTS },
+  { id: 'newsletterSubscribers', icon: 'mail', href: ROUTES.NEWSLETTER_SUBSCRIBERS },
 ];
 
 export const ADMIN_NAV: SidebarItem[] = [
@@ -38,9 +41,10 @@ export const ADMIN_NAV: SidebarItem[] = [
   { id: 'clients', icon: 'users', href: ROUTES.CLIENTS },
   { id: 'leads', icon: 'inbox', href: ROUTES.LEADS },
   { id: 'supplierNotices', icon: 'package', href: ROUTES.SUPPLIER_NOTICES },
+  { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
-  { id: 'team', icon: 'team', href: ROUTES.TEAM },
   { id: 'reports', icon: 'chart', href: ROUTES.REPORTS },
+  { id: 'newsletterSubscribers', icon: 'mail', href: ROUTES.NEWSLETTER_SUBSCRIBERS },
 ];
 
 export const SUPERADMIN_NAV: SidebarItem[] = [
@@ -69,6 +73,31 @@ export const OPERATOR_FOOTER: SidebarItem[] = [
   { id: 'settings', icon: 'settings', href: ROUTES.SETTINGS },
 ];
 
+type CapabilityCheck = (key: CapabilityKey) => boolean;
+
+// Only these entries are capability-gated. Everything else in the internal
+// arrays is a Staff-baseline route or a true Superadmin route. Keeping this
+// mapping beside the nav definitions makes it impossible for a role-only
+// sidebar item to reappear accidentally after a grant is removed.
+const NAV_CAPABILITIES: Partial<Record<SidebarItem['id'], readonly CapabilityKey[]>> = {
+  adminGallery: ['catalogue.manage'],
+  payments: ['finance.reports.view'],
+  reports: ['finance.reports.view', 'reports.operational.view', 'audit_logs.view'],
+  newsletterSubscribers: ['newsletter.manage'],
+};
+
+function isCapabilityVisible(item: SidebarItem, can: CapabilityCheck | undefined): boolean {
+  const required = NAV_CAPABILITIES[item.id];
+  if (!required) return true;
+  // getNavItems remains usable as a static role mapping in non-rendering
+  // contexts (tests, navigation tooling). AppLayout always passes the live
+  // checker, which is where capability-gated chrome is rendered.
+  if (!can) return true;
+  return item.id === 'reports'
+    ? required.some((capability) => can(capability))
+    : required.every((capability) => can(capability));
+}
+
 /**
  * Pure mapping role → main nav array. `null` (unauthenticated) and
  * `'user'` / `'supplier'` (Clerk customer roles) both fall through to
@@ -78,13 +107,24 @@ export const OPERATOR_FOOTER: SidebarItem[] = [
  * Lives in its own module so tests can hit it directly without
  * mounting the AppLayout component (which pulls 6+ hook dependencies).
  */
-export function getNavItems(role: Role | null | undefined): SidebarItem[] {
-  switch (role) {
-    case 'superadmin': return SUPERADMIN_NAV;
-    case 'admin': return ADMIN_NAV;
-    case 'staff': return STAFF_NAV;
-    default: return CUSTOMER_NAV;
-  }
+export function getNavItems(
+  role: Role | null | undefined,
+  can?: CapabilityCheck,
+): SidebarItem[] {
+  const items = (() => {
+    switch (role) {
+      case 'superadmin': return SUPERADMIN_NAV;
+      case 'admin': return ADMIN_NAV;
+      case 'staff': return STAFF_NAV;
+      default: return CUSTOMER_NAV;
+    }
+  })();
+
+  // Customer payments are not an internal finance surface, so no permission
+  // matrix is involved for the customer nav.
+  if (role === 'user' || role === 'supplier' || !role) return items;
+  if (!can) return items;
+  return items.filter((item) => isCapabilityVisible(item, can));
 }
 
 /**

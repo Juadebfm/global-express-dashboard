@@ -57,14 +57,25 @@ describe('getNavItems', () => {
     }
   });
 
-  it('admin-tier items (clients, team, reports) only appear from admin onwards', () => {
-    const adminTierIds = ['clients', 'team', 'reports'];
-    for (const id of adminTierIds) {
-      expect(CUSTOMER_NAV.some((item) => item.id === id)).toBe(false);
-      expect(STAFF_NAV.some((item) => item.id === id)).toBe(false);
-      expect(ADMIN_NAV.some((item) => item.id === id)).toBe(true);
-      expect(SUPERADMIN_NAV.some((item) => item.id === id)).toBe(true);
-    }
+  it('keeps Team management exclusive to superadmins', () => {
+    expect(CUSTOMER_NAV.some((item) => item.id === 'team')).toBe(false);
+    expect(STAFF_NAV.some((item) => item.id === 'team')).toBe(false);
+    expect(ADMIN_NAV.some((item) => item.id === 'team')).toBe(false);
+    expect(SUPERADMIN_NAV.some((item) => item.id === 'team')).toBe(true);
+  });
+
+  it('uses grants, not role, to show elevated navigation entries', () => {
+    const noGrants = getNavItems('admin', () => false);
+    expect(noGrants.some((item) => item.id === 'adminGallery')).toBe(false);
+    expect(noGrants.some((item) => item.id === 'payments')).toBe(false);
+    expect(noGrants.some((item) => item.id === 'reports')).toBe(false);
+
+    const operationalReportsOnly = getNavItems(
+      'staff',
+      (capability) => capability === 'reports.operational.view',
+    );
+    expect(operationalReportsOnly.some((item) => item.id === 'reports')).toBe(true);
+    expect(operationalReportsOnly.some((item) => item.id === 'adminGallery')).toBe(false);
   });
 
   it('every nav item points at a defined ROUTES value (no undefined hrefs)', () => {

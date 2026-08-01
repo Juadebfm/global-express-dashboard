@@ -7,6 +7,7 @@ import { AlertBanner, Button } from '@/components/ui';
 import {
   useAuth,
   useCan,
+  useCapability,
   useClaimForTicket,
   useDashboardData,
   useSearch,
@@ -72,15 +73,17 @@ export function SupportListView(): ReactElement {
           title={t('listView.pageTitle')}
           subtitle={isStaff ? t('listView.subtitleStaff') : t('listView.subtitleCustomer')}
         />
-        <Button
-          type="button"
-          size="sm"
-          className="text-sm"
-          leftIcon={<Plus className="h-4 w-4" />}
-          onClick={() => setModalOpen(true)}
-        >
-          {t('listView.newTicketButton')}
-        </Button>
+        {!isStaff && (
+          <Button
+            type="button"
+            size="sm"
+            className="text-sm"
+            leftIcon={<Plus className="h-4 w-4" />}
+            onClick={() => setModalOpen(true)}
+          >
+            {t('listView.newTicketButton')}
+          </Button>
+        )}
       </div>
 
       {isStaff && (
@@ -91,12 +94,14 @@ export function SupportListView(): ReactElement {
 
       <SupportTicketList tickets={filteredTickets} isStaff={isStaff} isLoading={isLoading} />
 
-      <CreateTicketModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSubmit={handleCreate}
-        isCreating={isCreating}
-      />
+      {!isStaff && (
+        <CreateTicketModal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onSubmit={handleCreate}
+          isCreating={isCreating}
+        />
+      )}
     </div>
   );
 }
@@ -108,6 +113,7 @@ function SupportDetailView({ ticketId }: { ticketId: string }): ReactElement {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isStaff = useCan('app.operator');
+  const canManageCatalogue = useCapability('catalogue.manage');
   const currentUserId = user?.id ?? '';
 
   const { ticket, messages, isLoading, error } = useSupportTicketDetail(ticketId);
@@ -124,7 +130,11 @@ function SupportDetailView({ ticketId }: { ticketId: string }): ReactElement {
     return prefix ? subject.slice(prefix.length).trim() : undefined;
   }, [ticket]);
 
-  const { claim } = useClaimForTicket({ ticketId, trackingNumber: claimTrackingNumber });
+  const { claim } = useClaimForTicket({
+    ticketId,
+    trackingNumber: claimTrackingNumber,
+    enabled: canManageCatalogue,
+  });
 
   const handleSend = useCallback(
     (body: string, isInternal: boolean) => {
@@ -174,7 +184,7 @@ function SupportDetailView({ ticketId }: { ticketId: string }): ReactElement {
       {/* Stays mounted post-approval for car-purchase claims so staff can track
           the resulting sale (contacted → delivered → closed) from the same
           ticket, instead of it disappearing the moment the claim is decided. */}
-      {isStaff && claim && (claim.status === 'pending' || (claim.claimType === 'car_purchase' && claim.shopInterestRequestId)) && (
+      {canManageCatalogue && claim && (claim.status === 'pending' || (claim.claimType === 'car_purchase' && claim.shopInterestRequestId)) && (
         <ClaimReviewPanel claim={claim} ticketStatus={ticket.status} />
       )}
 
