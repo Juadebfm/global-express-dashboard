@@ -22,5 +22,11 @@ export interface AuthContextValue extends AuthState {
   logout: () => Promise<void>;
   clearError: () => void;
   refreshUser: () => Promise<void>;
+  /**
+   * Applies the avatar URL returned by the authenticated avatar endpoint to
+   * the in-memory internal session immediately. This avoids making the
+   * header wait for a separate /internal/me refresh after a confirmed upload.
+   */
+  updateCurrentUserAvatar: (avatarUrl: string | null) => void;
   completePasswordChange: (result: PasswordChangeResult) => void;
 }

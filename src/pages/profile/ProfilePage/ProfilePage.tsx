@@ -309,7 +309,7 @@ export function ProfilePage(): ReactElement {
   const { t } = useTranslation('profile');
   const navigate = useNavigate();
   const getToken = useAuthToken();
-  const { user: authUser, refreshUser } = useAuth();
+  const { user: authUser, refreshUser, updateCurrentUserAvatar } = useAuth();
   const { isLoaded: isClerkLoaded, isSignedIn: isClerkSignedIn } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
   const { signOut: clerkSignOut } = useClerk();
@@ -594,7 +594,7 @@ export function ProfilePage(): ReactElement {
 
   const handleAvatarChanged = async (avatarUrl: string | null): Promise<void> => {
     if (authUser) {
-      await refreshUser();
+      updateCurrentUserAvatar(avatarUrl);
       return;
     }
     setCurrentUserAvatar(avatarUrl);

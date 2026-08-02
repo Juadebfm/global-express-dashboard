@@ -79,6 +79,7 @@ function mockAuth({
     logout: vi.fn(),
     clearError: vi.fn(),
     refreshUser: vi.fn(),
+    updateCurrentUserAvatar: vi.fn(),
     completePasswordChange: vi.fn(),
     completeMfaChallenge: vi.fn(),
   });

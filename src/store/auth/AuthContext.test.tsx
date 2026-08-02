@@ -343,6 +343,28 @@ describe('AuthContext — staff onboarding state', () => {
     expect(authService.getInternalMe).not.toHaveBeenCalled();
   });
 
+  it('updates an internal avatar in shared session state without a follow-up request', async () => {
+    sessionStorage.setItem(TOKEN_KEY, 'staff-token');
+    vi.mocked(authService.getMe).mockResolvedValue({
+      ...pendingStaff,
+      avatarUrl: null,
+    } as never);
+
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    act(() => {
+      result.current.updateCurrentUserAvatar('https://cdn.example/avatars/new.webp');
+    });
+
+    expect(result.current.user?.avatarUrl).toBe('https://cdn.example/avatars/new.webp');
+    expect(authService.getInternalMe).not.toHaveBeenCalled();
+  });
+
   it('deduplicates concurrent status refreshes', async () => {
     sessionStorage.setItem(TOKEN_KEY, 'pending-staff-token');
     vi.mocked(authService.getMe).mockResolvedValue(pendingStaff as never);

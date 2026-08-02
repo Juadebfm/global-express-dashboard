@@ -336,6 +336,16 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
+  const updateCurrentUserAvatar = useCallback((avatarUrl: string | null): void => {
+    setState((prev) => {
+      if (!prev.user) return prev;
+      return {
+        ...prev,
+        user: { ...prev.user, avatarUrl },
+      };
+    });
+  }, []);
+
   const completePasswordChange = useCallback((result: PasswordChangeResult): void => {
     lastSyncedAtRef.current = Date.now();
     setState((prev) => {
@@ -362,9 +372,10 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       logout,
       clearError,
       refreshUser,
+      updateCurrentUserAvatar,
       completePasswordChange,
     }),
-    [state, login, completeMfaChallenge, logout, clearError, refreshUser, completePasswordChange]
+    [state, login, completeMfaChallenge, logout, clearError, refreshUser, updateCurrentUserAvatar, completePasswordChange]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
