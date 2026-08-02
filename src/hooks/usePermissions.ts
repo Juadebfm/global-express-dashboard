@@ -72,6 +72,10 @@ export function usePermissions(): PermissionsState {
 
   const role = user?.role;
   const isInternal = isInternalRole(role);
+  // A temporary-password session may only use the password-change screen.
+  // In particular, do not start the capability request until the backend has
+  // confirmed that the password-change requirement is cleared.
+  const canLoadPermissions = isAuthenticated && isInternal && !user?.mustChangePassword;
 
   const { data, isLoading, isError } = useQuery({
     queryKey: MY_PERMISSIONS_KEY,
@@ -80,7 +84,7 @@ export function usePermissions(): PermissionsState {
       if (!token) throw new Error('Not authenticated');
       return getMyPermissions(token);
     },
-    enabled: isAuthenticated && isInternal,
+    enabled: canLoadPermissions,
     // Grants change rarely, and a superadmin toggling one invalidates this
     // key directly, so a short window would only add requests.
     staleTime: STALE_TIME.SLOW_MOVING,
@@ -89,9 +93,14 @@ export function usePermissions(): PermissionsState {
     retry: false,
   });
 
+  // Do not expose a previously cached matrix to a temporary-password session.
+  // That session is deliberately fail-closed until its account record clears
+  // the password-change flag.
+  const activeMatrix = canLoadPermissions ? data : undefined;
+
   const granted = useMemo(
-    () => grantedKeys(data?.capabilities ?? []),
-    [data?.capabilities],
+    () => grantedKeys(activeMatrix?.capabilities ?? []),
+    [activeMatrix?.capabilities],
   );
 
   const can = useCallback(
@@ -104,14 +113,14 @@ export function usePermissions(): PermissionsState {
   }, [queryClient]);
 
   return {
-    matrix: data ?? null,
-    capabilities: data?.capabilities ?? [],
-    role: data?.role ?? (isInternal ? role : null),
+    matrix: activeMatrix ?? null,
+    capabilities: activeMatrix?.capabilities ?? [],
+    role: activeMatrix?.role ?? (isInternal ? role : null),
     can,
-    isReady: !!data,
-    isLoading: isInternal && isLoading,
+    isReady: !!activeMatrix,
+    isLoading: canLoadPermissions && isLoading,
     isError,
-    isSuperadmin: (data?.role ?? role) === 'superadmin',
+    isSuperadmin: canLoadPermissions && (activeMatrix?.role ?? role) === 'superadmin',
     refresh,
   };
 }

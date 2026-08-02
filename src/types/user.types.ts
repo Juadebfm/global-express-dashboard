@@ -53,6 +53,18 @@ export interface AdminResetPasswordPayload {
   newPassword: string;
 }
 
+export interface AdminResetPasswordResult {
+  message: string;
+  user: {
+    id: string;
+    role: 'staff' | 'admin';
+    isActive: boolean;
+    mustChangePassword: true;
+    mustCompleteProfile: boolean;
+  };
+  sessionsInvalidated: true;
+}
+
 export interface CreateInternalUserPayload {
   email: string;
   phone: string;

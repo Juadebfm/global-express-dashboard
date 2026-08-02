@@ -307,6 +307,7 @@ describe('AuthContext — staff onboarding state', () => {
     email: 'pending@example.com',
     firstName: 'Pending',
     lastName: 'Staff',
+    avatarUrl: null,
     role: 'staff' as const,
     isActive: false,
     mustChangePassword: true,
@@ -315,32 +316,49 @@ describe('AuthContext — staff onboarding state', () => {
     updatedAt: '2026-01-01',
   };
 
-  it('applies the password-change response without a follow-up status request', async () => {
-    sessionStorage.setItem(TOKEN_KEY, 'pending-staff-token');
-    vi.mocked(authService.getMe).mockResolvedValue(pendingStaff as never);
+  it('loads the full internal account state before completing an internal login', async () => {
+    const loginUser = {
+      ...pendingStaff,
+      mustChangePassword: undefined,
+      isActive: undefined,
+    };
+    vi.mocked(authService.login).mockResolvedValue({
+      kind: 'success',
+      token: 'fresh-internal-token',
+      user: loginUser,
+    });
+    vi.mocked(authService.getInternalMe).mockResolvedValue(pendingStaff as never);
 
     const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
 
     await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
+      await result.current.login({ email: 'pending@example.com', password: 'password' });
     });
 
-    act(() => {
-      result.current.completePasswordChange({
-        message: 'Password updated successfully',
-        isActive: false,
-        mustChangePassword: false,
-        mustCompleteProfile: false,
+    expect(authService.getInternalMe).toHaveBeenCalledWith('fresh-internal-token');
+    expect(result.current.user).toMatchObject({
+      isActive: false,
+      mustChangePassword: true,
+    });
+  });
+
+  it('loads the full internal account state before completing MFA login', async () => {
+    vi.mocked(authService.getInternalMe).mockResolvedValue(pendingStaff as never);
+
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await result.current.completeMfaChallenge({
+        token: 'mfa-internal-token',
+        user: { ...pendingStaff, mustChangePassword: undefined, isActive: undefined },
       });
     });
 
+    expect(authService.getInternalMe).toHaveBeenCalledWith('mfa-internal-token');
     expect(result.current.user).toMatchObject({
       isActive: false,
-      mustChangePassword: false,
-      mustCompleteProfile: false,
+      mustChangePassword: true,
     });
-    expect(authService.getInternalMe).not.toHaveBeenCalled();
   });
 
   it('updates an internal avatar in shared session state without a follow-up request', async () => {

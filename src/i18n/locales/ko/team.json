@@ -51,6 +51,7 @@
       "permission": "권한",
       "removeButton": "제거",
       "editButton": "수정",
+      "resetPasswordButton": "비밀번호 재설정",
       "approveButton": "승인"
     },
     "invite": {
@@ -95,6 +96,19 @@
       "removeButton": "제거",
       "removeError": "팀원 제거에 실패했습니다.",
       "cancelButton": "취소"
+    },
+    "resetPassword": {
+      "title": "임시 비밀번호 설정",
+      "message": "{{name}}의 임시 비밀번호를 설정합니다. 현재 로그인된 모든 세션이 종료되며, 다음 로그인 시 이 비밀번호를 변경해야 합니다. 승인된 보안 채널로만 전달하세요.",
+      "passwordLabel": "임시 비밀번호",
+      "confirmPasswordLabel": "임시 비밀번호 확인",
+      "submitButton": "임시 비밀번호 설정",
+      "success": "{{name}}의 임시 비밀번호가 설정되었으며 현재 세션이 종료되었습니다.",
+      "error": "임시 비밀번호를 설정할 수 없습니다.",
+      "validation": {
+        "minLength": "임시 비밀번호는 12자 이상이어야 합니다.",
+        "passwordsDoNotMatch": "비밀번호가 일치하지 않습니다."
+      }
     }
   }
 }

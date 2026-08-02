@@ -1,9 +1,6 @@
-// The Team page creates and lists 'staff' and 'superadmin' only — the backend
-// team routes constrain their role field to those two. 'admin' exists in the
-// wider user_role enum (superadmin | admin | staff | user | supplier) and is
-// assignable elsewhere, so don't treat this narrower union as the full set of
-// internal roles; use InternalRole from permissions.types.ts for that.
-export type TeamRole = 'staff' | 'superadmin';
+// The Team list can return any internal account role. Creating or changing a
+// role remains controlled by its own backend route and UI options.
+export type TeamRole = 'staff' | 'admin' | 'superadmin';
 
 export interface TeamPermissions {
   makeAdmin: boolean;

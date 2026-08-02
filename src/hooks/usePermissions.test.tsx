@@ -10,7 +10,10 @@ const TOKEN_KEY = 'globalxpress_token';
 
 // AuthContext pulls in Clerk and a router; the hook only reads `user.role`
 // and `isAuthenticated`, so stub that surface rather than mounting the tree.
-const authState = { user: { role: 'staff' } as { role: string } | null, isAuthenticated: true };
+const authState = {
+  user: { role: 'staff' } as { role: string; mustChangePassword?: boolean } | null,
+  isAuthenticated: true,
+};
 vi.mock('./useAuth', () => ({
   useAuth: () => authState,
 }));
@@ -140,6 +143,17 @@ describe('usePermissions', () => {
     const { result } = renderHook(() => usePermissions(), { wrapper });
 
     expect(getMyPermissions).not.toHaveBeenCalled();
+    expect(result.current.can('catalogue.manage')).toBe(false);
+  });
+
+  it('never requests or exposes the matrix while a temporary password must be changed', () => {
+    authState.user = { role: 'staff', mustChangePassword: true };
+
+    const { result } = renderHook(() => usePermissions(), { wrapper });
+
+    expect(getMyPermissions).not.toHaveBeenCalled();
+    expect(result.current.matrix).toBeNull();
+    expect(result.current.isReady).toBe(false);
     expect(result.current.can('catalogue.manage')).toBe(false);
   });
 });

@@ -51,6 +51,7 @@
       "permission": "Permission",
       "removeButton": "Remove",
       "editButton": "Edit",
+      "resetPasswordButton": "Reset password",
       "approveButton": "Approve"
     },
     "invite": {
@@ -95,6 +96,19 @@
       "removeButton": "Remove",
       "removeError": "Failed to remove team member.",
       "cancelButton": "Cancel"
+    },
+    "resetPassword": {
+      "title": "Set temporary password",
+      "message": "Set a temporary password for {{name}}. Their current sessions will be signed out, and they must change this password when they next sign in. Share it only through your approved secure channel.",
+      "passwordLabel": "Temporary password",
+      "confirmPasswordLabel": "Confirm temporary password",
+      "submitButton": "Set temporary password",
+      "success": "Temporary password set for {{name}}. Their current sessions have been signed out.",
+      "error": "Could not set the temporary password.",
+      "validation": {
+        "minLength": "Temporary password must be at least 12 characters.",
+        "passwordsDoNotMatch": "The passwords do not match."
+      }
     }
   }
 }

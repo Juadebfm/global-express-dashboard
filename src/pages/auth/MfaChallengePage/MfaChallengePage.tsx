@@ -74,11 +74,11 @@ export function MfaChallengePage(): ReactElement {
     }
     try {
       const result = await verify({ mfaToken, code });
-      completeMfaChallenge({ user: result.user, token: result.token });
+      await completeMfaChallenge({ user: result.user, token: result.token });
       // ProtectedRoute will route based on role
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
-    } catch {
-      // surfaced via verifyError below
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Could not load your account status. Please try again.');
     }
   };
 
@@ -92,10 +92,10 @@ export function MfaChallengePage(): ReactElement {
     }
     try {
       const result = await recover({ mfaToken, recoveryCode: trimmed });
-      completeMfaChallenge({ user: result.user, token: result.tokens.accessToken });
+      await completeMfaChallenge({ user: result.user, token: result.tokens.accessToken });
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
-    } catch {
-      // surfaced via recoverError below
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Could not load your account status. Please try again.');
     }
   };
 

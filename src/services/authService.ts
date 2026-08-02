@@ -13,6 +13,7 @@ import type {
   ChangePasswordPayload,
   PasswordChangeResult,
   AdminResetPasswordPayload,
+  AdminResetPasswordResult,
   CreateInternalUserPayload,
   StaffProfilePayload,
   AvatarPresignRequest,
@@ -254,8 +255,8 @@ export async function adminResetPassword(
   token: string,
   userId: string,
   payload: AdminResetPasswordPayload
-): Promise<void> {
-  await apiPatch(`/internal/users/${userId}/password`, payload, token);
+): Promise<AdminResetPasswordResult> {
+  return apiPatchData<AdminResetPasswordResult>(`/internal/users/${userId}/password`, payload, token);
 }
 
 export async function createInternalUser(

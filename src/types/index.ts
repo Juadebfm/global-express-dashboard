@@ -15,6 +15,7 @@ export type {
   ChangePasswordPayload,
   PasswordChangeResult,
   AdminResetPasswordPayload,
+  AdminResetPasswordResult,
   CreateInternalUserPayload,
   StaffProfilePayload,
   AvatarPresignRequest,

@@ -19,7 +19,6 @@ export function StaffOnboardingPage(): ReactElement {
     isAuthenticated,
     isLoading: authLoading,
     refreshUser,
-    completePasswordChange,
   } = useAuth();
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -52,7 +51,7 @@ export function StaffOnboardingPage(): ReactElement {
 
     if (!currentPassword) { setPwError(tv.currentRequired); return; }
     if (!newPassword) { setPwError(tv.newRequired); return; }
-    if (newPassword.length < 8) { setPwError(tv.newMinLength); return; }
+    if (newPassword.length < 12) { setPwError(tv.newMinLength); return; }
     if (!confirmPassword) { setPwError(tv.confirmRequired); return; }
     if (newPassword !== confirmPassword) { setPwError(tv.passwordsDoNotMatch); return; }
 
@@ -61,18 +60,21 @@ export function StaffOnboardingPage(): ReactElement {
 
     setPwLoading(true);
     try {
-      const result = await changeMyPassword(token, { currentPassword, newPassword });
-      // The account becomes pending approval after its first password change.
-      // Use the authoritative mutation response instead of probing an
-      // operationally restricted endpoint, so this screen transitions
-      // immediately and deterministically.
-      completePasswordChange(result);
+      await changeMyPassword(token, { currentPassword, newPassword });
+      // The password endpoint confirms the change, but the current account
+      // record is the source of truth for the next step (dashboard or pending
+      // activation). Keep the user on this isolated screen until that record
+      // has been read successfully.
+      const refreshedUser = await refreshUser();
+      if (!refreshedUser) {
+        throw new Error('Your password was changed, but we could not confirm your account status. Refresh this page before continuing.');
+      }
     } catch (err) {
       setPwError(err instanceof Error ? err.message : 'Failed to change password');
     } finally {
       setPwLoading(false);
     }
-  }, [currentPassword, newPassword, confirmPassword, t, completePasswordChange]);
+  }, [currentPassword, newPassword, confirmPassword, t, refreshUser]);
 
   if (authLoading) return <AuthLayout><div /></AuthLayout>;
 

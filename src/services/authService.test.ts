@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   confirmMyAvatar,
+  adminResetPassword,
   getMe,
   login,
   presignMyAvatar,
@@ -135,6 +136,39 @@ describe('getMe', () => {
     const [, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     const headers = new Headers((init as RequestInit).headers);
     expect(headers.get('Authorization')).toBe('Bearer jwt-x');
+  });
+});
+
+describe('adminResetPassword', () => {
+  it('sends only the temporary password and unwraps the safe account state', async () => {
+    mockFetch({
+      success: true,
+      data: {
+        message: 'Temporary password set',
+        user: {
+          id: '11111111-1111-4111-8111-111111111111',
+          role: 'staff',
+          isActive: true,
+          mustChangePassword: true,
+          mustCompleteProfile: false,
+        },
+        sessionsInvalidated: true,
+      },
+    });
+
+    const result = await adminResetPassword(
+      'superadmin-token',
+      '11111111-1111-4111-8111-111111111111',
+      { newPassword: 'temporary-pass' },
+    );
+
+    expect(result.sessionsInvalidated).toBe(true);
+    expect(result.user.mustChangePassword).toBe(true);
+    const { url, init } = lastCall();
+    expect(url).toContain('/internal/users/11111111-1111-4111-8111-111111111111/password');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(init.body as string)).toEqual({ newPassword: 'temporary-pass' });
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer superadmin-token');
   });
 });
 

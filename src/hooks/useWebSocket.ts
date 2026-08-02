@@ -158,7 +158,11 @@ export function useWebSocket(): void {
       };
     };
 
-    if (isClerkSignedIn || !!user) {
+    // An internal user who must replace a temporary password is intentionally
+    // limited to the password screen. Do not establish a dashboard connection
+    // until the backend clears that requirement.
+    const mayConnect = (isClerkSignedIn && !user) || (!!user && !user.mustChangePassword);
+    if (mayConnect) {
       void connect();
     }
 
@@ -167,5 +171,5 @@ export function useWebSocket(): void {
       setWs(null);
       wsRef.current?.close();
     };
-  }, [isClerkSignedIn, !!user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isClerkSignedIn, !!user, user?.mustChangePassword]); // eslint-disable-line react-hooks/exhaustive-deps
 }

@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, Mail, Search, User, UserPlus, X } from 'lucide-react';
+import { ChevronDown, KeyRound, Loader2, Mail, Search, User, UserPlus, X } from 'lucide-react';
 import type { Country } from 'react-phone-number-input';
 import { getCountries, getCountryCallingCode } from 'react-phone-number-input';
 import flags from 'react-phone-number-input/flags';
@@ -21,7 +21,7 @@ import {
 } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { Pagination } from '@/components/ui';
-import { deleteUser } from '@/services';
+import { adminResetPassword, deleteUser } from '@/services';
 import { ApiError } from '@/lib/apiClient';
 import type { TeamMember, TeamRole } from '@/types';
 import { cn } from '@/utils';
@@ -33,7 +33,7 @@ import {
 } from '@/pages/profile/ProfilePage/internalPhone';
 
 type TeamTab = 'all' | 'admin' | 'non-admin';
-type ActiveModal = 'invite' | 'edit' | 'profile' | 'remove' | null;
+type ActiveModal = 'invite' | 'edit' | 'profile' | 'remove' | 'reset-password' | null;
 
 interface TeamFormState {
   firstName: string;
@@ -61,6 +61,7 @@ const emptyForm: TeamFormState = {
 
 const roleLabels: Record<TeamRole, string> = {
   staff: 'Staff',
+  admin: 'Admin',
   superadmin: 'Super Admin',
 };
 
@@ -247,6 +248,9 @@ export function TeamPage(): ReactElement {
   const [invitePhoneCountryCode, setInvitePhoneCountryCode] = useState<Country>('NG');
   const [invitePhoneError, setInvitePhoneError] = useState<string | null>(null);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+  const [temporaryPassword, setTemporaryPassword] = useState('');
+  const [confirmTemporaryPassword, setConfirmTemporaryPassword] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const isSuperAdmin = useCan('app.superadmin');
   const hasAccess = useCan('team.view');
@@ -318,11 +322,21 @@ export function TeamPage(): ReactElement {
     setActiveModal('remove');
   };
 
+  const openResetPassword = (member: TeamMember): void => {
+    setSelectedMember(member);
+    setTemporaryPassword('');
+    setConfirmTemporaryPassword('');
+    setFormError(null);
+    setActiveModal('reset-password');
+  };
+
   const closeModal = (): void => {
     setActiveModal(null);
     setFormError(null);
     setInvitePhoneError(null);
     setRoleDropdownOpen(false);
+    setTemporaryPassword('');
+    setConfirmTemporaryPassword('');
   };
 
   const handleRoleChange = (value: TeamRole): void => {
@@ -346,6 +360,13 @@ export function TeamPage(): ReactElement {
 
   const canApproveMember = (member: TeamMember): boolean =>
     isSuperAdmin && member.approvalStatus === 'pending';
+
+  // This action is intentionally role-gated rather than capability-gated:
+  // the backend exposes the temporary-password route to Superadmins only.
+  const canResetMemberPassword = (member: TeamMember): boolean =>
+    user?.role === 'superadmin' &&
+    member.id !== user.id &&
+    (member.role === 'staff' || member.role === 'admin');
 
   const handleSave = async (): Promise<void> => {
     if (activeModal === 'invite') {
@@ -374,7 +395,7 @@ export function TeamPage(): ReactElement {
           lastName: formState.lastName.trim(),
           email: formState.email.trim().toLowerCase(),
           phone: buildE164(invitePhone, selectedInvitePhoneCountry),
-          role: formState.role,
+          role: formState.role === 'superadmin' ? 'superadmin' : 'staff',
           position: formState.position.trim() || undefined,
         });
         pushMessage({ tone: 'success', message: t('modals.invite.inviteSuccess') });
@@ -464,6 +485,41 @@ export function TeamPage(): ReactElement {
     if (!selectedMember) return;
     approveMember(selectedMember);
     closeModal();
+  };
+
+  const handleResetPassword = async (): Promise<void> => {
+    if (!selectedMember || !canResetMemberPassword(selectedMember)) return;
+
+    setFormError(null);
+    if (temporaryPassword.length < 12) {
+      setFormError(t('modals.resetPassword.validation.minLength'));
+      return;
+    }
+    if (temporaryPassword !== confirmTemporaryPassword) {
+      setFormError(t('modals.resetPassword.validation.passwordsDoNotMatch'));
+      return;
+    }
+
+    setIsResettingPassword(true);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error('Not authenticated');
+      const result = await adminResetPassword(token, selectedMember.id, {
+        newPassword: temporaryPassword,
+      });
+      if (!result.sessionsInvalidated || !result.user.mustChangePassword) {
+        throw new Error('The temporary password could not be confirmed. Please try again.');
+      }
+      pushMessage({
+        tone: 'success',
+        message: t('modals.resetPassword.success', { name: selectedMember.fullName }),
+      });
+      closeModal();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : t('modals.resetPassword.error'));
+    } finally {
+      setIsResettingPassword(false);
+    }
   };
 
   return (
@@ -813,6 +869,16 @@ export function TeamPage(): ReactElement {
                   >
                     {t('modals.profile.editButton')}
                   </button>
+                  {canResetMemberPassword(selectedMember) && (
+                    <button
+                      type="button"
+                      onClick={() => openResetPassword(selectedMember)}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-200 px-6 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50 sm:w-auto"
+                    >
+                      <KeyRound className="h-4 w-4" />
+                      {t('modals.profile.resetPasswordButton')}
+                    </button>
+                  )}
                   {canApproveMember(selectedMember) && (
                     <button
                       type="button"
@@ -822,6 +888,68 @@ export function TeamPage(): ReactElement {
                       {t('modals.profile.approveButton')}
                     </button>
                   )}
+                </div>
+              </div>
+            )}
+
+            {activeModal === 'reset-password' && selectedMember && (
+              <div>
+                <h2 className="px-8 text-center text-xl font-semibold text-gray-800">
+                  {t('modals.resetPassword.title')}
+                </h2>
+                <p className="mt-4 text-sm leading-6 text-gray-600">
+                  {t('modals.resetPassword.message', { name: selectedMember.fullName })}
+                </p>
+
+                <div className="mt-6 space-y-4">
+                  <div>
+                    <label htmlFor="temporary-password" className="mb-1.5 block text-sm font-medium text-gray-700">
+                      {t('modals.resetPassword.passwordLabel')}
+                    </label>
+                    <input
+                      id="temporary-password"
+                      type="password"
+                      autoComplete="new-password"
+                      value={temporaryPassword}
+                      onChange={(event) => setTemporaryPassword(event.target.value)}
+                      className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-brand-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="confirm-temporary-password" className="mb-1.5 block text-sm font-medium text-gray-700">
+                      {t('modals.resetPassword.confirmPasswordLabel')}
+                    </label>
+                    <input
+                      id="confirm-temporary-password"
+                      type="password"
+                      autoComplete="new-password"
+                      value={confirmTemporaryPassword}
+                      onChange={(event) => setConfirmTemporaryPassword(event.target.value)}
+                      className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-brand-500"
+                    />
+                  </div>
+                </div>
+
+                {formError && <p className="mt-4 text-sm text-red-500" role="alert">{formError}</p>}
+
+                <div className="mt-6 flex flex-col-reverse gap-3 sm:mt-8 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    disabled={isResettingPassword}
+                    className="w-full flex-1 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-200 disabled:opacity-50 sm:w-auto"
+                  >
+                    {t('modals.cancelButton')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleResetPassword()}
+                    disabled={isResettingPassword}
+                    className="inline-flex w-full flex-1 items-center justify-center gap-2 rounded-2xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50 sm:w-auto"
+                  >
+                    {isResettingPassword && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {t('modals.resetPassword.submitButton')}
+                  </button>
                 </div>
               </div>
             )}

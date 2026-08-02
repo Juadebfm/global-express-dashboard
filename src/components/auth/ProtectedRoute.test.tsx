@@ -80,7 +80,6 @@ function mockAuth({
     clearError: vi.fn(),
     refreshUser: vi.fn(),
     updateCurrentUserAvatar: vi.fn(),
-    completePasswordChange: vi.fn(),
     completeMfaChallenge: vi.fn(),
   });
   vi.mocked(useClerkAuth).mockReturnValue({

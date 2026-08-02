@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClerk, useUser as useClerkUser } from '@clerk/clerk-react';
-import type { LoginCredentials, PasswordChangeResult, User } from '@/types';
+import type { LoginCredentials, User } from '@/types';
 import { login as apiLogin, getMe, getInternalMe, logout as apiLogout } from '@/services/authService';
 import { useLanguageStore } from '@/store/language';
 import { queryClient } from '@/lib/queryClient';
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   // visibilitychange / 403 handlers (registered once) can pick the right
   // endpoint for each refresh.
   const currentRoleRef = useRef<string | undefined>(undefined);
-  const refreshUserPromiseRef = useRef<Promise<void> | null>(null);
+  const refreshUserPromiseRef = useRef<Promise<User | null> | null>(null);
   useEffect(() => {
     currentRoleRef.current = state.user?.role;
   }, [state.user?.role]);
@@ -94,6 +94,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
 
       syncLanguageFromUser(user);
       lastSyncedAtRef.current = Date.now();
+      currentRoleRef.current = user.role;
       setState({
         user,
         isAuthenticated: true,
@@ -119,26 +120,29 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   // refocus, and a role-change 403) share one in-flight request. Without
   // this, a forbidden operational request could fan out into concurrent
   // status probes and make the UI flicker between stale states.
-  const refreshUser = useCallback((): Promise<void> => {
+  const refreshUser = useCallback((): Promise<User | null> => {
     if (refreshUserPromiseRef.current) return refreshUserPromiseRef.current;
 
     const token = sessionStorage.getItem(TOKEN_KEY);
-    if (!token) return Promise.resolve();
+    if (!token) return Promise.resolve(null);
 
-    const refresh = (async (): Promise<void> => {
+    const refresh = (async (): Promise<User | null> => {
       try {
         const user = await fetchUser(token, currentRoleRef.current);
-        if (!user?.role) return;
+        if (!user?.role) return null;
         syncLanguageFromUser(user);
         lastSyncedAtRef.current = Date.now();
+        currentRoleRef.current = user.role;
         setState({
           user,
           isAuthenticated: true,
           isLoading: false,
           error: null,
         });
+        return user;
       } catch {
         /* Keep the current state when the status probe itself fails. */
+        return null;
       }
     })();
 
@@ -257,18 +261,17 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
         return { kind: 'mfa_required', mfaToken: outcome.mfaToken, userId: outcome.userId };
       }
 
-      sessionStorage.setItem(TOKEN_KEY, outcome.token);
-      // For internal staff, enrich the login-response user with
-      // /internal/me so we get isActive/mustCompleteProfile immediately.
+      // Internal users must be checked against their full account state
+      // before the session is made available to the dashboard. In particular,
+      // this prevents a temporary-password account from briefly loading
+      // permissions, navigation, or operational data from the login response.
       let user = outcome.user;
       if (isInternalRole(user.role)) {
-        try {
-          user = await getInternalMe(outcome.token);
-        } catch {
-          // fall back to login-response user if /internal/me is unavailable
-        }
+        user = await getInternalMe(outcome.token);
       }
+      sessionStorage.setItem(TOKEN_KEY, outcome.token);
       syncLanguageFromUser(user);
+      currentRoleRef.current = user.role;
       setState({
         user,
         isAuthenticated: true,
@@ -288,25 +291,23 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   }, []);
 
   const completeMfaChallenge = useCallback(
-    ({ user: loginUser, token }: { user: User; token: string }) => {
+    async ({ user: loginUser, token }: { user: User; token: string }): Promise<void> => {
+      // As with password login, resolve an internal user's account state
+      // before writing a usable dashboard session. This keeps forced-password
+      // users on the isolated onboarding screen from their first render.
+      let user = loginUser;
+      if (isInternalRole(loginUser.role)) {
+        user = await getInternalMe(token);
+      }
       sessionStorage.setItem(TOKEN_KEY, token);
-      syncLanguageFromUser(loginUser);
+      syncLanguageFromUser(user);
+      currentRoleRef.current = user.role;
       setState({
-        user: loginUser,
+        user,
         isAuthenticated: true,
         isLoading: false,
         error: null,
       });
-      // Fire-and-forget enrichment for internal staff — sets isActive/flags
-      // as soon as /internal/me responds without blocking the login transition.
-      if (isInternalRole(loginUser.role)) {
-        void getInternalMe(token)
-          .then((fullUser) => {
-            syncLanguageFromUser(fullUser);
-            setState({ user: fullUser, isAuthenticated: true, isLoading: false, error: null });
-          })
-          .catch(() => { /* loginUser is a usable fallback */ });
-      }
     },
     [],
   );
@@ -346,24 +347,6 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     });
   }, []);
 
-  const completePasswordChange = useCallback((result: PasswordChangeResult): void => {
-    lastSyncedAtRef.current = Date.now();
-    setState((prev) => {
-      if (!prev.user) return prev;
-      return {
-        ...prev,
-        user: {
-          ...prev.user,
-          isActive: result.isActive,
-          mustChangePassword: result.mustChangePassword,
-          mustCompleteProfile: result.mustCompleteProfile,
-        },
-        isLoading: false,
-        error: null,
-      };
-    });
-  }, []);
-
   const value = useMemo<AuthContextValue>(
     () => ({
       ...state,
@@ -373,9 +356,8 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       clearError,
       refreshUser,
       updateCurrentUserAvatar,
-      completePasswordChange,
     }),
-    [state, login, completeMfaChallenge, logout, clearError, refreshUser, updateCurrentUserAvatar, completePasswordChange]
+    [state, login, completeMfaChallenge, logout, clearError, refreshUser, updateCurrentUserAvatar]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
