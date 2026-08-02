@@ -3,12 +3,12 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useAuth,
-  useCan,
   useDashboardData,
   useOpenSupportTicketCount,
   useOrders,
   useRecordShipmentIntake,
 } from '@/hooks';
+import { useCapability } from '@/hooks/usePermissions';
 import { AppShell } from '@/pages/shared';
 import type { DetailTab } from '@/pages/shared';
 import { ShipmentIntakeModal } from '@/pages/shipments/components';
@@ -42,7 +42,7 @@ export function OperationsPage(): ReactElement {
   const { user } = useAuth();
   const { data: appData, isLoading: appLoading, error: appError } = useDashboardData();
   const { orders: allOrders, isLoading: ordersLoading } = useOrders(1, 100);
-  const isSuperAdmin = useCan('app.superadmin');
+  const canResolveEscalations = useCapability('operations.escalation.resolve');
   const [searchParams, setSearchParams] = useSearchParams();
   const [showIntake, setShowIntake] = useState(false);
   const recordIntake = useRecordShipmentIntake();
@@ -124,7 +124,7 @@ export function OperationsPage(): ReactElement {
       ) : (
         <BrowsePane
           allOrders={allOrders}
-          isSuperAdmin={isSuperAdmin}
+          canResolveEscalations={canResolveEscalations}
           userName={userName}
           onStartQueue={handleStartQueue}
         />

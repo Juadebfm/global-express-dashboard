@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 const launchGateEnabled = (process.env.VITE_LAUNCH_GATE_ENABLED ?? 'false').toLowerCase() === 'true';
 
 test.describe('Public Route Smoke Tests', () => {
-  test('home page renders global launch countdown', async ({ page }) => {
+  test('home page redirects an unauthenticated visitor to customer sign-in when launch gate is disabled', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     await expect(page).toHaveURL(/\/$/);
@@ -15,11 +15,11 @@ test.describe('Public Route Smoke Tests', () => {
       return;
     }
 
-    await expect(page.locator('a[href="/sign-in"]')).toHaveCount(1);
-    await expect(page.locator('a[href="/login"]')).toHaveCount(1);
+    await expect(page).toHaveURL(/\/sign-in$/);
+    await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
   });
 
-  test('login page is also locked behind launch countdown', async ({ page }) => {
+  test('login page renders the internal sign-in form when launch gate is disabled', async ({ page }) => {
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
 
     await expect(page).toHaveURL(/\/login$/);
@@ -35,7 +35,7 @@ test.describe('Public Route Smoke Tests', () => {
     await expect(page.locator('button[type="submit"]')).toBeVisible();
   });
 
-  test('track page is also locked behind launch countdown', async ({ page }) => {
+  test('track page renders tracking controls when launch gate is disabled', async ({ page }) => {
     await page.goto('/track', { waitUntil: 'domcontentloaded' });
 
     await expect(page).toHaveURL(/\/track$/);

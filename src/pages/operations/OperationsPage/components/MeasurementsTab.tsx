@@ -143,7 +143,7 @@ function CheckpointCard({
 
   useEffect(() => {
     if (wasPending.current && !isPending && editState === 'submitting') {
-      setEditState('idle'); // eslint-disable-line react-hooks/set-state-in-effect
+      setEditState('idle');
     }
     wasPending.current = isPending;
   }, [isPending, editState]);

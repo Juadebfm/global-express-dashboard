@@ -7,24 +7,13 @@ import { ProtectedRoute } from '@/components/auth';
 import { SupplierRoute } from '@/components/supplier/SupplierRoute';
 import { RouteErrorBoundary } from '@/components/errors';
 import { FeedbackCenter, PageLoader } from '@/components/ui';
-// Static imports — auth + landing + error pages + public tracking. These are
-// either needed on the initial paint (landing, login) or so small they aren't
-// worth splitting (error fallbacks). Everything else is lazy below.
-import {
-  LandingPage,
-  LoginPage,
-  ExternalSignInPage,
-  CompleteProfilePage,
-  ExternalSignUpPage,
-  StaffOnboardingPage,
-  ForgotPasswordPage,
-  ReactivateAccountPage,
-  MfaChallengePage,
-  MfaEnrollmentPage,
-  ForbiddenPage,
-  NotFoundPage,
-  TrackPage,
-} from '@/pages';
+// Landing must stay on the initial path because it is also the launch-gate
+// surface. The other auth flows are route-level chunks: importing signup and
+// profile completion eagerly pulled phone metadata, flags and form libraries
+// into every public visit.
+import { LandingPage } from '@/pages/auth/LandingPage';
+import { ForbiddenPage, NotFoundPage } from '@/pages/errors';
+import { TrackPage } from '@/pages/public';
 import { ROUTES, isLaunchGateActive } from '@/constants';
 
 // Code-split everything that lives behind auth or behind a less-trafficked
@@ -33,6 +22,33 @@ import { ROUTES, isLaunchGateActive } from '@/constants';
 // one Suspense boundary on the <Routes> tree below.
 const DashboardPage = lazy(() =>
   import('@/pages/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })),
+);
+const LoginPage = lazy(() =>
+  import('@/pages/auth/LoginPage').then((m) => ({ default: m.LoginPage })),
+);
+const ExternalSignInPage = lazy(() =>
+  import('@/pages/auth/ExternalSignInPage').then((m) => ({ default: m.ExternalSignInPage })),
+);
+const CompleteProfilePage = lazy(() =>
+  import('@/pages/auth/CompleteProfilePage').then((m) => ({ default: m.CompleteProfilePage })),
+);
+const ExternalSignUpPage = lazy(() =>
+  import('@/pages/auth/ExternalSignUpPage').then((m) => ({ default: m.ExternalSignUpPage })),
+);
+const StaffOnboardingPage = lazy(() =>
+  import('@/pages/auth/StaffOnboardingPage').then((m) => ({ default: m.StaffOnboardingPage })),
+);
+const ForgotPasswordPage = lazy(() =>
+  import('@/pages/auth/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })),
+);
+const ReactivateAccountPage = lazy(() =>
+  import('@/pages/auth/ReactivateAccountPage').then((m) => ({ default: m.ReactivateAccountPage })),
+);
+const MfaChallengePage = lazy(() =>
+  import('@/pages/auth/MfaChallengePage').then((m) => ({ default: m.MfaChallengePage })),
+);
+const MfaEnrollmentPage = lazy(() =>
+  import('@/pages/auth/MfaEnrollmentPage').then((m) => ({ default: m.MfaEnrollmentPage })),
 );
 const AdminDashboardPage = lazy(() =>
   import('@/pages/admin/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage })),

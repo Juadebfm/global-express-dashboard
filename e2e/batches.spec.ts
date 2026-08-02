@@ -1,25 +1,7 @@
 import { expect, test } from '@playwright/test';
-
-// The app calls the backend defined by VITE_API_BASE_URL. We intercept at the
-// network layer so tests never hit a live API and run deterministically.
-// Keep this in sync with .env.local (local dev) / .env (CI/prod).
-const API = process.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api/v1';
+import { API, ADMIN_USER, setupInternalAuth } from './helpers/internalAuth';
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
-
-const ADMIN_USER = {
-  id: 'test-admin-id',
-  email: 'admin@test.com',
-  firstName: 'Test',
-  lastName: 'Admin',
-  role: 'admin',
-  isActive: true,
-  mustChangePassword: false,
-  mustCompleteProfile: false,
-  canManageShipmentBatches: true,
-};
-
-const SUPERADMIN_USER = { ...ADMIN_USER, role: 'superadmin' };
 
 const MOCK_BATCHES = [
   {
@@ -142,36 +124,6 @@ function ok(data: unknown) {
   return { success: true, data };
 }
 
-/** Set the JWT token in localStorage before the app boots, then mock /auth/me. */
-async function setupAuth(
-  page: import('@playwright/test').Page,
-  user: typeof ADMIN_USER = ADMIN_USER,
-) {
-  // addInitScript runs before any page script — token is in storage when
-  // AuthContext mounts and calls checkAuth.
-  await page.addInitScript(() => {
-    window.localStorage.setItem('globalxpress_token', 'e2e-test-token');
-  });
-
-  await page.route(`${API}/auth/me`, (route) =>
-    route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(user)) }),
-  );
-
-  // Silence background calls that are irrelevant to batch tests
-  await page.route(`${API}/notifications/unread-count`, (route) =>
-    route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok({ count: 0 })) }),
-  );
-  await page.route(`${API}/support/tickets**`, (route) =>
-    route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok({ data: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 1 } })) }),
-  );
-  await page.route(`${API}/shipments**`, (route) =>
-    route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok({ data: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 1 } })) }),
-  );
-  await page.route(`${API}/dashboard**`, (route) =>
-    route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(null)) }),
-  );
-}
-
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 test.describe('Batch Management', () => {
@@ -190,7 +142,7 @@ test.describe('Batch Management', () => {
 
   test.describe('BatchesPage', () => {
     test.beforeEach(async ({ page }) => {
-      await setupAuth(page);
+      await setupInternalAuth(page);
       await page.route(`${API}/batches/status-labels`, (route) =>
         route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(MOCK_STATUS_LABELS)) }),
       );
@@ -229,51 +181,36 @@ test.describe('Batch Management', () => {
 
     test('renders batch cards with tracking numbers', async ({ page }) => {
       await page.goto('/batches');
-      await expect(page.getByText('GEX-MASTER-AIR-20260613-A1B2C3')).toBeVisible();
-      await expect(page.getByText('GEX-MASTER-SEA-20260613-D4E5F6')).toBeVisible();
+      const batchTable = page.locator('table:visible');
+      await expect(batchTable.getByText('GEX-MASTER-AIR-20260613-A1B2C3')).toBeVisible();
+      await expect(batchTable.getByText('GEX-MASTER-SEA-20260613-D4E5F6')).toBeVisible();
     });
 
     test('renders transport mode badges on batch cards', async ({ page }) => {
       await page.goto('/batches');
-      await expect(page.getByText('Air Freight').first()).toBeVisible();
-      await expect(page.getByText('Ocean Freight')).toBeVisible();
+      const batchTable = page.locator('table:visible');
+      await expect(batchTable.getByText('Air Freight')).toBeVisible();
+      await expect(batchTable.getByText('Ocean Freight')).toBeVisible();
     });
 
     test('renders status labels on batch cards', async ({ page }) => {
       await page.goto('/batches');
-      await expect(page.getByText('Accepting goods')).toBeVisible();
-      await expect(page.getByText('Sealed')).toBeVisible();
+      const batchTable = page.locator('table:visible');
+      await expect(batchTable.getByText('Accepting goods')).toBeVisible();
+      await expect(batchTable.getByText('Sealed')).toBeVisible();
     });
 
     test('renders customer and order counts on batch cards', async ({ page }) => {
       await page.goto('/batches');
+      const batchTable = page.locator('table:visible');
       // First batch: 4 customers, 11 orders
-      await expect(page.getByText('4').first()).toBeVisible();
-      await expect(page.getByText('11').first()).toBeVisible();
+      await expect(batchTable.getByText('4', { exact: true })).toBeVisible();
+      await expect(batchTable.getByText('11', { exact: true })).toBeVisible();
     });
 
-    test('"New Batch" button is visible for admin', async ({ page }) => {
+    test('explains that batches are created automatically', async ({ page }) => {
       await page.goto('/batches');
-      await expect(page.getByRole('button', { name: /new batch/i })).toBeVisible();
-    });
-
-    test('"New Batch" button opens mode picker modal', async ({ page }) => {
-      await page.goto('/batches');
-      await page.getByRole('button', { name: /new batch/i }).click();
-      await expect(page.getByRole('heading', { name: /new batch/i })).toBeVisible();
-      // The mode filter bar already has "Air" and "Sea" buttons — scope to the modal to
-      // avoid a strict-mode violation from the duplicate names.
-      const newBatchModal = page.getByRole('heading', { name: /new batch/i }).locator('..');
-      await expect(newBatchModal.getByRole('button', { name: /^air$/i })).toBeVisible();
-      await expect(newBatchModal.getByRole('button', { name: /^sea$/i })).toBeVisible();
-      await expect(page.getByRole('button', { name: /cancel/i })).toBeVisible();
-    });
-
-    test('cancel closes the new batch modal', async ({ page }) => {
-      await page.goto('/batches');
-      await page.getByRole('button', { name: /new batch/i }).click();
-      await page.getByRole('button', { name: /cancel/i }).click();
-      await expect(page.getByRole('heading', { name: /new batch/i })).not.toBeVisible();
+      await expect(page.getByText(/batches are created automatically when orders are verified and priced/i)).toBeVisible();
     });
 
     test('clicking a batch card navigates to detail page', async ({ page }) => {
@@ -282,7 +219,7 @@ test.describe('Batch Management', () => {
         route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(MOCK_ROSTER)) }),
       );
       await page.goto('/batches');
-      await page.getByText('GEX-MASTER-AIR-20260613-A1B2C3').click();
+      await page.locator('table:visible').getByText('GEX-MASTER-AIR-20260613-A1B2C3').click();
       await expect(page).toHaveURL(/\/batches\/batch-air-001/);
     });
 
@@ -296,7 +233,7 @@ test.describe('Batch Management', () => {
 
   test.describe('BatchDetailPage', () => {
     test.beforeEach(async ({ page }) => {
-      await setupAuth(page);
+      await setupInternalAuth(page);
       await page.route(`${API}/batches/status-labels`, (route) =>
         route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(MOCK_STATUS_LABELS)) }),
       );
@@ -318,11 +255,9 @@ test.describe('Batch Management', () => {
 
     test('renders summary stats cards', async ({ page }) => {
       await page.goto('/batches/batch-air-001');
-      // "Customers" and "Total weight" are unique. "Orders" also appears in the sidebar
-      // nav link, so we scope to <p> elements to avoid a strict-mode violation.
-      await expect(page.getByText('Customers', { exact: true })).toBeVisible();
+      await expect(page.locator('p').filter({ hasText: /^Customers$/ })).toBeVisible();
       await expect(page.locator('p').filter({ hasText: /^Orders$/ })).toBeVisible();
-      await expect(page.getByText('Total weight', { exact: true })).toBeVisible();
+      await expect(page.locator('p').filter({ hasText: /^Total weight$/ })).toBeVisible();
     });
 
     test('renders unverified warning when unverifiedOrders > 0', async ({ page }) => {
@@ -334,39 +269,39 @@ test.describe('Batch Management', () => {
 
     test('renders customer roster with customer names', async ({ page }) => {
       await page.goto('/batches/batch-air-001');
-      await expect(page.getByText('Adaobi Nwachukwu')).toBeVisible();
-      await expect(page.getByText('Emeka Okafor')).toBeVisible();
+      const rosterTable = page.locator('table:visible');
+      await expect(rosterTable.getByText('Adaobi Nwachukwu')).toBeVisible();
+      await expect(rosterTable.getByText('Emeka Okafor')).toBeVisible();
     });
 
     test('renders batch tracking numbers for each customer (not individual order numbers)', async ({ page }) => {
       await page.goto('/batches/batch-air-001');
-      await expect(page.getByText('GEX-20260601-AB12CD34').first()).toBeVisible();
-      await expect(page.getByText('GEX-20260601-CD34EF56').first()).toBeVisible();
+      const rosterTable = page.locator('table:visible');
+      await expect(rosterTable.getByText('GEX-20260601-AB12CD34')).toBeVisible();
+      await expect(rosterTable.getByText('GEX-20260601-CD34EF56')).toBeVisible();
     });
 
     test('unverified customer slot shows "Unverified" badge', async ({ page }) => {
       await page.goto('/batches/batch-air-001');
-      // "Unverified" also appears as a stats card label — scope to the customer row
-      // button so the locator resolves to exactly one element.
       await expect(
-        page.locator('button', { hasText: 'Emeka Okafor' }).getByText('Unverified'),
+        page.locator('table:visible').getByRole('row', { name: /Emeka Okafor/ }).getByText('Unverified orders'),
       ).toBeVisible();
     });
 
     test('expanding a customer row reveals order details', async ({ page }) => {
       await page.goto('/batches/batch-air-001');
       // Click Adaobi's row to expand
-      await page.getByText('Adaobi Nwachukwu').click();
-      await expect(page.getByText('Electronics')).toBeVisible();
+      const rosterTable = page.locator('table:visible');
+      await rosterTable.getByText('Adaobi Nwachukwu').click();
+      await expect(rosterTable.getByText('Electronics')).toBeVisible();
       // exact: true avoids a substring match with the warning banner which contains
       // "verified and priced" as part of a longer sentence.
-      await expect(page.getByText('Verified and priced', { exact: true })).toBeVisible();
+      await expect(rosterTable.getByText('Verified', { exact: true })).toBeVisible();
     });
 
-    test('"Add order" input is visible for open batch with canManage', async ({ page }) => {
+    test('manual batch controls stay hidden for an admin without batches.manage', async ({ page }) => {
       await page.goto('/batches/batch-air-001');
-      await expect(page.getByPlaceholder(/order id/i)).toBeVisible();
-      await expect(page.getByText('Add order to batch')).toBeVisible();
+      await expect(page.getByText('Add order manually')).not.toBeVisible();
     });
 
     test('"Back" link navigates to the batch list', async ({ page }) => {
@@ -388,15 +323,18 @@ test.describe('Batch Management', () => {
       await expect(page).toHaveURL(/\/batches$/);
     });
 
-    test('"Close batch" button is NOT visible for plain admin (superadmin only)', async ({ page }) => {
+    test('"Close batch" stays hidden without batches.finalise', async ({ page }) => {
       await page.goto('/batches/batch-air-001');
       await expect(page.getByRole('button', { name: /close batch/i })).not.toBeVisible();
     });
   });
 
-  test.describe('BatchDetailPage (superadmin)', () => {
+  test.describe('BatchDetailPage (capability grants)', () => {
     test.beforeEach(async ({ page }) => {
-      await setupAuth(page, SUPERADMIN_USER);
+      await setupInternalAuth(page, {
+        user: ADMIN_USER,
+        grantedCapabilities: ['batches.manage', 'batches.finalise'],
+      });
       await page.route(`${API}/batches/status-labels`, (route) =>
         route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(MOCK_STATUS_LABELS)) }),
       );
@@ -405,7 +343,15 @@ test.describe('Batch Management', () => {
       );
     });
 
-    test('"Close batch" button IS visible for superadmin', async ({ page }) => {
+    test('manual batch controls are visible with batches.manage', async ({ page }) => {
+      await page.route(`${API}/batches/batch-air-001/available-orders`, (route) =>
+        route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok([])) }),
+      );
+      await page.goto('/batches/batch-air-001');
+      await expect(page.getByText('Add order manually')).toBeVisible();
+    });
+
+    test('"Close batch" button is visible with batches.finalise', async ({ page }) => {
       await page.goto('/batches/batch-air-001');
       await expect(page.getByRole('button', { name: /close batch/i })).toBeVisible();
     });
@@ -469,7 +415,7 @@ test.describe('Batch Management', () => {
     };
 
     test.beforeEach(async ({ page }) => {
-      await setupAuth(page);
+      await setupInternalAuth(page, { grantedCapabilities: ['batches.manage'] });
       await page.route(`${API}/batches/status-labels`, (route) =>
         route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(MOCK_STATUS_LABELS)) }),
       );
@@ -491,14 +437,15 @@ test.describe('Batch Management', () => {
     test('"Update status" button opens the status modal', async ({ page }) => {
       await page.goto('/batches/batch-air-001');
       await page.getByRole('button', { name: /update status/i }).click();
-      await expect(page.getByRole('heading', { name: /update batch status/i })).toBeVisible();
-      await expect(page.getByRole('combobox')).toBeVisible();
+      const statusModal = page.getByRole('heading', { name: /update batch status/i }).locator('xpath=../..');
+      await expect(statusModal).toBeVisible();
+      await expect(statusModal.getByRole('combobox')).toBeVisible();
     });
 
     test('status modal shows transport-mode-relevant statuses', async ({ page }) => {
       await page.goto('/batches/batch-air-001');
       await page.getByRole('button', { name: /update status/i }).click();
-      const select = page.getByRole('combobox');
+      const select = page.getByRole('heading', { name: /update batch status/i }).locator('xpath=../..').getByRole('combobox');
       await expect(select.locator('option', { hasText: 'Sent to the airport' })).toHaveCount(1);
       await expect(select.locator('option', { hasText: 'Flight has departed' })).toHaveCount(1);
     });
@@ -512,7 +459,7 @@ test.describe('Batch Management', () => {
     test('selecting a status enables "Apply status" button', async ({ page }) => {
       await page.goto('/batches/batch-air-001');
       await page.getByRole('button', { name: /update status/i }).click();
-      await page.getByRole('combobox').selectOption('FLIGHT_DEPARTED');
+      await page.getByRole('heading', { name: /update batch status/i }).locator('xpath=../..').getByRole('combobox').selectOption('FLIGHT_DEPARTED');
       await expect(page.getByRole('button', { name: /apply status/i })).toBeEnabled();
     });
   });

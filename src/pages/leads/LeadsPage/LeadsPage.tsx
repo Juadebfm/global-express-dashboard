@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { ChevronDown, Trash2, UserCheck } from 'lucide-react';
 import type { Lead, LeadStatus, LeadType } from '@/types';
 import { useLeads, useUpdateLead, useDeleteLead } from '@/hooks/useLeads';
+import { useCapability } from '@/hooks/usePermissions';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { Pagination } from '@/components/ui';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -76,6 +77,7 @@ export function LeadsPage(): ReactElement {
   });
   const { update, isUpdating } = useUpdateLead();
   const deleteMutation = useDeleteLead();
+  const canDeleteLead = useCapability('leads.manage');
   const pushMessage = useFeedbackStore((s) => s.pushMessage);
 
   const handleStatusChange = async (id: string, status: LeadStatus) => {
@@ -88,7 +90,7 @@ export function LeadsPage(): ReactElement {
   };
 
   const handleDelete = async (): Promise<void> => {
-    if (!deleteTarget) return;
+    if (!deleteTarget || !canDeleteLead) return;
     try {
       await deleteMutation.mutateAsync(deleteTarget);
       pushMessage({ tone: 'success', message: 'Inquiry deleted.' });
@@ -192,13 +194,15 @@ export function LeadsPage(): ReactElement {
                             <UserCheck className="h-4 w-4" />
                           </button>
                         )}
-                        <button
-                          title="Delete"
-                          onClick={() => setDeleteTarget(lead.id)}
-                          className="rounded p-1 text-red-500 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {canDeleteLead && (
+                          <button
+                            title="Delete"
+                            onClick={() => setDeleteTarget(lead.id)}
+                            className="rounded p-1 text-red-500 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -260,16 +264,18 @@ export function LeadsPage(): ReactElement {
         </div>
       )}
 
-      <ConfirmModal
-        isOpen={deleteTarget !== null}
-        tone="danger"
-        title="Permanently delete this inquiry?"
-        message="This cannot be undone."
-        confirmLabel="Delete"
-        isLoading={deleteMutation.isPending}
-        onConfirm={() => void handleDelete()}
-        onCancel={() => setDeleteTarget(null)}
-      />
+      {canDeleteLead && (
+        <ConfirmModal
+          isOpen={deleteTarget !== null}
+          tone="danger"
+          title="Permanently delete this inquiry?"
+          message="This cannot be undone."
+          confirmLabel="Delete"
+          isLoading={deleteMutation.isPending}
+          onConfirm={() => void handleDelete()}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </AppShell>
   );
 }

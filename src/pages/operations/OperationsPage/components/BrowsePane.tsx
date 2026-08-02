@@ -258,7 +258,7 @@ function getActionLabel(o: OrderListItem): string {
 
 export interface BrowsePaneProps {
   allOrders: OrderListItem[];
-  isSuperAdmin: boolean;
+  canResolveEscalations: boolean;
   userName: string;
   /** Guided-queue selection — starts the queue AT this specific order. */
   onStartQueue: (orderId: string, kind: QueueKind) => void;
@@ -273,7 +273,7 @@ export interface BrowsePaneProps {
  */
 export function BrowsePane({
   allOrders,
-  isSuperAdmin,
+  canResolveEscalations,
   userName,
   onStartQueue,
 }: BrowsePaneProps): ReactElement {
@@ -365,7 +365,7 @@ export function BrowsePane({
         {canManageCatalogue && (
           <ActionChip label="Claims to review" count={pendingClaimsCount} onClick={() => navigate(ROUTES.SUPPORT)} />
         )}
-        {isSuperAdmin && (
+        {canResolveEscalations && (
           <ActionChip label="Needs your review" count={counts.escalated} onClick={() => handleStartQueue('escalated')} />
         )}
       </div>
