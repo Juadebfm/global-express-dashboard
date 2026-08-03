@@ -14,6 +14,7 @@ import {
   useCan,
   useChangeUserRole,
   useDashboardData,
+  usePermissions,
   usePositions,
   useSearch,
   useTeam,
@@ -31,9 +32,18 @@ import {
   isPossibleE164,
   type PhoneCountryOption,
 } from '@/pages/profile/ProfilePage/internalPhone';
+import { TeamAccessPanel } from './TeamAccessPanel';
 
 type TeamTab = 'all' | 'admin' | 'non-admin';
-type ActiveModal = 'invite' | 'edit' | 'profile' | 'remove' | 'reset-password' | null;
+type TeamWorkspaceTab = 'members' | 'access';
+type ActiveModal =
+  | 'invite'
+  | 'edit'
+  | 'confirm-role-change'
+  | 'profile'
+  | 'remove'
+  | 'reset-password'
+  | null;
 
 interface TeamFormState {
   firstName: string;
@@ -198,6 +208,7 @@ export function TeamPage(): ReactElement {
   const { data, isLoading, error } = useDashboardData();
   const { query, setQuery } = useSearch();
   const { user } = useAuth();
+  const { isReady: permissionsReady, isSuperadmin } = usePermissions();
 
   // ?page=N URL state — same shape as the other paginated pages.
   const [searchParams, setSearchParams] = useSearchParams();
@@ -232,6 +243,7 @@ export function TeamPage(): ReactElement {
   const { positions, isLoading: positionsLoading } = usePositions();
   const updateUserMutation = useUpdateUser();
   const changeRoleMutation = useChangeUserRole();
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<TeamWorkspaceTab>('members');
   const [activeTab, setActiveTab] = useState<TeamTab>('all');
   // All four mutations below (invite/edit/remove/approve) invalidate the
   // ['team'] query on success, so apiMembers is always the fresh source of
@@ -254,9 +266,10 @@ export function TeamPage(): ReactElement {
 
   const isSuperAdmin = useCan('app.superadmin');
   const hasAccess = useCan('team.view');
+  const canManageAccess = permissionsReady && isSuperadmin;
   const isSavingForm = isInviting || updateUserMutation.isPending || changeRoleMutation.isPending;
 
-  const roleOptions: TeamRole[] = isSuperAdmin ? ['staff', 'superadmin'] : ['staff'];
+  const roleOptions: TeamRole[] = isSuperAdmin ? ['staff', 'admin', 'superadmin'] : ['staff'];
   const selectedInvitePhoneCountry = useMemo(
     () =>
       PHONE_COUNTRY_OPTIONS.find((country) => country.code === invitePhoneCountryCode) ??
@@ -368,7 +381,7 @@ export function TeamPage(): ReactElement {
     member.id !== user.id &&
     (member.role === 'staff' || member.role === 'admin');
 
-  const handleSave = async (): Promise<void> => {
+  const handleSave = async (roleChangeConfirmed = false): Promise<void> => {
     if (activeModal === 'invite') {
       if (
         !formState.firstName.trim() ||
@@ -395,7 +408,7 @@ export function TeamPage(): ReactElement {
           lastName: formState.lastName.trim(),
           email: formState.email.trim().toLowerCase(),
           phone: buildE164(invitePhone, selectedInvitePhoneCountry),
-          role: formState.role === 'superadmin' ? 'superadmin' : 'staff',
+          role: formState.role,
           position: formState.position.trim() || undefined,
         });
         pushMessage({ tone: 'success', message: t('modals.invite.inviteSuccess') });
@@ -429,7 +442,11 @@ export function TeamPage(): ReactElement {
       return;
     }
 
-    if (activeModal === 'edit' && selectedMember) {
+    if ((activeModal === 'edit' || activeModal === 'confirm-role-change') && selectedMember) {
+      if (formState.role !== selectedMember.role && !roleChangeConfirmed) {
+        setActiveModal('confirm-role-change');
+        return;
+      }
       const trimmedPosition = formState.position.trim();
       try {
         await updateUserMutation.mutateAsync({
@@ -528,7 +545,7 @@ export function TeamPage(): ReactElement {
         <PageHeader
           title={t('pageTitle')}
           subtitle={t('subtitle')}
-          actions={
+          actions={activeWorkspaceTab === 'members' ? (
             <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
               <div className="relative w-full sm:max-w-xs">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -551,7 +568,7 @@ export function TeamPage(): ReactElement {
                 </button>
               )}
             </div>
-          }
+          ) : undefined}
         />
 
         {!hasAccess ? (
@@ -563,7 +580,48 @@ export function TeamPage(): ReactElement {
           </div>
         ) : (
           <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
-            <div className="flex flex-wrap items-center gap-6 border-b border-gray-100 pb-4">
+            <div className="flex flex-wrap items-center gap-6 border-b border-gray-100 pb-4" role="tablist" aria-label={t('workspaceTabs.label')}>
+              <button
+                id="team-members-tab"
+                type="button"
+                role="tab"
+                aria-selected={activeWorkspaceTab === 'members'}
+                aria-controls="team-members-panel"
+                onClick={() => setActiveWorkspaceTab('members')}
+                className={cn(
+                  'relative text-sm font-semibold transition',
+                  activeWorkspaceTab === 'members' ? 'text-brand-600' : 'text-gray-500 hover:text-gray-700',
+                )}
+              >
+                {t('workspaceTabs.members')}
+                {activeWorkspaceTab === 'members' && (
+                  <span className="absolute -bottom-4 left-0 h-0.5 w-full rounded-full bg-brand-500" />
+                )}
+              </button>
+              {canManageAccess && (
+                <button
+                  id="team-access-tab"
+                  type="button"
+                  role="tab"
+                  aria-selected={activeWorkspaceTab === 'access'}
+                  aria-controls="team-access-panel"
+                  onClick={() => setActiveWorkspaceTab('access')}
+                  className={cn(
+                    'relative text-sm font-semibold transition',
+                    activeWorkspaceTab === 'access' ? 'text-brand-600' : 'text-gray-500 hover:text-gray-700',
+                  )}
+                >
+                  {t('workspaceTabs.access')}
+                  {activeWorkspaceTab === 'access' && (
+                    <span className="absolute -bottom-4 left-0 h-0.5 w-full rounded-full bg-brand-500" />
+                  )}
+                </button>
+              )}
+            </div>
+
+            {activeWorkspaceTab === 'members' && (
+              <div id="team-members-panel" role="tabpanel" aria-labelledby="team-members-tab">
+            <div className="mt-6 flex flex-wrap items-center gap-6 border-b border-gray-100 pb-4">
               {([
                 { id: 'all', label: t('tabs.all') },
                 { id: 'admin', label: t('tabs.admin') },
@@ -794,6 +852,13 @@ export function TeamPage(): ReactElement {
                     onPageChange={setPage}
                   />
                 )}
+              </div>
+            )}
+              </div>
+            )}
+            {activeWorkspaceTab === 'access' && canManageAccess && (
+              <div id="team-access-panel" role="tabpanel" aria-labelledby="team-access-tab" className="pt-6">
+                <TeamAccessPanel onEditMember={openEdit} />
               </div>
             )}
           </div>
@@ -1081,6 +1146,40 @@ export function TeamPage(): ReactElement {
                     className="w-full flex-1 rounded-2xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50 sm:w-auto"
                   >
                     {isSavingForm ? '...' : t('modals.saveButton')}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeModal === 'confirm-role-change' && selectedMember && (
+              <div className="text-center">
+                <h2 className="px-8 text-xl font-semibold text-gray-800">
+                  {t('modals.confirmRoleChange.title')}
+                </h2>
+                <p className="mt-4 text-sm leading-6 text-gray-600">
+                  {t('modals.confirmRoleChange.message', {
+                    name: selectedMember.fullName,
+                    fromRole: t(`roleLabels.${selectedMember.role}`),
+                    toRole: t(`roleLabels.${formState.role}`),
+                  })}
+                </p>
+                {formError && <p className="mt-4 text-sm text-red-500" role="alert">{formError}</p>}
+                <div className="mt-6 flex flex-col-reverse gap-3 sm:mt-8 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setActiveModal('edit')}
+                    disabled={isSavingForm}
+                    className="w-full flex-1 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-200 disabled:opacity-50 sm:w-auto"
+                  >
+                    {t('modals.cancelButton')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleSave(true)}
+                    disabled={isSavingForm}
+                    className="w-full flex-1 rounded-2xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50 sm:w-auto"
+                  >
+                    {isSavingForm ? '...' : t('modals.confirmRoleChange.confirmButton')}
                   </button>
                 </div>
               </div>

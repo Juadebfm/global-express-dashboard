@@ -4,7 +4,7 @@ import { apiGetData, apiPatch, apiPost } from '@/lib/apiClient';
 export interface CreateTeamMemberPayload {
   email: string;
   phone: string;
-  role: 'staff' | 'superadmin';
+  role: 'staff' | 'admin' | 'superadmin';
   firstName: string;
   lastName: string;
   position?: string;
@@ -27,9 +27,10 @@ export function getPositions(token: string): Promise<string[]> {
 
 export function getTeam(
   token: string,
-  params: { role?: string; isActive?: boolean; page?: number; limit?: number } = {}
+  params: { q?: string; role?: string; isActive?: boolean; page?: number; limit?: number } = {}
 ): Promise<ApiTeamResponse['data']> {
   const searchParams = new URLSearchParams();
+  if (params.q?.trim()) searchParams.set('q', params.q.trim());
   if (params.role) searchParams.set('role', params.role);
   if (params.isActive !== undefined) searchParams.set('isActive', String(params.isActive));
   if (params.page !== undefined) searchParams.set('page', String(params.page));

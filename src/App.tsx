@@ -82,9 +82,6 @@ const NotificationsPage = lazy(() =>
 const TeamPage = lazy(() =>
   import('@/pages/team/TeamPage').then((m) => ({ default: m.TeamPage })),
 );
-const PermissionsPage = lazy(() =>
-  import('@/pages/admin/PermissionsPage').then((m) => ({ default: m.PermissionsPage })),
-);
 const SettingsPage = lazy(() =>
   import('@/pages/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
@@ -378,14 +375,12 @@ function AppRoutes(): ReactElement {
           </ProtectedRoute>
         }
       />
-      {/* Capability administration. Superadmin-only at the route AND inside
-          the page, mirroring requireSuperAdmin on /permissions/catalogue,
-          /permissions/users/:id and the grant toggle. */}
+      {/* Keep old bookmarks working while access management now lives on Team. */}
       <Route
         path={ROUTES.PERMISSIONS}
         element={
           <ProtectedRoute allowedRoles={['superadmin']} redirectTo={ROUTES.DASHBOARD}>
-            <PermissionsPage />
+            <Navigate to={ROUTES.TEAM} replace />
           </ProtectedRoute>
         }
       />

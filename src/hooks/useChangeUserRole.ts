@@ -13,9 +13,10 @@ export function useChangeUserRole() {
       if (!token) throw new Error('Not authenticated');
       return changeUserRole(token, id, payload);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       void queryClient.invalidateQueries({ queryKey: ['team'] });
+      void queryClient.invalidateQueries({ queryKey: ['permissions', 'user', variables.id] });
     },
   });
 }

@@ -6,6 +6,7 @@ import { mapSupportMessage } from '@/services';
 import { FEEDBACK_MESSAGES } from '@/constants';
 import type { SupportMessage, SupportTicket } from '@/types';
 import { useAuth } from './useAuth';
+import { MY_PERMISSIONS_KEY } from './usePermissions';
 
 const TOKEN_KEY = 'globalxpress_token';
 
@@ -30,18 +31,21 @@ function buildWsUrl(): string {
 }
 
 export function useWebSocket(): void {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
   const queryClient = useQueryClient();
   const setWs = useWebSocketStore((s) => s.setWs);
   const pushMessage = useFeedbackStore((s) => s.pushMessage);
   const wsRef = useRef<WebSocket | null>(null);
+  const hasUser = !!user;
+  const isOperator = !!user && user.role !== 'user';
+  const mustChangePassword = user?.mustChangePassword ?? false;
 
   useEffect(() => {
     let isMounted = true;
 
     const connect = async (): Promise<void> => {
-      const token = isClerkSignedIn && !user
+      const token = isClerkSignedIn && !hasUser
         ? await getToken()
         : sessionStorage.getItem(TOKEN_KEY);
 
@@ -54,7 +58,7 @@ export function useWebSocket(): void {
       wsRef.current = ws;
       setWs(ws);
 
-      ws.onmessage = (event) => {
+      ws.onmessage = async (event) => {
         try {
           const parsed = JSON.parse(event.data as string) as {
             type?: string;
@@ -97,7 +101,6 @@ export function useWebSocket(): void {
 
             case 'support:new_ticket': {
               void queryClient.invalidateQueries({ queryKey: ['support', 'tickets'] });
-              const isOperator = user && user.role !== 'user';
               if (isOperator) {
                 pushMessage({
                   tone: 'info',
@@ -112,6 +115,17 @@ export function useWebSocket(): void {
               void queryClient.invalidateQueries({ queryKey: ['order'] });
               void queryClient.invalidateQueries({ queryKey: ['shipments'] });
               void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+              break;
+            }
+
+            // A Superadmin may change this user's role or an extra
+            // capability while their dashboard is open. The event itself is
+            // deliberately only a refresh signal: fetch the account and
+            // permission matrix again rather than trusting a value carried in
+            // a WebSocket message.
+            case 'access:updated': {
+              await refreshUser();
+              await queryClient.invalidateQueries({ queryKey: MY_PERMISSIONS_KEY });
               break;
             }
 
@@ -161,7 +175,7 @@ export function useWebSocket(): void {
     // An internal user who must replace a temporary password is intentionally
     // limited to the password screen. Do not establish a dashboard connection
     // until the backend clears that requirement.
-    const mayConnect = (isClerkSignedIn && !user) || (!!user && !user.mustChangePassword);
+    const mayConnect = (isClerkSignedIn && !hasUser) || (hasUser && !mustChangePassword);
     if (mayConnect) {
       void connect();
     }
@@ -171,5 +185,5 @@ export function useWebSocket(): void {
       setWs(null);
       wsRef.current?.close();
     };
-  }, [isClerkSignedIn, !!user, user?.mustChangePassword]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [getToken, hasUser, isClerkSignedIn, isOperator, mustChangePassword, pushMessage, queryClient, refreshUser, setWs]);
 }

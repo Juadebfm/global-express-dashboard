@@ -503,6 +503,28 @@ Car prices use NGN and for-sale prices use USD. Both are decimal strings at the 
 
 ---
 
+### Team access management panel
+
+File: `src/pages/team/TeamPage/TeamAccessPanel.tsx`
+Last updated: 2026-08-03
+
+| Property | Class |
+|---|---|
+| List and detail panels | `rounded-2xl border border-gray-200 bg-white` |
+| Search input | `rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3` |
+| Selected member row | `bg-brand-50` |
+| Unselected member row | `hover:bg-gray-50 transition-colors` |
+| Role badge | `rounded-full bg-gray-100` / `bg-brand-50` for Super Admin |
+| Permission switch | `rounded-full` with `bg-brand-500` when enabled |
+| Role-ineligible notice | `rounded-full bg-amber-50 text-amber-700` |
+| Super Admin notice | `border-b border-blue-200 bg-blue-50 text-blue-800` |
+| Change-role control | `rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50` |
+
+**Pattern notes:**
+The Team page is the single Superadmin workspace for both team records and individual permissions. Roles & access is a tab within that page, not a route or sidebar destination. Its staff list has its own server-backed search and pagination; it must not reuse the Team members table's current page. State the reason for a disabled permission in plain language: it applies to the selected team member's role, not the person managing the page. Keep the selected team member in a brand-tinted list row, while role badges remain compact pills. Permission changes use one five-second toast at a time so the newest result is always visible.
+
+---
+
 ## Known Tech Debt
 
 - `src/components/forms/SupportTicketForm/SupportTicketForm.tsx` — raw `border-[#DDE5E9]` hex inputs

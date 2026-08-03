@@ -13,6 +13,33 @@
     "admin": "Super Admin",
     "nonAdmin": "Staff"
   },
+  "workspaceTabs": {
+    "label": "Team management sections",
+    "members": "Team members",
+    "access": "Roles & access"
+  },
+  "access": {
+    "title": "Roles & access",
+    "subtitle": "Choose a team member to change their role and the extra permissions they can use.",
+    "searchPlaceholder": "Search name or email",
+    "loadingMembers": "Loading team members...",
+    "emptyMembers": "No team members match that search.",
+    "selectMember": "Select a team member to review and change their role and permissions.",
+    "loadingPermissions": "Loading permissions...",
+    "loadPermissionsError": "Could not load this team member's permissions.",
+    "memberNotAvailable": "This team member is no longer available on the current page.",
+    "activeAccount": "Active account",
+    "inactiveAccount": "Inactive account",
+    "changeRole": "Change role",
+    "superadminNotice": "Super Admins already have every permission. Individual permissions cannot be changed here.",
+    "requiresRole": "Requires the selected team member to be an {{role}}",
+    "toggleLabel": "{{action}} {{name}}",
+    "grant": "Grant",
+    "revoke": "Revoke",
+    "updatedGranted": "{{name}} granted.",
+    "updatedRevoked": "{{name}} revoked.",
+    "updateError": "Could not update this permission."
+  },
   "roleLabels": {
     "staff": "Staff",
     "admin": "Admin",
@@ -75,6 +102,11 @@
       "emailLocked": "Email can't be changed here.",
       "editSuccess": "Team member updated successfully.",
       "editError": "Failed to update team member."
+    },
+    "confirmRoleChange": {
+      "title": "Confirm role change",
+      "message": "Change {{name}} from {{fromRole}} to {{toRole}}? Their access will update immediately.",
+      "confirmButton": "Change role"
     },
     "positionPlaceholder": "Select a position (optional)",
     "positionLoading": "Loading positions…",

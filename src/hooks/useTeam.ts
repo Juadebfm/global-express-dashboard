@@ -48,6 +48,7 @@ interface TeamState {
 }
 
 interface UseTeamParams {
+  q?: string;
   page?: number;
   limit?: number;
 }
@@ -55,6 +56,7 @@ interface UseTeamParams {
 const DEFAULT_TEAM_PAGE_SIZE = 20;
 
 export function useTeam(params: UseTeamParams = {}): TeamState {
+  const q = params.q?.trim() || undefined;
   const page = params.page ?? 1;
   const limit = params.limit ?? DEFAULT_TEAM_PAGE_SIZE;
   const { user } = useAuth();
@@ -70,11 +72,11 @@ export function useTeam(params: UseTeamParams = {}): TeamState {
   };
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['team', page, limit],
+    queryKey: ['team', q, page, limit],
     queryFn: async () => {
       const token = await getToken_();
       if (!token) throw new Error('Not authenticated');
-      return getTeam(token, { page, limit });
+      return getTeam(token, { q, page, limit });
     },
     enabled,
     staleTime: STALE_TIME.REAL_TIME,
