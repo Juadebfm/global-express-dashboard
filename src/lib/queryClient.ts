@@ -7,9 +7,12 @@ import { ApiError } from './apiClient';
  * on a capability denial, and — for `CAPABILITY_REQUIRED` — directly violates
  * the contract's "do not automatically retry" rule.
  *
+ * A 404 is equally definitive: the record does not exist, so asking again only
+ * delays telling the user that.
+ *
  * Other statuses keep the previous single retry.
  */
-const NON_RETRYABLE_STATUSES = new Set([401, 403]);
+const NON_RETRYABLE_STATUSES = new Set([401, 403, 404]);
 
 function shouldRetry(failureCount: number, error: unknown): boolean {
   if (error instanceof ApiError && NON_RETRYABLE_STATUSES.has(error.status)) return false;

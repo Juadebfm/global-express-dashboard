@@ -48,6 +48,7 @@ import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
 import { BatchMovementPanel } from './components/BatchMovementPanel';
 import { BatchCarrierPanel } from './components/BatchCarrierPanel';
+import { BatchLoadError } from './components/BatchLoadError';
 import type {
   BatchRosterCustomer,
   BatchRosterOrder,
@@ -651,14 +652,10 @@ export function BatchDetailPage(): ReactElement {
           </div>
         )}
 
-        {/* Error */}
+        {/* Error — a missing or forbidden batch gets no retry, since asking
+            again would fail the same way. */}
         {!isLoading && error && (
-          <Card className="p-8 text-center space-y-3">
-            <p className="text-sm text-red-500">
-              {error instanceof Error ? error.message : 'Failed to load batch'}
-            </p>
-            <Button variant="secondary" onClick={() => void refetch()}>Retry</Button>
-          </Card>
+          <BatchLoadError error={error} onRetry={() => void refetch()} />
         )}
 
         {/* Content */}
