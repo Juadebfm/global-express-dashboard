@@ -24,6 +24,7 @@ export { ConfirmModal } from './ConfirmModal/ConfirmModal';
 export { ProvisioningGateModal } from './ProvisioningGateModal/ProvisioningGateModal';
 export { FlagIcon } from './FlagIcon';
 export { CopyButton } from './CopyButton';
+export { TrackingNumber } from './TrackingNumber';
 export { StepIndicator } from './StepIndicator';
 export type { StepIndicatorItem } from './StepIndicator';
 export { FileScanPill } from './FileScanPill';

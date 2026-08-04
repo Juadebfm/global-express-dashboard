@@ -20,7 +20,7 @@ import { ROUTES } from '@/constants';
 const matchesQuery = (shipment: ShipmentRecord, query: string): boolean => {
   if (!query) return true;
   const haystack = [
-    shipment.sku,
+    shipment.sku ?? '',
     shipment.customer,
     shipment.origin,
     shipment.destination,
@@ -54,7 +54,7 @@ const buildCsv = (
 ): string => {
   const lines = rows.map((shipment) =>
     [
-      shipment.sku,
+      shipment.sku ?? '',
       shipment.customer,
       shipment.origin,
       shipment.destination,

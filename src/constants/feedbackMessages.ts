@@ -40,7 +40,6 @@ export const FEEDBACK_MESSAGES = {
     taskInvoiceUploadError: 'Unable to upload the task invoice. Please try again.',
     regDocUploadSuccess: 'Regulatory document uploaded.',
     regDocUploadError: 'Unable to upload the document. Please try again.',
-    batchApproveCutoffSuccess: 'Batch cutoff approved.',
     batchApproveCutoffError: 'Unable to approve the cutoff. Please try again.',
     batchCarrierInfoSuccess: 'Carrier details updated.',
     batchCarrierInfoError: 'Unable to update carrier details. Please try again.',

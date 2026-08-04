@@ -26,6 +26,7 @@ export { useChangePassword } from './useChangePassword';
 export { useCreateInternalUser } from './useCreateInternalUser';
 export { useOrderDetail } from './useOrderDetail';
 export { useOrderTimeline } from './useOrderTimeline';
+export { useTrackShipment, trackingKey } from './useTrackShipment';
 export { useUpdateOrderStatus } from './useUpdateOrderStatus';
 export { useCreateClient } from './useCreateClient';
 export { useActivateClient } from './useActivateClient';
@@ -134,7 +135,6 @@ export {
 export type { UploadInvoiceAttachmentInput } from './useShipmentInvoices';
 export {
   useInternalTrackByMasterTracking,
-  useApproveBatchCutoff,
   useUpdateBatchCarrierInfo,
   useUpdateBatchStatus,
   useMoveBatchToNext,
@@ -168,6 +168,7 @@ export {
   useBatch,
   useBatchRoster,
   useBatchMovement,
+  useBatchMovementHistory,
   useAvailableOrdersForBatch,
   useAddOrderToBatch,
   useRemoveOrderFromBatch,

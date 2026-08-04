@@ -281,6 +281,9 @@ export type {
   BatchMovementAction,
   BatchMovement,
   BatchMovementUpdateResult,
+  BatchMovementFlowStage,
+  BatchMovementEvent,
+  BatchMovementHistory,
   BatchCloseResult,
 } from './shipmentOps.types';
 

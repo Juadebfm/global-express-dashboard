@@ -7,10 +7,30 @@ import { AlertBanner } from "@/components/ui";
 import { FEEDBACK_MESSAGES, ROUTES } from "@/constants";
 import { getDisplayErrorMessage } from "@/lib/feedback";
 import { useFeedbackStore } from "@/store";
-import { trackShipment, type TrackingResult } from "@/services/trackingService";
+import {
+  trackShipment,
+  isMasterTrackingNumber,
+  type TrackingResult,
+} from "@/services/trackingService";
 import { getStatusStyle } from "@/lib/statusUtils";
 import { formatTrackingDisplay } from "@/lib/trackingUtils";
 import { resolveLocation } from "@/utils";
+
+/**
+ * Timeline entries arrive as raw ISO strings, unlike `lastUpdate`, which the
+ * backend pre-formats. Matches the formatting used by ShipmentTimeline.
+ */
+function formatEventTime(timestamp: string): string {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return timestamp;
+  return date.toLocaleDateString(undefined, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export function TrackPage(): ReactElement {
   const { t } = useTranslation('tracking');
@@ -27,6 +47,15 @@ export function TrackPage(): ReactElement {
   const doSearch = async (trackingNumber: string): Promise<void> => {
     const trimmed = trackingNumber.trim();
     if (!trimmed) return;
+
+    // Master batch references are staff-only and the public endpoint 404s on
+    // them. Explain that instead of showing a bare "not found".
+    if (isMasterTrackingNumber(trimmed)) {
+      setResult(null);
+      setFetchError(t('public.internalNumberDesc'));
+      setSearched(true);
+      return;
+    }
 
     setIsLoading(true);
     setFetchError(null);
@@ -209,6 +238,100 @@ export function TrackPage(): ReactElement {
                     <CheckCircle2 className="ml-auto h-5 w-5 text-green-500" />
                   </div>
                 </div>
+
+                {/* Goods — batch-scoped results carry no per-item tracking
+                    number, so the description is the only identifier shown. */}
+                {result.trackingScope === 'customer_batch' &&
+                  result.goods &&
+                  result.goods.length > 0 && (
+                    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-gray-400" />
+                        <h2 className="text-sm font-semibold text-gray-900">
+                          {t('public.goods')}
+                        </h2>
+                      </div>
+                      <p className="mt-1 text-xs text-gray-400">{t('public.goodsNote')}</p>
+
+                      <ul className="mt-4 divide-y divide-gray-100">
+                        {result.goods.map((good, index) => (
+                          <li
+                            key={`${good.description ?? 'item'}-${index}`}
+                            className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-800">
+                                {good.description ?? t('public.noDescription')}
+                              </p>
+                              <p className="mt-0.5 text-xs text-gray-400">
+                                {t('public.packages', { count: good.packageCount })}
+                                {good.weightKg ? ` · ${good.weightKg} kg` : ''}
+                              </p>
+                            </div>
+                            {good.statusLabel && (
+                              <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
+                                {good.statusLabel}
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+
+                      {result.cargoMetrics && (
+                        <dl className="mt-4 grid grid-cols-3 gap-3 border-t border-gray-100 pt-4">
+                          <div>
+                            <dt className="text-xs text-gray-400">
+                              {t('public.totalPackages')}
+                            </dt>
+                            <dd className="mt-0.5 text-sm font-medium text-gray-800">
+                              {result.cargoMetrics.packageCount}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-xs text-gray-400">{t('public.totalWeight')}</dt>
+                            <dd className="mt-0.5 text-sm font-medium text-gray-800">
+                              {result.cargoMetrics.totalWeightKg} kg
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-xs text-gray-400">{t('public.totalVolume')}</dt>
+                            <dd className="mt-0.5 text-sm font-medium text-gray-800">
+                              {result.cargoMetrics.totalCbm} CBM
+                            </dd>
+                          </div>
+                        </dl>
+                      )}
+                    </div>
+                  )}
+
+                {/* Progress */}
+                {result.timeline && result.timeline.length > 0 && (
+                  <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <h2 className="text-sm font-semibold text-gray-900">
+                      {t('public.timeline')}
+                    </h2>
+                    <ol className="mt-4 space-y-4">
+                      {result.timeline.map((event, index) => (
+                        <li key={`${event.status}-${index}`} className="flex gap-3">
+                          <div className="flex flex-col items-center">
+                            <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-brand-500" />
+                            {index < (result.timeline?.length ?? 0) - 1 && (
+                              <span className="w-px flex-1 bg-gray-200" />
+                            )}
+                          </div>
+                          <div className="pb-1">
+                            <p className="text-sm font-medium text-gray-800">
+                              {event.statusLabel}
+                            </p>
+                            <p className="mt-0.5 text-xs text-gray-400">
+                              {formatEventTime(event.timestamp)}
+                            </p>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
 
                 <p className="text-center text-xs text-gray-400">
                   {t('public.haveAccount')}{" "}

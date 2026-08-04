@@ -7,6 +7,7 @@ import { FEEDBACK_MESSAGES } from '@/constants';
 import type { SupportMessage, SupportTicket } from '@/types';
 import { useAuth } from './useAuth';
 import { MY_PERMISSIONS_KEY } from './usePermissions';
+import { trackingKey } from './useTrackShipment';
 
 const TOKEN_KEY = 'globalxpress_token';
 
@@ -118,6 +119,30 @@ export function useWebSocket(): void {
               break;
             }
 
+            // Sent to Staff, Admin, and Superadmin sessions after a batch is
+            // closed or its movement changes, including hold, cancellation,
+            // restricted-item rejection, and an approved override. Like
+            // access:updated below, it carries only an id — never read a stage
+            // from the message, always refetch the authoritative endpoints.
+            case 'batch:movement_updated': {
+              const batchId = String(
+                (payload as Record<string, unknown>).batchId ?? '',
+              );
+              if (batchId) {
+                // Covers both the movement state and the movement history,
+                // which share the ['shipments', 'batches', id] prefix.
+                void queryClient.invalidateQueries({
+                  queryKey: ['shipments', 'batches', batchId],
+                });
+                void queryClient.invalidateQueries({ queryKey: ['batches', 'roster', batchId] });
+                void queryClient.invalidateQueries({ queryKey: ['batches', 'detail', batchId] });
+              }
+              // A close creates the next open batch, so the list changes even
+              // when the batch that moved is not the one on screen.
+              void queryClient.invalidateQueries({ queryKey: ['batches', 'list'] });
+              break;
+            }
+
             // A Superadmin may change this user's role or an extra
             // capability while their dashboard is open. The event itself is
             // deliberately only a refresh signal: fetch the account and
@@ -132,6 +157,22 @@ export function useWebSocket(): void {
             case 'notification:new':
             case 'notification:broadcast': {
               void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+              // Customers never receive batch:movement_updated. A batch-related
+              // notification names their own customer batch reference instead,
+              // so refresh that tracking page if they happen to be on it. Only
+              // the customer reference is ever used — never a master reference.
+              const metadata = (payload as Record<string, unknown>).metadata;
+              const customerBatchTrackingNumber =
+                metadata && typeof metadata === 'object' && !Array.isArray(metadata)
+                  ? String(
+                      (metadata as Record<string, unknown>).customerBatchTrackingNumber ?? '',
+                    )
+                  : '';
+              if (customerBatchTrackingNumber) {
+                void queryClient.invalidateQueries({
+                  queryKey: trackingKey(customerBatchTrackingNumber),
+                });
+              }
               if (title || body) {
                 pushMessage({
                   tone: 'info',

@@ -5,7 +5,6 @@ import { FileDown, Layers, Lock, Search, Wind, Waves, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Input } from '@/components/ui';
 import {
-  useApproveBatchCutoff,
   useInternalTrackByMasterTracking,
   useMoveBatchToNext,
   useUpdateBatchCarrierInfo,
@@ -77,7 +76,7 @@ const STATUS_LABELS: Record<typeof STATUS_OPTIONS[number], string> = {
   CANCELLED: 'Cancelled',
 };
 
-type Tab = 'cutoff' | 'carrier' | 'status' | 'move' | 'lookup';
+type Tab = 'carrier' | 'status' | 'move' | 'lookup';
 type ModeFilter = 'all' | 'air' | 'sea';
 
 // ── Batch picker ──────────────────────────────────────────────────────────────
@@ -234,7 +233,7 @@ interface BatchOpsModalProps {
 }
 
 export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
-  const [tab, setTab] = useState<Tab>('cutoff');
+  const [tab, setTab] = useState<Tab>('carrier');
   const [selectedBatch, setSelectedBatch] = useState<DispatchBatchListItem | null>(null);
   const [masterTracking, setMasterTracking] = useState('');
   const [activeMaster, setActiveMaster] = useState<string | undefined>(undefined);
@@ -242,7 +241,6 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const lookup = useInternalTrackByMasterTracking(activeMaster);
-  const approve = useApproveBatchCutoff();
   const carrier = useUpdateBatchCarrierInfo();
   const status = useUpdateBatchStatus();
   const move = useMoveBatchToNext();
@@ -271,7 +269,6 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
   };
 
   const tabs: Array<{ id: Tab; label: string }> = [
-    { id: 'cutoff', label: 'Lock & close batch' },
     { id: 'carrier', label: 'Shipping details' },
     { id: 'status', label: 'Change status' },
     { id: 'move', label: 'Move packages' },
@@ -378,23 +375,13 @@ export function BatchOpsModal({ onClose }: BatchOpsModalProps): ReactElement {
                       estimatedDepartureAt: null,
                       createdAt: '',
                     });
-                    setTab('cutoff');
+                    setTab('carrier');
                   }}
                 />
               )}
             </div>
           )}
 
-          {tab === 'cutoff' && selectedBatch && (
-            <ApproveCutoffPanel
-              batch={selectedBatch}
-              isPending={approve.isPending}
-              onApprove={async () => {
-                await approve.mutate(batchId);
-                setSelectedBatch((prev) => prev ? { ...prev, status: 'closed' } : prev);
-              }}
-            />
-          )}
           {tab === 'carrier' && selectedBatch && (
             <CarrierInfoPanel
               batchId={batchId}
@@ -462,41 +449,6 @@ function BatchLookupResult({
           Use this batch
         </button>
       )}
-    </div>
-  );
-}
-
-function ApproveCutoffPanel({
-  batch,
-  isPending,
-  onApprove,
-}: {
-  batch: DispatchBatchListItem;
-  isPending: boolean;
-  onApprove: () => Promise<void>;
-}): ReactElement {
-  if (batch.status === 'closed') {
-    return (
-      <div className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
-        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
-        <p>This batch is locked. No more shipments can be added to it.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded-2xl border border-gray-200 p-4 text-sm text-gray-600">
-      <p>This will lock the batch and prevent new shipments from being added. Only do this when the batch is ready to depart.</p>
-      <div className="mt-3 flex justify-end">
-        <Button
-          type="button"
-          variant="primary"
-          isLoading={isPending}
-          onClick={onApprove}
-        >
-          Lock &amp; close batch
-        </Button>
-      </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertBanner, CopyButton } from '@/components/ui';
+import { AlertBanner, TrackingNumber } from '@/components/ui';
 import { useDashboardData, useSearch, useShipmentsDashboard } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
 
@@ -115,7 +115,7 @@ export function DeliverySchedulePage(): ReactElement {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500">{row.sku}<CopyButton value={row.sku} /></span>
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500"><TrackingNumber value={row.sku} /></span>
                       {(() => {
                         const style = getStatusStyle(row.statusV2);
                         return (

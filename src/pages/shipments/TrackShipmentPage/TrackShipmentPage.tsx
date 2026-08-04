@@ -13,9 +13,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AppShell, ShipmentTimeline } from '@/pages/shared';
-import { useDashboardData, useOrderTimeline } from '@/hooks';
-import { trackShipment } from '@/services';
-import type { TrackingResult } from '@/services/trackingService';
+import { useDashboardData, useOrderTimeline, useTrackShipment } from '@/hooks';
+import { isMasterTrackingNumber } from '@/services/trackingService';
 import { ROUTES } from '@/constants';
 import { getCustomerTrackingStyle } from '@/lib/statusUtils';
 import { cn, resolveLocation } from '@/utils';
@@ -32,8 +31,14 @@ export function TrackShipmentPage(): ReactElement {
   const { t } = useTranslation('tracking');
   const { data, isLoading, error } = useDashboardData();
   const [trackingInput, setTrackingInput] = useState('');
-  const [trackingResult, setTrackingResult] = useState<TrackingResult | null>(null);
-  const [isTracking, setIsTracking] = useState(false);
+  // Held in a query rather than local state so a batch notification arriving
+  // over the WebSocket can refresh what is on screen.
+  const [submittedNumber, setSubmittedNumber] = useState<string | null>(null);
+  const {
+    data: trackingResult,
+    isFetching: isTracking,
+    error: trackingError,
+  } = useTrackShipment(submittedNumber);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const timelineOrderId = trackingResult?.orderId;
   const shouldFetchOrderTimeline = Boolean(timelineOrderId)
@@ -43,8 +48,11 @@ export function TrackShipmentPage(): ReactElement {
     shouldFetchOrderTimeline,
   );
 
+  // Only ever a backend-issued number. Never echo back what was typed — that
+  // would present an unrecognised value as though it were a real tracking
+  // number, including an internal order number the backend now rejects.
   const effectiveTrackingNumber =
-    trackingResult?.trackingNumber || orderTimeline?.trackingNumber || trackingInput.trim();
+    trackingResult?.trackingNumber || orderTimeline?.trackingNumber || '';
   const effectiveStatus = trackingResult?.status ?? orderTimeline?.currentStatus;
   const effectiveStatusLabel =
     trackingResult?.statusLabel || orderTimeline?.currentStatusLabel || '';
@@ -53,29 +61,22 @@ export function TrackShipmentPage(): ReactElement {
       ? trackingResult.timeline
       : (orderTimeline?.timeline ?? []);
 
-  const handleTrack = async (): Promise<void> => {
+  const handleTrack = (): void => {
     const normalized = trackingInput.trim();
     if (!normalized) {
       setErrorMessage(t('internal.emptyState'));
       return;
     }
 
-    setErrorMessage(null);
-    setIsTracking(true);
-    setTrackingResult(null);
-
-    try {
-      const result = await trackShipment(normalized);
-      setTrackingResult(result);
-    } catch (trackError) {
-      setErrorMessage(
-        trackError instanceof Error
-          ? trackError.message
-          : t('internal.emptyState')
-      );
-    } finally {
-      setIsTracking(false);
+    // Master batch references are staff-only; the public endpoint 404s on them.
+    if (isMasterTrackingNumber(normalized)) {
+      setSubmittedNumber(null);
+      setErrorMessage(t('public.internalNumberDesc'));
+      return;
     }
+
+    setErrorMessage(null);
+    setSubmittedNumber(normalized);
   };
 
   return (
@@ -143,8 +144,13 @@ export function TrackShipmentPage(): ReactElement {
                 )}
               </button>
             </div>
-            {errorMessage && (
-              <p className="mt-3 text-sm text-rose-600">{errorMessage}</p>
+            {(errorMessage || trackingError) && (
+              <p className="mt-3 text-sm text-rose-600">
+                {errorMessage ??
+                  (trackingError instanceof Error
+                    ? trackingError.message
+                    : t('internal.emptyState'))}
+              </p>
             )}
           </div>
         </section>
@@ -259,7 +265,7 @@ export function TrackShipmentPage(): ReactElement {
         )}
 
         {/* Empty state */}
-        {!trackingResult && !isTracking && !errorMessage && (
+        {!trackingResult && !isTracking && !errorMessage && !trackingError && (
           <section className="rounded-3xl border border-dashed border-gray-200 bg-white p-10 text-center">
             <Package className="mx-auto h-10 w-10 text-gray-300" />
             <p className="mt-4 text-sm font-medium text-gray-500">

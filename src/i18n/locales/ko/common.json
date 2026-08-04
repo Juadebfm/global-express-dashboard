@@ -52,5 +52,8 @@
     "admin": "관리자",
     "staff": "직원",
     "user": "고객"
+  },
+  "tracking": {
+    "notAssigned": "아직 배정되지 않음"
   }
 }

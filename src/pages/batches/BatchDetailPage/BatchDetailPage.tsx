@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronRight,
+  FileDown,
   FileText,
   Loader2,
   Lock,
@@ -19,31 +20,40 @@ import {
   User,
   X,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useAuth,
   useBatchRoster,
   useBatchMovement,
+  useBatchMovementHistory,
   useAvailableOrdersForBatch,
   useAddOrderToBatch,
   useRemoveOrderFromBatch,
   useAdvanceBatchMovement,
   useCloseBatch,
   useCapability,
+  useUpdateBatchCarrierInfo,
+  MY_PERMISSIONS_KEY,
 } from '@/hooks';
 import { useBatchDocuments, useUploadBatchDocument } from '@/hooks/useBatchDocuments';
 import type { AvailableOrder } from '@/services';
+import { downloadBatchManifest } from '@/services/shipmentsService';
 import { getDisplayErrorMessage } from '@/lib/feedback';
+import { ApiError } from '@/lib/apiClient';
 import { AppLayout } from '@/components/layout';
 import { Button, Card } from '@/components/ui';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useFeedbackStore } from '@/store';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
+import { BatchMovementPanel } from './components/BatchMovementPanel';
+import { BatchCarrierPanel } from './components/BatchCarrierPanel';
 import type {
   BatchRosterCustomer,
   BatchRosterOrder,
   BatchDocumentType,
   BatchMovementAction,
+  DispatchBatchCarrierInfoPayload,
 } from '@/types';
 
 function ShipmentTypeBadge({ type, label }: { type: string; label: string }): ReactElement {
@@ -456,14 +466,19 @@ export function BatchDetailPage(): ReactElement {
   // capability-gated batch controls.
   const canManage = useCapability('batches.manage');
   const canFinalise = useCapability('batches.finalise');
+  // The backend rejects a restricted-item override unless this is also granted.
+  const canOverrideRestriction = useCapability('restricted_items.override');
 
+  const queryClient = useQueryClient();
   const { data: roster, isLoading, error, refetch } = useBatchRoster(batchId);
   const { data: movement, isLoading: isMovementLoading } = useBatchMovement(batchId);
+  const movementHistory = useBatchMovementHistory(batchId);
 
   const addOrder = useAddOrderToBatch();
   const removeOrder = useRemoveOrderFromBatch();
   const advanceMovement = useAdvanceBatchMovement();
   const closeBatchMutation = useCloseBatch();
+  const carrierInfo = useUpdateBatchCarrierInfo();
   const availableOrders = useAvailableOrdersForBatch(batchId, canManage);
 
   // Combobox state for "Add order"
@@ -474,13 +489,16 @@ export function BatchDetailPage(): ReactElement {
   const comboboxRef = useRef<HTMLDivElement>(null);
   const [removingOrderId, setRemovingOrderId] = useState<string | null>(null);
   const [removeConfirm, setRemoveConfirm] = useState<{ orderId: string; customerName: string } | null>(null);
-  const [selectedMovementAction, setSelectedMovementAction] = useState<BatchMovementAction | null>(null);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [isDownloadingManifest, setIsDownloadingManifest] = useState(false);
 
   const batch = roster?.batch;
   const summary = roster?.summary;
   const customers = roster?.customers ?? [];
   const isOpen = batch?.status === 'open';
+  // Cutoff approval is retired. Anything not yet closed can still be closed,
+  // including historic batches left in cutoff_pending_approval.
+  const isClosed = batch?.status === 'closed';
 
   const handleAddOrder = async (): Promise<void> => {
     setAddOrderError(null);
@@ -526,20 +544,70 @@ export function BatchDetailPage(): ReactElement {
     }
   };
 
-  const confirmMovementAction = async (): Promise<void> => {
-    if (!batchId || !selectedMovementAction) return;
+  const confirmMovementAction = async (action: BatchMovementAction): Promise<void> => {
+    if (!batchId) return;
     try {
       const result = await advanceMovement.mutateAsync({
         batchId,
-        statusV2: selectedMovementAction.statusV2,
+        statusV2: action.statusV2,
       });
       pushMessage({
         tone: 'success',
         message: `Batch moved to ${result.movement.currentStatusLabel} for ${result.updatedOrderCount} orders.`,
       });
-      setSelectedMovementAction(null);
     } catch (err) {
-      pushMessage({ tone: 'error', message: getDisplayErrorMessage(err, 'Unable to update batch movement. Please try again.') });
+      // The restricted-item override denial returns a plain 403 without the
+      // CAPABILITY_REQUIRED code, so apiClient does not refresh permissions for
+      // it. Refresh here on any 403 so a revoked action disappears from the UI.
+      if (err instanceof ApiError && err.status === 403) {
+        void queryClient.invalidateQueries({ queryKey: MY_PERMISSIONS_KEY });
+      }
+      // A 422 means the backend refused this move as out of order. Its reason
+      // is written for staff, so show it and reload the allowed actions.
+      if (err instanceof ApiError && err.status === 422) {
+        void queryClient.invalidateQueries({
+          queryKey: ['shipments', 'batches', batchId, 'movement'],
+        });
+      }
+      pushMessage({
+        tone: 'error',
+        message: getDisplayErrorMessage(err, 'Unable to update batch movement. Please try again.'),
+      });
+    }
+  };
+
+  const handleSaveCarrierInfo = async (
+    payload: DispatchBatchCarrierInfoPayload,
+  ): Promise<void> => {
+    if (!batchId) return;
+    await carrierInfo.mutate({ batchId, payload });
+    // The roster carries the batch record the read-only view renders from.
+    await refetch();
+  };
+
+  const handleDownloadManifest = async (): Promise<void> => {
+    if (!batchId || !batch) return;
+    setIsDownloadingManifest(true);
+    try {
+      const token = sessionStorage.getItem('globalxpress_token');
+      if (!token) throw new Error('Not authenticated');
+      const blob = await downloadBatchManifest(token, batchId);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `manifest-${batch.masterTrackingNumber}.pdf`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      const isMissing = err instanceof Error && /not found|no shipments/i.test(err.message);
+      pushMessage({
+        tone: 'error',
+        message: isMissing
+          ? 'This batch has no orders to list yet.'
+          : getDisplayErrorMessage(err, 'Could not download the manifest. Please try again.'),
+      });
+    } finally {
+      setIsDownloadingManifest(false);
     }
   };
 
@@ -624,11 +692,26 @@ export function BatchDetailPage(): ReactElement {
 
               {/* Actions */}
               <div className="flex flex-wrap gap-2">
-                {isOpen && canFinalise && (
+                <Button
+                  variant="secondary"
+                  onClick={() => void handleDownloadManifest()}
+                  disabled={isDownloadingManifest}
+                >
+                  {isDownloadingManifest
+                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    : <FileDown className="mr-2 h-4 w-4" />
+                  }
+                  Manifest
+                </Button>
+                {!isClosed && canFinalise && (
                   <Button
                     onClick={() => setShowCloseConfirm(true)}
                     disabled={!summary.canClose || closeBatchMutation.isPending}
-                    title={!summary.canClose ? 'All orders must be verified before closing' : undefined}
+                    title={
+                      !summary.canClose
+                        ? 'Every order must be verified and priced, and the batch must hold at least one order, before it can be closed'
+                        : undefined
+                    }
                   >
                     <Lock className="mr-2 h-4 w-4" />
                     Close batch
@@ -638,40 +721,28 @@ export function BatchDetailPage(): ReactElement {
             </div>
 
             {/* The backend decides which batch movement actions are valid. */}
-            {!isOpen && movement && (
-              <Card className="p-4">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Batch movement</p>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Current stage: <span className="font-medium text-gray-700">{movement.currentStatusLabel ?? 'No movement stage recorded'}</span>
-                    </p>
-                  </div>
-                  {canManage && movement.allowedActions.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {movement.allowedActions.map((action) => (
-                        <Button
-                          key={action.statusV2}
-                          variant={action.kind === 'advance' ? 'primary' : 'secondary'}
-                          size="sm"
-                          onClick={() => setSelectedMovementAction(action)}
-                        >
-                          {action.label}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {canManage && movement.allowedActions.length === 0 && movement.currentStatus === 'IN_TRANSIT_TO_LAGOS_OFFICE' && (
-                  <p className="mt-3 text-sm text-gray-500">
-                    No further batch-level movement is available. Pickup and local delivery are managed per order.
-                  </p>
-                )}
-                {canManage && movement.allowedActions.length === 0 && movement.currentStatus !== 'IN_TRANSIT_TO_LAGOS_OFFICE' && (
-                  <p className="mt-3 text-sm text-gray-500">No batch movement action is currently available.</p>
-                )}
-              </Card>
+            {!isMovementLoading && movement && (
+              <BatchMovementPanel
+                movement={movement}
+                history={movementHistory.data}
+                isHistoryLoading={movementHistory.isLoading}
+                historyError={movementHistory.error}
+                onRetryHistory={() => void movementHistory.refetch()}
+                masterTrackingNumber={batch.masterTrackingNumber}
+                totalOrders={summary.totalOrders}
+                canManage={canManage}
+                canOverrideRestriction={canOverrideRestriction}
+                isSubmitting={advanceMovement.isPending}
+                onConfirmAction={(action) => void confirmMovementAction(action)}
+              />
             )}
+
+            <BatchCarrierPanel
+              batch={batch}
+              canManage={canManage}
+              isSaving={carrierInfo.isPending}
+              onSave={handleSaveCarrierInfo}
+            />
 
             {/* Summary cards */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -906,51 +977,6 @@ export function BatchDetailPage(): ReactElement {
           </>
         )}
       </div>
-
-      {/* Movement confirmation — actions come exclusively from the backend. */}
-      {selectedMovementAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <Card className="w-full max-w-md p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {selectedMovementAction.kind === 'advance'
-                  ? `Move batch to ${selectedMovementAction.label}?`
-                  : `${selectedMovementAction.label}?`}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setSelectedMovementAction(null)}
-                className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-                aria-label="Close confirmation"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <p className="text-sm text-gray-500">
-              {selectedMovementAction.description}
-            </p>
-            <p className="text-sm text-gray-500">
-              This applies to all <span className="font-medium text-gray-700">{summary?.totalOrders ?? 0} orders</span> in this batch.
-            </p>
-            <div className="flex gap-2">
-              <Button
-                className="flex-1"
-                onClick={() => void confirmMovementAction()}
-                disabled={advanceMovement.isPending}
-              >
-                {advanceMovement.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Confirm
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => setSelectedMovementAction(null)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
 
       {/* Close Batch Confirm Modal */}
       {showCloseConfirm && (

@@ -19,6 +19,7 @@ import type {
   DispatchBatchMoveToNextPayload,
   BatchMovement,
   BatchMovementUpdateResult,
+  BatchMovementHistory,
 } from '@/types';
 import type { StatusCategory } from '@/types/status.types';
 import { getStatusCategory } from '@/lib/statusUtils';
@@ -40,7 +41,7 @@ export interface InternalShipmentsQueryParams {
 function mapApiShipment(s: ApiShipmentRecord): ShipmentRecord {
   return {
     id: s.id,
-    sku: s.trackingNumber,
+    sku: s.trackingNumber || null,
     customer: s.senderName,
     createdAt: s.createdAt || null,
     origin: s.origin,
@@ -179,7 +180,9 @@ function mapMyShipment(item: AnyRecord, index: number): ShipmentRecord {
 
   return {
     id,
-    sku: tracking || id,
+    // Null before warehouse verification. Never fall back to the order id —
+    // that would put an internal identifier in front of the customer.
+    sku: tracking || null,
     customer: firstString(item, [
       'recipientName',
       'customerName',
@@ -493,17 +496,6 @@ export function getDispatchBatchByMasterTracking(
 
 // ── Phase 3: dispatch-batch operations ───────────────────────────────────────
 
-export function approveDispatchBatchCutoff(
-  token: string,
-  batchId: string,
-): Promise<DispatchBatch> {
-  return apiPostData<DispatchBatch>(
-    `/shipments/batches/${batchId}/approve-cutoff`,
-    undefined,
-    token,
-  );
-}
-
 export function updateDispatchBatchCarrierInfo(
   token: string,
   batchId: string,
@@ -534,6 +526,17 @@ export function getDispatchBatchMovement(
   batchId: string,
 ): Promise<BatchMovement> {
   return apiGetData<BatchMovement>(`/shipments/batches/${batchId}/status`, token);
+}
+
+/**
+ * The backend owns both the ordered stage list and the recorded stages.
+ * Never derive the flow locally — it differs by transport mode and may change.
+ */
+export function getDispatchBatchMovementHistory(
+  token: string,
+  batchId: string,
+): Promise<BatchMovementHistory> {
+  return apiGetData<BatchMovementHistory>(`/shipments/batches/${batchId}/history`, token);
 }
 
 export function moveDispatchBatchToNext(

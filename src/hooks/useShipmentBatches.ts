@@ -1,10 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FEEDBACK_MESSAGES } from '@/constants';
-import { ApiError } from '@/lib/apiClient';
 import { STALE_TIME } from '@/lib/queryDefaults';
 import { useFeedbackStore } from '@/store';
 import {
-  approveDispatchBatchCutoff,
   getDispatchBatchByMasterTracking,
   moveDispatchBatchToNext,
   updateDispatchBatchCarrierInfo,
@@ -65,47 +63,6 @@ export function useInternalTrackByMasterTracking(
       queryClient.invalidateQueries({
         queryKey: internalTrackKey(masterTrackingNumber),
       }),
-  };
-}
-
-export function useApproveBatchCutoff(): {
-  mutate: (batchId: string) => Promise<DispatchBatch>;
-  isPending: boolean;
-  error: Error | null;
-} {
-  const getToken = useAuthToken();
-  const queryClient = useQueryClient();
-  const pushMessage = useFeedbackStore((s) => s.pushMessage);
-
-  const m = useMutation<DispatchBatch, Error, string>({
-    mutationFn: async (batchId) => {
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
-      return approveDispatchBatchCutoff(token, batchId);
-    },
-    onSuccess: (_data, batchId) => {
-      invalidateBatch(queryClient, batchId);
-      pushMessage({
-        tone: 'success',
-        message: FEEDBACK_MESSAGES.shipments.batchApproveCutoffSuccess,
-      });
-    },
-    onError: (err) => {
-      if (err instanceof ApiError && err.status === 409) {
-        pushMessage({ tone: 'info', message: err.message });
-      } else {
-        pushMessage({
-          tone: 'error',
-          message: err.message || FEEDBACK_MESSAGES.shipments.batchApproveCutoffError,
-        });
-      }
-    },
-  });
-
-  return {
-    mutate: (batchId) => m.mutateAsync(batchId),
-    isPending: m.isPending,
-    error: m.error,
   };
 }
 

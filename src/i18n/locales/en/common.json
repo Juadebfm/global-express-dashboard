@@ -52,5 +52,8 @@
     "admin": "Admin",
     "staff": "Staff",
     "user": "Customer"
+  },
+  "tracking": {
+    "notAssigned": "Not assigned yet"
   }
 }

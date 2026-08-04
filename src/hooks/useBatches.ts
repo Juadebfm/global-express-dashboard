@@ -11,6 +11,7 @@ import {
 } from '@/services';
 import {
   getDispatchBatchMovement,
+  getDispatchBatchMovementHistory,
   updateDispatchBatchStatus,
 } from '@/services/shipmentsService';
 import type { CreateBatchPayload } from '@/services';
@@ -68,6 +69,20 @@ export function useBatchMovement(batchId: string | undefined) {
   });
 }
 
+const batchMovementHistoryKey = (batchId: string | undefined) =>
+  ['shipments', 'batches', batchId, 'movement-history'] as const;
+
+/** Staff-readable. Supplies the ordered stage list and the stages already reached. */
+export function useBatchMovementHistory(batchId: string | undefined) {
+  return useQuery({
+    queryKey: batchMovementHistoryKey(batchId),
+    queryFn: () => getDispatchBatchMovementHistory(getToken(), batchId!),
+    enabled: !!batchId,
+    staleTime: STALE_TIME.REAL_TIME,
+    retry: false,
+  });
+}
+
 export function useAvailableOrdersForBatch(batchId: string | undefined, enabled = true) {
   return useQuery({
     queryKey: ['batches', 'available-orders', batchId],
@@ -115,6 +130,8 @@ export function useAdvanceBatchMovement() {
       updateDispatchBatchStatus(getToken(), batchId, { statusV2 }),
     onSuccess: (data, { batchId }) => {
       queryClient.setQueryData<BatchMovement>(batchMovementKey(batchId), data.movement);
+      // The new stage adds a recorded event, so the timeline must be refetched.
+      void queryClient.invalidateQueries({ queryKey: batchMovementHistoryKey(batchId) });
       void queryClient.invalidateQueries({ queryKey: ['batches', 'detail', batchId] });
       void queryClient.invalidateQueries({ queryKey: ['batches', 'roster', batchId] });
       void queryClient.invalidateQueries({ queryKey: ['batches', 'list'] });

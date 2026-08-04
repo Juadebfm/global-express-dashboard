@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MY_PERMISSIONS_KEY } from './usePermissions';
+import { trackingKey } from './useTrackShipment';
 import { useWebSocket } from './useWebSocket';
 
 const TOKEN_KEY = 'globalxpress_token';
@@ -82,5 +83,84 @@ describe('useWebSocket access updates', () => {
 
     expect(refreshUser).toHaveBeenCalledTimes(1);
     expect(invalidatePermissions).toHaveBeenCalledWith({ queryKey: MY_PERMISSIONS_KEY });
+  });
+});
+
+describe('useWebSocket batch movement', () => {
+  // The event carries only an id. The new stage must always come from a
+  // refetch, never from the socket message.
+  it('refetches the batch movement endpoints on batch:movement_updated', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidate = vi.spyOn(client, 'invalidateQueries');
+
+    renderHook(() => useWebSocket(), { wrapper: wrapperFor(client) });
+
+    await waitFor(() => expect(MockWebSocket.instances).toHaveLength(1));
+    const socket = MockWebSocket.instances[0];
+
+    await act(async () => {
+      await socket.onmessage?.({
+        data: JSON.stringify({
+          type: 'batch:movement_updated',
+          data: { batchId: 'batch-1' },
+        }),
+      } as MessageEvent);
+    });
+
+    // Covers both /status and /history, which share this key prefix.
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['shipments', 'batches', 'batch-1'],
+    });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['batches', 'roster', 'batch-1'],
+    });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['batches', 'list'] });
+  });
+
+  it('ignores the event when it carries no batch id', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidate = vi.spyOn(client, 'invalidateQueries');
+
+    renderHook(() => useWebSocket(), { wrapper: wrapperFor(client) });
+
+    await waitFor(() => expect(MockWebSocket.instances).toHaveLength(1));
+    const socket = MockWebSocket.instances[0];
+
+    await act(async () => {
+      await socket.onmessage?.({
+        data: JSON.stringify({ type: 'batch:movement_updated', data: {} }),
+      } as MessageEvent);
+    });
+
+    expect(invalidate).not.toHaveBeenCalledWith({
+      queryKey: ['shipments', 'batches', ''],
+    });
+  });
+
+  it('refreshes a customer tracking page named by a batch notification', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidate = vi.spyOn(client, 'invalidateQueries');
+
+    renderHook(() => useWebSocket(), { wrapper: wrapperFor(client) });
+
+    await waitFor(() => expect(MockWebSocket.instances).toHaveLength(1));
+    const socket = MockWebSocket.instances[0];
+
+    await act(async () => {
+      await socket.onmessage?.({
+        data: JSON.stringify({
+          type: 'notification:new',
+          data: {
+            title: 'Your shipment moved',
+            body: 'Your goods are on their way.',
+            metadata: { customerBatchTrackingNumber: '20260804-A1B2' },
+          },
+        }),
+      } as MessageEvent);
+    });
+
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: trackingKey('20260804-A1B2'),
+    });
   });
 });

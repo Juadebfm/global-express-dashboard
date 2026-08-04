@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plane, Search, Ship, X } from 'lucide-react';
-import { CopyButton } from '@/components/ui';
+import { TrackingNumber } from '@/components/ui';
 import type { ShipmentMode, ShipmentRecord } from '@/types';
 import { getStatusStyle } from '@/lib/statusUtils';
 import { cn, resolveLocation } from '@/utils';
@@ -131,10 +131,10 @@ export function ShipmentsTable({
                 {/* Primary row */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-semibold text-gray-900 font-mono">{shipment.sku}</span>
-                      <CopyButton value={shipment.sku} />
-                    </div>
+                    <TrackingNumber
+                      value={shipment.sku}
+                      className="text-sm font-semibold text-gray-900 font-mono"
+                    />
                     <p className="mt-0.5 text-xs text-gray-500">{translateCustomer(shipment.customer)}</p>
                   </div>
                   <span className={cn('shrink-0 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold', style.bgClass, style.textClass)}>
@@ -233,10 +233,7 @@ export function ShipmentsTable({
                   )}
                 >
                   <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4 font-medium text-gray-800">
-                    <span className="inline-flex items-center gap-1.5">
-                      {shipment.sku}
-                      <CopyButton value={shipment.sku} />
-                    </span>
+                    <TrackingNumber value={shipment.sku} />
                   </td>
                   <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4 text-gray-600">
                     {translateCustomer(shipment.customer)}

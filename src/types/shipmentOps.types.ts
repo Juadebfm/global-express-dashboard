@@ -141,6 +141,9 @@ export interface DispatchBatchCarrierInfoPayload {
   voyageOrFlightNumber?: string | null;
   estimatedDepartureAt?: string | null;
   estimatedArrivalAt?: string | null;
+  actualDepartureAt?: string | null;
+  actualArrivalAt?: string | null;
+  actualGrossWeightKg?: number | null;
   notes?: string | null;
   billOfLadingNumber?: string | null;
   vesselName?: string | null;
@@ -187,7 +190,8 @@ export interface Batch {
   masterTrackingNumber: string;
   transportMode: 'air' | 'sea';
   transportLabel: string;
-  status: 'open' | 'closed';
+  // Cutoff approval is retired, but historic batches still carry this state.
+  status: 'open' | 'cutoff_pending_approval' | 'closed';
   statusLabel: string;
   carrierName: string | null;
   airlineTrackingNumber: string | null;
@@ -209,7 +213,8 @@ export interface BatchListItem {
   masterTrackingNumber: string;
   transportMode: 'air' | 'sea';
   transportLabel: string;
-  status: 'open' | 'closed';
+  // Cutoff approval is retired, but historic batches still carry this state.
+  status: 'open' | 'cutoff_pending_approval' | 'closed';
   statusLabel: string;
   customerCount: number;
   orderCount: number;
@@ -298,6 +303,33 @@ export interface BatchMovementUpdateResult {
   ok: true;
   updatedOrderCount: number;
   movement: BatchMovement;
+}
+
+/** One stage of the backend-owned normal movement flow. Exceptions never appear here. */
+export interface BatchMovementFlowStage {
+  statusV2: string;
+  label: string;
+  description: string;
+  kind: 'advance';
+}
+
+/**
+ * A stage the batch actually reached. Stages completed before the backend
+ * started recording history have no event, so they carry no timestamp.
+ */
+export interface BatchMovementEvent {
+  statusV2: string;
+  label: string;
+  description: string;
+  occurredAt: string;
+}
+
+export interface BatchMovementHistory {
+  batchId: string;
+  transportMode: string;
+  currentStatus: string | null;
+  flow: BatchMovementFlowStage[];
+  events: BatchMovementEvent[];
 }
 
 export interface BatchCloseResult {

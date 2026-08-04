@@ -4,7 +4,7 @@ import { Copy, Download, Trash2, Pencil, Plane, Ship } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ShipmentRecord, StatusCategory } from '@/types';
 import { cn, resolveLocation } from '@/utils';
-import { CopyButton } from '@/components/ui';
+import { TrackingNumber } from '@/components/ui';
 
 interface DashboardShipmentListProps {
   shipments: ShipmentRecord[];
@@ -98,7 +98,7 @@ export function DashboardShipmentList({ shipments }: DashboardShipmentListProps)
                 {/* Tracking + status */}
                 <div className="flex items-start justify-between gap-3">
                   <span className="inline-flex items-center gap-1.5 font-mono text-sm font-semibold text-gray-900">
-                    {row.sku}<CopyButton value={row.sku} />
+                    <TrackingNumber value={row.sku} />
                   </span>
                   <span className="inline-flex items-center gap-1.5 shrink-0">
                     <span className={cn('h-1.5 w-1.5 rounded-full', statusStyle.dot)} />
@@ -164,7 +164,7 @@ export function DashboardShipmentList({ shipments }: DashboardShipmentListProps)
                 return (
                   <tr key={row.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-700 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1.5">{row.sku}<CopyButton value={row.sku} /></span>
+                      <span className="inline-flex items-center gap-1.5"><TrackingNumber value={row.sku} /></span>
                     </td>
                     <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{tCustomer(row.customer)}</td>
                     <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{tLoc(row.origin)}</td>

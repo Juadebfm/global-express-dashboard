@@ -102,6 +102,11 @@ export const batchCarrierInfoSchema = z
     voyageOrFlightNumber: z.string().max(120).optional().or(z.literal('')),
     estimatedDepartureAt: z.string().optional().or(z.literal('')),
     estimatedArrivalAt: z.string().optional().or(z.literal('')),
+    actualDepartureAt: z.string().optional().or(z.literal('')),
+    actualArrivalAt: z.string().optional().or(z.literal('')),
+    // Kept as text so every field in this form shares one type. The backend
+    // requires a positive number, so callers convert before sending.
+    actualGrossWeightKg: z.string().optional().or(z.literal('')),
     notes: z.string().max(1000).optional().or(z.literal('')),
     billOfLadingNumber: z.string().max(120).nullable().optional().or(z.literal('')),
     vesselName: z.string().max(160).nullable().optional().or(z.literal('')),

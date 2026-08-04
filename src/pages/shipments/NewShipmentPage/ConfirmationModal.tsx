@@ -44,12 +44,15 @@ export function ConfirmationModal({
       )}`
     : '';
 
+  // A tracking number only exists after warehouse verification, so a freshly
+  // booked order has none. Omit both lines rather than sharing "null" and a
+  // link that goes nowhere.
   const shareBody = [
     'Global Express — Order Confirmation',
-    `Tracking Number: ${trackingNumber}`,
+    ...(trackingNumber ? [`Tracking Number: ${trackingNumber}`] : []),
     `Type: ${typeLabel}`,
     ...(costLabel ? [`Estimated Cost: ${costLabel}`] : []),
-    `Track your shipment: ${trackUrl}`,
+    ...(trackingNumber && trackUrl ? [`Track your shipment: ${trackUrl}`] : []),
   ].join('\n');
 
   const handleCopy = async (): Promise<void> => {

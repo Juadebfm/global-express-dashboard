@@ -27,7 +27,7 @@ import { buildCsv, copyCsvToClipboard, downloadCsv, exportDate } from '@/pages/o
 const matchesQuery = (shipment: ShipmentRecord, query: string): boolean => {
   if (!query) return true;
   const haystack = [
-    shipment.sku,
+    shipment.sku ?? '',
     shipment.customer,
     shipment.origin,
     shipment.destination,
@@ -45,7 +45,7 @@ function buildShipmentsCsv(
   csvHeaders: string[],
 ): string {
   return buildCsv(rows, csvHeaders, (shipment) => [
-    shipment.sku,
+    shipment.sku ?? '',
     shipment.customer,
     shipment.origin,
     shipment.destination,

@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  approveDispatchBatchCutoff,
   confirmRegDoc,
   confirmTaskInvoice,
   getDispatchBatchMovement,
   getDispatchBatchByMasterTracking,
+  getShipmentsDashboard,
   getRegDocs,
   getShipmentMeasurements,
   getTaskInvoices,
@@ -180,14 +180,6 @@ describe('internal track + batch ops', () => {
     expect(url).toContain('/shipments/internal-track/MASTER%2042%2FAB');
   });
 
-  it('approve-cutoff POSTs (no body required)', async () => {
-    mockFetch({ success: true, data: { id: 'b1', status: 'closed' } });
-    await approveDispatchBatchCutoff('token', 'b1');
-    const { url, init } = lastCall();
-    expect(url).toContain('/shipments/batches/b1/approve-cutoff');
-    expect(init.method).toBe('POST');
-  });
-
   it('carrier-info PATCHes the payload', async () => {
     mockFetch({ success: true, data: { id: 'b1', carrierName: 'Korean Air' } });
     await updateDispatchBatchCarrierInfo('token', 'b1', { carrierName: 'Korean Air' });
@@ -262,5 +254,97 @@ describe('internal track + batch ops', () => {
       orderId: 'order-1',
       packageIds: ['p1', 'p2'],
     });
+  });
+});
+
+describe('customer-visible tracking number', () => {
+  // A customer tracking number only exists once the goods are verified and
+  // priced. Before that the backend sends null, and the frontend must not
+  // substitute anything — least of all the internal order id, which is what
+  // the old `tracking || id` fallback did.
+  it('leaves sku null when the customer order has no tracking number yet', async () => {
+    mockFetch({
+      success: true,
+      data: {
+        data: [
+          {
+            id: 'e7d0e1a8-0000-4000-8000-000000000001',
+            trackingNumber: null,
+            description: "Children's clothes",
+            statusV2: 'AWAITING_WAREHOUSE_RECEIPT',
+            statusLabel: 'Processing at Origin',
+          },
+        ],
+      },
+    });
+
+    const result = await getShipmentsDashboard('token', true);
+
+    expect(result.shipments).toHaveLength(1);
+    expect(result.shipments[0]?.sku).toBeNull();
+  });
+
+  it('never falls back to the internal order id', async () => {
+    const internalId = 'e7d0e1a8-0000-4000-8000-000000000001';
+    mockFetch({
+      success: true,
+      data: {
+        data: [{ id: internalId, trackingNumber: null, statusV2: 'WAREHOUSE_RECEIVED' }],
+      },
+    });
+
+    const result = await getShipmentsDashboard('token', true);
+
+    expect(result.shipments[0]?.sku).not.toBe(internalId);
+    expect(result.shipments[0]?.sku).toBeFalsy();
+  });
+
+  it('uses the customer batch tracking number once one is assigned', async () => {
+    mockFetch({
+      success: true,
+      data: {
+        data: [
+          {
+            id: 'e7d0e1a8-0000-4000-8000-000000000001',
+            trackingNumber: '20260804-A1B2',
+            statusV2: 'WAREHOUSE_VERIFIED_PRICED',
+          },
+        ],
+      },
+    });
+
+    const result = await getShipmentsDashboard('token', true);
+
+    expect(result.shipments[0]?.sku).toBe('20260804-A1B2');
+  });
+
+  it('leaves sku null on the staff list when a tracking number is absent', async () => {
+    mockFetch({
+      success: true,
+      data: {
+        data: [
+          {
+            id: 'order-1',
+            trackingNumber: '',
+            senderName: 'Test Customer',
+            origin: 'South Korea',
+            destination: 'Lagos, Nigeria',
+            departureDate: null,
+            eta: null,
+            statusV2: 'WAREHOUSE_RECEIVED',
+            statusLabel: 'Received at warehouse',
+            shipmentType: 'air',
+            numberOfPackages: 1,
+            weight: '10',
+            declaredValue: 100,
+          },
+        ],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      },
+    });
+
+    const result = await getShipmentsDashboard('token', false);
+
+    expect(result.shipments[0]?.sku).toBeNull();
   });
 });
