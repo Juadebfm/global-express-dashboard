@@ -41,7 +41,7 @@ export function DashboardPage(): ReactElement {
           <h1 className="text-2xl font-semibold text-gray-900">My Shipments</h1>
           <Button size="sm" onClick={() => navigate(ROUTES.BOOKINGS_NEW)} data-tour="booking-btn">
             <PackagePlus className="h-4 w-4 mr-1.5" />
-            New Booking
+            New Order
           </Button>
         </div>
 
@@ -99,7 +99,7 @@ export function DashboardPage(): ReactElement {
                   <p className="mt-1 text-sm text-gray-400">Place a booking to get started.</p>
                 </div>
                 <Button size="sm" onClick={() => navigate(ROUTES.BOOKINGS_NEW)}>
-                  New Booking
+                  New Order
                 </Button>
               </div>
             ) : (

@@ -59,9 +59,6 @@ const ShipmentsPage = lazy(() =>
 const TrackShipmentPage = lazy(() =>
   import('@/pages/shipments/TrackShipmentPage').then((m) => ({ default: m.TrackShipmentPage })),
 );
-const NewShipmentPage = lazy(() =>
-  import('@/pages/shipments/NewShipmentPage').then((m) => ({ default: m.NewShipmentPage })),
-);
 const ClientsPage = lazy(() =>
   import('@/pages/clients/ClientsPage').then((m) => ({ default: m.ClientsPage })),
 );
@@ -313,11 +310,14 @@ function AppRoutes(): ReactElement {
           </ProtectedRoute>
         }
       />
+      {/* Staff and customers now share one order form. This route keeps the
+          old staff URL working and, unlike before, names its roles — an
+          unrestricted ProtectedRoute admitted customers too. */}
       <Route
         path={ROUTES.NEW_SHIPMENT}
         element={
-          <ProtectedRoute>
-            <NewShipmentPage />
+          <ProtectedRoute allowedRoles={['staff', 'admin', 'superadmin']}>
+            <NewBookingPage />
           </ProtectedRoute>
         }
       />

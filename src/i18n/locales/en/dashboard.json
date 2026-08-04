@@ -35,7 +35,7 @@
     "trackClientShipment": "Track Client Shipment",
     "trackShipment": "Track Shipment",
     "createClientOrder": "Create Client Order",
-    "preOrder": "New Booking",
+    "preOrder": "New Order",
     "requestNewShipment": "Request for New Shippment"
   },
   "charts": {

@@ -23,7 +23,7 @@ import {
 import flags from 'react-phone-number-input/flags';
 import en from 'react-phone-number-input/locale/en';
 import { AppLayout } from '@/components/layout';
-import { Button, Card, Input, AlertBanner } from '@/components/ui';
+import { Button, Card, Input, AlertBanner, ClientCombobox } from '@/components/ui';
 import {
   useAuth,
   useAuthToken,
@@ -37,6 +37,7 @@ import type { SupplierDirectorySupplier, SupplierDirectorySummary } from '@/type
 import { newBookingSchema, type NewBookingFormValues } from './schema';
 import { buildSourcingSupplier } from './bookingPayload';
 import { EstimatePreview } from './components/EstimatePreview';
+import { ShipmentTypeSelect } from './components/ShipmentTypeSelect';
 
 // ── Country selector ──────────────────────────────────────────────────────────
 
@@ -84,7 +85,7 @@ function CountrySelect({ selected, onSelect, isError = false }: CountrySelectPro
   };
 
   return (
-    <div ref={wrapperRef} className="relative w-[130px] shrink-0 sm:w-[160px]">
+    <div ref={wrapperRef} className="relative w-28 shrink-0 sm:w-40">
       <button
         type="button"
         onClick={handleToggle}
@@ -320,6 +321,10 @@ export function NewBookingPage(): ReactElement {
     return `${selectedCountryOption.dialCode}${cleaned}`;
   }, [selectedCountryOption.dialCode]);
 
+  // Internal roles get the staff-only section. Customers never see it.
+  const isInternal =
+    user?.role === 'staff' || user?.role === 'admin' || user?.role === 'superadmin';
+
   const layoutUser = {
     displayName: user
       ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email
@@ -377,12 +382,26 @@ export function NewBookingPage(): ReactElement {
           recipientName: values.recipientName,
           recipientPhone: values.recipientPhone,
           recipientEmail: values.recipientEmail ?? '',
-          orderDirection: 'inbound',
+          // Each surface keeps the direction it already sent: a customer's own
+          // order is inbound, a staff-created one outbound. Consolidating the
+          // form deliberately did not change this behaviour.
+          orderDirection: isInternal ? 'outbound' : 'inbound',
           weight: values.weight,
           declaredValue: values.declaredValue,
           description: values.description,
           shipmentType: values.shipmentType,
           sourcingSupplier,
+          ...(values.shipmentType === 'd2d' &&
+            values.recipientAddress?.trim() && {
+              recipientAddress: values.recipientAddress.trim(),
+            }),
+          ...(isInternal &&
+            values.senderId && { senderId: values.senderId }),
+          ...(isInternal &&
+            values.pickupRepName?.trim() && {
+              pickupRepName: values.pickupRepName.trim(),
+              pickupRepPhone: values.pickupRepPhone?.trim() || undefined,
+            }),
         },
         token,
         idempotencyKey.current,
@@ -401,12 +420,12 @@ export function NewBookingPage(): ReactElement {
           <Card className="flex flex-col items-center gap-4 p-10 text-center">
             <CheckCircle className="h-12 w-12 text-emerald-500" />
             <div>
-              <p className="text-lg font-semibold text-gray-900">Booking received</p>
+              <p className="text-lg font-semibold text-gray-900">Order received</p>
               <p className="mt-1 text-sm text-gray-500">
                 We'll notify your supplier and update your tracking once your goods are assigned to a dispatch.
               </p>
             </div>
-            <div className="flex gap-3 mt-2">
+            <div className="mt-2 flex flex-col gap-3 sm:flex-row">
               <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.DASHBOARD)}>
                 View my shipments
               </Button>
@@ -434,11 +453,53 @@ export function NewBookingPage(): ReactElement {
       <AppLayout user={layoutUser}>
       <div className="max-w-lg mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">New Booking</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">New Order</h1>
           <p className="mt-1 text-sm text-gray-500">Tell us what you're shipping and who should receive it.</p>
         </div>
 
         <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-6">
+          {/* Staff place orders on behalf of a client; a customer places their
+              own, so this whole section is hidden from them. The backend
+              remains the authority on who may set senderId. */}
+          {isInternal && (
+            <Card className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-gray-700">Who is this order for?</p>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Pick the client this order belongs to.
+                </p>
+              </div>
+
+              <Controller
+                control={control}
+                name="senderId"
+                render={({ field }) => (
+                  <ClientCombobox
+                    selectedId={field.value ?? ''}
+                    onSelect={(client) => field.onChange(client.id)}
+                    placeholder="Search by name or email"
+                    error={errors.senderId?.message ?? null}
+                  />
+                )}
+              />
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Input
+                  label="Pickup representative (optional)"
+                  placeholder="Who is collecting the goods?"
+                  error={errors.pickupRepName?.message}
+                  {...register('pickupRepName')}
+                />
+                <Input
+                  label="Representative phone"
+                  placeholder="Phone number"
+                  error={errors.pickupRepPhone?.message}
+                  {...register('pickupRepPhone')}
+                />
+              </div>
+            </Card>
+          )}
+
           {/* Step 1 */}
           <Card className="space-y-4">
             <p className="text-sm font-semibold text-gray-700">What are you shipping?</p>
@@ -460,24 +521,15 @@ export function NewBookingPage(): ReactElement {
 
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">
-                Shipment type
+                How should it travel?
               </label>
-              <div className="flex gap-3">
-                {(['air', 'sea'] as const).map((type) => (
-                  <label
-                    key={type}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <input
-                      type="radio"
-                      value={type}
-                      {...register('shipmentType')}
-                      className="accent-brand-500"
-                    />
-                    <span className="text-sm text-gray-700 capitalize">{type}</span>
-                  </label>
-                ))}
-              </div>
+              <Controller
+                control={control}
+                name="shipmentType"
+                render={({ field }) => (
+                  <ShipmentTypeSelect value={field.value} onChange={field.onChange} />
+                )}
+              />
             </div>
 
             <Input
@@ -487,7 +539,16 @@ export function NewBookingPage(): ReactElement {
               {...register('weight')}
             />
 
-            <EstimatePreview shipmentType={shipmentType} rawWeight={weight ?? ''} />
+            {/* Door-to-door is quoted individually, and the estimate endpoint
+                only accepts air or sea, so no estimate is shown for it. */}
+            {shipmentType === 'd2d' ? (
+              <p className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-500">
+                Door-to-door is priced individually. Our team will confirm the cost
+                after reviewing the goods.
+              </p>
+            ) : (
+              <EstimatePreview shipmentType={shipmentType} rawWeight={weight ?? ''} />
+            )}
 
             <Input
               label="Declared value (USD)"
@@ -554,6 +615,29 @@ export function NewBookingPage(): ReactElement {
               {...register('recipientEmail')}
             />
 
+            {/* Door-to-door delivers to an address, so one is required. Other
+                shipment types are collected at our Lagos office. */}
+            {shipmentType === 'd2d' && (
+              <div>
+                <label
+                  htmlFor="order-recipient-address"
+                  className="mb-1.5 block text-sm font-medium text-gray-700"
+                >
+                  Delivery address
+                </label>
+                <textarea
+                  id="order-recipient-address"
+                  {...register('recipientAddress')}
+                  rows={3}
+                  placeholder="Street, city, and any landmark that helps the courier"
+                  className="w-full resize-none rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-sm placeholder:text-gray-400 hover:border-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+                {errors.recipientAddress && (
+                  <p className="mt-1.5 text-sm text-red-600">{errors.recipientAddress.message}</p>
+                )}
+              </div>
+            )}
+
             {/* Sourcing supplier toggle */}
             <div className="pt-1">
               <Controller
@@ -577,7 +661,7 @@ export function NewBookingPage(): ReactElement {
 
             {hasSourcingSupplier && (
               <div className="space-y-4 pt-1">
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-x-4 gap-y-2">
                   {(['directory', 'new'] as const).map((type) => (
                     <label key={type} className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -680,7 +764,7 @@ export function NewBookingPage(): ReactElement {
                       </div>
                     ) : !supplierDirectoryError ? (
                       <p className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-                        No matching supplier found. Choose “Someone new” below to enter their details for this booking.
+                        No matching supplier found. Choose “Someone new” below to enter their details for this order.
                       </p>
                     ) : null}
 
@@ -713,7 +797,7 @@ export function NewBookingPage(): ReactElement {
                     )}
 
                     <p className="text-xs text-gray-500">
-                      Selecting a directory supplier only links it to this booking; it does not change their profile.
+                      Selecting a directory supplier only links it to this order; it does not change their profile.
                     </p>
 
                     {errors.sourcingSupplierId && (
@@ -754,7 +838,7 @@ export function NewBookingPage(): ReactElement {
             className="w-full"
             isLoading={mutation.isPending}
           >
-            Place booking
+            Place order
           </Button>
         </form>
       </div>

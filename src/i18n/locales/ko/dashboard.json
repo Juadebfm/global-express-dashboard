@@ -35,7 +35,7 @@
     "trackClientShipment": "고객 배송 추적",
     "trackShipment": "배송 추적",
     "createClientOrder": "고객 주문 생성",
-    "preOrder": "사전 주문",
+    "preOrder": "신규 주문",
     "requestNewShipment": "신규 배송 요청"
   },
   "charts": {

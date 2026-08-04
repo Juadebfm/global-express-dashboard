@@ -17,7 +17,6 @@ export { AdminDashboardPage } from './admin';
 export {
   ShipmentsPage,
   TrackShipmentPage,
-  NewShipmentPage,
 } from './shipments';
 export { ClientsPage, ClientWorkbenchPage } from './clients';
 export { SuppliersPage } from './suppliers';
