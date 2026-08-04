@@ -167,11 +167,11 @@ export {
   useBatches,
   useBatch,
   useBatchRoster,
-  useBatchStatusLabels,
+  useBatchMovement,
   useAvailableOrdersForBatch,
   useAddOrderToBatch,
   useRemoveOrderFromBatch,
-  useSetBatchMovementStatus,
+  useAdvanceBatchMovement,
   useCloseBatch,
   useCreateBatch,
 } from './useBatches';

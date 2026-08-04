@@ -5,14 +5,16 @@ import {
   getBatchRoster,
   addOrderToBatch,
   removeOrderFromBatch,
-  updateBatchStatus,
   closeBatch,
-  getBatchStatusLabels,
   getAvailableOrdersForBatch,
   createBatch,
 } from '@/services';
+import {
+  getDispatchBatchMovement,
+  updateDispatchBatchStatus,
+} from '@/services/shipmentsService';
 import type { CreateBatchPayload } from '@/services';
-import type { Batch } from '@/types';
+import type { Batch, BatchMovement, BatchMovementUpdateResult } from '@/types';
 import type {
   BatchListParams,
 } from '@/services/batchesService';
@@ -52,11 +54,17 @@ export function useBatchRoster(batchId: string | undefined) {
   });
 }
 
-export function useBatchStatusLabels() {
+const batchMovementKey = (batchId: string | undefined) =>
+  ['shipments', 'batches', batchId, 'movement'] as const;
+
+/** Staff can read this backend-calculated state. The write is capability-gated separately. */
+export function useBatchMovement(batchId: string | undefined) {
   return useQuery({
-    queryKey: ['batches', 'status-labels'],
-    queryFn: () => getBatchStatusLabels(getToken()),
-    staleTime: STALE_TIME.SLOW_MOVING,
+    queryKey: batchMovementKey(batchId),
+    queryFn: () => getDispatchBatchMovement(getToken(), batchId!),
+    enabled: !!batchId,
+    staleTime: STALE_TIME.REAL_TIME,
+    retry: false,
   });
 }
 
@@ -100,12 +108,13 @@ export function useRemoveOrderFromBatch() {
   });
 }
 
-export function useSetBatchMovementStatus() {
+export function useAdvanceBatchMovement() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ batchId, status }: { batchId: string; status: string }) =>
-      updateBatchStatus(getToken(), batchId, { status }),
-    onSuccess: (_data, { batchId }) => {
+  return useMutation<BatchMovementUpdateResult, Error, { batchId: string; statusV2: string }>({
+    mutationFn: ({ batchId, statusV2 }) =>
+      updateDispatchBatchStatus(getToken(), batchId, { statusV2 }),
+    onSuccess: (data, { batchId }) => {
+      queryClient.setQueryData<BatchMovement>(batchMovementKey(batchId), data.movement);
       void queryClient.invalidateQueries({ queryKey: ['batches', 'detail', batchId] });
       void queryClient.invalidateQueries({ queryKey: ['batches', 'roster', batchId] });
       void queryClient.invalidateQueries({ queryKey: ['batches', 'list'] });

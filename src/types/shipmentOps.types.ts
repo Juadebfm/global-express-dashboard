@@ -224,13 +224,15 @@ export interface BatchListResult {
 export interface BatchRosterOrder {
   id: string;
   trackingNumber: string;
-  status: string;
-  statusLabel: string;
-  description: string;
-  weightKg: string;
-  shipmentType: 'air' | 'd2d';
+  status: string | null;
+  statusLabel: string | null;
+  /** This recorded fact remains true after movement status advances. */
+  isWarehouseVerifiedAndPriced: boolean;
+  description: string | null;
+  weightKg: string | null;
+  shipmentType: 'air' | 'ocean' | 'd2d' | null;
   shipmentTypeLabel: string;
-  declaredValueUsd: string;
+  declaredValueUsd: string | null;
   createdAt: string;
 }
 
@@ -262,12 +264,6 @@ export interface BatchRosterResult {
   summary: BatchRosterSummary;
 }
 
-export interface BatchStatusLabel {
-  status: string;
-  label: string;
-  description: string;
-}
-
 export interface BatchAddOrderPayload {
   orderId: string;
 }
@@ -280,15 +276,28 @@ export interface BatchAddOrderResult {
   isNewSlot: boolean;
 }
 
-export interface BatchUpdateStatusPayload {
-  status: string;
+export type BatchMovementActionKind = 'advance' | 'exception';
+
+export interface BatchMovementAction {
+  statusV2: string;
+  label: string;
+  description: string;
+  kind: BatchMovementActionKind;
 }
 
-export interface BatchUpdateStatusResult {
-  ok: boolean;
+export interface BatchMovement {
+  batchId: string;
+  batchLifecycleStatus: 'open' | 'cutoff_pending_approval' | 'closed';
+  currentStatus: string | null;
+  currentStatusLabel: string | null;
+  heldFromStatus: string | null;
+  allowedActions: BatchMovementAction[];
+}
+
+export interface BatchMovementUpdateResult {
+  ok: true;
   updatedOrderCount: number;
-  newStatus: string;
-  statusLabel: string;
+  movement: BatchMovement;
 }
 
 export interface BatchCloseResult {

@@ -4,6 +4,7 @@ import {
   approveDispatchBatchCutoff,
   confirmRegDoc,
   confirmTaskInvoice,
+  getDispatchBatchMovement,
   getDispatchBatchByMasterTracking,
   getRegDocs,
   getShipmentMeasurements,
@@ -197,12 +198,55 @@ describe('internal track + batch ops', () => {
   });
 
   it('status PATCHes statusV2', async () => {
-    mockFetch({ success: true, data: { id: 'b1' } });
-    await updateDispatchBatchStatus('token', 'b1', { statusV2: 'FLIGHT_DEPARTED' });
+    mockFetch({
+      success: true,
+      data: {
+        ok: true,
+        updatedOrderCount: 2,
+        movement: {
+          batchId: 'b1',
+          batchLifecycleStatus: 'closed',
+          currentStatus: 'FLIGHT_DEPARTED',
+          currentStatusLabel: 'Flight departed',
+          heldFromStatus: null,
+          allowedActions: [],
+        },
+      },
+    });
+    const result = await updateDispatchBatchStatus('token', 'b1', { statusV2: 'FLIGHT_DEPARTED' });
     const { url, init } = lastCall();
     expect(url).toContain('/shipments/batches/b1/status');
     expect(init.method).toBe('PATCH');
     expect(JSON.parse(init.body as string)).toEqual({ statusV2: 'FLIGHT_DEPARTED' });
+    expect(result.movement.currentStatusLabel).toBe('Flight departed');
+  });
+
+  it('gets the backend-calculated movement state and allowed actions', async () => {
+    mockFetch({
+      success: true,
+      data: {
+        batchId: 'b1',
+        batchLifecycleStatus: 'closed',
+        currentStatus: 'AT_ORIGIN_AIRPORT',
+        currentStatusLabel: 'At origin airport',
+        heldFromStatus: null,
+        allowedActions: [
+          {
+            statusV2: 'BOARDED_ON_FLIGHT',
+            label: 'Boarded on flight',
+            description: 'Goods have been loaded onto the flight.',
+            kind: 'advance',
+          },
+        ],
+      },
+    });
+
+    const result = await getDispatchBatchMovement('token', 'b1');
+    const { url, init } = lastCall();
+    expect(url).toContain('/shipments/batches/b1/status');
+    expect(init.method ?? 'GET').toBe('GET');
+    expect(result.allowedActions).toHaveLength(1);
+    expect(result.allowedActions[0]?.statusV2).toBe('BOARDED_ON_FLIGHT');
   });
 
   it('move-to-next POSTs the supplier or package selection', async () => {

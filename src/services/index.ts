@@ -152,9 +152,7 @@ export {
   getBatchRoster,
   addOrderToBatch,
   removeOrderFromBatch,
-  updateBatchStatus,
   closeBatch,
-  getBatchStatusLabels,
   getAvailableOrdersForBatch,
   createBatch,
 } from './batchesService';

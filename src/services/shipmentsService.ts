@@ -17,6 +17,8 @@ import type {
   DispatchBatchCarrierInfoPayload,
   DispatchBatchStatusPayload,
   DispatchBatchMoveToNextPayload,
+  BatchMovement,
+  BatchMovementUpdateResult,
 } from '@/types';
 import type { StatusCategory } from '@/types/status.types';
 import { getStatusCategory } from '@/lib/statusUtils';
@@ -518,12 +520,20 @@ export function updateDispatchBatchStatus(
   token: string,
   batchId: string,
   payload: DispatchBatchStatusPayload,
-): Promise<DispatchBatch> {
-  return apiPatchData<DispatchBatch>(
+): Promise<BatchMovementUpdateResult> {
+  return apiPatchData<BatchMovementUpdateResult>(
     `/shipments/batches/${batchId}/status`,
     payload,
     token,
   );
+}
+
+/** The backend is the authority for the current stage and valid next actions. */
+export function getDispatchBatchMovement(
+  token: string,
+  batchId: string,
+): Promise<BatchMovement> {
+  return apiGetData<BatchMovement>(`/shipments/batches/${batchId}/status`, token);
 }
 
 export function moveDispatchBatchToNext(

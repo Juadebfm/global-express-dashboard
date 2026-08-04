@@ -15,6 +15,7 @@ import type {
   DispatchBatchCarrierInfoPayload,
   DispatchBatchMoveToNextPayload,
   DispatchBatchStatusPayload,
+  BatchMovementUpdateResult,
 } from '@/types';
 import { useAuthToken } from './useAuthToken';
 
@@ -156,7 +157,7 @@ export function useUpdateBatchStatus(): {
   mutate: (params: {
     batchId: string;
     payload: DispatchBatchStatusPayload;
-  }) => Promise<DispatchBatch>;
+  }) => Promise<BatchMovementUpdateResult>;
   isPending: boolean;
   error: Error | null;
 } {
@@ -165,7 +166,7 @@ export function useUpdateBatchStatus(): {
   const pushMessage = useFeedbackStore((s) => s.pushMessage);
 
   const m = useMutation<
-    DispatchBatch,
+    BatchMovementUpdateResult,
     Error,
     { batchId: string; payload: DispatchBatchStatusPayload }
   >({

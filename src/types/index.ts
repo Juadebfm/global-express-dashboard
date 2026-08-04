@@ -275,11 +275,12 @@ export type {
   BatchRosterCustomer,
   BatchRosterSummary,
   BatchRosterResult,
-  BatchStatusLabel,
   BatchAddOrderPayload,
   BatchAddOrderResult,
-  BatchUpdateStatusPayload,
-  BatchUpdateStatusResult,
+  BatchMovementActionKind,
+  BatchMovementAction,
+  BatchMovement,
+  BatchMovementUpdateResult,
   BatchCloseResult,
 } from './shipmentOps.types';
 

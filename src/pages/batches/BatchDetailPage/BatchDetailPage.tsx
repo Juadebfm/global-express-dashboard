@@ -22,11 +22,11 @@ import {
 import {
   useAuth,
   useBatchRoster,
-  useBatchStatusLabels,
+  useBatchMovement,
   useAvailableOrdersForBatch,
   useAddOrderToBatch,
   useRemoveOrderFromBatch,
-  useSetBatchMovementStatus,
+  useAdvanceBatchMovement,
   useCloseBatch,
   useCapability,
 } from '@/hooks';
@@ -39,43 +39,12 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useFeedbackStore } from '@/store';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
-import type { BatchRosterCustomer, BatchRosterOrder, BatchDocumentType } from '@/types';
-
-// Air-specific statuses (post-close movement)
-const AIR_STATUSES = new Set([
-  'DISPATCHED_TO_ORIGIN_AIRPORT',
-  'AT_ORIGIN_AIRPORT',
-  'BOARDED_ON_FLIGHT',
-  'FLIGHT_DEPARTED',
-  'FLIGHT_LANDED_LAGOS',
-  'CUSTOMS_CLEARED_LAGOS',
-  'IN_TRANSIT_TO_LAGOS_OFFICE',
-  'IN_EXTRA_TRUCK_MOVEMENT_LAGOS',
-  'READY_FOR_PICKUP',
-  'PICKED_UP_COMPLETED',
-  'LOCAL_COURIER_ASSIGNED',
-  'IN_TRANSIT_TO_DESTINATION_CITY',
-  'OUT_FOR_DELIVERY_DESTINATION_CITY',
-  'DELIVERED_TO_RECIPIENT',
-  'ON_HOLD',
-]);
-
-const SEA_STATUSES = new Set([
-  'DISPATCHED_TO_ORIGIN_PORT',
-  'AT_ORIGIN_PORT',
-  'LOADED_ON_VESSEL',
-  'VESSEL_DEPARTED',
-  'VESSEL_ARRIVED_LAGOS_PORT',
-  'CUSTOMS_CLEARED_LAGOS',
-  'IN_TRANSIT_TO_LAGOS_OFFICE',
-  'IN_EXTRA_TRUCK_MOVEMENT_LAGOS',
-  'READY_FOR_PICKUP',
-  'PICKED_UP_COMPLETED',
-  'IN_TRANSIT_TO_DESTINATION_CITY',
-  'OUT_FOR_DELIVERY_DESTINATION_CITY',
-  'DELIVERED_TO_RECIPIENT',
-  'ON_HOLD',
-]);
+import type {
+  BatchRosterCustomer,
+  BatchRosterOrder,
+  BatchDocumentType,
+  BatchMovementAction,
+} from '@/types';
 
 function ShipmentTypeBadge({ type, label }: { type: string; label: string }): ReactElement {
   if (type === 'd2d') {
@@ -160,7 +129,10 @@ function CustomerRow({
 
       {/* Expanded order rows */}
       {expanded && customer.orders.map((order: BatchRosterOrder) => {
-        const isVerified = order.status.toLowerCase().includes('verified');
+        const isVerified = order.isWarehouseVerifiedAndPriced;
+        const hasMovementStatus = Boolean(
+          order.statusLabel && order.status !== 'WAREHOUSE_VERIFIED_PRICED',
+        );
         return (
           <tr key={order.id} className="bg-gray-50/60">
             {/* Tracking + description — indented */}
@@ -182,24 +154,43 @@ function CustomerRow({
             {/* Badges (mode + status) */}
             <td className="px-4 py-3 text-right">
               <div className="flex items-center justify-end gap-2">
-                <ShipmentTypeBadge type={order.shipmentType} label={order.shipmentTypeLabel} />
-                <span className={cn(
-                  'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-                  isVerified ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700',
-                )}>
-                  <span className={cn('h-1.5 w-1.5 rounded-full', isVerified ? 'bg-emerald-500' : 'bg-amber-500')} />
-                  {isVerified ? 'Verified' : order.statusLabel}
-                </span>
+                <ShipmentTypeBadge type={order.shipmentType ?? ''} label={order.shipmentTypeLabel} />
+                {isVerified ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Verified &amp; priced
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    Needs verification
+                  </span>
+                )}
+                {hasMovementStatus && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                    {order.statusLabel}
+                  </span>
+                )}
               </div>
             </td>
 
             {/* Weight */}
             <td className="px-4 py-3 text-right">
-              <span className="text-sm text-gray-500">{order.weightKg} kg</span>
+              <span className="text-sm text-gray-500">{order.weightKg ?? '—'} kg</span>
             </td>
 
             {/* Remove action */}
             <td className="px-4 py-3 text-right">
+              <div className="flex justify-end gap-2">
+              {!isVerified && (
+                <Link
+                  to={`${ROUTES.ORDERS}?select=${order.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
+                >
+                  Review order
+                </Link>
+              )}
               {canManage && batchOpen && (
                 <button
                   type="button"
@@ -214,6 +205,7 @@ function CustomerRow({
                   Remove
                 </button>
               )}
+              </div>
             </td>
           </tr>
         );
@@ -273,7 +265,10 @@ function MobileCustomerCard({
       {expanded && (
         <div className="mt-3 space-y-2">
           {customer.orders.map((order: BatchRosterOrder) => {
-            const isVerified = order.status.toLowerCase().includes('verified');
+            const isVerified = order.isWarehouseVerifiedAndPriced;
+            const hasMovementStatus = Boolean(
+              order.statusLabel && order.status !== 'WAREHOUSE_VERIFIED_PRICED',
+            );
             return (
               <div key={order.id} className="rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-2.5">
                 <div className="flex items-center justify-between gap-2">
@@ -283,19 +278,32 @@ function MobileCustomerCard({
                   >
                     {order.trackingNumber}
                   </Link>
-                  <span className={cn(
-                    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-                    isVerified ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700',
-                  )}>
-                    <span className={cn('h-1.5 w-1.5 rounded-full', isVerified ? 'bg-emerald-500' : 'bg-amber-500')} />
-                    {isVerified ? 'Verified' : order.statusLabel}
-                  </span>
+                  {isVerified ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      Verified &amp; priced
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                      Needs verification
+                    </span>
+                  )}
                 </div>
+                {hasMovementStatus && <p className="mt-1 text-xs text-gray-500">{order.statusLabel}</p>}
                 {order.description && (
                   <p className="mt-0.5 text-xs text-gray-500 truncate">{order.description}</p>
                 )}
                 <div className="mt-1 flex items-center justify-between">
-                  <span className="text-xs text-gray-500">{order.weightKg} kg</span>
+                  <span className="text-xs text-gray-500">{order.weightKg ?? '—'} kg</span>
+                  {!isVerified && (
+                    <Link
+                      to={`${ROUTES.ORDERS}?select=${order.id}`}
+                      className="text-xs font-medium text-amber-700 hover:text-amber-800"
+                    >
+                      Review order
+                    </Link>
+                  )}
                   {canManage && batchOpen && (
                     <button
                       type="button"
@@ -450,11 +458,11 @@ export function BatchDetailPage(): ReactElement {
   const canFinalise = useCapability('batches.finalise');
 
   const { data: roster, isLoading, error, refetch } = useBatchRoster(batchId);
-  const { data: statusLabels } = useBatchStatusLabels();
+  const { data: movement, isLoading: isMovementLoading } = useBatchMovement(batchId);
 
   const addOrder = useAddOrderToBatch();
   const removeOrder = useRemoveOrderFromBatch();
-  const updateStatus = useSetBatchMovementStatus();
+  const advanceMovement = useAdvanceBatchMovement();
   const closeBatchMutation = useCloseBatch();
   const availableOrders = useAvailableOrdersForBatch(batchId, canManage);
 
@@ -466,21 +474,13 @@ export function BatchDetailPage(): ReactElement {
   const comboboxRef = useRef<HTMLDivElement>(null);
   const [removingOrderId, setRemovingOrderId] = useState<string | null>(null);
   const [removeConfirm, setRemoveConfirm] = useState<{ orderId: string; customerName: string } | null>(null);
-  const [showStatusModal, setShowStatusModal] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedMovementAction, setSelectedMovementAction] = useState<BatchMovementAction | null>(null);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   const batch = roster?.batch;
   const summary = roster?.summary;
   const customers = roster?.customers ?? [];
   const isOpen = batch?.status === 'open';
-
-  // Filter status labels by transport mode
-  const relevantStatuses = (statusLabels ?? []).filter((s) => {
-    if (!batch) return true;
-    const set = batch.transportMode === 'air' ? AIR_STATUSES : SEA_STATUSES;
-    return set.has(s.status);
-  });
 
   const handleAddOrder = async (): Promise<void> => {
     setAddOrderError(null);
@@ -526,15 +526,20 @@ export function BatchDetailPage(): ReactElement {
     }
   };
 
-  const handleUpdateStatus = async (): Promise<void> => {
-    if (!batchId || !selectedStatus) return;
+  const confirmMovementAction = async (): Promise<void> => {
+    if (!batchId || !selectedMovementAction) return;
     try {
-      const result = await updateStatus.mutateAsync({ batchId, status: selectedStatus });
-      pushMessage({ tone: 'success', message: `Status updated to "${result.statusLabel}" for ${result.updatedOrderCount} orders.` });
-      setShowStatusModal(false);
-      setSelectedStatus('');
+      const result = await advanceMovement.mutateAsync({
+        batchId,
+        statusV2: selectedMovementAction.statusV2,
+      });
+      pushMessage({
+        tone: 'success',
+        message: `Batch moved to ${result.movement.currentStatusLabel} for ${result.updatedOrderCount} orders.`,
+      });
+      setSelectedMovementAction(null);
     } catch (err) {
-      pushMessage({ tone: 'error', message: getDisplayErrorMessage(err, 'Failed to update status. Please try again.') });
+      pushMessage({ tone: 'error', message: getDisplayErrorMessage(err, 'Unable to update batch movement. Please try again.') });
     }
   };
 
@@ -608,17 +613,17 @@ export function BatchDetailPage(): ReactElement {
                   )}>
                     {batch.statusLabel}
                   </span>
+                  {!isMovementLoading && movement?.currentStatusLabel && (
+                    <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+                      {movement.currentStatusLabel}
+                    </span>
+                  )}
                 </div>
                 <h1 className="font-mono text-xl font-semibold text-gray-900">{batch.masterTrackingNumber}</h1>
               </div>
 
               {/* Actions */}
               <div className="flex flex-wrap gap-2">
-                {!isOpen && canManage && (
-                  <Button variant="secondary" onClick={() => setShowStatusModal(true)}>
-                    Update status
-                  </Button>
-                )}
                 {isOpen && canFinalise && (
                   <Button
                     onClick={() => setShowCloseConfirm(true)}
@@ -631,6 +636,42 @@ export function BatchDetailPage(): ReactElement {
                 )}
               </div>
             </div>
+
+            {/* The backend decides which batch movement actions are valid. */}
+            {!isOpen && movement && (
+              <Card className="p-4">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Batch movement</p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Current stage: <span className="font-medium text-gray-700">{movement.currentStatusLabel ?? 'No movement stage recorded'}</span>
+                    </p>
+                  </div>
+                  {canManage && movement.allowedActions.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {movement.allowedActions.map((action) => (
+                        <Button
+                          key={action.statusV2}
+                          variant={action.kind === 'advance' ? 'primary' : 'secondary'}
+                          size="sm"
+                          onClick={() => setSelectedMovementAction(action)}
+                        >
+                          {action.label}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {canManage && movement.allowedActions.length === 0 && movement.currentStatus === 'IN_TRANSIT_TO_LAGOS_OFFICE' && (
+                  <p className="mt-3 text-sm text-gray-500">
+                    No further batch-level movement is available. Pickup and local delivery are managed per order.
+                  </p>
+                )}
+                {canManage && movement.allowedActions.length === 0 && movement.currentStatus !== 'IN_TRANSIT_TO_LAGOS_OFFICE' && (
+                  <p className="mt-3 text-sm text-gray-500">No batch movement action is currently available.</p>
+                )}
+              </Card>
+            )}
 
             {/* Summary cards */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -866,45 +907,43 @@ export function BatchDetailPage(): ReactElement {
         )}
       </div>
 
-      {/* Update Status Modal */}
-      {showStatusModal && (
+      {/* Movement confirmation — actions come exclusively from the backend. */}
+      {selectedMovementAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <Card className="w-full max-w-md p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Update batch status</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {selectedMovementAction.kind === 'advance'
+                  ? `Move batch to ${selectedMovementAction.label}?`
+                  : `${selectedMovementAction.label}?`}
+              </h2>
               <button
                 type="button"
-                onClick={() => { setShowStatusModal(false); setSelectedStatus(''); }}
+                onClick={() => setSelectedMovementAction(null)}
                 className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+                aria-label="Close confirmation"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
             <p className="text-sm text-gray-500">
-              The new status will be applied to all <span className="font-medium text-gray-700">{summary?.totalOrders ?? 0} orders</span> in this batch.
+              {selectedMovementAction.description}
             </p>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-            >
-              <option value="">Select status…</option>
-              {relevantStatuses.map((s) => (
-                <option key={s.status} value={s.status}>{s.label}</option>
-              ))}
-            </select>
+            <p className="text-sm text-gray-500">
+              This applies to all <span className="font-medium text-gray-700">{summary?.totalOrders ?? 0} orders</span> in this batch.
+            </p>
             <div className="flex gap-2">
               <Button
                 className="flex-1"
-                onClick={() => void handleUpdateStatus()}
-                disabled={!selectedStatus || updateStatus.isPending}
+                onClick={() => void confirmMovementAction()}
+                disabled={advanceMovement.isPending}
               >
-                {updateStatus.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Apply status
+                {advanceMovement.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Confirm
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => { setShowStatusModal(false); setSelectedStatus(''); }}
+                onClick={() => setSelectedMovementAction(null)}
               >
                 Cancel
               </Button>

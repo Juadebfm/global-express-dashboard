@@ -525,6 +525,27 @@ The Team page is the single Superadmin workspace for both team records and indiv
 
 ---
 
+### Batch movement panel
+
+File: `src/pages/batches/BatchDetailPage/BatchDetailPage.tsx`
+Last updated: 2026-08-03
+
+| Property | Class |
+|---|---|
+| Surface | Shared `Card` — `rounded-2xl border border-gray-200 bg-white p-4` |
+| Heading | `text-sm font-medium text-gray-900` |
+| Supporting text | `mt-1 text-sm text-gray-500` |
+| Current stage | `font-medium text-gray-700` |
+| Advance action | Shared primary `Button`, `size="sm"` |
+| Exception action | Shared secondary `Button`, `size="sm"` |
+| Verification badge | `rounded-full bg-emerald-50 text-emerald-700` |
+| Verification-needed action | `rounded-xl border border-amber-200 bg-amber-50 text-amber-700` |
+
+**Pattern notes:**
+Batch movement is always driven by backend-provided actions, never a local status list. Confirm an action in the existing elevated modal before applying it. Show warehouse verification separately from the current shipment stage, because a verified order can legitimately move beyond the warehouse.
+
+---
+
 ## Known Tech Debt
 
 - `src/components/forms/SupportTicketForm/SupportTicketForm.tsx` — raw `border-[#DDE5E9]` hex inputs

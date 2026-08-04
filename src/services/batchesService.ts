@@ -8,11 +8,8 @@ import type {
   Batch,
   BatchListResult,
   BatchRosterResult,
-  BatchStatusLabel,
   BatchAddOrderPayload,
   BatchAddOrderResult,
-  BatchUpdateStatusPayload,
-  BatchUpdateStatusResult,
   BatchCloseResult,
   BatchDocument,
   BatchDocumentType,
@@ -75,14 +72,6 @@ export function removeOrderFromBatch(
   return apiDeleteData<void>(`/batches/${batchId}/orders/${orderId}`, token);
 }
 
-export function updateBatchStatus(
-  token: string,
-  batchId: string,
-  payload: BatchUpdateStatusPayload,
-): Promise<BatchUpdateStatusResult> {
-  return apiPatchData<BatchUpdateStatusResult>(`/batches/${batchId}/status`, payload, token);
-}
-
 export function closeBatch(token: string, batchId: string): Promise<BatchCloseResult> {
   return apiPostData<BatchCloseResult>(`/batches/${batchId}/close`, undefined, token);
 }
@@ -93,10 +82,6 @@ export interface CreateBatchPayload {
 
 export function createBatch(token: string, payload: CreateBatchPayload): Promise<Batch> {
   return apiPostData<Batch>('/batches', payload, token);
-}
-
-export function getBatchStatusLabels(token: string): Promise<BatchStatusLabel[]> {
-  return apiGetData<BatchStatusLabel[]>('/batches/status-labels', token);
 }
 
 export function getAvailableOrdersForBatch(
