@@ -69,7 +69,8 @@
       "Bash(awk '/^## Shipments/,/^## Team/' /Users/macbookpro/Documents/GitHub/global-express-backend/API_ENDPOINTS.md)",
       "Bash(grep \"^### \\\\`\")",
       "Bash(grep \"^### \\\\`\" /Users/macbookpro/Documents/GitHub/global-express-backend/API_ENDPOINTS.md)",
-      "Bash(git status *)"
+      "Bash(git status *)",
+      "Bash(awk 'NR>520 && NR<560 && /recipientEmail/{print NR\": \"$0; getline; print NR\": \"$0; getline; print NR\": \"$0; getline; print NR\": \"$0}' src/routes/orders.routes.ts)"
     ]
   }
 }
