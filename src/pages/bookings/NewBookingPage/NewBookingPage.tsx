@@ -40,6 +40,7 @@ import { EstimatePreview } from './components/EstimatePreview';
 import { ShipmentTypeSelect } from './components/ShipmentTypeSelect';
 import { ParcelMeasurements } from './components/ParcelMeasurements';
 import { CreateClientModal } from './components/CreateClientModal';
+import { ClientSupplierPicker } from './components/ClientSupplierPicker';
 import {
   EMPTY_PARCEL,
   findInvalidMeasurement,
@@ -374,13 +375,18 @@ export function NewBookingPage(): ReactElement {
 
   const hasSourcingSupplier = useWatch({ control, name: 'hasSourcingSupplier' });
   const sourcingSupplierType = useWatch({ control, name: 'sourcingSupplierType' });
+  const senderId = useWatch({ control, name: 'senderId' });
+  const sourcingSupplierId = useWatch({ control, name: 'sourcingSupplierId' });
   const shipmentType = useWatch({ control, name: 'shipmentType' });
   const [supplierSearch, setSupplierSearch] = useState('');
   const [supplierDirectoryPage, setSupplierDirectoryPage] = useState(1);
   const [supplierDetails, setSupplierDetails] = useState<SupplierDirectorySummary | null>(null);
   const [selectedDirectorySupplier, setSelectedDirectorySupplier] = useState<SupplierDirectorySummary | null>(null);
   const debouncedSupplierSearch = useDebounce(supplierSearch, 300);
-  const isDirectorySelection = hasSourcingSupplier && sourcingSupplierType === 'directory';
+  // Never request the customer-only directory from an internal account: it
+  // answers 403 for every staff role, superadmin included.
+  const isDirectorySelection =
+    !isInternal && hasSourcingSupplier && sourcingSupplierType === 'directory';
   const { data: supplierDirectory, isLoading: isSupplierDirectoryLoading, error: supplierDirectoryError } =
     useSupplierDirectory(
       { q: debouncedSupplierSearch, page: supplierDirectoryPage, limit: 10 },
@@ -723,6 +729,10 @@ export function NewBookingPage(): ReactElement {
 
             {hasSourcingSupplier && (
               <div className="space-y-4 pt-1">
+                {/* The directory is customer-only by role — /supplier-directory
+                    is requireRole(USER) — so an internal account always gets a
+                    403 from it, superadmin included. Staff enter the supplier
+                    by hand instead of being shown a search that cannot work. */}
                 <div className="flex flex-wrap gap-x-4 gap-y-2">
                   {(['directory', 'new'] as const).map((type) => (
                     <label key={type} className="flex items-center gap-2 cursor-pointer">
@@ -740,13 +750,33 @@ export function NewBookingPage(): ReactElement {
                         className="accent-brand-500"
                       />
                       <span className="text-sm text-gray-700">
-                        {type === 'directory' ? 'Search supplier directory' : 'Someone new'}
+                        {type === 'directory'
+                          ? isInternal
+                            ? 'Search their suppliers'
+                            : 'Search supplier directory'
+                          : 'Someone new'}
                       </span>
                     </label>
                   ))}
                 </div>
 
-                {sourcingSupplierType === 'directory' ? (
+                {/* Staff read the client's own supplier relationships; the
+                    customer-facing directory is requireRole(USER) and answers
+                    403 for every internal account. */}
+                {isInternal && sourcingSupplierType === 'directory' && (
+                  <ClientSupplierPicker
+                    clientId={senderId}
+                    selectedSupplierId={sourcingSupplierId}
+                    onSelect={(supplier) =>
+                      setValue('sourcingSupplierId', supplier.id, { shouldValidate: true })
+                    }
+                    onClear={() =>
+                      setValue('sourcingSupplierId', undefined, { shouldValidate: true })
+                    }
+                  />
+                )}
+
+                {!isInternal && sourcingSupplierType === 'directory' ? (
                   <div className="space-y-3">
                     {selectedDirectorySupplier && (
                       <div className="flex items-center justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50 px-3 py-3">
