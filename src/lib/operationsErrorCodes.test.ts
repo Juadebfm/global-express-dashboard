@@ -112,4 +112,18 @@ describe('describeOperationsError', () => {
       expect(describeOperationsError(problemError(400, code))).toBeTruthy();
     }
   });
+
+  // The backend is free to reword its sentences now that we read the code, so
+  // ours must not be a copy of theirs.
+  it('renders our own wording, not the backend detail', () => {
+    const error = problemError(409, 'ORDER_ALREADY_IN_BATCH');
+    expect(describeOperationsError(error)).not.toBe('Backend sentence');
+    expect(describeOperationsError(error)).toBe('This order is already part of another batch.');
+  });
+
+  it('tells staff what to do when an order is not ready for a batch', () => {
+    expect(describeOperationsError(problemError(409, 'ORDER_NOT_VERIFIED_FOR_BATCH'))).toBe(
+      'Weigh and price this order at the warehouse before adding it to a batch.',
+    );
+  });
 });

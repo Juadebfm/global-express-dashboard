@@ -100,8 +100,9 @@ export function describeOperationsError(error: unknown): string | null {
     case 'FINAL_CHARGE_INVALID':
       return 'The final charge must be a number greater than zero.';
     case 'ORDER_ALREADY_IN_BATCH':
-      return 'This order is already in a batch.';
+      return 'This order is already part of another batch.';
     case 'ORDER_NOT_VERIFIED_FOR_BATCH':
-      return 'This order has to be verified and priced before it can join a batch.';
+      // Says what to do next rather than only what is wrong.
+      return 'Weigh and price this order at the warehouse before adding it to a batch.';
   }
 }

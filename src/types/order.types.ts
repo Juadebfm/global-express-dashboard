@@ -44,7 +44,13 @@ export interface CustomerDeclaredParcel {
   widthCm: string | null;
   heightCm: string | null;
   weightKg: string | null;
-  /** A finished sentence for the staff order view — print it as-is. */
+  /**
+   * Who supplied the figures — set from the token that created the order, not
+   * a client input. A claim about goods that have not arrived carries
+   * different weight depending on who made it.
+   */
+  declaredSource: 'customer' | 'staff';
+  /** A finished sentence naming the source — print it as-is. */
   staffDescription: string;
   createdAt: string;
   updatedAt: string;

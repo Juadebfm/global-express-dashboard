@@ -20,6 +20,7 @@ const PARCEL: CustomerDeclaredParcel = {
   widthCm: '30.00',
   heightCm: '25.00',
   weightKg: '12.500',
+  declaredSource: 'customer',
   staffDescription:
     'Customer-provided measurements: Length: 40.00 cm, Width: 30.00 cm, Height: 25.00 cm, Weight: 12.500 kg.',
   createdAt: '2026-08-04T10:00:00.000Z',
@@ -172,5 +173,19 @@ describe('CustomerParcelsPanel', () => {
     await waitFor(() =>
       expect(screen.getByText(/can no longer be changed/i)).toBeInTheDocument(),
     );
+  });
+
+  // Attribution comes along inside the sentence, so it must not be rebuilt
+  // from the parts — a staff-recorded parcel reads differently.
+  it('prints the staff attribution verbatim when staff recorded it', () => {
+    const staffParcel = {
+      ...PARCEL,
+      declaredSource: 'staff' as const,
+      staffDescription:
+        'Measurements recorded by staff at booking: Length: 40.00 cm, Width: 30.00 cm, Height: 25.00 cm, Weight: 12.500 kg.',
+    };
+
+    render(<CustomerParcelsPanel orderId="o1" parcels={[staffParcel]} canEdit={false} />);
+    expect(screen.getByText(staffParcel.staffDescription)).toBeInTheDocument();
   });
 });

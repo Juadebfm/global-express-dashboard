@@ -187,12 +187,12 @@ export function CustomerParcelsPanel({
         <Ruler className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
         <div>
           <h3 className="text-sm font-semibold text-gray-800">
-            {canEdit ? 'Parcel sizes you gave us' : 'Parcel sizes the customer gave us'}
+            {canEdit ? 'Parcel sizes you gave us' : 'Declared parcel sizes'}
           </h3>
           <p className="mt-0.5 text-xs text-gray-500">
             {canEdit
               ? 'We weigh and measure everything on arrival — those numbers set the final price.'
-              : 'Advance details from the customer. Warehouse measurements remain the source of price.'}
+              : 'Advance details recorded at booking. Each line names who supplied it. Warehouse measurements remain the source of price.'}
           </p>
         </div>
       </div>

@@ -328,7 +328,8 @@ export function NewBookingPage(): ReactElement {
     return `${selectedCountryOption.dialCode}${cleaned}`;
   }, [selectedCountryOption.dialCode]);
 
-  // Advance parcel sizes are customer-only; a staff token is rejected with 403.
+  // Advance parcel sizes. Staff booking by phone or walk-in record these too;
+  // the backend attributes them from the token, so nothing here distinguishes.
   const [parcels, setParcels] = useState<ParcelDraft[]>([{ ...EMPTY_PARCEL }]);
   const [parcelError, setParcelError] = useState<string | null>(null);
 
@@ -411,13 +412,11 @@ export function NewBookingPage(): ReactElement {
               pickupRepName: values.pickupRepName.trim(),
               pickupRepPhone: values.pickupRepPhone?.trim() || undefined,
             }),
-          // customerDeclaredParcels is the customer's own record of what is
-          // coming; the API answers 403 if a staff token sends it, so a
-          // staff-created order carries the measurements only in the estimate.
-          ...(!isInternal &&
-            toParcelPayload(parcels) && {
-              customerDeclaredParcels: toParcelPayload(parcels),
-            }),
+          // Sent for both audiences. Only omitted when nothing was entered,
+          // rather than sending an empty list.
+          ...(toParcelPayload(parcels) && {
+            customerDeclaredParcels: toParcelPayload(parcels),
+          }),
         },
         token,
         idempotencyKey.current,
