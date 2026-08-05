@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -13,6 +14,7 @@ import {
   LayoutDashboard,
   Layers,
   LifeBuoy,
+  Loader2,
   LogOut,
   Mail,
   Package,
@@ -68,6 +70,7 @@ export function Sidebar({
   const location = useLocation();
   const navigate = useNavigate();
   const { user: authUser, logout } = useAuth();
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const currentAvatarUrl = useCurrentUserAvatar();
   const { isSignedIn: isClerkSignedIn, signOut } = useClerkAuth();
   const { user: clerkUser } = useClerkUser();
@@ -88,6 +91,11 @@ export function Sidebar({
   const avatarUrl = authUser?.avatarUrl ?? currentAvatarUrl ?? clerkUser?.imageUrl ?? '/images/favicon.svg';
 
   const handleLogout = async (): Promise<void> => {
+    // Signing out is a round trip — two for a Clerk customer — and the button
+    // sits in a sidebar that is still on screen throughout. Without this it
+    // looks idle and a second click fires a second logout.
+    if (isSigningOut) return;
+    setIsSigningOut(true);
     onCloseMobile();
     if (isClerkSignedIn) {
       await logout();
@@ -96,6 +104,8 @@ export function Sidebar({
       await logout();
       navigate(ROUTES.LOGIN);
     }
+    // Deliberately not reset: the session is gone and this view is being
+    // replaced, so re-enabling would flash the control back to life.
   };
 
   const isActive = (href: string): boolean =>
@@ -237,15 +247,24 @@ export function Sidebar({
           <button
             type="button"
             onClick={() => void handleLogout()}
+            disabled={isSigningOut}
+            aria-busy={isSigningOut}
             className={cn(
               'group flex w-full border-b border-gray-100 text-sm font-medium transition-colors',
               'items-center gap-3 px-4 py-3.5',
               'lg:flex-col lg:items-center lg:justify-center lg:gap-1 lg:px-2 lg:py-3 lg:text-center',
               'text-red-500 hover:bg-red-50 hover:text-red-600',
+              'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent',
             )}
           >
-            <LogOut className="h-5 w-5" />
-            <span className="leading-tight lg:text-xs">Sign out</span>
+            {isSigningOut ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <LogOut className="h-5 w-5" />
+            )}
+            <span className="leading-tight lg:text-xs">
+              {isSigningOut ? 'Signing out…' : 'Sign out'}
+            </span>
           </button>
         </div>
       </aside>

@@ -36,6 +36,8 @@ export function MfaChallengePage(): ReactElement {
   const [code, setCode] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  /** True for the whole sign-in, not just the code check. */
+  const [isSigningIn, setIsSigningIn] = useState(false);
   const verifyFormRef = useRef<HTMLFormElement>(null);
 
   const [challengeSecondsLeft, setChallengeSecondsLeft] = useState(CHALLENGE_TTL_SECONDS);
@@ -72,6 +74,11 @@ export function MfaChallengePage(): ReactElement {
       setFormError('Enter the 6-digit code from your authenticator app');
       return;
     }
+    // Signing in takes two round trips: verifying the code, then loading the
+    // account. The mutation's own pending flag only covers the first, so
+    // without this the button would go idle mid-flow and invite a second
+    // click that resubmits an already-consumed one-time code.
+    setIsSigningIn(true);
     try {
       const result = await verify({ mfaToken, code });
       await completeMfaChallenge({ user: result.user, token: result.token });
@@ -79,6 +86,9 @@ export function MfaChallengePage(): ReactElement {
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Could not load your account status. Please try again.');
+      // Only release on failure — on success the page is navigating away and
+      // re-enabling would flash the form back to life.
+      setIsSigningIn(false);
     }
   };
 
@@ -90,12 +100,14 @@ export function MfaChallengePage(): ReactElement {
       setFormError('Enter a valid recovery code');
       return;
     }
+    setIsSigningIn(true);
     try {
       const result = await recover({ mfaToken, recoveryCode: trimmed });
       await completeMfaChallenge({ user: result.user, token: result.tokens.accessToken });
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Could not load your account status. Please try again.');
+      setIsSigningIn(false);
     }
   };
 
@@ -147,21 +159,22 @@ export function MfaChallengePage(): ReactElement {
               onComplete={() => verifyFormRef.current?.requestSubmit()}
               error={serverError ?? undefined}
               autoFocus
-              disabled={isVerifying}
+              disabled={isVerifying || isSigningIn}
             />
             <Button
               type="submit"
               variant="primary"
-              isLoading={isVerifying}
-              disabled={code.length !== 6}
+              isLoading={isVerifying || isSigningIn}
+              disabled={code.length !== 6 || isSigningIn}
               className="w-full"
             >
-              Verify
+              {isSigningIn ? 'Signing you in…' : 'Verify'}
             </Button>
             <button
               type="button"
               onClick={() => { setMode('recovery'); setFormError(null); }}
-              className="block w-full text-center text-sm text-brand-600 hover:underline"
+              disabled={isSigningIn}
+              className="block w-full text-center text-sm text-brand-600 hover:underline disabled:opacity-50"
             >
               Lost your authenticator? Use a recovery code
             </button>
@@ -179,7 +192,7 @@ export function MfaChallengePage(): ReactElement {
                 onChange={(e) => setRecoveryCode(e.target.value)}
                 placeholder="XXXXX-XXXXX"
                 autoComplete="one-time-code"
-                disabled={isRecovering}
+                disabled={isRecovering || isSigningIn}
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 font-mono text-base focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
               {serverError && <p className="mt-2 text-sm text-red-600">{serverError}</p>}
@@ -187,8 +200,8 @@ export function MfaChallengePage(): ReactElement {
             <Button
               type="submit"
               variant="primary"
-              isLoading={isRecovering}
-              disabled={recoveryCode.trim().length < 8}
+              isLoading={isRecovering || isSigningIn}
+              disabled={recoveryCode.trim().length < 8 || isSigningIn}
               className="w-full"
             >
               Use recovery code
@@ -196,7 +209,8 @@ export function MfaChallengePage(): ReactElement {
             <button
               type="button"
               onClick={() => { setMode('totp'); setFormError(null); }}
-              className="block w-full text-center text-sm text-brand-600 hover:underline"
+              disabled={isSigningIn}
+              className="block w-full text-center text-sm text-brand-600 hover:underline disabled:opacity-50"
             >
               Back to authenticator code
             </button>

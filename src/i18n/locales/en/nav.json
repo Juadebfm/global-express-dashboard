@@ -44,6 +44,7 @@
     "roleLabel": "Role",
     "positionLabel": "Position",
     "memberSince": "Member since",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "signingOut": "Signing out…"
   }
 }

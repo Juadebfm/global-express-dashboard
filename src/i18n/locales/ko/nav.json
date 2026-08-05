@@ -44,6 +44,7 @@
     "roleLabel": "역할",
     "positionLabel": "직책",
     "memberSince": "가입일",
-    "signOut": "로그아웃"
+    "signOut": "로그아웃",
+    "signingOut": "로그아웃 중…"
   }
 }

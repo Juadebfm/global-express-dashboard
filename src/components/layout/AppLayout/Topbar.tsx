@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronDown, LogOut, Menu } from 'lucide-react';
+import { Bell, ChevronDown, Loader2, LogOut, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
@@ -27,6 +27,7 @@ export function Topbar({
   const { user: clerkUser } = useClerkUser();
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,6 +53,10 @@ export function Topbar({
     : null;
 
   const handleLogout = async (): Promise<void> => {
+    // Same two round trips as the sidebar control; without a busy state the
+    // dropdown looks idle and a second click fires a second logout.
+    if (isSigningOut) return;
+    setIsSigningOut(true);
     setIsDropdownOpen(false);
     if (isClerkSignedIn) {
       await logout();
@@ -170,11 +175,17 @@ export function Topbar({
                 <div className="border-t border-gray-100 p-2">
                   <button
                     type="button"
-                    onClick={handleLogout}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                    onClick={() => void handleLogout()}
+                    disabled={isSigningOut}
+                    aria-busy={isSigningOut}
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-500 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent"
                   >
-                    <LogOut className="h-4 w-4" />
-                    {t('topbar.signOut')}
+                    {isSigningOut ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <LogOut className="h-4 w-4" />
+                    )}
+                    {isSigningOut ? t('topbar.signingOut') : t('topbar.signOut')}
                   </button>
                 </div>
               </div>
