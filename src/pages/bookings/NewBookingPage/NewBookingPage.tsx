@@ -39,6 +39,7 @@ import { buildSourcingSupplier } from './bookingPayload';
 import { EstimatePreview } from './components/EstimatePreview';
 import { ShipmentTypeSelect } from './components/ShipmentTypeSelect';
 import { ParcelMeasurements } from './components/ParcelMeasurements';
+import { CreateClientModal } from './components/CreateClientModal';
 import {
   EMPTY_PARCEL,
   findInvalidMeasurement,
@@ -333,6 +334,16 @@ export function NewBookingPage(): ReactElement {
   const [parcels, setParcels] = useState<ParcelDraft[]>([{ ...EMPTY_PARCEL }]);
   const [parcelError, setParcelError] = useState<string | null>(null);
 
+  // Staff take bookings by phone and walk-in from people who have never had an
+  // account. Without this they would have to abandon the form, create the
+  // client elsewhere, and start again.
+  const [isCreatingClient, setIsCreatingClient] = useState(false);
+  const [newClient, setNewClient] = useState<{
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+  } | null>(null);
+
   // Internal roles get the staff-only section. Customers never see it.
   const isInternal =
     user?.role === 'staff' || user?.role === 'admin' || user?.role === 'superadmin';
@@ -507,7 +518,21 @@ export function NewBookingPage(): ReactElement {
                 render={({ field }) => (
                   <ClientCombobox
                     selectedId={field.value ?? ''}
-                    onSelect={(client) => field.onChange(client.id)}
+                    selectedClient={
+                      newClient && newClient.id === field.value
+                        ? {
+                            id: newClient.id,
+                            firstName: newClient.firstName,
+                            lastName: newClient.lastName,
+                            email: '',
+                          }
+                        : undefined
+                    }
+                    onSelect={(client) => {
+                      field.onChange(client.id);
+                      setNewClient(null);
+                    }}
+                    onCreateNew={() => setIsCreatingClient(true)}
                     placeholder="Search by name or email"
                     error={errors.senderId?.message ?? null}
                   />
@@ -891,6 +916,23 @@ export function NewBookingPage(): ReactElement {
             setValue('sourcingSupplierId', supplier.id, { shouldValidate: true });
             setSelectedDirectorySupplier(supplier);
             setSupplierDetails(null);
+          }}
+        />
+      )}
+
+      {/* Creates a dormant account so the booking can continue immediately;
+          the client activates it later. */}
+      {isCreatingClient && (
+        <CreateClientModal
+          onClose={() => setIsCreatingClient(false)}
+          onCreated={(client) => {
+            setValue('senderId', client.id, { shouldValidate: true });
+            setNewClient({
+              id: client.id,
+              firstName: client.firstName,
+              lastName: client.lastName,
+            });
+            setIsCreatingClient(false);
           }}
         />
       )}
