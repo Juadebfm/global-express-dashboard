@@ -28,6 +28,7 @@ import {
   useAuth,
   useAuthToken,
   useDebounce,
+  useFormDraft,
   useSupplierDirectory,
   useSupplierDirectorySupplier,
 } from '@/hooks';
@@ -35,7 +36,7 @@ import { createOrder } from '@/services';
 import { ROUTES } from '@/constants';
 import type { SupplierDirectorySupplier, SupplierDirectorySummary } from '@/types';
 import { newBookingSchema, type NewBookingFormValues } from './schema';
-import { buildSourcingSupplier } from './bookingPayload';
+import { buildSourcingSupplier, optionalText } from './bookingPayload';
 import { EstimatePreview } from './components/EstimatePreview';
 import { ShipmentTypeSelect } from './components/ShipmentTypeSelect';
 import { ParcelMeasurements } from './components/ParcelMeasurements';
@@ -330,6 +331,10 @@ export function NewBookingPage(): ReactElement {
     return `${selectedCountryOption.dialCode}${cleaned}`;
   }, [selectedCountryOption.dialCode]);
 
+  // Keyed by the signed-in user so one person's half-finished booking can
+  // never surface for the next person on a shared machine.
+  const draftKey = user?.id ? `gx_order_draft_${user.id}` : null;
+
   // Advance parcel sizes. Staff booking by phone or walk-in record these too;
   // the backend attributes them from the token, so nothing here distinguishes.
   const [parcels, setParcels] = useState<ParcelDraft[]>([{ ...EMPTY_PARCEL }]);
@@ -363,6 +368,8 @@ export function NewBookingPage(): ReactElement {
     handleSubmit,
     reset,
     setValue,
+    watch,
+    getValues,
     formState: { errors },
   } = useForm<NewBookingFormValues>({
     resolver: zodResolver(newBookingSchema),
@@ -398,6 +405,26 @@ export function NewBookingPage(): ReactElement {
     error: supplierDirectoryDetailsError,
   } = useSupplierDirectorySupplier(supplierDetails?.id ?? null);
 
+  const { save: saveDraft, clear: clearDraft, restored } = useFormDraft<{
+    values: Partial<NewBookingFormValues>;
+    parcels: ParcelDraft[];
+  }>(draftKey, (draft) => {
+    if (draft.values) reset({ ...draft.values } as NewBookingFormValues);
+    if (Array.isArray(draft.parcels) && draft.parcels.length > 0) setParcels(draft.parcels);
+  });
+
+  // Save on every change. The hook debounces, so this is one write per pause.
+  useEffect(() => {
+    const subscription = watch((values) => {
+      saveDraft({ values: values as Partial<NewBookingFormValues>, parcels });
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, saveDraft, parcels]);
+
+  useEffect(() => {
+    saveDraft({ values: getValues(), parcels });
+  }, [parcels, saveDraft, getValues]);
+
   const mutation = useMutation({
     mutationFn: async (values: NewBookingFormValues) => {
       const token = await getToken();
@@ -409,7 +436,7 @@ export function NewBookingPage(): ReactElement {
         {
           recipientName: values.recipientName,
           recipientPhone: values.recipientPhone,
-          recipientEmail: values.recipientEmail ?? '',
+          ...optionalText('recipientEmail', values.recipientEmail),
           // Each surface keeps the direction it already sent: a customer's own
           // order is inbound, a staff-created one outbound. Consolidating the
           // form deliberately did not change this behaviour.
@@ -441,6 +468,7 @@ export function NewBookingPage(): ReactElement {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
+      clearDraft();
       setSubmitted(true);
     },
   });
@@ -488,6 +516,28 @@ export function NewBookingPage(): ReactElement {
           <h1 className="text-2xl font-semibold text-gray-900">New Order</h1>
           <p className="mt-1 text-sm text-gray-500">Tell us what you're shipping and who should receive it.</p>
         </div>
+
+        {/* Say so rather than silently repopulating fields the user may not
+            remember typing. */}
+        {restored && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+            <p className="text-sm text-blue-800">
+              We kept what you had already filled in.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                clearDraft();
+                reset();
+                setParcels([{ ...EMPTY_PARCEL }]);
+                setPhoneDigits('');
+              }}
+              className="text-sm font-medium text-blue-700 underline hover:text-blue-900"
+            >
+              Start fresh
+            </button>
+          </div>
+        )}
 
         <form
           onSubmit={handleSubmit((v) => {

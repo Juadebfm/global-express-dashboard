@@ -10,7 +10,8 @@ export interface SourcingSupplier {
 export interface CreateOrderPayload {
   recipientName: string;
   recipientPhone: string;
-  recipientEmail: string;
+  /** Optional on the API. Omit when blank — an empty string fails .email(). */
+  recipientEmail?: string;
   orderDirection: OrderDirection;
   weight?: string;
   declaredValue: string;
