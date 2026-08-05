@@ -1,37 +1,48 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { estimateOrderCost } from '@/services';
-import type { OrderEstimateResult } from '@/types';
+import type { CustomerDeclaredParcelInput, OrderEstimateResult } from '@/types';
 import { useAuthToken } from '@/hooks';
 import { STALE_TIME } from '@/lib/queryDefaults';
 
-function parseWeightValue(raw: string): number | null {
-  const cleaned = raw.replace(/[^0-9.]/g, '');
-  const val = parseFloat(cleaned);
-  return Number.isFinite(val) && val > 0 ? val : null;
-}
-
-export function useOrderEstimate(shipmentType: 'air' | 'sea', rawWeight: string) {
+/**
+ * Estimates from parcel measurements.
+ *
+ * The server derives volume, volumetric weight and chargeable weight from the
+ * four numbers — none of that arithmetic belongs here. Air and ocean send the
+ * identical shape; only the mode differs.
+ *
+ * Door-to-door is priced individually and is not accepted by this endpoint, so
+ * callers must not request an estimate for it.
+ */
+export function useOrderEstimate(
+  shipmentType: 'air' | 'sea',
+  parcels: CustomerDeclaredParcelInput[],
+) {
   const getToken = useAuthToken();
-  const [debouncedWeight, setDebouncedWeight] = useState(rawWeight);
+  // Keyed on the values rather than the array identity, which changes on every
+  // keystroke and would restart the debounce forever.
+  const signature = JSON.stringify(parcels);
+  const [debouncedSignature, setDebouncedSignature] = useState(signature);
 
   useEffect(() => {
-    const id = setTimeout(() => setDebouncedWeight(rawWeight), 400);
+    const id = setTimeout(() => setDebouncedSignature(signature), 400);
     return () => clearTimeout(id);
-  }, [rawWeight]);
+  }, [signature]);
 
-  const parsedValue = parseWeightValue(debouncedWeight);
-  const enabled = parsedValue !== null;
+  const debouncedParcels = JSON.parse(debouncedSignature) as CustomerDeclaredParcelInput[];
+  const enabled = debouncedParcels.length > 0;
 
   return useQuery<OrderEstimateResult>({
-    queryKey: ['order-estimate', shipmentType, parsedValue],
+    queryKey: ['order-estimate', shipmentType, debouncedSignature],
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
       return estimateOrderCost(
-        shipmentType === 'air'
-          ? { shipmentType: 'air', weightKg: parsedValue! }
-          : { shipmentType: 'ocean', cbm: parsedValue! },
+        {
+          shipmentType: shipmentType === 'air' ? 'air' : 'ocean',
+          parcels: debouncedParcels,
+        },
         token,
       );
     },

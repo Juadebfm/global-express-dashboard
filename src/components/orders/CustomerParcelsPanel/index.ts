@@ -1,0 +1,1 @@
+export { CustomerParcelsPanel } from './CustomerParcelsPanel';

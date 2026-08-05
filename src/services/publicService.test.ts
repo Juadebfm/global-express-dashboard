@@ -57,8 +57,10 @@ describe('estimateShipping', () => {
     expect(headers.has('Authorization')).toBe(false);
   });
 
-  it('normalizes ocean → sea before sending', async () => {
-    mockFetch({
+  // The calculator accepts only air | ocean | d2d and answers "sea" with a
+  // 400, so the UI's wording must be translated on the way out.
+  it('normalizes sea → ocean before sending', async () => {
+    const oceanResponse = {
       success: true,
       data: {
         mode: 'sea',
@@ -69,11 +71,16 @@ describe('estimateShipping', () => {
         estimatedTransitDays: 30,
         disclaimer: '',
       },
-    });
+    };
+
+    mockFetch(oceanResponse);
+    await estimateShipping({ shipmentType: 'sea', cbm: 0.5 });
+    expect(JSON.parse(lastCall().init.body as string).shipmentType).toBe('ocean');
+
+    // Already-correct spelling passes straight through.
+    mockFetch(oceanResponse);
     await estimateShipping({ shipmentType: 'ocean', cbm: 0.5 });
-    const { init } = lastCall();
-    const body = JSON.parse(init.body as string);
-    expect(body.shipmentType).toBe('sea');
+    expect(JSON.parse(lastCall().init.body as string).shipmentType).toBe('ocean');
   });
 });
 

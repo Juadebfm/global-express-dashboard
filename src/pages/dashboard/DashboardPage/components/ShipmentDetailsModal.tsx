@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { useOrderDetail, useOrderTimeline } from '@/hooks';
+import { CustomerParcelsPanel } from '@/components/orders';
 import { ORIGIN_WAREHOUSE, ROUTES } from '@/constants';
 import { cn, formatDate } from '@/utils';
 import type { ApiOrder } from '@/types';
@@ -217,7 +218,15 @@ function ModalContent({ orderId }: { orderId: string }): ReactElement {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Tracking number</p>
-            <p className="mt-1 font-mono text-sm font-semibold text-gray-900">{order.trackingNumber}</p>
+            {order.trackingNumber ? (
+              <p className="mt-1 font-mono text-sm font-semibold text-gray-900">
+                {order.trackingNumber}
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-gray-400">
+                Available after warehouse verification
+              </p>
+            )}
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700">
             {mode.icon}
@@ -235,6 +244,14 @@ function ModalContent({ orderId }: { orderId: string }): ReactElement {
           </div>
         )}
       </section>
+
+      {/* Advance parcel sizes. The backend serves the editable flag from the
+          same rule it enforces, so it is used as-is rather than derived. */}
+      <CustomerParcelsPanel
+        orderId={order.id}
+        parcels={order.customerDeclaredParcels ?? []}
+        canEdit={order.customerDeclaredParcelsEditable === true}
+      />
 
       {amountDue != null && amountDue > 0 ? (
         <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">

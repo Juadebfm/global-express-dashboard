@@ -26,6 +26,11 @@ export { useChangePassword } from './useChangePassword';
 export { useCreateInternalUser } from './useCreateInternalUser';
 export { useOrderDetail } from './useOrderDetail';
 export { useOrderTimeline } from './useOrderTimeline';
+export {
+  useAddCustomerDeclaredParcels,
+  useUpdateCustomerDeclaredParcel,
+  useDeleteCustomerDeclaredParcel,
+} from './useCustomerDeclaredParcels';
 export { useTrackShipment, trackingKey } from './useTrackShipment';
 export { useUpdateOrderStatus } from './useUpdateOrderStatus';
 export { useCreateClient } from './useCreateClient';

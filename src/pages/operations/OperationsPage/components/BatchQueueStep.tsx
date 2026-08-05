@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { isOperationsErrorCode } from '@/lib/operationsErrorCodes';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useBatches, useAddOrderToBatch, useCapability, useCreateBatch } from '@/hooks';
@@ -41,8 +42,10 @@ export function BatchQueueStep({
 
   const batches = batchesData?.batches ?? [];
 
+  // Was matching the backend's English sentence, which broke the moment that
+  // copy was reworded or translated. The machine code is stable by contract.
   const isAlreadyInBatch = (err: unknown) =>
-    err instanceof Error && err.message.toLowerCase().includes('already in a batch');
+    isOperationsErrorCode(err, 'ORDER_ALREADY_IN_BATCH');
 
   const handleAssign = async () => {
     if (!selectedBatchId) return;

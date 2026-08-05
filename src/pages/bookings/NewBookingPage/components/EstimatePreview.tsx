@@ -1,19 +1,17 @@
 import type { ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useOrderEstimate } from '@/hooks';
+import type { CustomerDeclaredParcelInput } from '@/types';
 
 interface EstimatePreviewProps {
   shipmentType: 'air' | 'sea';
-  rawWeight: string;
+  parcels: CustomerDeclaredParcelInput[];
 }
 
-export function EstimatePreview({ shipmentType, rawWeight }: EstimatePreviewProps): ReactElement | null {
-  const { data, isPending, isError, isFetching } = useOrderEstimate(shipmentType, rawWeight);
+export function EstimatePreview({ shipmentType, parcels }: EstimatePreviewProps): ReactElement | null {
+  const { data, isPending, isError, isFetching } = useOrderEstimate(shipmentType, parcels);
 
-  if (!rawWeight.trim()) return null;
-
-  const hasValue = rawWeight.replace(/[^0-9.]/g, '');
-  if (!hasValue || parseFloat(hasValue) <= 0) return null;
+  if (parcels.length === 0) return null;
 
   if (isPending && !data) {
     return (

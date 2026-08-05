@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { CustomerParcelsPanel } from '@/components/orders';
 import { Loader2 } from 'lucide-react';
 import {
   useCapability,
@@ -78,6 +79,18 @@ export function OrderDetailPanel({ orderId, activeTab, onTabChange, onExit }: Or
 
   return (
     <div className="space-y-4">
+      {/* What the customer told us was coming. Read-only for staff — editing it
+          would erase the record of what they actually said. */}
+      {(orderDetailQuery.data?.customerDeclaredParcels?.length ?? 0) > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-4">
+          <CustomerParcelsPanel
+            orderId={orderDetailQuery.data!.id}
+            parcels={orderDetailQuery.data!.customerDeclaredParcels ?? []}
+            canEdit={false}
+          />
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-3">
         <OrderSummaryCard view={view} />
         <button

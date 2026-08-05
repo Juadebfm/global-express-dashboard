@@ -21,6 +21,52 @@ export interface CreateOrderPayload {
   pickupRepName?: string;
   pickupRepPhone?: string;
   sourcingSupplier?: SourcingSupplier;
+  /**
+   * Customer-only. A staff account sending this is rejected with 403, so the
+   * staff-facing form must never populate it.
+   */
+  customerDeclaredParcels?: CustomerDeclaredParcelInput[];
+}
+
+/**
+ * Measurements a customer supplies before their goods reach the Korea
+ * warehouse — "here is what's coming". Warehouse staff still weigh and measure
+ * everything on arrival, and only those numbers set the price. These are kept
+ * separately as the record of what the customer told us, and are never
+ * overwritten.
+ *
+ * The four measurements arrive as fixed-precision strings, not numbers: two
+ * decimal places for the lengths, three for the weight. Any one may be null.
+ */
+export interface CustomerDeclaredParcel {
+  id: string;
+  lengthCm: string | null;
+  widthCm: string | null;
+  heightCm: string | null;
+  weightKg: string | null;
+  /** A finished sentence for the staff order view — print it as-is. */
+  staffDescription: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Sent as numbers. At least one measurement is required per parcel. */
+export interface CustomerDeclaredParcelInput {
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
+  weightKg?: number;
+}
+
+/**
+ * A number replaces the stored value, null clears that one field, and an
+ * omitted field is left alone. At least one key is required.
+ */
+export interface CustomerDeclaredParcelPatch {
+  lengthCm?: number | null;
+  widthCm?: number | null;
+  heightCm?: number | null;
+  weightKg?: number | null;
 }
 
 export interface ApiOrder {
@@ -48,6 +94,29 @@ export interface ApiOrder {
   sourcingSupplierName: string | null;
   sourcingSupplierPhone: string | null;
   sourcingSupplierEmail: string | null;
+  /**
+   * Present on POST /orders and GET /orders/:id only — deliberately absent
+   * from the list endpoints, so load the single order when you need it.
+   */
+  customerDeclaredParcels?: CustomerDeclaredParcel[];
+  /**
+   * Totals of what the customer said is coming, for queue views — null when
+   * they declared nothing. Advance information only, never a basis for charge.
+   * Unlike the parcel list, this rides on the order list responses too.
+   */
+  customerDeclaredSummary?: {
+    parcelCount: number;
+    totalWeightKg: string;
+    totalCbm: string;
+  } | null;
+  /**
+   * Whether the customer may still add, edit or remove their parcels. Gate the
+   * controls on this and never derive it: a customer sees statusV2 remapped to
+   * a coarser taxonomy where PREORDER_SUBMITTED and AWAITING_WAREHOUSE_RECEIPT
+   * are the same value, so any local check is wrong in one direction or the
+   * other. Served on POST /orders and GET /orders/:id only.
+   */
+  customerDeclaredParcelsEditable?: boolean;
   invoice?: { id: string; invoiceNumber: string; status: string } | null;
   [key: string]: unknown;
 }
@@ -75,6 +144,12 @@ export interface OrderListItem {
   flaggedForAdminReview: boolean;
   escalatedAt: string | null;
   escalationNote: string | null;
+  /** Present on list responses so a queue can show what is expected without opening each order. */
+  customerDeclaredSummary?: {
+    parcelCount: number;
+    totalWeightKg: string;
+    totalCbm: string;
+  } | null;
   raw: Record<string, unknown>;
 }
 
@@ -99,6 +174,9 @@ export interface OrderEstimateResult {
   departureFrequency: string;
   estimatedTransitDays: number;
   disclaimer: string;
+  /** True when the figure came from parcel measurements rather than a bare weight or volume. */
+  derivedFromParcels?: boolean;
+  parcelCount?: number;
 }
 
 export type WarehousePricingQuotePayload =

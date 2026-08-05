@@ -258,7 +258,6 @@ export interface OrderView {
   paymentCollectionStatus: string;
   totalPaidUsd: number | null;
   amountDue: number | null;
-  estimatedChargeUsd: string | null;
   finalChargeUsd: number | null;
   paymentNote: string | null;
   pricingSource: string;
@@ -430,7 +429,6 @@ export function toView(order: ApiOrder): OrderView {
     paymentCollectionStatus: readString(record, ['paymentCollectionStatus']),
     totalPaidUsd: readNumber(record, ['totalPaidUsd']),
     amountDue: readNumber(record, ['amountDue']),
-    estimatedChargeUsd: readString(record, ['estimatedChargeUsd']) || null,
     finalChargeUsd: readNumber(record, ['finalChargeUsd']),
     paymentNote: readString(record, ['paymentNote']) || null,
     pricingSource: readString(record, ['pricingSource']),

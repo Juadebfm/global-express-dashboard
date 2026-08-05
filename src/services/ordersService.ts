@@ -7,11 +7,19 @@ import type {
   OrderImage,
   OrderListItem,
   OrdersListResult,
+  CustomerDeclaredParcel,
+  CustomerDeclaredParcelInput,
+  CustomerDeclaredParcelPatch,
 } from '@/types';
-import { apiDelete, apiGet, apiPatch, apiPatchData, apiPostData } from '@/lib/apiClient';
+import { apiDelete, apiDeleteData, apiGet, apiPatch, apiPatchData, apiPostData } from '@/lib/apiClient';
 
-function normalizeShipmentType(type: 'air' | 'sea' | 'ocean' | 'd2d'): 'air' | 'sea' | 'd2d' {
-  return type === 'ocean' ? 'sea' : type;
+/**
+ * The UI says "sea" but the API accepts only `air | ocean | d2d`, and rejects
+ * "sea" with a 400. Callers may pass either spelling; the wire always gets
+ * "ocean".
+ */
+function normalizeShipmentType(type: 'air' | 'sea' | 'ocean' | 'd2d'): 'air' | 'ocean' | 'd2d' {
+  return type === 'sea' ? 'ocean' : type;
 }
 
 export function createOrder(
@@ -162,7 +170,26 @@ function mapOrderRow(row: AnyRecord, index: number): OrderListItem {
     flaggedForAdminReview: row.flaggedForAdminReview === true,
     escalatedAt: firstString(row, ['escalatedAt']) ?? null,
     escalationNote: firstString(row, ['escalationNote']) ?? null,
+    customerDeclaredSummary: readDeclaredSummary(row),
     raw: row,
+  };
+}
+
+/**
+ * Totals of what the customer said is coming. Null when they declared nothing.
+ * Advance information for planning only — never a basis for a charge.
+ */
+function readDeclaredSummary(
+  row: Record<string, unknown>,
+): { parcelCount: number; totalWeightKg: string; totalCbm: string } | null {
+  const raw = row.customerDeclaredSummary;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const summary = raw as Record<string, unknown>;
+  if (typeof summary.parcelCount !== 'number') return null;
+  return {
+    parcelCount: summary.parcelCount,
+    totalWeightKg: String(summary.totalWeightKg ?? ''),
+    totalCbm: String(summary.totalCbm ?? ''),
   };
 }
 
@@ -375,7 +402,17 @@ export function updatePickupRep(
 
 /* ── Estimate ────────────────────────────────────────────── */
 
+/**
+ * Parcels are the shape to send. The server derives volume, volumetric weight
+ * and chargeable weight from the four measurements using the same arithmetic
+ * warehouse verification uses — never compute any of that here, or the formula
+ * exists in two places and they drift.
+ *
+ * The bare weightKg / cbm forms are the backend's deprecated inputs, kept only
+ * so anything still on them keeps working.
+ */
 export type OrderEstimatePayload =
+  | { shipmentType: 'air' | 'ocean'; parcels: CustomerDeclaredParcelInput[] }
   | { shipmentType: 'air'; weightKg: number }
   | { shipmentType: 'ocean'; cbm: number };
 
@@ -384,4 +421,48 @@ export function estimateOrderCost(
   token: string,
 ): Promise<OrderEstimateResult> {
   return apiPostData<OrderEstimateResult>('/orders/estimate', payload, token);
+}
+
+// ── Customer-declared parcel measurements ────────────────────────────────────
+// Advance details a customer gives before their goods reach the warehouse.
+// Customer-only: a staff token is rejected with 403. Editable only while the
+// order is the customer's own pre-order at PREORDER_SUBMITTED and unpriced —
+// after that the API answers 409.
+
+export function addCustomerDeclaredParcels(
+  orderId: string,
+  parcels: CustomerDeclaredParcelInput[],
+  token: string,
+): Promise<{ parcels: CustomerDeclaredParcel[] }> {
+  return apiPostData<{ parcels: CustomerDeclaredParcel[] }>(
+    `/orders/${orderId}/customer-declared-parcels`,
+    { parcels },
+    token,
+  );
+}
+
+export function updateCustomerDeclaredParcel(
+  orderId: string,
+  parcelId: string,
+  patch: CustomerDeclaredParcelPatch,
+  token: string,
+): Promise<{ parcel: CustomerDeclaredParcel }> {
+  return apiPatchData<{ parcel: CustomerDeclaredParcel }>(
+    `/orders/${orderId}/customer-declared-parcels/${parcelId}`,
+    patch,
+    token,
+  );
+}
+
+export function deleteCustomerDeclaredParcel(
+  orderId: string,
+  parcelId: string,
+  token: string,
+): Promise<{ parcels: CustomerDeclaredParcel[] }> {
+  // Returns the parcels that remain, so the panel refreshes without a second
+  // request. Removing the last one is allowed — declaring any is optional.
+  return apiDeleteData<{ parcels: CustomerDeclaredParcel[] }>(
+    `/orders/${orderId}/customer-declared-parcels/${parcelId}`,
+    token,
+  );
 }

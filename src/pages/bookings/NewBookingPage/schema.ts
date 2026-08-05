@@ -11,7 +11,6 @@ export const newBookingSchema = z
   .object({
     description: z.string().min(3, 'Please describe what you are shipping'),
     shipmentType: z.enum(['air', 'sea', 'd2d']),
-    weight: z.string().min(1, 'Weight is required'),
     declaredValue: z
       .string()
       .min(1, 'Declared value is required')

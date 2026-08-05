@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { getOrderTimeline, getOrders, MAX_ORDERS_PAGE_SIZE, updateOrderStatus } from './ordersService';
+import { createOrder, getOrderTimeline, getOrders, MAX_ORDERS_PAGE_SIZE, updateOrderStatus } from './ordersService';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -104,5 +104,59 @@ describe('updateOrderStatus', () => {
         body: JSON.stringify({ statusV2: 'WAREHOUSE_RECEIVED' }),
       }),
     );
+  });
+});
+
+describe('createOrder shipment type', () => {
+  function mockCreate() {
+    // Params are declared so the mock's call tuple is typed and the request
+    // body can be read back, even though the stub ignores them.
+    const fetchMock = vi.fn((url: string | URL | Request, init?: RequestInit) =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({ success: true, data: { id: 'o1', trackingNumber: null }, url, init }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+
+  const BASE = {
+    recipientName: 'Julius Adebowale',
+    recipientPhone: '+2348012345678',
+    recipientEmail: '',
+    orderDirection: 'inbound' as const,
+    declaredValue: '100',
+    description: 'Children clothes',
+  };
+
+  function sentBody(fetchMock: ReturnType<typeof mockCreate>) {
+    const call = fetchMock.mock.calls.at(-1);
+    if (!call) throw new Error('fetch was not called');
+    return JSON.parse(call[1]?.body as string) as { shipmentType?: string };
+  }
+
+  // POST /orders accepts only air | ocean | d2d and rejects "sea" with a 400,
+  // so every ocean order fails unless the UI wording is translated.
+  it('sends ocean when the UI says sea', async () => {
+    const fetchMock = mockCreate();
+    await createOrder({ ...BASE, shipmentType: 'sea' }, 'token', 'key-1');
+    expect(sentBody(fetchMock).shipmentType).toBe('ocean');
+  });
+
+  it('leaves air and d2d untouched', async () => {
+    for (const shipmentType of ['air', 'd2d'] as const) {
+      const fetchMock = mockCreate();
+      await createOrder({ ...BASE, shipmentType }, 'token', 'key-2');
+      expect(sentBody(fetchMock).shipmentType).toBe(shipmentType);
+    }
+  });
+
+  it('passes ocean through unchanged', async () => {
+    const fetchMock = mockCreate();
+    await createOrder({ ...BASE, shipmentType: 'ocean' }, 'token', 'key-3');
+    expect(sentBody(fetchMock).shipmentType).toBe('ocean');
   });
 });

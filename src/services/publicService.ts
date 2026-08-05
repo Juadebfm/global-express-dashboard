@@ -14,10 +14,14 @@ import { apiGetData, apiPostData } from '@/lib/apiClient';
 // Phase 4 — backend /public/* routes that are NOT gallery-related.
 // All endpoints here are unauthenticated — token argument is omitted.
 
+/**
+ * The calculator accepts only `air | ocean | d2d` and rejects "sea" with a
+ * 400, so the UI's "sea" is translated on the way out.
+ */
 function normalizeShipmentType(
   type: PublicEstimatePayload['shipmentType'],
-): 'air' | 'sea' | 'd2d' {
-  if (type === 'ocean') return 'sea';
+): 'air' | 'ocean' | 'd2d' {
+  if (type === 'sea') return 'ocean';
   return type;
 }
 

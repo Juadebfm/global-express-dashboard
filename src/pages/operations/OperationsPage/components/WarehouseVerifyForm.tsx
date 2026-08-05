@@ -5,7 +5,7 @@ import { Button } from '@/components/ui';
 import { formatCurrency } from '@/utils';
 import { cn } from '@/utils';
 import { useDebounce, useWarehousePricingQuote } from '@/hooks';
-import type { WarehousePricingQuotePayload } from '@/types';
+import type { CustomerDeclaredParcel, WarehousePricingQuotePayload } from '@/types';
 import type { GoodsBreakdownItem } from '@/services';
 import type { OrderView } from '@/pages/shared/orderStatus';
 import { mapPackageForm, parsePositive, parsePositiveInt, toIso } from '@/pages/shared/orderStatus';
@@ -49,6 +49,22 @@ function rowFromBreakdown(item: GoodsBreakdownItem, id: number): PackageRow {
     widthCm: item.dimensionsCm?.width ? String(item.dimensionsCm.width) : '',
     heightCm: item.dimensionsCm?.height ? String(item.dimensionsCm.height) : '',
     arrivalAt: isoToDatetimeLocal(item.arrivalAt),
+  };
+}
+
+/** Seeds a row from a customer declaration. Volume is never copied — staff
+ *  never type one, and the backend derives it from the three sizes. */
+function rowFromDeclaredParcel(parcel: CustomerDeclaredParcel, id: number): PackageRow {
+  return {
+    id,
+    description: '',
+    quantity: '1',
+    lengthCm: parcel.lengthCm ?? '',
+    widthCm: parcel.widthCm ?? '',
+    heightCm: parcel.heightCm ?? '',
+    weightKg: parcel.weightKg ?? '',
+    cbm: '',
+    arrivalAt: '',
   };
 }
 
@@ -139,10 +155,16 @@ function PackageRowCard({
   onUpdate: (updates: Partial<PackageRow>) => void;
   onRemove: () => void;
 }): ReactElement {
+  // Measurements are mandatory for every mode now. Verification used to fall
+  // back to the customer's typed weight; that fallback is gone, because an
+  // unverified number must never set a price.
   const hasWeight = (parsePositive(row.weightKg) ?? 0) > 0;
-  const hasCbm = (parsePositive(row.cbm) ?? 0) > 0;
-  const weightError = showErrors && isD2D && !hasWeight;
-  const cbmError = showErrors && isD2D && !hasCbm;
+  const hasAllSizes =
+    (parsePositive(row.lengthCm) ?? 0) > 0 &&
+    (parsePositive(row.widthCm) ?? 0) > 0 &&
+    (parsePositive(row.heightCm) ?? 0) > 0;
+  const weightError = showErrors && !hasWeight;
+  const sizeError = showErrors && !hasAllSizes;
 
   const volKg = rowVolKg(row);
   const actualKg = parsePositive(row.weightKg);
@@ -151,7 +173,7 @@ function PackageRowCard({
     : null;
   const usingVol = chargeableKg != null && (volKg ?? 0) > (actualKg ?? 0);
 
-  const hasError = showErrors && isD2D && (!hasWeight || !hasCbm);
+  const hasError = showErrors && (!hasWeight || !hasAllSizes);
   const qty = parsePositiveInt(row.quantity) ?? 1;
 
   return (
@@ -192,40 +214,13 @@ function PackageRowCard({
       {/* Card body */}
       <div className="p-4">
 
-      {isD2D ? (
-        /* D2D: weight + CBM + qty — stack to 2-col on mobile, 3-col on sm+ */
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          <div>
-            <SectionLabel>Weight <span className="text-red-400">*</span></SectionLabel>
-            <UnitInput
-              type="number" min="0" step="0.01" placeholder="0.00" unit="kg"
-              value={row.weightKg}
-              onChange={(e) => onUpdate({ weightKg: e.target.value })}
-              error={weightError}
-            />
-            {weightError && <p className="mt-1 text-xs text-red-500">Required</p>}
-          </div>
-          <div>
-            <SectionLabel>CBM <span className="text-red-400">*</span></SectionLabel>
-            <UnitInput
-              type="number" min="0" step="0.000001" placeholder="0.000000" unit="m³"
-              value={row.cbm}
-              onChange={(e) => onUpdate({ cbm: e.target.value })}
-              error={cbmError}
-            />
-            {cbmError && <p className="mt-1 text-xs text-red-500">Required</p>}
-          </div>
-          <div className="col-span-2 sm:col-span-1">
-            <SectionLabel>Qty</SectionLabel>
-            <UnitInput type="number" min="1" step="1" placeholder="1" unit="×"
-              value={row.quantity} onChange={(e) => onUpdate({ quantity: e.target.value })} />
-          </div>
-        </div>
-      ) : (
-        /* Air / Sea: L×W×H + weight + qty — stack on mobile, 5-col on sm+ */
+      {/* One set of measurements for air, sea and door-to-door. Staff never
+          type a volume — the backend derives it, and the air volumetric and
+          sea chargeable weights, from these four numbers. */}
+      {(
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-5">
           <div className="sm:col-span-3">
-            <SectionLabel>L × W × H (cm)</SectionLabel>
+            <SectionLabel>L × W × H (cm) <span className="text-red-400">*</span></SectionLabel>
             <div className="grid grid-cols-3 gap-1.5">
               <UnitInput type="number" min="0" step="0.1" placeholder="L" unit="cm"
                 value={row.lengthCm} onChange={(e) => onUpdate({ lengthCm: e.target.value })} />
@@ -234,12 +229,17 @@ function PackageRowCard({
               <UnitInput type="number" min="0" step="0.1" placeholder="H" unit="cm"
                 value={row.heightCm} onChange={(e) => onUpdate({ heightCm: e.target.value })} />
             </div>
+            {sizeError && (
+              <p className="mt-1 text-xs text-red-500">All three sizes are required</p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-2 sm:contents">
             <div>
-              <SectionLabel>Weight</SectionLabel>
+              <SectionLabel>Weight <span className="text-red-400">*</span></SectionLabel>
               <UnitInput type="number" min="0" step="0.01" placeholder="0.00" unit="kg"
-                value={row.weightKg} onChange={(e) => onUpdate({ weightKg: e.target.value })} />
+                value={row.weightKg} onChange={(e) => onUpdate({ weightKg: e.target.value })}
+                error={weightError} />
+              {weightError && <p className="mt-1 text-xs text-red-500">Required</p>}
             </div>
             <div>
               <SectionLabel>Qty</SectionLabel>
@@ -307,6 +307,12 @@ interface WarehouseVerifyFormProps {
   isPending: boolean;
   mode?: 'first-verify' | 're-verify';
   initialPackages?: GoodsBreakdownItem[];
+  /**
+   * What the customer said was coming. Used only to pre-fill an otherwise
+   * empty form — staff correct these rather than retyping them, and their
+   * numbers are what set the price.
+   */
+  declaredParcels?: CustomerDeclaredParcel[];
   /** When provided, the form element gets this id and internal action buttons are hidden. The caller renders its own submit trigger with `form={formId}`. */
   formId?: string;
   onSwitchToImages: () => void;
@@ -327,6 +333,7 @@ export function WarehouseVerifyForm({
   isPending,
   mode = 'first-verify',
   initialPackages = [],
+  declaredParcels = [],
   formId,
   onSwitchToImages,
   onSubmit,
@@ -370,9 +377,15 @@ export function WarehouseVerifyForm({
   );
   const [rows, setRows] = useState<PackageRow[]>(() => {
     if (restoredDraft) return restoredDraft.rows;
-    return initialPackages.length > 0
-      ? initialPackages.map((pkg, i) => rowFromBreakdown(pkg, i + 1))
-      : [emptyRow(1)];
+    if (initialPackages.length > 0) {
+      return initialPackages.map((pkg, i) => rowFromBreakdown(pkg, i + 1));
+    }
+    // Pre-fill from the customer's declaration so staff adjust rather than
+    // transcribe. Only warehouse numbers are ever submitted.
+    if (declaredParcels.length > 0) {
+      return declaredParcels.map((parcel, i) => rowFromDeclaredParcel(parcel, i + 1));
+    }
+    return [emptyRow(1)];
   });
   const [nextId, setNextId] = useState(restoredDraft?.nextId ?? initialPackages.length + 2);
 
@@ -441,9 +454,15 @@ export function WarehouseVerifyForm({
     ? transportMode === 'sea' ? 'CBM total' : 'actual package weight'
     : transportMode === 'sea' ? 'CBM total' : 'chargeable weight';
 
-  // D2D gates
-  const missingMeasurements = isD2D && rows.some(
-    (r) => !(parsePositive(r.weightKg) ?? 0) || !(parsePositive(r.cbm) ?? 0),
+  // Measurements are mandatory for every mode. The old fallback to the
+  // customer's typed weight is gone — an unverified number must never set a
+  // price — so the backend rejects a verification without them.
+  const missingMeasurements = rows.some(
+    (r) =>
+      !(parsePositive(r.weightKg) ?? 0) ||
+      !(parsePositive(r.lengthCm) ?? 0) ||
+      !(parsePositive(r.widthCm) ?? 0) ||
+      !(parsePositive(r.heightCm) ?? 0),
   );
   const missingImages = isD2D && imageCount === 0;
   const d2dBlocked = missingMeasurements || missingImages;
@@ -477,9 +496,9 @@ export function WarehouseVerifyForm({
     setNotice(null);
     setError(null);
 
-    if (isD2D && missingMeasurements) {
+    if (missingMeasurements) {
       setShowRowErrors(true);
-      setError('Every package must have both weight and CBM for D2D orders.');
+      setError('Enter the weight and all three sizes for every parcel.');
       return;
     }
 
@@ -648,7 +667,7 @@ export function WarehouseVerifyForm({
         <div className="space-y-3">
           <SectionLabel>
             Packages ({rows.length})
-            {isD2D && <span className="ml-2 text-red-400">Weight + CBM required per package</span>}
+            <span className="ml-2 text-red-400">Weight and all three sizes required per package</span>
           </SectionLabel>
           {rows.map((row, i) => (
             <PackageRowCard

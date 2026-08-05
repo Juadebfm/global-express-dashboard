@@ -4,7 +4,6 @@ import { newBookingSchema } from './schema';
 const VALID = {
   description: 'Children clothes',
   shipmentType: 'air' as const,
-  weight: '5kg',
   declaredValue: '100',
   recipientName: 'Julius Adebowale',
   recipientPhone: '+2348012345678',

@@ -68,7 +68,8 @@
       "Skill(code-review:*)",
       "Bash(awk '/^## Shipments/,/^## Team/' /Users/macbookpro/Documents/GitHub/global-express-backend/API_ENDPOINTS.md)",
       "Bash(grep \"^### \\\\`\")",
-      "Bash(grep \"^### \\\\`\" /Users/macbookpro/Documents/GitHub/global-express-backend/API_ENDPOINTS.md)"
+      "Bash(grep \"^### \\\\`\" /Users/macbookpro/Documents/GitHub/global-express-backend/API_ENDPOINTS.md)",
+      "Bash(git status *)"
     ]
   }
 }

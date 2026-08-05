@@ -38,6 +38,13 @@ import { newBookingSchema, type NewBookingFormValues } from './schema';
 import { buildSourcingSupplier } from './bookingPayload';
 import { EstimatePreview } from './components/EstimatePreview';
 import { ShipmentTypeSelect } from './components/ShipmentTypeSelect';
+import { ParcelMeasurements } from './components/ParcelMeasurements';
+import {
+  EMPTY_PARCEL,
+  findInvalidMeasurement,
+  toParcelPayload,
+  type ParcelDraft,
+} from './components/parcelDraft';
 
 // ── Country selector ──────────────────────────────────────────────────────────
 
@@ -321,6 +328,10 @@ export function NewBookingPage(): ReactElement {
     return `${selectedCountryOption.dialCode}${cleaned}`;
   }, [selectedCountryOption.dialCode]);
 
+  // Advance parcel sizes are customer-only; a staff token is rejected with 403.
+  const [parcels, setParcels] = useState<ParcelDraft[]>([{ ...EMPTY_PARCEL }]);
+  const [parcelError, setParcelError] = useState<string | null>(null);
+
   // Internal roles get the staff-only section. Customers never see it.
   const isInternal =
     user?.role === 'staff' || user?.role === 'admin' || user?.role === 'superadmin';
@@ -352,7 +363,6 @@ export function NewBookingPage(): ReactElement {
   const hasSourcingSupplier = useWatch({ control, name: 'hasSourcingSupplier' });
   const sourcingSupplierType = useWatch({ control, name: 'sourcingSupplierType' });
   const shipmentType = useWatch({ control, name: 'shipmentType' });
-  const weight = useWatch({ control, name: 'weight' });
   const [supplierSearch, setSupplierSearch] = useState('');
   const [supplierDirectoryPage, setSupplierDirectoryPage] = useState(1);
   const [supplierDetails, setSupplierDetails] = useState<SupplierDirectorySummary | null>(null);
@@ -386,7 +396,6 @@ export function NewBookingPage(): ReactElement {
           // order is inbound, a staff-created one outbound. Consolidating the
           // form deliberately did not change this behaviour.
           orderDirection: isInternal ? 'outbound' : 'inbound',
-          weight: values.weight,
           declaredValue: values.declaredValue,
           description: values.description,
           shipmentType: values.shipmentType,
@@ -401,6 +410,13 @@ export function NewBookingPage(): ReactElement {
             values.pickupRepName?.trim() && {
               pickupRepName: values.pickupRepName.trim(),
               pickupRepPhone: values.pickupRepPhone?.trim() || undefined,
+            }),
+          // customerDeclaredParcels is the customer's own record of what is
+          // coming; the API answers 403 if a staff token sends it, so a
+          // staff-created order carries the measurements only in the estimate.
+          ...(!isInternal &&
+            toParcelPayload(parcels) && {
+              customerDeclaredParcels: toParcelPayload(parcels),
             }),
         },
         token,
@@ -457,7 +473,23 @@ export function NewBookingPage(): ReactElement {
           <p className="mt-1 text-sm text-gray-500">Tell us what you're shipping and who should receive it.</p>
         </div>
 
-        <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-6">
+        <form
+          onSubmit={handleSubmit((v) => {
+            // Parcels are the shipment description, so at least one is
+            // required, and every filled measurement must be a positive number.
+            const invalid = findInvalidMeasurement(parcels);
+            if (invalid) {
+              setParcelError(invalid);
+              return;
+            }
+            if (!toParcelPayload(parcels)) {
+              setParcelError('Add the size and weight of at least one parcel.');
+              return;
+            }
+            mutation.mutate(v);
+          })}
+          className="space-y-6"
+        >
           {/* Staff place orders on behalf of a client; a customer places their
               own, so this whole section is hidden from them. The backend
               remains the authority on who may set senderId. */}
@@ -532,22 +564,27 @@ export function NewBookingPage(): ReactElement {
               />
             </div>
 
-            <Input
-              label={shipmentType === 'sea' ? 'Volume (CBM)' : 'Weight'}
-              placeholder={shipmentType === 'sea' ? 'e.g. 0.3cbm' : 'e.g. 5kg'}
-              error={errors.weight?.message}
-              {...register('weight')}
+            <ParcelMeasurements
+              parcels={parcels}
+              onChange={(next) => {
+                setParcels(next);
+                setParcelError(null);
+              }}
+              error={parcelError}
             />
 
             {/* Door-to-door is quoted individually, and the estimate endpoint
-                only accepts air or sea, so no estimate is shown for it. */}
+                only accepts air or ocean, so no estimate is shown for it. */}
             {shipmentType === 'd2d' ? (
               <p className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-500">
                 Door-to-door is priced individually. Our team will confirm the cost
                 after reviewing the goods.
               </p>
             ) : (
-              <EstimatePreview shipmentType={shipmentType} rawWeight={weight ?? ''} />
+              <EstimatePreview
+                shipmentType={shipmentType}
+                parcels={toParcelPayload(parcels) ?? []}
+              />
             )}
 
             <Input
@@ -559,6 +596,7 @@ export function NewBookingPage(): ReactElement {
               error={errors.declaredValue?.message}
               {...register('declaredValue')}
             />
+
           </Card>
 
           {/* Divider */}

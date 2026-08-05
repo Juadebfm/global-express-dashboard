@@ -114,6 +114,18 @@ function PriorityRow({
           {order.statusLabel || STATUS_LABELS[order.statusV2] || order.statusV2.replace(/_/g, ' ')}
           {wait ? ` · ${wait} ago` : ''}
         </p>
+        {/* What the customer said is coming, so the queue can be planned
+            without opening each order. Expected, not measured. */}
+        {order.customerDeclaredSummary && (
+          <p className="truncate text-xs text-gray-400">
+            {order.customerDeclaredSummary.parcelCount}{' '}
+            {order.customerDeclaredSummary.parcelCount === 1 ? 'parcel' : 'parcels'}
+            {order.customerDeclaredSummary.totalWeightKg
+              ? `, ${order.customerDeclaredSummary.totalWeightKg} kg`
+              : ''}{' '}
+            expected
+          </p>
+        )}
       </div>
       <button
         type="button"

@@ -1,7 +1,8 @@
 import type { ReactElement } from 'react';
+import { describeOperationsError } from '@/lib/operationsErrorCodes';
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { useWarehouseVerify, useOrderImages, useOrderTimeline, useUpload, useCapability } from '@/hooks';
+import { useWarehouseVerify, useOrderImages, useOrderTimeline, useOrderDetail, useUpload, useCapability } from '@/hooks';
 import { cn } from '@/utils';
 import type { OrderView } from '@/pages/shared/orderStatus';
 import { canReVerifyPackages } from '@/pages/shared/orderStatus';
@@ -41,9 +42,14 @@ export function VerifyQueueStep({
   const uploadImage = useUpload();
   const imagesQuery = useOrderImages(view.id);
   const timelineQuery = useOrderTimeline(view.id, true);
+  // Declared parcels ride on the single-order response, not the timeline.
+  const orderDetailQuery = useOrderDetail(view.id);
 
   const images = Array.isArray(imagesQuery.data) ? imagesQuery.data : [];
   const goodsBreakdown = timelineQuery.data?.goodsBreakdown ?? [];
+  // Advance measurements from the customer, used only to pre-fill an empty
+  // form. Staff correct them; their numbers are what set the price.
+  const declaredParcels = orderDetailQuery.data?.customerDeclaredParcels ?? [];
 
   const isD2D = view.shipmentType === 'd2d';
   const isReVerify = canReVerifyPackages(view.statusV2);
@@ -133,6 +139,7 @@ export function VerifyQueueStep({
             isPending={verifyWarehouse.isPending}
             mode={mode}
             initialPackages={goodsBreakdown}
+            declaredParcels={declaredParcels}
             formId={FORM_ID}
             onSwitchToImages={() => setShowImages(true)}
             onSubmit={handleSubmit}
@@ -141,9 +148,10 @@ export function VerifyQueueStep({
 
         {verifyWarehouse.isError && (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {verifyWarehouse.error instanceof Error
-              ? verifyWarehouse.error.message
-              : 'Verification failed — please try again'}
+            {describeOperationsError(verifyWarehouse.error) ??
+              (verifyWarehouse.error instanceof Error
+                ? verifyWarehouse.error.message
+                : 'Verification failed — please try again')}
           </div>
         )}
       </div>
