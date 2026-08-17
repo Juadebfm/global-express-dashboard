@@ -14,7 +14,6 @@ dist-ssr
 .env
 .env.*
 !.env.example
-memory.md
 
 # Editor directories and files
 .vscode/*
@@ -26,3 +25,20 @@ memory.md
 *.njsproj
 *.sln
 *.sw?
+
+# Local agent tooling and notes — machine-specific, and settings.local.json
+# carries absolute paths from whoever ran it. Kept on disk, out of the repo.
+AGENTS.md
+memory.md
+.agents/
+.claude/
+skills-lock.json
+
+# Working notes and internal docs — useful locally, not part of the product
+ui-registry.md
+TEST_TRACKER.md
+docs/
+
+# Test artefacts
+test-results/
+playwright-report/
