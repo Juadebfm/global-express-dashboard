@@ -30,8 +30,19 @@ dist-ssr
 # carries absolute paths from whoever ran it. Kept on disk, out of the repo.
 AGENTS.md
 memory.md
+MEMORY.md
+CLAUDE.md
+SKILL.md
 .agents/
 .claude/
+.codex/
+.cursor/
+.aider/
+.continue/
+.windsurf/
+.roo/
+.gemini/
+.opencode/
 skills-lock.json
 
 # Working notes and internal docs — useful locally, not part of the product
