@@ -82,7 +82,7 @@ const TAB_FALLBACK_LABEL: Record<SettingsTab, string> = {
   'restricted-goods': 'Restricted Goods',
   'shipment-types': 'Shipment Types',
   logistics: 'Logistics',
-  'notification-templates': 'Templates',
+  'notification-templates': 'Broadcast messages',
 };
 
 /* ── Shared sub-components ───────────────────────────────────── */
