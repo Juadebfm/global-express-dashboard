@@ -27,7 +27,6 @@ import { ApiError, apiPatch } from '@/lib/apiClient';
 import {
   checkAccountAvailability,
   syncClerkAccount,
-  updateMyNotificationPreferences,
 } from '@/services';
 
 type SignUpStep = 'details' | 'verify';
@@ -61,7 +60,6 @@ interface SignUpFormState {
   password: string;
   phone: string;
   whatsappNumber: string;
-  consentMarketing: boolean;
   addressStreet: string;
   addressCity: string;
   addressState: string;
@@ -77,7 +75,6 @@ const initialFormState: SignUpFormState = {
   password: '',
   phone: '',
   whatsappNumber: '',
-  consentMarketing: false,
   addressStreet: '',
   addressCity: '',
   addressState: '',
@@ -462,10 +459,6 @@ export function ExternalSignUpPage(): ReactElement {
       token
     );
 
-    if (form.consentMarketing) {
-      await updateMyNotificationPreferences(token, { consentMarketing: true });
-    }
-
     await clerkUser?.update({ unsafeMetadata: { profileCompleted: true } });
     navigate(postSignUpRedirect, { replace: true });
   }, [buildE164, clerkUser, form, navigate, postSignUpRedirect]);
@@ -628,7 +621,10 @@ export function ExternalSignUpPage(): ReactElement {
     if (!form.phone.trim()) {
       nextErrors.phone = t('externalSignUp.validation.phoneRequired');
     } else if (!isValidPhone(form.phone)) {
-      nextErrors.phone = t('externalSignUp.validation.phoneInvalid');
+      nextErrors.phone =
+        selectedCountry === 'NG'
+          ? t('externalSignUp.validation.nigerianPhoneInvalid')
+          : t('externalSignUp.validation.phoneInvalid');
     }
 
     // whatsappNumber is optional — only validate format if provided
@@ -800,23 +796,6 @@ export function ExternalSignUpPage(): ReactElement {
     }
   };
 
-  const isDetailsStepValid =
-    (isSignedIn ||
-      (
-        !!form.email.trim() &&
-        emailPattern.test(form.email.trim()) &&
-        !!form.password.trim() &&
-        form.password.trim().length >= 8
-      )) &&
-    !!form.phone.trim() &&
-    isValidPhone(form.phone) &&
-    (!form.whatsappNumber.trim() || isValidPhone(form.whatsappNumber)) &&
-    !!form.addressStreet.trim() &&
-    !!form.addressCity.trim() &&
-    !!form.addressState.trim() &&
-    !!form.addressCountry.trim() &&
-    !!form.addressPostalCode.trim();
-
   const currentStepIndex = SIGN_UP_STEP_ORDER.indexOf(step);
 
   const handleStepSelect = (targetIndex: number) => {
@@ -833,6 +812,7 @@ export function ExternalSignUpPage(): ReactElement {
     error?: string,
     disabled?: boolean,
     inputId?: string,
+    hint?: string,
   ) => (
     <div className="space-y-1.5">
       <label className="block text-sm font-medium text-gray-700">
@@ -859,9 +839,9 @@ export function ExternalSignUpPage(): ReactElement {
           aria-invalid={error ? 'true' : 'false'}
         />
       </div>
-      {error && (
-        <p className="text-sm text-red-600" role="alert">
-          {error}
+      {(error || hint) && (
+        <p className="text-sm text-red-600" role={error ? 'alert' : undefined}>
+          {error || hint}
         </p>
       )}
     </div>
@@ -1056,6 +1036,9 @@ export function ExternalSignUpPage(): ReactElement {
                 errors.phone,
                 false,
                 'signup-phone',
+                selectedCountry === 'NG' && form.phone.trim() && !isValidPhone(form.phone)
+                  ? t('externalSignUp.validation.nigerianPhoneInvalid')
+                  : undefined,
               )}
 
               <div className="space-y-2">
@@ -1126,12 +1109,6 @@ export function ExternalSignUpPage(): ReactElement {
                 />
               </div>
 
-              <Checkbox
-                label={t('externalSignUp.consentMarketing')}
-                checked={form.consentMarketing}
-                onChange={(event) => updateField('consentMarketing', event.target.checked)}
-              />
-
               {!isSignedIn && shouldRenderClerkCaptcha && (
                 <div className="space-y-2" aria-live="polite">
                   {isPreparingSecureVerification && (
@@ -1147,7 +1124,7 @@ export function ExternalSignUpPage(): ReactElement {
                 className={`auth-cta-btn w-full ${buttonTextClassName}`}
                 size="lg"
                 isLoading={isSubmitting}
-                disabled={!isDetailsStepValid || isSubmitting}
+                disabled={!isLoaded || isSubmitting}
               >
                 {isCheckingAccountDetails
                   ? 'Checking account details…'
