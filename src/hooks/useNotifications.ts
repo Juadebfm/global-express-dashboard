@@ -3,6 +3,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { ApiNotification } from '@/types';
 import { getNotifications, markNotificationRead, markAllNotificationsRead, toggleNotificationSave, deleteNotification, deleteNotificationsBulk } from '@/services';
 import { STALE_TIME } from '@/lib/queryDefaults';
+import { useSupplierAuthStore } from '@/store/supplierAuth';
 import { useAuth } from './useAuth';
 import { useAuthToken } from './useAuthToken';
 
@@ -23,14 +24,21 @@ export function useNotifications(): NotificationsState {
   const { user } = useAuth();
   const { isSignedIn: isClerkSignedIn } = useClerkAuth();
   const getToken = useAuthToken();
+  const supplierToken = useSupplierAuthStore((state) => state.token);
   const queryClient = useQueryClient();
 
-  const enabled = isClerkSignedIn || !!user;
+  const hasPrimarySession = isClerkSignedIn || !!user;
+  const enabled = hasPrimarySession || !!supplierToken;
+
+  async function getNotificationToken(): Promise<string | null> {
+    if (!hasPrimarySession && supplierToken) return supplierToken;
+    return getToken();
+  }
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['notifications', 'list'],
     queryFn: async () => {
-      const token = await getToken();
+      const token = await getNotificationToken();
       if (!token) throw new Error('Not authenticated');
       return getNotifications(token);
     },
@@ -40,7 +48,7 @@ export function useNotifications(): NotificationsState {
 
   const markReadMutation = useMutation({
     mutationFn: async (id: string) => {
-      const token = await getToken();
+      const token = await getNotificationToken();
       if (!token) throw new Error('Not authenticated');
       return markNotificationRead(id, token);
     },
@@ -51,7 +59,7 @@ export function useNotifications(): NotificationsState {
 
   const markAllReadMutation = useMutation({
     mutationFn: async () => {
-      const token = await getToken();
+      const token = await getNotificationToken();
       if (!token) throw new Error('Not authenticated');
       return markAllNotificationsRead(token);
     },
@@ -62,7 +70,7 @@ export function useNotifications(): NotificationsState {
 
   const toggleSaveMutation = useMutation({
     mutationFn: async (id: string) => {
-      const token = await getToken();
+      const token = await getNotificationToken();
       if (!token) throw new Error('Not authenticated');
       return toggleNotificationSave(id, token);
     },
@@ -73,7 +81,7 @@ export function useNotifications(): NotificationsState {
 
   const deleteOneMutation = useMutation({
     mutationFn: async (id: string) => {
-      const token = await getToken();
+      const token = await getNotificationToken();
       if (!token) throw new Error('Not authenticated');
       return deleteNotification(id, token);
     },
@@ -84,7 +92,7 @@ export function useNotifications(): NotificationsState {
 
   const deleteBulkMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      const token = await getToken();
+      const token = await getNotificationToken();
       if (!token) throw new Error('Not authenticated');
       return deleteNotificationsBulk(ids, token);
     },

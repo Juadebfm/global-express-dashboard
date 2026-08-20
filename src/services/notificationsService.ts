@@ -1,5 +1,11 @@
-import type { ApiNotificationsResponse } from '@/types';
-import { apiDelete, apiGetData, apiPatch, apiPost } from '@/lib/apiClient';
+import type {
+  ApiNotificationsResponse,
+  BroadcastAudience,
+  BroadcastImageConfirmResponse,
+  BroadcastImageContentType,
+  BroadcastImagePresignResponse,
+} from '@/types';
+import { apiDelete, apiGetData, apiPatch, apiPost, apiPostData } from '@/lib/apiClient';
 
 export function getNotifications(
   token: string,
@@ -39,7 +45,47 @@ export async function deleteNotificationsBulk(ids: string[], token: string): Pro
 
 export async function sendBroadcast(
   token: string,
-  payload: { type: string; title: string; subtitle?: string; body?: string; metadata?: Record<string, unknown> }
+  payload: {
+    type: string;
+    title: string;
+    subtitle?: string;
+    body?: string;
+    audience: BroadcastAudience;
+    metadata?: Record<string, unknown>;
+  }
 ): Promise<void> {
   await apiPost('/notifications/broadcast', payload, token);
+}
+
+export function presignBroadcastImage(
+  token: string,
+  payload: { contentType: BroadcastImageContentType; originalFileName: string },
+): Promise<BroadcastImagePresignResponse> {
+  return apiPostData<BroadcastImagePresignResponse>(
+    '/notifications/broadcast-images/presign',
+    payload,
+    token,
+  );
+}
+
+export function confirmBroadcastImage(
+  token: string,
+  r2Key: string,
+): Promise<BroadcastImageConfirmResponse> {
+  return apiPostData<BroadcastImageConfirmResponse>(
+    '/notifications/broadcast-images/confirm',
+    { r2Key },
+    token,
+  );
+}
+
+export async function uploadBroadcastImageFile(uploadUrl: string, file: File): Promise<void> {
+  const response = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  });
+  if (!response.ok) {
+    throw new Error('Unable to upload the banner image. Please try again.');
+  }
 }

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useCapability, useDashboardData } from '@/hooks';
 import type { UiAction } from '@/types';
 import { DashboardHeader } from '@/pages/dashboard/components';
+import { BroadcastBanners } from '@/pages/dashboard/DashboardPage/components/BroadcastBanners';
 import { AppShell } from '@/pages/shared';
 import { ROUTES } from '@/constants';
 import { AdminKpiBar } from './components/AdminKpiBar';
@@ -27,6 +28,7 @@ export function AdminDashboardPage(): ReactElement {
   return (
     <AppShell data={data} isLoading={isLoading} error={error} loadingLabel={t('loadingLabel')}>
       <div className="space-y-8">
+        <BroadcastBanners />
         {data && (
           <>
             <DashboardHeader

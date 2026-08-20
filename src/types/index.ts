@@ -60,6 +60,10 @@ export type {
 
 export type {
   NotificationType,
+  BroadcastAudience,
+  BroadcastImageContentType,
+  BroadcastImagePresignResponse,
+  BroadcastImageConfirmResponse,
   ApiNotification,
   ApiNotificationsResponse,
   ApiUnreadCountResponse,

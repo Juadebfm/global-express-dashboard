@@ -1,4 +1,15 @@
 export type NotificationType = string;
+export type BroadcastAudience = 'customers' | 'staff' | 'everyone';
+export type BroadcastImageContentType = 'image/jpeg' | 'image/png' | 'image/webp';
+
+export interface BroadcastImagePresignResponse {
+  uploadUrl: string;
+  r2Key: string;
+}
+
+export interface BroadcastImageConfirmResponse {
+  publicUrl: string;
+}
 
 export interface ApiNotification {
   id: string;
@@ -11,6 +22,7 @@ export interface ApiNotification {
   isRead: boolean;
   isSaved: boolean;
   isBroadcast?: boolean;
+  audience?: BroadcastAudience;
   createdBy?: string | null;
   createdAt: string;
   updatedAt: string;

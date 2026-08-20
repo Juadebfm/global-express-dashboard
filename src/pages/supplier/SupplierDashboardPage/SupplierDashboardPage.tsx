@@ -6,6 +6,7 @@ import { SupplierLayout } from '@/components/supplier/SupplierLayout';
 import { AlertBanner, Card, Button } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import { useSupplierDeclarations } from '@/hooks/useSupplierPortal';
+import { BroadcastBanners } from '@/pages/dashboard/DashboardPage/components/BroadcastBanners';
 import { useSupplierAuthStore } from '@/store/supplierAuth';
 import { cn } from '@/utils';
 import type { Declaration, DeclarationStatus } from '@/types/supplierPortal.types';
@@ -91,6 +92,7 @@ export function SupplierDashboardPage(): ReactElement {
   return (
     <SupplierLayout>
       <div className="space-y-6">
+        <BroadcastBanners />
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>

@@ -23,9 +23,16 @@ import {
   useUpdateShipmentTypesCatalog,
 } from '@/hooks';
 import { AppShell, PageHeader } from '@/pages/shared';
-import { exportMyAccountData, sendBroadcast } from '@/services';
+import {
+  confirmBroadcastImage,
+  exportMyAccountData,
+  presignBroadcastImage,
+  sendBroadcast,
+  uploadBroadcastImageFile,
+} from '@/services';
 import type {
   CustomerPricingOverride,
+  BroadcastImageContentType,
   EtaNotes,
   NotificationTemplate,
   OfficeInfo,
@@ -873,13 +880,29 @@ function LogisticsSection({
 /* ── Broadcast section ───────────────────────────────────────── */
 
 type BroadcastType = 'system_announcement' | 'admin_alert';
+type BroadcastAudience = 'customers' | 'staff' | 'everyone';
+
+const BROADCAST_IMAGE_TYPES: BroadcastImageContentType[] = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+];
+const MAX_BROADCAST_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+
+function isSafeBroadcastActionPath(value: string): boolean {
+  return value.startsWith('/') && !value.startsWith('//') && !value.includes('\\');
+}
 
 function BroadcastSection(): ReactElement {
   const getToken = useAuthToken();
   const [type, setType] = useState<BroadcastType>('system_announcement');
+  const [audience, setAudience] = useState<BroadcastAudience>('everyone');
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [body, setBody] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [actionLabel, setActionLabel] = useState('');
+  const [actionUrl, setActionUrl] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -889,21 +912,61 @@ function BroadcastSection(): ReactElement {
       setError('Title and message body are required.');
       return;
     }
+    const cleanActionLabel = actionLabel.trim();
+    const cleanActionUrl = actionUrl.trim();
+    if (Boolean(cleanActionLabel) !== Boolean(cleanActionUrl)) {
+      setError('Provide both an action label and an internal page path, or leave both blank.');
+      return;
+    }
+    if (cleanActionUrl && !isSafeBroadcastActionPath(cleanActionUrl)) {
+      setError('The action page must be an internal path that starts with a single slash, for example /orders.');
+      return;
+    }
+    if (
+      imageFile &&
+      (!BROADCAST_IMAGE_TYPES.includes(imageFile.type as BroadcastImageContentType) ||
+        imageFile.size > MAX_BROADCAST_IMAGE_SIZE_BYTES)
+    ) {
+      setError('Choose a JPEG, PNG, or WebP image no larger than 5 MB.');
+      return;
+    }
     setError(null);
     setSuccess(false);
     setIsSending(true);
     try {
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
+      const metadata: Record<string, string> = {};
+
+      if (imageFile) {
+        const image = await presignBroadcastImage(token, {
+          contentType: imageFile.type as BroadcastImageContentType,
+          originalFileName: imageFile.name,
+        });
+        await uploadBroadcastImageFile(image.uploadUrl, imageFile);
+        const confirmedImage = await confirmBroadcastImage(token, image.r2Key);
+        metadata.imageUrl = confirmedImage.publicUrl;
+      }
+
+      if (cleanActionLabel && cleanActionUrl) {
+        metadata.actionLabel = cleanActionLabel;
+        metadata.actionUrl = cleanActionUrl;
+      }
+
       await sendBroadcast(token, {
         type,
         title: title.trim(),
         subtitle: subtitle.trim() || undefined,
         body: body.trim(),
+        audience,
+        metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
       });
       setTitle('');
       setSubtitle('');
       setBody('');
+      setImageFile(null);
+      setActionLabel('');
+      setActionUrl('');
       setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send broadcast');
@@ -915,11 +978,11 @@ function BroadcastSection(): ReactElement {
   return (
     <SectionShell
       title="System Broadcast"
-      subtitle="Send a notification to all users immediately via WebSocket and in-app inbox."
+      subtitle="Send a notification to customers, internal staff, or everyone through live updates and the in-app inbox."
     >
       <div className="mt-4 space-y-4">
         {error && <AlertBanner tone="error" message={error} />}
-        {success && <AlertBanner tone="success" message="Broadcast sent to all users." />}
+        {success && <AlertBanner tone="success" message="Broadcast sent." />}
 
         <div>
           <label className="mb-1.5 block text-xs font-medium text-gray-700">Type</label>
@@ -941,6 +1004,19 @@ function BroadcastSection(): ReactElement {
               </label>
             ))}
           </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-gray-700">Audience</label>
+          <select
+            value={audience}
+            onChange={(event) => { setAudience(event.target.value as BroadcastAudience); setSuccess(false); }}
+            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-brand-500"
+          >
+            <option value="everyone">Everyone</option>
+            <option value="customers">Customers only</option>
+            <option value="staff">Staff, admins, and superadmins only</option>
+          </select>
         </div>
 
         <FieldInput
@@ -968,6 +1044,59 @@ function BroadcastSection(): ReactElement {
           />
         </div>
 
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-gray-700">Banner image (optional)</label>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(event) => {
+              const file = event.target.files?.[0] ?? null;
+              event.target.value = '';
+              setSuccess(false);
+              if (!file) return;
+              if (
+                !BROADCAST_IMAGE_TYPES.includes(file.type as BroadcastImageContentType) ||
+                file.size > MAX_BROADCAST_IMAGE_SIZE_BYTES
+              ) {
+                setImageFile(null);
+                setError('Choose a JPEG, PNG, or WebP image no larger than 5 MB.');
+                return;
+              }
+              setError(null);
+              setImageFile(file);
+            }}
+            className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200"
+          />
+          <p className="mt-1 text-xs text-gray-500">JPEG, PNG, or WebP · Maximum 5 MB</p>
+          {imageFile && (
+            <div className="mt-2 flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700">
+              <span className="truncate">{imageFile.name}</span>
+              <button
+                type="button"
+                onClick={() => setImageFile(null)}
+                className="ml-3 shrink-0 font-medium text-brand-600 hover:text-brand-700"
+              >
+                Remove
+              </button>
+            </div>
+          )}
+        </div>
+
+        <FieldInput
+          label="Action label (optional)"
+          value={actionLabel}
+          onChange={(value) => { setActionLabel(value); setSuccess(false); }}
+          placeholder="e.g. Check now"
+        />
+
+        <FieldInput
+          label="Action page path (optional)"
+          value={actionUrl}
+          onChange={(value) => { setActionUrl(value); setSuccess(false); }}
+          placeholder="e.g. /orders"
+        />
+        <p className="-mt-2 text-xs text-gray-500">Action label and page path must be provided together.</p>
+
         <div className="border-t border-gray-100 pt-4">
           <button
             type="button"
@@ -978,7 +1107,7 @@ function BroadcastSection(): ReactElement {
               isSending ? 'cursor-not-allowed bg-gray-400' : 'bg-brand-500 hover:bg-brand-600',
             )}
           >
-            {isSending ? 'Sending…' : 'Send to all users'}
+            {isSending ? 'Sending…' : 'Send broadcast'}
           </button>
         </div>
       </div>
