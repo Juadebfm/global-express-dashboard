@@ -17,7 +17,7 @@ export function WelcomePopup({ displayName, onDismiss }: WelcomePopupProps): Rea
 
   const handleCreateShipment = (): void => {
     onDismiss();
-    navigate(ROUTES.NEW_SHIPMENT);
+    navigate(ROUTES.BOOKINGS_NEW);
   };
 
   return (
