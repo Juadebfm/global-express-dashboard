@@ -879,7 +879,6 @@ function LogisticsSection({
 
 /* ── Broadcast section ───────────────────────────────────────── */
 
-type BroadcastType = 'system_announcement' | 'admin_alert';
 type BroadcastAudience = 'customers' | 'staff' | 'everyone';
 
 const BROADCAST_IMAGE_TYPES: BroadcastImageContentType[] = [
@@ -895,7 +894,6 @@ function isSafeBroadcastActionPath(value: string): boolean {
 
 function BroadcastSection(): ReactElement {
   const getToken = useAuthToken();
-  const [type, setType] = useState<BroadcastType>('system_announcement');
   const [audience, setAudience] = useState<BroadcastAudience>('everyone');
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
@@ -954,7 +952,7 @@ function BroadcastSection(): ReactElement {
       }
 
       await sendBroadcast(token, {
-        type,
+        type: 'system_announcement',
         title: title.trim(),
         subtitle: subtitle.trim() || undefined,
         body: body.trim(),
@@ -983,28 +981,6 @@ function BroadcastSection(): ReactElement {
       <div className="mt-4 space-y-4">
         {error && <AlertBanner tone="error" message={error} />}
         {success && <AlertBanner tone="success" message="Broadcast sent." />}
-
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-700">Type</label>
-          <div className="flex gap-4">
-            {([
-              { value: 'system_announcement', label: 'System announcement' },
-              { value: 'admin_alert', label: 'Admin alert' },
-            ] as const).map((opt) => (
-              <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="broadcast-type"
-                  value={opt.value}
-                  checked={type === opt.value}
-                  onChange={() => { setType(opt.value); setSuccess(false); }}
-                  className="accent-brand-500"
-                />
-                <span className="text-sm text-gray-700">{opt.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
 
         <div>
           <label className="mb-1.5 block text-xs font-medium text-gray-700">Audience</label>
