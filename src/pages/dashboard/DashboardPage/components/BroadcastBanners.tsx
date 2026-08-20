@@ -19,62 +19,53 @@ function isSafeInternalPath(value: string | null): value is string {
  */
 export function BroadcastBanners(): ReactElement | null {
   const { notifications, deleteOne } = useNotifications();
-  const broadcasts = notifications.filter((n) => n.isBroadcast && !n.isRead);
+  const activeBroadcast = notifications
+    .filter((notification) => notification.isBroadcast && !notification.isRead)
+    .sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt))[0];
 
-  if (broadcasts.length === 0) return null;
+  if (!activeBroadcast) return null;
+
+  const metadata = activeBroadcast.metadata ?? {};
+  const imageUrl = readMetadataString(metadata, 'imageUrl');
+  const actionLabel = readMetadataString(metadata, 'actionLabel');
+  const actionUrl = readMetadataString(metadata, 'actionUrl');
+  const hasAction = !!actionLabel && isSafeInternalPath(actionUrl);
 
   return (
-    <div className="space-y-3">
-      {broadcasts.map((n) => (
-        (() => {
-          const metadata = n.metadata ?? {};
-          const imageUrl = readMetadataString(metadata, 'imageUrl');
-          const actionLabel = readMetadataString(metadata, 'actionLabel');
-          const actionUrl = readMetadataString(metadata, 'actionUrl');
-          const hasAction = !!actionLabel && isSafeInternalPath(actionUrl);
-
-          return (
-            <div
-              key={n.id}
-              className="banner-enter overflow-hidden rounded-[2rem] bg-black text-white shadow-[0_16px_36px_rgba(0,0,0,0.16)]"
+    <div className="banner-enter overflow-hidden rounded-[2rem] bg-black text-white shadow-[0_16px_36px_rgba(0,0,0,0.16)]">
+      <div className="flex items-start gap-5 px-6 py-6 sm:px-8 sm:py-7">
+        {imageUrl && (
+          <img
+            src={imageUrl}
+            alt=""
+            className="h-20 w-20 shrink-0 rounded-2xl object-cover sm:h-28 sm:w-28"
+          />
+        )}
+        <div className="min-w-0 flex-1 pr-1">
+          <p className="text-2xl font-semibold leading-tight text-white">
+            {activeBroadcast.title}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-gray-200">
+            {activeBroadcast.body?.trim() || activeBroadcast.message}
+          </p>
+          {hasAction && (
+            <Link
+              to={actionUrl}
+              className="mt-4 inline-block text-sm font-semibold text-white underline underline-offset-4 transition hover:text-gray-300"
             >
-              <div className="flex items-start gap-5 px-6 py-6 sm:px-8 sm:py-7">
-                {imageUrl && (
-                  <img
-                    src={imageUrl}
-                    alt=""
-                    className="h-20 w-20 shrink-0 rounded-2xl object-cover sm:h-28 sm:w-28"
-                  />
-                )}
-                <div className="min-w-0 flex-1 pr-1">
-                  <p className="text-2xl font-semibold leading-tight text-white">
-                    {n.title}
-                  </p>
-                  <p className="mt-2 text-sm leading-relaxed text-gray-200">
-                    {n.body?.trim() || n.message}
-                  </p>
-                  {hasAction && (
-                    <Link
-                      to={actionUrl}
-                      className="mt-4 inline-block text-sm font-semibold text-white underline underline-offset-4 transition hover:text-gray-300"
-                    >
-                      {actionLabel}
-                    </Link>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => deleteOne(n.id)}
-                  className="-mr-2 -mt-2 shrink-0 rounded-xl p-2 text-white transition hover:bg-white/10"
-                  aria-label="Dismiss announcement"
-                >
-                  <X className="h-7 w-7 sm:h-8 sm:w-8" strokeWidth={2.5} />
-                </button>
-              </div>
-            </div>
-          );
-        })()
-      ))}
+              {actionLabel}
+            </Link>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => deleteOne(activeBroadcast.id)}
+          className="-mr-2 -mt-2 shrink-0 rounded-xl p-2 text-white transition hover:bg-white/10"
+          aria-label="Dismiss announcement"
+        >
+          <X className="h-7 w-7 sm:h-8 sm:w-8" strokeWidth={2.5} />
+        </button>
+      </div>
     </div>
   );
 }
