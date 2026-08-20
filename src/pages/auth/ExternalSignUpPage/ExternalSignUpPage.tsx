@@ -1119,21 +1119,23 @@ export function ExternalSignUpPage(): ReactElement {
               )}
               </fieldset>
 
-              <Button
-                type="submit"
-                className={`auth-cta-btn w-full ${buttonTextClassName}`}
-                size="lg"
-                isLoading={isSubmitting}
-                disabled={!isLoaded || isSubmitting}
-              >
-                {isCheckingAccountDetails
-                  ? 'Checking account details…'
-                  : isPreparingSecureVerification
-                    ? 'Preparing secure verification…'
-                    : isSignedIn
-                      ? t('externalSignUp.completeRegistration')
-                      : t('externalSignUp.continueButton')}
-              </Button>
+              <div className="pt-4">
+                <Button
+                  type="submit"
+                  className={`auth-cta-btn w-full ${buttonTextClassName}`}
+                  size="lg"
+                  isLoading={isSubmitting}
+                  disabled={!isLoaded || isSubmitting}
+                >
+                  {isCheckingAccountDetails
+                    ? 'Checking account details…'
+                    : isPreparingSecureVerification
+                      ? 'Preparing secure verification…'
+                      : isSignedIn
+                        ? t('externalSignUp.completeRegistration')
+                        : t('externalSignUp.continueButton')}
+                </Button>
+              </div>
             </form>
 
             <p className="mt-6 text-center text-sm text-gray-500">
