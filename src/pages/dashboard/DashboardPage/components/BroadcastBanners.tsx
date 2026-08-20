@@ -47,16 +47,16 @@ export function BroadcastBanners(): ReactElement | null {
                   />
                 )}
                 <div className="min-w-0 flex-1 pr-1">
-                  <p className="text-xl font-semibold leading-tight tracking-tight text-white sm:text-3xl">
+                  <p className="text-2xl font-semibold leading-tight text-white">
                     {n.title}
                   </p>
-                  <p className="mt-3 text-base leading-relaxed text-gray-200 sm:text-xl">
+                  <p className="mt-2 text-sm leading-relaxed text-gray-200">
                     {n.body?.trim() || n.message}
                   </p>
                   {hasAction && (
                     <Link
                       to={actionUrl}
-                      className="mt-5 inline-block text-lg font-medium text-white underline underline-offset-4 transition hover:text-gray-300 sm:text-2xl"
+                      className="mt-4 inline-block text-sm font-semibold text-white underline underline-offset-4 transition hover:text-gray-300"
                     >
                       {actionLabel}
                     </Link>
