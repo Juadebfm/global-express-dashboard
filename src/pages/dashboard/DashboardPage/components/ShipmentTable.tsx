@@ -26,6 +26,10 @@ function isRowActivation(event: KeyboardEvent<HTMLTableRowElement>): boolean {
 }
 
 function paymentCell(row: OrderListItem): { label: string; cls: string } | null {
+  if (row.paymentCollectionStatus.toUpperCase() === 'PAYMENT_IN_PROGRESS') {
+    return { label: 'Payment pending', cls: 'bg-amber-100 text-amber-700' };
+  }
+
   const raw = row.raw as Record<string, unknown>;
   const due = raw.amountDue != null ? parseFloat(raw.amountDue as string) : null;
   if (due != null && due > 0) {

@@ -211,6 +211,7 @@ function ModalContent({ orderId }: { orderId: string }): ReactElement {
   const declaredValue = formatMoney(order.declaredValue);
   const view = toView(order);
   const amountDue = view.amountDue;
+  const isPaymentPending = view.paymentCollectionStatus.toUpperCase() === 'PAYMENT_IN_PROGRESS';
 
   return (
     <div className="space-y-5 p-6">
@@ -253,7 +254,20 @@ function ModalContent({ orderId }: { orderId: string }): ReactElement {
         canEdit={order.customerDeclaredParcelsEditable === true}
       />
 
-      {amountDue != null && amountDue > 0 ? (
+      {isPaymentPending ? (
+        <section className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600">
+            <Clock3 className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Payment status</p>
+            <p className="mt-0.5 text-sm font-semibold text-amber-900">Payment pending</p>
+            <p className="mt-1 text-sm text-amber-800">
+              We received your payment receipt and are reviewing it. You do not need to pay again.
+            </p>
+          </div>
+        </section>
+      ) : amountDue != null && amountDue > 0 ? (
         <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Balance due</p>

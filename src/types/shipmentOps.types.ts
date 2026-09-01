@@ -237,6 +237,13 @@ export interface BatchRosterOrder {
   weightKg: string | null;
   shipmentType: 'air' | 'ocean' | 'd2d' | null;
   shipmentTypeLabel: string;
+  /** Warehouse-set shipping charge; never substitute the declared item value. */
+  finalChargeUsd: string | null;
+  /** Successful payments converted to USD by the backend's locked payment rate. */
+  totalPaidUsd: string | null;
+  /** Null when fully paid or when warehouse pricing has not happened yet. */
+  amountDue: string | null;
+  paymentCollectionStatus: 'UNPAID' | 'PAYMENT_IN_PROGRESS' | 'PAID_IN_FULL';
   declaredValueUsd: string | null;
   createdAt: string;
 }

@@ -27,6 +27,7 @@ export function ShipmentRow({ row, onOpen, onTrack }: ShipmentRowProps): ReactEl
   const raw = row.raw as Record<string, unknown>;
   const rawAmountDue = raw.amountDue != null ? parseFloat(raw.amountDue as string) : null;
   const due = rawAmountDue != null && rawAmountDue > 0 ? rawAmountDue : null;
+  const isPaymentPending = row.paymentCollectionStatus.toUpperCase() === 'PAYMENT_IN_PROGRESS';
   // amountDue is also null once fully paid, not just "never priced yet" —
   // check finalChargeUsd to tell those two apart and show "Paid" instead of
   // nothing at all.
@@ -83,7 +84,11 @@ export function ShipmentRow({ row, onOpen, onTrack }: ShipmentRowProps): ReactEl
             </>
           )}
         </div>
-        {due != null ? (
+        {isPaymentPending ? (
+          <span className="mt-1.5 inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+            Payment pending
+          </span>
+        ) : due != null ? (
           <span className="mt-1.5 inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
             ${due.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} due
           </span>

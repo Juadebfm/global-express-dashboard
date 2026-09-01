@@ -53,6 +53,13 @@ export function useUploadPaymentReceipt(): {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
+      // Receipt submission changes the order's collection status to
+      // PAYMENT_IN_PROGRESS. Refresh every order-backed customer surface now
+      // instead of leaving a "Balance due" CTA on screen until the cache ages.
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
+      queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 
@@ -83,6 +90,10 @@ export function useVerifyPaymentReceipt(): {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
+      queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 

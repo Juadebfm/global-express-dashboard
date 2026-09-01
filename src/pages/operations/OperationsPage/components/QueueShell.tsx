@@ -108,19 +108,19 @@ export function QueueShell({
           desktop and naturally spans full width on mobile where the panel
           already is the full viewport. */}
       <div className="sticky bottom-0 z-20 mt-4 border-t border-gray-200 bg-white px-4 py-3">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
           {hint && (
             <p className="min-w-0 flex-1 truncate text-sm text-gray-500">
               {hint}
             </p>
           )}
-          <div className={cn('flex shrink-0 items-center gap-2', !hint && 'ml-auto')}>
+          <div className={cn('flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center', !hint && 'sm:ml-auto')}>
             {secondaryLabel && onSecondary && (
               <button
                 type="button"
                 onClick={onSecondary}
                 disabled={secondaryDisabled || isPending}
-                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 {secondaryLabel}
               </button>
@@ -129,7 +129,7 @@ export function QueueShell({
               type="button"
               onClick={onPrimary}
               disabled={primaryDisabled || isPending}
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
             >
               {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {primaryLabel}

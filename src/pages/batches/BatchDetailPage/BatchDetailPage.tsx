@@ -45,7 +45,7 @@ import { Button, Card } from '@/components/ui';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useFeedbackStore } from '@/store';
 import { ROUTES } from '@/constants';
-import { cn } from '@/utils';
+import { cn, formatDate } from '@/utils';
 import { BatchMovementPanel } from './components/BatchMovementPanel';
 import { BatchCarrierPanel } from './components/BatchCarrierPanel';
 import { BatchLoadError } from './components/BatchLoadError';
@@ -56,6 +56,12 @@ import type {
   BatchMovementAction,
   DispatchBatchCarrierInfoPayload,
 } from '@/types';
+import {
+  paidAmountLabel,
+  paymentStatusDisplay,
+  usdLabel,
+  verifiedWeightLabel,
+} from './utils/rosterDisplay';
 
 function ShipmentTypeBadge({ type, label }: { type: string; label: string }): ReactElement {
   if (type === 'd2d') {
@@ -74,7 +80,40 @@ function ShipmentTypeBadge({ type, label }: { type: string; label: string }): Re
   );
 }
 
-function CustomerRow({
+function OrderStatusBadge({ order }: { order: BatchRosterOrder }): ReactElement {
+  const isVerified = order.isWarehouseVerifiedAndPriced;
+  const hasMovementStatus = Boolean(
+    order.statusLabel && order.status !== 'WAREHOUSE_VERIFIED_PRICED',
+  );
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className={cn(
+        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+        isVerified ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700',
+      )}>
+        <span className={cn('h-1.5 w-1.5 rounded-full', isVerified ? 'bg-emerald-500' : 'bg-amber-500')} />
+        {isVerified ? 'Verified & priced' : 'Pending verification'}
+      </span>
+      {hasMovementStatus && (
+        <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+          {order.statusLabel}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function PaymentStatusBadge({ status }: { status: BatchRosterOrder['paymentCollectionStatus'] }): ReactElement {
+  const payment = paymentStatusDisplay(status);
+  return (
+    <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium', payment.className)}>
+      {payment.label}
+    </span>
+  );
+}
+
+function DesktopRosterOrderRow({
   customer,
   batchOpen,
   canManage,
@@ -87,140 +126,46 @@ function CustomerRow({
   onRemoveOrder: (orderId: string, customerName: string) => void;
   removingOrderId: string | null;
 }): ReactElement {
-  const [expanded, setExpanded] = useState(false);
+  const orders = customer.orders;
 
   return (
     <>
-      {/* Summary row */}
-      <tr
-        onClick={() => setExpanded((v) => !v)}
-        className="cursor-pointer hover:bg-gray-50 transition-colors"
-      >
-        {/* Customer name + mark */}
-        <td className="px-4 py-4">
-          <div className="flex items-start gap-2 min-w-0">
-            {expanded
-              ? <ChevronDown className="h-4 w-4 mt-0.5 shrink-0 text-gray-400" />
-              : <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 text-gray-400" />
-            }
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium text-gray-900">{customer.customerName}</span>
-                {!customer.allVerified && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                    <AlertTriangle className="h-3 w-3" />
-                    Unverified orders
-                  </span>
-                )}
-              </div>
-              <p className="mt-0.5 max-w-[180px] truncate font-mono text-xs text-gray-400" title={customer.shippingMark ?? undefined}>Mark: {customer.shippingMark}</p>
-            </div>
-          </div>
-        </td>
-
-        {/* Tracking number */}
-        <td className="px-4 py-4 text-left">
-          <p className="font-mono text-sm font-semibold text-gray-800">{customer.batchTrackingNumber}</p>
-          <p className="text-xs text-gray-400">customer tracking no.</p>
-        </td>
-
-        {/* Orders */}
-        <td className="px-4 py-4 text-right">
-          <span className="text-sm text-gray-700">{customer.orderCount} orders</span>
-        </td>
-
-        {/* Weight */}
-        <td className="px-4 py-4 text-right">
-          <span className="text-sm text-gray-700">{customer.totalWeightKg} kg</span>
-        </td>
-
-        {/* Actions placeholder */}
-        <td className="px-4 py-4" />
-      </tr>
-
-      {/* Expanded order rows */}
-      {expanded && customer.orders.map((order: BatchRosterOrder) => {
-        const isVerified = order.isWarehouseVerifiedAndPriced;
-        const hasMovementStatus = Boolean(
-          order.statusLabel && order.status !== 'WAREHOUSE_VERIFIED_PRICED',
-        );
-        return (
-          <tr key={order.id} className="bg-gray-50/60">
-            {/* Tracking + description — indented */}
-            <td className="py-3 pl-12 pr-4" colSpan={2}>
-              <div className="flex items-center gap-3 min-w-0">
-                <Link
-                  to={`${ROUTES.ORDERS}?select=${order.id}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="font-mono text-sm font-semibold text-brand-500 shrink-0 hover:text-brand-600"
-                >
-                  {order.trackingNumber}
-                </Link>
-                {order.description && (
-                  <span className="text-sm text-gray-500 truncate">{order.description}</span>
-                )}
-              </div>
-            </td>
-
-            {/* Badges (mode + status) */}
-            <td className="px-4 py-3 text-right">
-              <div className="flex items-center justify-end gap-2">
-                <ShipmentTypeBadge type={order.shipmentType ?? ''} label={order.shipmentTypeLabel} />
-                {isVerified ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    Verified &amp; priced
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                    Needs verification
-                  </span>
-                )}
-                {hasMovementStatus && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
-                    {order.statusLabel}
-                  </span>
-                )}
-              </div>
-            </td>
-
-            {/* Weight */}
-            <td className="px-4 py-3 text-right">
-              <span className="text-sm text-gray-500">{order.weightKg ?? '—'} kg</span>
-            </td>
-
-            {/* Remove action */}
-            <td className="px-4 py-3 text-right">
-              <div className="flex justify-end gap-2">
-              {!isVerified && (
-                <Link
-                  to={`${ROUTES.ORDERS}?select=${order.id}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
-                >
-                  Review order
-                </Link>
+      {orders.map((order) => (
+        <tr key={order.id} className="border-t border-gray-100 bg-white align-top transition-colors hover:bg-gray-50">
+          <td className="min-w-44 px-4 py-3">
+            <p className="font-medium text-gray-900">{customer.customerName}</p>
+            <p className="mt-0.5 font-mono text-xs text-gray-400">{customer.shippingMark || 'No shipping mark'}</p>
+          </td>
+          <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-gray-600">{customer.batchTrackingNumber}</td>
+          <td className="min-w-64 px-4 py-3">
+            <Link to={`${ROUTES.ORDERS}?select=${order.id}`} className="font-mono text-sm font-semibold text-brand-500 hover:text-brand-600">
+              {order.trackingNumber}
+            </Link>
+            <p className="mt-1 max-w-64 truncate text-xs text-gray-500">{order.description || 'No goods description'}</p>
+          </td>
+          <td className="whitespace-nowrap px-4 py-3"><ShipmentTypeBadge type={order.shipmentType ?? ''} label={order.shipmentTypeLabel} /></td>
+          <td className="min-w-44 px-4 py-3"><OrderStatusBadge order={order} /></td>
+          <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{verifiedWeightLabel(order.weightKg)}</td>
+          <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-800">{usdLabel(order.finalChargeUsd)}</td>
+          <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{paidAmountLabel(order.totalPaidUsd)}</td>
+          <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{usdLabel(order.amountDue)}</td>
+          <td className="whitespace-nowrap px-4 py-3"><PaymentStatusBadge status={order.paymentCollectionStatus} /></td>
+          <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500">{formatDate(order.createdAt, { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+          <td className="whitespace-nowrap px-4 py-3 text-right">
+            <div className="flex justify-end gap-2">
+              {!order.isWarehouseVerifiedAndPriced && (
+                <Link to={`${ROUTES.ORDERS}?select=${order.id}`} className="inline-flex items-center rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100">Review</Link>
               )}
               {canManage && batchOpen && (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onRemoveOrder(order.id, customer.customerName); }}
-                  disabled={removingOrderId === order.id}
-                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
-                >
-                  {removingOrderId === order.id
-                    ? <Loader2 className="h-3 w-3 animate-spin" />
-                    : <X className="h-3 w-3" />
-                  }
+                <button type="button" onClick={() => onRemoveOrder(order.id, customer.customerName)} disabled={removingOrderId === order.id} className="inline-flex items-center gap-1 rounded-xl border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50">
+                  {removingOrderId === order.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
                   Remove
                 </button>
               )}
-              </div>
-            </td>
-          </tr>
-        );
-      })}
+            </div>
+          </td>
+        </tr>
+      ))}
     </>
   );
 }
@@ -277,9 +222,6 @@ function MobileCustomerCard({
         <div className="mt-3 space-y-2">
           {customer.orders.map((order: BatchRosterOrder) => {
             const isVerified = order.isWarehouseVerifiedAndPriced;
-            const hasMovementStatus = Boolean(
-              order.statusLabel && order.status !== 'WAREHOUSE_VERIFIED_PRICED',
-            );
             return (
               <div key={order.id} className="rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-2.5">
                 <div className="flex items-center justify-between gap-2">
@@ -289,24 +231,21 @@ function MobileCustomerCard({
                   >
                     {order.trackingNumber}
                   </Link>
-                  {isVerified ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      Verified &amp; priced
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                      Needs verification
-                    </span>
-                  )}
+                  <OrderStatusBadge order={order} />
                 </div>
-                {hasMovementStatus && <p className="mt-1 text-xs text-gray-500">{order.statusLabel}</p>}
                 {order.description && (
                   <p className="mt-0.5 text-xs text-gray-500 truncate">{order.description}</p>
                 )}
-                <div className="mt-1 flex items-center justify-between">
-                  <span className="text-xs text-gray-500">{order.weightKg ?? '—'} kg</span>
+                <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-gray-200 pt-2 text-xs">
+                  <div><p className="text-gray-400">Verified weight</p><p className="mt-0.5 text-gray-700">{verifiedWeightLabel(order.weightKg)}</p></div>
+                  <div><p className="text-gray-400">Shipping charge</p><p className="mt-0.5 text-gray-700">{usdLabel(order.finalChargeUsd)}</p></div>
+                  <div><p className="text-gray-400">Paid</p><p className="mt-0.5 text-gray-700">{paidAmountLabel(order.totalPaidUsd)}</p></div>
+                  {order.amountDue !== null && (
+                    <div><p className="text-gray-400">Balance</p><p className="mt-0.5 text-gray-700">{usdLabel(order.amountDue)}</p></div>
+                  )}
+                  <div><p className="text-gray-400">Payment</p><div className="mt-0.5"><PaymentStatusBadge status={order.paymentCollectionStatus} /></div></div>
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-2">
                   {!isVerified && (
                     <Link
                       to={`${ROUTES.ORDERS}?select=${order.id}`}
@@ -907,7 +846,7 @@ export function BatchDetailPage(): ReactElement {
               {/* Roster header */}
               <div className="flex items-center justify-between px-5 py-4">
                 <h2 className="font-semibold text-gray-900">Roster</h2>
-                <span className="text-sm text-gray-400">{customers.length} customers</span>
+                <span className="text-sm text-gray-400">{summary.totalOrders} shipments · {customers.length} customers</span>
               </div>
 
               {customers.length === 0 ? (
@@ -932,32 +871,39 @@ export function BatchDetailPage(): ReactElement {
                       />
                     ))}
                   </div>
-                  {/* Desktop: existing table */}
-                  <table className="w-full text-sm border-t border-gray-100 hidden md:table">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
-                          <span className="pl-6">Customer</span>
-                        </th>
-                        <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Customer Tracking No.</th>
-                        <th className="px-4 pb-3 pt-2.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Orders</th>
-                        <th className="px-4 pb-3 pt-2.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Weight</th>
-                        <th className="px-4 pb-3 pt-2.5" />
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {customers.map((customer) => (
-                        <CustomerRow
-                          key={customer.slotId}
-                          customer={customer}
-                          batchOpen={isOpen}
-                          canManage={canManage}
-                          onRemoveOrder={(orderId) => void handleRemoveOrder(orderId, customer.customerName)}
-                          removingOrderId={removingOrderId}
-                        />
-                      ))}
-                    </tbody>
-                  </table>
+                  {/* Desktop: one shipment per row so operational and payment facts are visible together. */}
+                  <div className="hidden overflow-x-auto border-t border-gray-100 md:block">
+                    <table className="min-w-[1680px] w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Customer</th>
+                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Customer tracking</th>
+                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Shipment</th>
+                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Mode</th>
+                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Shipment status</th>
+                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Verified weight</th>
+                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Shipping charge</th>
+                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Paid</th>
+                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Balance</th>
+                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Payment</th>
+                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Booked</th>
+                          <th className="px-4 pb-3 pt-2.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {customers.map((customer) => (
+                          <DesktopRosterOrderRow
+                            key={customer.slotId}
+                            customer={customer}
+                            batchOpen={isOpen}
+                            canManage={canManage}
+                            onRemoveOrder={(orderId) => void handleRemoveOrder(orderId, customer.customerName)}
+                            removingOrderId={removingOrderId}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </>
               )}
             </div>

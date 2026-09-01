@@ -164,3 +164,25 @@ describe('useWebSocket batch movement', () => {
     });
   });
 });
+
+describe('useWebSocket order updates', () => {
+  it('refreshes payment-backed shipment views when the backend updates an order', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidate = vi.spyOn(client, 'invalidateQueries');
+
+    renderHook(() => useWebSocket(), { wrapper: wrapperFor(client) });
+
+    await waitFor(() => expect(MockWebSocket.instances).toHaveLength(1));
+    const socket = MockWebSocket.instances[0];
+
+    await act(async () => {
+      await socket.onmessage?.({
+        data: JSON.stringify({ type: 'order_status_updated', data: { orderId: 'order-1' } }),
+      } as MessageEvent);
+    });
+
+    for (const queryKey of [['orders'], ['order'], ['shipments'], ['dashboard']]) {
+      expect(invalidate).toHaveBeenCalledWith({ queryKey });
+    }
+  });
+});
