@@ -142,7 +142,7 @@ function extractOrderRows(payload: unknown): AnyRecord[] {
 function mapOrderRow(row: AnyRecord, index: number): OrderListItem {
   const id = firstString(row, ['id', '_id', 'orderId']) ?? `order-${index + 1}`;
   const trackingNumber =
-    firstString(row, ['trackingNumber', 'trackingNo', 'reference', 'code']) ?? id;
+    firstString(row, ['trackingNumber', 'trackingNo', 'reference', 'code']) ?? '';
 
   const statusV2 = firstString(row, ['statusV2', 'status_v2']) ?? '';
   const statusLabel = firstString(row, ['statusLabel', 'status_label']) ?? '';

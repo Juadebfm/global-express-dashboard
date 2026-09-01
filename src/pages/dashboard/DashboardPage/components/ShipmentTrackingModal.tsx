@@ -35,8 +35,22 @@ function ModalContent({ orderId }: { orderId: string }): ReactElement {
   return (
     <div className="space-y-5 p-6">
       <section className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Tracking number</p>
-        <p className="mt-1 font-mono text-sm font-semibold text-gray-900">{data.trackingNumber}</p>
+        {data.trackingNumber ? (
+          <>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Tracking number</p>
+            <p className="mt-1 font-mono text-sm font-semibold text-gray-900">{data.trackingNumber}</p>
+          </>
+        ) : (
+          <>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Current step</p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {data.currentStatusLabel || data.currentStatus || 'Processing'}
+            </p>
+            <p className="mt-2 text-sm text-gray-500">
+              Awaiting receipt of your goods at our warehouse. A tracking number will be available after warehouse verification.
+            </p>
+          </>
+        )}
       </section>
       <ShipmentTimeline timeline={data.timeline} currentStatus={data.currentStatus} />
     </div>

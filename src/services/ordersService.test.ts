@@ -18,6 +18,34 @@ describe('getOrders pagination limits', () => {
   });
 });
 
+describe('getOrders tracking numbers', () => {
+  it('does not expose an internal order ID when tracking has not been assigned', async () => {
+    const internalOrderId = 'cefd2ff8-497e-4cf9-86bd-7d306a5b36f5';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              success: true,
+              data: {
+                data: [{ id: internalOrderId, trackingNumber: null }],
+                pagination: { total: 1, page: 1, limit: 20, totalPages: 1 },
+              },
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          ),
+        ),
+      ),
+    );
+
+    const result = await getOrders('token');
+
+    expect(result.data[0]?.trackingNumber).toBe('');
+    expect(result.data[0]?.trackingNumber).not.toBe(internalOrderId);
+  });
+});
+
 describe('getOrderTimeline', () => {
   it('keeps the verified goods and warehouse fields returned by the backend', async () => {
     vi.stubGlobal(

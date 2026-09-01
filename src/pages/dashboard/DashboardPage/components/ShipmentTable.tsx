@@ -90,7 +90,11 @@ export function ShipmentTable({ orders, onOpen, onTrack }: ShipmentTableProps): 
                 </td>
                 <td className="whitespace-nowrap border-r border-gray-100 px-5 py-4">
                   <span className={cn('text-xs', internal ? 'italic text-gray-400' : 'font-mono text-gray-700')}>
-                    {internal ? formatTrackingDisplay(row.trackingNumber) : row.trackingNumber}
+                    {row.trackingNumber
+                      ? internal
+                        ? formatTrackingDisplay(row.trackingNumber)
+                        : row.trackingNumber
+                      : '—'}
                   </span>
                 </td>
                 <td className="whitespace-nowrap border-r border-gray-100 px-5 py-4">
