@@ -25,25 +25,34 @@ function isRowActivation(event: KeyboardEvent<HTMLTableRowElement>): boolean {
   return event.key === 'Enter' || event.key === ' ';
 }
 
-function paymentCell(row: OrderListItem): { label: string; cls: string } | null {
+function paymentCell(row: OrderListItem): { lines: string[]; cls: string } | null {
   if (row.paymentCollectionStatus.toUpperCase() === 'PAYMENT_IN_PROGRESS') {
-    return { label: 'Payment pending', cls: 'bg-amber-100 text-amber-700' };
+    return { lines: ['Payment pending'], cls: 'bg-amber-100 text-amber-700' };
   }
 
   const raw = row.raw as Record<string, unknown>;
   const due = raw.amountDue != null ? parseFloat(raw.amountDue as string) : null;
-  if (due != null && due > 0) {
+  const finalCharge = raw.finalChargeUsd != null ? parseFloat(raw.finalChargeUsd as string) : null;
+  if (due != null && due > 0 && finalCharge != null) {
     return {
-      label: `$${due.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} due`,
+      lines: [
+        `Final charge $${finalCharge.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        `Amount due $${due.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      ],
       cls: 'bg-amber-100 text-amber-700',
     };
   }
   // amountDue is null once fully paid (not just "unset") — but that's the
   // same signal as "never priced yet", so also check finalChargeUsd to tell
   // the two apart and show "Paid" instead of a blank-looking dash.
-  const finalCharge = raw.finalChargeUsd != null ? parseFloat(raw.finalChargeUsd as string) : null;
   if (finalCharge != null && finalCharge > 0) {
-    return { label: 'Paid', cls: 'bg-emerald-100 text-emerald-700' };
+    return {
+      lines: [
+        `Final charge $${finalCharge.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        'Amount due Paid in full',
+      ],
+      cls: 'bg-emerald-100 text-emerald-700',
+    };
   }
   return null;
 }
@@ -124,8 +133,8 @@ export function ShipmentTable({ orders, onOpen, onTrack }: ShipmentTableProps): 
                 </td>
                 <td className="whitespace-nowrap border-r border-gray-100 px-5 py-4">
                   {payment ? (
-                    <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold', payment.cls)}>
-                      {payment.label}
+                    <span className={cn('inline-flex flex-col items-start rounded-xl px-2.5 py-1 text-xs font-semibold', payment.cls)}>
+                      {payment.lines.map((line) => <span key={line}>{line}</span>)}
                     </span>
                   ) : (
                     <span className="text-xs text-gray-300">—</span>

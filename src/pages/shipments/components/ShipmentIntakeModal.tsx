@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, Plus, Search, Trash2, UserPlus, X } from 'lucide-react';
@@ -370,7 +370,6 @@ export function ShipmentIntakeModal({
     register,
     control,
     handleSubmit,
-    watch,
     setValue,
     formState: { errors },
   } = useForm<ShipmentIntakeFormData>({
@@ -386,8 +385,9 @@ export function ShipmentIntakeModal({
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'goods' });
-  const serviceType = watch('serviceType');
-  const shipmentPayer = watch('shipmentPayer');
+  const serviceType = useWatch({ control, name: 'serviceType' });
+  const shipmentPayer = useWatch({ control, name: 'shipmentPayer' });
+  const billingSupplierId = useWatch({ control, name: 'billingSupplierId' });
   const isD2D = serviceType === 'd2d';
   const { items: itemTypeOptions } = useItemTypes();
 
@@ -395,8 +395,8 @@ export function ShipmentIntakeModal({
   const [customerNotFound, setCustomerNotFound] = useState(false);
   const [searchedMark, setSearchedMark] = useState('');
   const [dormantPending, setDormantPending] = useState(false);
-  // Retain the intake payload so we can replay it after dormant creation
-  const pendingPayloadRef = useRef<ShipmentIntakePayload | null>(null);
+  // Retain the intake payload so we can replay it after dormant creation.
+  const [pendingPayload, setPendingPayload] = useState<ShipmentIntakePayload | null>(null);
 
   const buildPayload = (values: ShipmentIntakeFormData): ShipmentIntakePayload => {
     const mode: 'air' | 'sea' =
@@ -430,7 +430,7 @@ export function ShipmentIntakeModal({
       const newClient = await createDormantClient(token, dormantPayload);
 
       // Re-submit intake with the new customerId
-      const intakePayload = pendingPayloadRef.current;
+      const intakePayload = pendingPayload;
       if (!intakePayload) throw new Error('Intake payload lost');
       try {
         await onSubmit({ ...intakePayload, customerId: newClient.id });
@@ -448,25 +448,27 @@ export function ShipmentIntakeModal({
     }
   };
 
+  const handleIntakeSubmit = async (values: ShipmentIntakeFormData): Promise<void> => {
+    const payload = buildPayload(values);
+    try {
+      await onSubmit(payload);
+    } catch (err) {
+      // 404 = shipping mark not found — expand inline dormant form.
+      if (err instanceof ApiError && err.status === 404) {
+        setPendingPayload(payload);
+        setSearchedMark(values.shippingMark.trim().toLowerCase());
+        setCustomerNotFound(true);
+        return;
+      }
+      // All other errors propagate normally (parent already shows toast).
+      throw err;
+    }
+  };
+
   return (
     <ModalShell title="Record warehouse intake" onClose={onClose}>
       <form
-        onSubmit={handleSubmit(async (values) => {
-          const payload = buildPayload(values);
-          try {
-            await onSubmit(payload);
-          } catch (err) {
-            // 404 = shipping mark not found — expand inline dormant form
-            if (err instanceof ApiError && err.status === 404) {
-              pendingPayloadRef.current = payload;
-              setSearchedMark(values.shippingMark.trim().toLowerCase());
-              setCustomerNotFound(true);
-              return;
-            }
-            // All other errors propagate normally (parent already shows toast)
-            throw err;
-          }
-        })}
+        onSubmit={handleSubmit(handleIntakeSubmit)}
         className="space-y-4"
       >
         <p className="text-sm text-gray-500">
@@ -546,7 +548,7 @@ export function ShipmentIntakeModal({
                 Select supplier
               </label>
               <SupplierCombobox
-                value={watch('billingSupplierId') ?? ''}
+                value={billingSupplierId ?? ''}
                 onChange={(id) => setValue('billingSupplierId', id, { shouldValidate: true })}
                 error={errors.billingSupplierId?.message}
               />
@@ -702,7 +704,7 @@ export function ShipmentIntakeModal({
             onCancel={() => {
               setCustomerNotFound(false);
               setSearchedMark('');
-              pendingPayloadRef.current = null;
+              setPendingPayload(null);
             }}
           />
         )}

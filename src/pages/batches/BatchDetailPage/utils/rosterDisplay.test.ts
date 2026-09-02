@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  amountDueLabel,
   paidAmountLabel,
   paymentStatusDisplay,
   usdLabel,
@@ -15,6 +16,12 @@ describe('batch roster display values', () => {
   it('uses the final shipping charge and never displays a missing paid value as zero', () => {
     expect(usdLabel('3208.50')).toBe('$3,208.50');
     expect(paidAmountLabel(null)).toBe('Needs finance review');
+  });
+
+  it('labels a priced, fully paid order without dropping the amount-due state', () => {
+    expect(amountDueLabel('3208.50', null)).toBe('Paid in full');
+    expect(amountDueLabel('3208.50', '75.00')).toBe('$75.00');
+    expect(amountDueLabel(null, null)).toBe('—');
   });
 
   it('renders the backend payment state as display-only status text', () => {

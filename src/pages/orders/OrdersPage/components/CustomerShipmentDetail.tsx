@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import { Button, PhoneLink } from '@/components/ui';
+import { ChargeBalanceSummary } from '@/components/orders';
 import type { ApiPayment } from '@/types';
 import type { OrderTimelineEvent } from '@/services/ordersService';
 import { cn, formatDate } from '@/utils';
@@ -308,12 +309,6 @@ export function CustomerShipmentDetail({
     : <Plane className="h-3.5 w-3.5" />;
   const transportLabel = view.transportMode === 'sea' ? 'Sea freight' : 'Air freight';
 
-  const amountDisplay = view.amountDue
-    ? `$${view.amountDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-    : view.finalChargeUsd
-      ? `$${view.finalChargeUsd.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-      : '—';
-
   const sortedTimeline = [...timeline].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
   );
@@ -413,7 +408,13 @@ export function CustomerShipmentDetail({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-emerald-700">Paid in full</p>
-              <p className="text-xs text-gray-500">{amountDisplay} · confirmed</p>
+              <ChargeBalanceSummary
+                finalChargeUsd={view.finalChargeUsd}
+                amountDue={view.amountDue}
+                compact
+                className="mt-1"
+                valueClassName="text-emerald-700"
+              />
             </div>
             <Button size="sm" variant="secondary">Receipt</Button>
           </div>
@@ -428,10 +429,14 @@ export function CustomerShipmentDetail({
               <p className="text-xs text-gray-500">
                 {view.paymentNote ?? "We're verifying your payment. You'll get a confirmation shortly."}
               </p>
+              <ChargeBalanceSummary
+                finalChargeUsd={view.finalChargeUsd}
+                amountDue={view.amountDue}
+                compact
+                className="mt-1"
+                valueClassName="text-amber-700"
+              />
             </div>
-            {amountDisplay !== '—' && (
-              <span className="shrink-0 text-sm font-bold text-amber-600">{amountDisplay}</span>
-            )}
           </div>
         ) : paymentState === 'due' ? (
           /* Confirmed amount — show exact balance */
@@ -440,8 +445,16 @@ export function CustomerShipmentDetail({
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100">
                 <span className="text-base">🧾</span>
               </div>
-              <p className="flex-1 text-sm font-bold text-gray-900">Balance due</p>
-              <span className="shrink-0 text-base font-bold text-brand-500">{amountDisplay}</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-gray-900">Balance due</p>
+                <ChargeBalanceSummary
+                  finalChargeUsd={view.finalChargeUsd}
+                  amountDue={view.amountDue}
+                  compact
+                  className="mt-1"
+                  valueClassName="text-brand-600"
+                />
+              </div>
             </div>
             <div className="flex items-center justify-between gap-3 pl-12">
               <p className="text-xs text-gray-400">

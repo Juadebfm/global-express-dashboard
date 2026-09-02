@@ -77,6 +77,7 @@ export default function GalleryPage(): ReactElement {
     if (!matchedItem) return;
 
     if (intent === 'claim') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- URL intent is an external navigation state that opens this modal.
       setClaimTarget(matchedItem);
     } else if (intent === 'shop-inquiry') {
       setInquiryTarget(matchedItem);

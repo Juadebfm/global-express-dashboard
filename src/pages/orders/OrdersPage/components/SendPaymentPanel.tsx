@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { Send } from 'lucide-react';
 import { Button } from '@/components/ui';
-import { formatCurrency } from '@/utils';
+import { ChargeBalanceSummary } from '@/components/orders';
 import type { OrderView } from '../types';
 
 interface SendPaymentPanelProps {
@@ -45,17 +45,12 @@ export function SendPaymentPanel({ view, isPending, onSend }: SendPaymentPanelPr
             </p>
           )}
           {view.finalChargeUsd !== null && (
-            <p className="mt-2 text-sm font-semibold text-gray-900">
-              Final charge:{' '}
-              <span className="text-brand-600">
-                {formatCurrency(view.finalChargeUsd, 'USD')}
-              </span>
-              {view.amountDue !== null && view.amountDue !== view.finalChargeUsd && (
-                <span className="ml-2 text-xs font-normal text-gray-400">
-                  · {formatCurrency(view.amountDue, 'USD')} outstanding
-                </span>
-              )}
-            </p>
+            <ChargeBalanceSummary
+              finalChargeUsd={view.finalChargeUsd}
+              amountDue={view.amountDue}
+              className="mt-2"
+              valueClassName="text-brand-600"
+            />
           )}
         </div>
         <Button

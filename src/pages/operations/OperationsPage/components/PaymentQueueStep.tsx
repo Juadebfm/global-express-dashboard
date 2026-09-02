@@ -9,13 +9,13 @@ import {
   useCapability,
 } from '@/hooks';
 import { cn } from '@/utils';
-import { formatCurrency } from '@/utils';
 import type { ApiPayment } from '@/types';
 import type { OrderView } from '@/pages/shared/orderStatus';
 import { QueueShell } from './QueueShell';
 import { OrderSummaryCard } from './OrderSummaryCard';
 import { ReceiptApprovalPanel } from './ReceiptApprovalPanel';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { ChargeBalanceSummary } from '@/components/orders';
 
 interface PaymentQueueStepProps {
   view: OrderView;
@@ -174,7 +174,6 @@ function CashForm({ view, onSuccess }: CashFormProps): ReactElement {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const recordPayment = useRecordOfflinePayment();
 
-  const amountDue = view.amountDue ?? view.finalChargeUsd ?? 0;
   const parsed = parseFloat(amount);
   const canSubmit = amount.trim() !== '' && !isNaN(parsed) && parsed > 0;
 
@@ -201,12 +200,9 @@ function CashForm({ view, onSuccess }: CashFormProps): ReactElement {
         <span className="text-sm font-semibold text-gray-900">Record cash payment</span>
       </div>
       <div className="space-y-4 px-5 py-5">
-        {amountDue > 0 && (
+        {view.finalChargeUsd != null && (
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Amount due</p>
-            <p className="mt-0.5 text-2xl font-bold text-gray-900">
-              {formatCurrency(amountDue, 'USD')}
-            </p>
+            <ChargeBalanceSummary finalChargeUsd={view.finalChargeUsd} amountDue={view.amountDue} />
           </div>
         )}
 
@@ -319,8 +315,6 @@ export function PaymentQueueStep({
   const pendingReceipts = (paymentsQuery.data ?? []).filter((p) => p.status === 'pending');
   const approvedReceipts = (paymentsQuery.data ?? []).filter((p) => p.status === 'successful');
 
-  const amountDue = view.amountDue ?? view.finalChargeUsd ?? 0;
-
   const hasPending = pendingReceipts.length > 0;
 
   if (paymentsQuery.isLoading) {
@@ -352,11 +346,14 @@ export function PaymentQueueStep({
           <OrderSummaryCard view={view} />
 
           {/* Running total */}
-          {amountDue > 0 && (
+          {view.finalChargeUsd != null && (
             <div className="rounded-2xl border border-gray-200 bg-white px-5 py-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Total due</p>
-                <p className="mt-0.5 text-2xl font-bold text-gray-900">{formatCurrency(amountDue, 'USD')}</p>
+                <ChargeBalanceSummary
+                  finalChargeUsd={view.finalChargeUsd}
+                  amountDue={view.amountDue}
+                  valueClassName="text-gray-900 text-2xl"
+                />
                 {approvedReceipts.length > 0 && (
                   <p className="mt-1 text-sm font-medium text-emerald-600">
                     {approvedReceipts.length} receipt{approvedReceipts.length !== 1 ? 's' : ''} approved
@@ -409,10 +406,13 @@ export function PaymentQueueStep({
         <OrderSummaryCard view={view} />
 
         {/* Amount summary */}
-        {amountDue > 0 && (
+        {view.finalChargeUsd != null && (
           <div className="rounded-2xl border border-gray-200 bg-white px-5 py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Amount due</p>
-            <p className="mt-0.5 text-2xl font-bold text-gray-900">{formatCurrency(amountDue, 'USD')}</p>
+            <ChargeBalanceSummary
+              finalChargeUsd={view.finalChargeUsd}
+              amountDue={view.amountDue}
+              valueClassName="text-gray-900 text-2xl"
+            />
             {approvedReceipts.length > 0 && (
               <p className="mt-1 text-sm text-emerald-600 font-medium">
                 {approvedReceipts.length} receipt{approvedReceipts.length !== 1 ? 's' : ''} approved

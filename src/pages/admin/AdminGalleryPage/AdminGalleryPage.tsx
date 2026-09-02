@@ -1,5 +1,5 @@
 import { useEffect, useRef, useMemo, useState, type ReactElement, type ReactNode } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   CheckCircle2,
@@ -235,8 +235,8 @@ function CreateItemModal({ onClose }: CreateItemModalProps): ReactElement {
 
   const {
     register,
+    control,
     handleSubmit,
-    watch,
     setValue,
     formState: { errors },
   } = useForm<GalleryItemFormData>({
@@ -255,7 +255,8 @@ function CreateItemModal({ onClose }: CreateItemModalProps): ReactElement {
     },
   });
 
-  const itemType = watch('itemType');
+  const itemType = useWatch({ control, name: 'itemType' });
+  const previewImageUrl = useWatch({ control, name: 'previewImageUrl' });
 
   const isPending = createItem.isPending || createAdvert.isPending || uploading;
 
@@ -369,10 +370,10 @@ function CreateItemModal({ onClose }: CreateItemModalProps): ReactElement {
                 }}
               />
             </label>
-            {(previewUrl || watch('previewImageUrl')) && (
+            {(previewUrl || previewImageUrl) && (
               <div className="relative mt-3 h-40 w-40 overflow-hidden rounded-xl border border-gray-200 bg-white">
                 <img
-                  src={previewUrl || watch('previewImageUrl')}
+                  src={previewUrl || previewImageUrl}
                   alt="Preview"
                   className="h-full w-full object-cover"
                 />

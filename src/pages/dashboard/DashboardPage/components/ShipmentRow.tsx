@@ -88,13 +88,15 @@ export function ShipmentRow({ row, onOpen, onTrack }: ShipmentRowProps): ReactEl
           <span className="mt-1.5 inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
             Payment pending
           </span>
-        ) : due != null ? (
-          <span className="mt-1.5 inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
-            ${due.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} due
+        ) : due != null && rawFinalCharge != null ? (
+          <span className="mt-1.5 inline-flex flex-col items-start rounded-xl bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">
+            <span>Final charge ${rawFinalCharge.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>Amount due ${due.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </span>
         ) : isPaid ? (
-          <span className="mt-1.5 inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-            Paid
+          <span className="mt-1.5 inline-flex flex-col items-start rounded-xl bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+            <span>Final charge ${rawFinalCharge?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>Amount due Paid in full</span>
           </span>
         ) : null}
       </div>

@@ -515,6 +515,7 @@ export function BrowsePane({
             {awaitingOrders.map((order) => {
               const raw = order.raw as Record<string, unknown>;
               const charge = raw.finalChargeUsd != null ? parseFloat(raw.finalChargeUsd as string) : null;
+              const due = raw.amountDue != null ? parseFloat(raw.amountDue as string) : null;
               const sentAt = order.paymentDetailsSentAt;
               const isSea = order.transportMode === 'sea';
               const isD2D = raw.shipmentType === 'd2d';
@@ -528,14 +529,16 @@ export function BrowsePane({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-gray-900">{order.senderName || formatTrackingDisplay(order.trackingNumber)}</p>
                     <p className="text-xs text-gray-400">
-                      {charge != null ? `$${charge.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} due` : 'Charge not set'}
+                      {charge != null
+                        ? `Final charge $${charge.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · Amount due ${due != null && due > 0 ? `$${due.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Paid in full'}`
+                        : 'Charge not set'}
                       {sentAt ? ` · sent ${waitLabel(sentAt)} ago` : ' · details not sent'}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <WhatsAppButton
                       order={order}
-                      amountUsd={charge}
+                      amountUsd={due}
                       bankAccounts={bankAccounts.data}
                       fxRate={fxRate.data?.effectiveRate ?? null}
                     />

@@ -15,7 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { useOrderDetail, useOrderTimeline } from '@/hooks';
-import { CustomerParcelsPanel } from '@/components/orders';
+import { ChargeBalanceSummary, CustomerParcelsPanel } from '@/components/orders';
 import { PhoneLink } from '@/components/ui';
 import { ORIGIN_WAREHOUSE, ROUTES } from '@/constants';
 import { cn, formatDate } from '@/utils';
@@ -272,9 +272,12 @@ function ModalContent({ orderId }: { orderId: string }): ReactElement {
         <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Balance due</p>
-            <p className="mt-0.5 text-xl font-bold text-amber-900">
-              ${amountDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </p>
+            <ChargeBalanceSummary
+              finalChargeUsd={view.finalChargeUsd}
+              amountDue={amountDue}
+              className="mt-1"
+              valueClassName="text-amber-900"
+            />
           </div>
           <button
             type="button"
@@ -292,6 +295,12 @@ function ModalContent({ orderId }: { orderId: string }): ReactElement {
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Payment status</p>
             <p className="mt-0.5 text-sm font-semibold text-emerald-900">Paid in full</p>
+            <ChargeBalanceSummary
+              finalChargeUsd={view.finalChargeUsd}
+              amountDue={view.amountDue}
+              className="mt-2"
+              valueClassName="text-emerald-900"
+            />
           </div>
         </section>
       ) : null}

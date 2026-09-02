@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ApiOrder } from '@/types';
 import { sendPaymentRequest } from '@/services';
 import { useFeedbackStore } from '@/store';
 import { useAuthToken } from './useAuthToken';
+import { ApiError } from '@/lib/apiClient';
+import { getDisplayErrorMessage } from '@/lib/feedback';
 
 export function useSendPaymentRequest() {
   const getToken = useAuthToken();
@@ -16,20 +17,24 @@ export function useSendPaymentRequest() {
       return { orderId, result: await sendPaymentRequest(token, orderId) };
     },
     onSuccess: ({ orderId, result }) => {
-      queryClient.setQueryData<ApiOrder>(['order', orderId], (old) => {
-        if (!old) return old;
-        return { ...old, paymentDetailsSentAt: result.paymentDetailsSentAt };
-      });
+      // The response amount is the backend's remaining balance. Do not
+      // subtract payments or convert currency in the client.
+      void queryClient.invalidateQueries({ queryKey: ['order', orderId] });
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
       pushMessage({
         tone: 'success',
         message: `Payment details sent — $${result.amountUsd} USD (₦${result.amountNgn} NGN)`,
       });
     },
-    onError: () => {
+    onError: (error) => {
+      // A fully paid order can change in another staff member's session. A
+      // refresh removes its stale send-payment action from this screen.
+      if (error instanceof ApiError && error.status === 409) {
+        void queryClient.invalidateQueries({ queryKey: ['orders'] });
+      }
       pushMessage({
         tone: 'error',
-        message: 'Failed to send payment details. Please try again.',
+        message: getDisplayErrorMessage(error, 'Failed to send payment details. Please try again.'),
       });
     },
   });

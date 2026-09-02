@@ -13,13 +13,12 @@ export function PaymentCallbackPage(): ReactElement {
   const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
   const [searchParams] = useSearchParams();
   const reference = searchParams.get('reference');
-  const [status, setStatus] = useState<'verifying' | 'success' | 'failed'>('verifying');
+  const [status, setStatus] = useState<'verifying' | 'success' | 'failed'>(
+    reference ? 'verifying' : 'failed',
+  );
 
   useEffect(() => {
-    if (!reference) {
-      setStatus('failed');
-      return;
-    }
+    if (!reference) return;
 
     const verify = async () => {
       try {

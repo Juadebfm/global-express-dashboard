@@ -12,6 +12,11 @@ export function usdLabel(value: string | null): string {
   return Number.isFinite(numeric) ? formatCurrency(numeric, 'USD') : '—';
 }
 
+export function amountDueLabel(finalChargeUsd: string | null, amountDue: string | null): string {
+  if (finalChargeUsd === null) return '—';
+  return amountDue === null ? 'Paid in full' : usdLabel(amountDue);
+}
+
 export function paidAmountLabel(totalPaidUsd: string | null): string {
   return totalPaidUsd === null ? 'Needs finance review' : usdLabel(totalPaidUsd);
 }

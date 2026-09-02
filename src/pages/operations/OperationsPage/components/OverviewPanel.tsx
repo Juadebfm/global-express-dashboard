@@ -2,6 +2,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { PhoneLink } from '@/components/ui';
+import { ChargeBalanceSummary } from '@/components/orders';
 import { formatDate, formatCurrency } from '@/utils';
 import type { OrderView } from '@/pages/shared/orderStatus';
 import { pricingSourceLabel } from '@/pages/shared/orderStatus';
@@ -185,21 +186,12 @@ export function OverviewPanel({ view, billableWeightKg }: OverviewPanelProps): R
               </div>
             </div>
 
-            {(view.totalPaidUsd != null || view.amountDue != null || view.finalChargeUsd != null) && (
+            {view.finalChargeUsd != null && (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {view.finalChargeUsd != null && (
-                  <Field label="Final charge">
-                    {formatCurrency(view.finalChargeUsd, 'USD')}
-                  </Field>
-                )}
+                <ChargeBalanceSummary finalChargeUsd={view.finalChargeUsd} amountDue={view.amountDue} />
                 {view.totalPaidUsd != null && (
                   <Field label="Total paid">
                     {formatCurrency(view.totalPaidUsd, 'USD')}
-                  </Field>
-                )}
-                {view.amountDue != null && (
-                  <Field label="Balance remaining">
-                    {formatCurrency(view.amountDue, 'USD')}
                   </Field>
                 )}
               </div>

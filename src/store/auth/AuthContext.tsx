@@ -113,7 +113,8 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   }, []);
 
   useEffect(() => {
-    checkAuth();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- this is the initial external session probe and must run immediately at app start.
+    void checkAuth();
   }, [checkAuth]);
 
   // All account-status refresh paths (the pending-approval button, a tab

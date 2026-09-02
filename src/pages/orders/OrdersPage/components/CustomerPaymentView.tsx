@@ -2,6 +2,7 @@ import type { ChangeEvent, FormEvent, ReactElement } from 'react';
 import { useRef, useState } from 'react';
 import { ArrowLeft, Building2, Check, Copy, Loader2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { ChargeBalanceSummary } from '@/components/orders';
 import { useBankAccounts } from '@/hooks';
 import { useUploadPaymentReceipt } from '@/hooks/usePaymentReceipts';
 import type { BankInfo, ReceiptContentType } from '@/types';
@@ -62,11 +63,9 @@ interface BankTabsProps {
   banks: BankInfo[];
   beneficiaryName: string;
   trackingNumber: string;
-  amountDisplay: string;
-  isConfirmed: boolean;
 }
 
-function BankTabs({ banks, beneficiaryName, trackingNumber, amountDisplay, isConfirmed }: BankTabsProps): ReactElement {
+function BankTabs({ banks, beneficiaryName, trackingNumber }: BankTabsProps): ReactElement {
   const [active, setActive] = useState(0);
   const bank = banks[active];
 
@@ -105,12 +104,6 @@ function BankTabs({ banks, beneficiaryName, trackingNumber, amountDisplay, isCon
             />
           ))}
           <CopyRow label="Payment Reference (Important)" value={trackingNumber} />
-          <div className="pt-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-              {isConfirmed ? 'Amount to Send' : 'Estimated Amount'}
-            </p>
-            <p className="mt-0.5 text-xl font-bold text-brand-500">{amountDisplay}</p>
-          </div>
         </div>
       )}
     </div>
@@ -135,7 +128,7 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
   const [transactionRef, setTransactionRef] = useState('');
   const [note, setNote] = useState('');
 
-  const amountOwedUsd = view.amountDue ?? view.finalChargeUsd ?? 0;
+  const amountOwedUsd = view.amountDue ?? 0;
   // Sourced from the public bank-accounts settings response, not
   // GET /settings/fx-rate — that endpoint is staff+-only and customers
   // can't call it. Null means no rate is currently available (not a
@@ -148,13 +141,6 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
     return '';
   })();
   const amount = manualAmount ?? autoAmount;
-
-  const isConfirmed = view.amountDue !== null;
-  const amountDisplay = view.amountDue !== null
-    ? `$${view.amountDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-    : view.finalChargeUsd
-      ? `$${view.finalChargeUsd.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-      : '—';
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const picked = e.target.files?.[0] ?? null;
@@ -223,11 +209,12 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
             Transfer the balance to any of our accounts below, then upload your receipt — we'll confirm within 2 hours.
           </p>
         </div>
-        <div className="sm:text-right shrink-0">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-            {isConfirmed ? 'Balance Due' : 'Estimated Balance'}
-          </p>
-          <p className="text-2xl font-bold text-brand-500">{amountDisplay}</p>
+        <div className="shrink-0 sm:text-right">
+          <ChargeBalanceSummary
+            finalChargeUsd={view.finalChargeUsd}
+            amountDue={view.amountDue}
+            valueClassName="text-brand-600"
+          />
           {view.paymentNote && (
             <p className="mt-0.5 text-xs text-gray-400">{view.paymentNote}</p>
           )}
@@ -252,7 +239,7 @@ export function CustomerPaymentView({ view, onBack }: CustomerPaymentViewProps):
             </div>
           )}
 
-          {bankSettings && <BankTabs banks={bankSettings.banks} beneficiaryName={bankSettings.beneficiaryName} trackingNumber={view.trackingNumber} amountDisplay={amountDisplay} isConfirmed={isConfirmed} />}
+          {bankSettings && <BankTabs banks={bankSettings.banks} beneficiaryName={bankSettings.beneficiaryName} trackingNumber={view.trackingNumber} />}
 
           <div className="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3">
             <span className="mt-0.5 text-amber-500">ⓘ</span>

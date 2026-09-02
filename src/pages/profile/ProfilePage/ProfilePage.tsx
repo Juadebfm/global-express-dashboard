@@ -364,6 +364,7 @@ export function ProfilePage(): ReactElement {
   const extCities = useStateCities(externalForm.addressCountry, externalForm.addressState);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- changing account mode intentionally closes the prior mode's editor.
     setIsEditing(false);
   }, [mode]);
 
@@ -402,6 +403,7 @@ export function ProfilePage(): ReactElement {
     const emailFromClerk =
       clerkUser.emailAddresses[0]?.emailAddress ?? '';
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Clerk is the external source for initially missing profile fields.
     setExternalForm((prev) => ({
       ...prev,
       firstName: prev.firstName || clerkUser.firstName || '',

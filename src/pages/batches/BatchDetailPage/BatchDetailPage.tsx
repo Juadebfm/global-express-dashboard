@@ -58,6 +58,7 @@ import type {
 } from '@/types';
 import {
   paidAmountLabel,
+  amountDueLabel,
   paymentStatusDisplay,
   usdLabel,
   verifiedWeightLabel,
@@ -148,7 +149,7 @@ function DesktopRosterOrderRow({
           <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{verifiedWeightLabel(order.weightKg)}</td>
           <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-800">{usdLabel(order.finalChargeUsd)}</td>
           <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{paidAmountLabel(order.totalPaidUsd)}</td>
-          <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{usdLabel(order.amountDue)}</td>
+          <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{amountDueLabel(order.finalChargeUsd, order.amountDue)}</td>
           <td className="whitespace-nowrap px-4 py-3"><PaymentStatusBadge status={order.paymentCollectionStatus} /></td>
           <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500">{formatDate(order.createdAt, { day: 'numeric', month: 'short', year: 'numeric' })}</td>
           <td className="whitespace-nowrap px-4 py-3 text-right">
@@ -238,11 +239,9 @@ function MobileCustomerCard({
                 )}
                 <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-gray-200 pt-2 text-xs">
                   <div><p className="text-gray-400">Verified weight</p><p className="mt-0.5 text-gray-700">{verifiedWeightLabel(order.weightKg)}</p></div>
-                  <div><p className="text-gray-400">Shipping charge</p><p className="mt-0.5 text-gray-700">{usdLabel(order.finalChargeUsd)}</p></div>
+                  <div><p className="text-gray-400">Final charge</p><p className="mt-0.5 text-gray-700">{usdLabel(order.finalChargeUsd)}</p></div>
                   <div><p className="text-gray-400">Paid</p><p className="mt-0.5 text-gray-700">{paidAmountLabel(order.totalPaidUsd)}</p></div>
-                  {order.amountDue !== null && (
-                    <div><p className="text-gray-400">Balance</p><p className="mt-0.5 text-gray-700">{usdLabel(order.amountDue)}</p></div>
-                  )}
+                  <div><p className="text-gray-400">Amount due</p><p className="mt-0.5 text-gray-700">{amountDueLabel(order.finalChargeUsd, order.amountDue)}</p></div>
                   <div><p className="text-gray-400">Payment</p><div className="mt-0.5"><PaymentStatusBadge status={order.paymentCollectionStatus} /></div></div>
                 </div>
                 <div className="mt-3 flex items-center justify-end gap-2">
@@ -882,9 +881,9 @@ export function BatchDetailPage(): ReactElement {
                           <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Mode</th>
                           <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Shipment status</th>
                           <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Verified weight</th>
-                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Shipping charge</th>
+                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Final charge</th>
                           <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Paid</th>
-                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Balance</th>
+                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Amount due</th>
                           <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Payment</th>
                           <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Booked</th>
                           <th className="px-4 pb-3 pt-2.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Actions</th>

@@ -100,10 +100,6 @@ export function ExternalSignInPage(): ReactElement {
   const provisioningModalMessage =
     `${PROVISIONING_GATE_BLOCK_MESSAGE}. Estimated unlock in ${countdownLabel}.`;
 
-  useEffect(() => {
-    setPostAuthRedirect(defaultPostAuthRedirect);
-  }, [defaultPostAuthRedirect]);
-
   const resolvePostAuthRedirect = useCallback(async (): Promise<string> => {
     const token = await getToken();
     if (!token) {

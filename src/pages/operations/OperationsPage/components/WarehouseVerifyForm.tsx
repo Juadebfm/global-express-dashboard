@@ -30,6 +30,33 @@ function emptyRow(id: number): PackageRow {
   return { id, description: '', quantity: '1', lengthCm: '', widthCm: '', heightCm: '', weightKg: '', cbm: '', arrivalAt: '' };
 }
 
+function getRestoredDraft(draftKey: string, isReVerify: boolean): {
+  rows: PackageRow[];
+  transportMode: 'air' | 'sea';
+  nextId: number;
+} | null {
+  if (isReVerify) return null;
+  try {
+    const raw = localStorage.getItem(draftKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { rows: PackageRow[]; transportMode: 'air' | 'sea'; nextId: number; savedAt?: number };
+    if (parsed.savedAt && Date.now() - parsed.savedAt > 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(draftKey);
+      return null;
+    }
+    const hasMeasurements = parsed.rows?.some(
+      (row) => parsePositive(row.weightKg) || parsePositive(row.lengthCm) || parsePositive(row.widthCm) || parsePositive(row.heightCm) || parsePositive(row.cbm),
+    );
+    if (!hasMeasurements) {
+      localStorage.removeItem(draftKey);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 function isoToDatetimeLocal(iso: string | null | undefined): string {
   if (!iso) return '';
   const d = new Date(iso);
@@ -342,33 +369,8 @@ export function WarehouseVerifyForm({
   const defaultMode = (view.transportMode || view.shipmentType) === 'sea' ? 'sea' : 'air';
   const draftKey = `gx_verify_draft_${view.id}`;
 
-  // Restore draft on mount (only for first-verify; re-verify prefills from existing data)
-  const DRAFT_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-  const restoredDraft = useMemo(() => {
-    if (isReVerify) return null;
-    try {
-      const raw = localStorage.getItem(draftKey);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as { rows: PackageRow[]; transportMode: 'air' | 'sea'; nextId: number; savedAt?: number };
-      if (parsed.savedAt && Date.now() - parsed.savedAt > DRAFT_TTL_MS) {
-        localStorage.removeItem(draftKey);
-        return null;
-      }
-      // Discard drafts that have no actual measurements (e.g. stale auto-saves from untouched forms)
-      const hasMeasurements = parsed.rows?.some(
-        (r) => parsePositive(r.weightKg) || parsePositive(r.lengthCm) || parsePositive(r.widthCm) || parsePositive(r.heightCm) || parsePositive(r.cbm),
-      );
-      if (!hasMeasurements) {
-        localStorage.removeItem(draftKey);
-        return null;
-      }
-      return parsed;
-    } catch {
-      return null;
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Restore a usable draft once when this verification form is mounted.
+  const [restoredDraft] = useState(() => getRestoredDraft(draftKey, isReVerify));
 
   const submitting = useRef(false);
 
@@ -539,7 +541,7 @@ export function WarehouseVerifyForm({
     }));
 
     try {
-      const result = await onSubmit({
+      await onSubmit({
         transportMode,
         departureDate: undefined,
         packages,
@@ -549,11 +551,9 @@ export function WarehouseVerifyForm({
       // Clear saved draft on success
       try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
       if (isReVerify && view.finalChargeUsd != null) {
-        setNotice(
-          `Packages updated. Charge revised from ${formatCurrency(view.finalChargeUsd, 'USD')} → ${formatCurrency(result.finalChargeUsd, 'USD')}.`,
-        );
+        setNotice('Packages updated and pricing recalculated. Review the charge and amount due in the order details.');
       } else {
-        setNotice(`Verified. Final charge: ${formatCurrency(result.finalChargeUsd, 'USD')}`);
+        setNotice('Verified. Review the charge and amount due in the order details.');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Verification failed. Please try again.');
@@ -622,9 +622,7 @@ export function WarehouseVerifyForm({
               <p className="font-semibold">Re-verifying will recalculate the final charge.</p>
               <p className="mt-0.5">
                 All previous packages will be replaced with what you submit below.
-                {view.finalChargeUsd != null && (
-                  <> Current charge: <span className="font-semibold">{formatCurrency(view.finalChargeUsd, 'USD')}</span>.</>
-                )}
+                {view.finalChargeUsd != null && ' Review the current charge and amount due in the order details.'}
                 {' '}If the customer has already paid, their payment status will be reviewed automatically.
               </p>
             </div>

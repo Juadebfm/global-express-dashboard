@@ -9,6 +9,7 @@ import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
 import type { ApiPayment, OrderListItem } from '@/types';
 import { ReceiptApprovalPanel } from '@/pages/operations/OperationsPage/components/ReceiptApprovalPanel';
+import { ChargeBalanceSummary } from '@/components/orders';
 import { ReceiptModal } from './ReceiptModal';
 
 function ReviewReceiptModal({ payment, onClose }: { payment: ApiPayment; onClose: () => void }): ReactElement {
@@ -47,6 +48,12 @@ function ReviewReceiptModal({ payment, onClose }: { payment: ApiPayment; onClose
 function amountDue(order: OrderListItem): number | null {
   const raw = order.raw as Record<string, unknown>;
   const value = raw.amountDue != null ? parseFloat(raw.amountDue as string) : null;
+  return value != null && value > 0 ? value : null;
+}
+
+function finalCharge(order: OrderListItem): number | null {
+  const raw = order.raw as Record<string, unknown>;
+  const value = raw.finalChargeUsd != null ? parseFloat(raw.finalChargeUsd as string) : null;
   return value != null && value > 0 ? value : null;
 }
 
@@ -194,13 +201,18 @@ export function PaymentsPage(): ReactElement {
             <div className="mt-2 divide-y divide-amber-100">
               {dueOrders.map((order) => {
                 const due = amountDue(order);
+                const charge = finalCharge(order);
                 return (
                   <div key={order.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">{order.trackingNumber}</p>
-                      <p className="text-xs text-amber-700">
-                        ${due?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} due
-                      </p>
+                      <ChargeBalanceSummary
+                        finalChargeUsd={charge}
+                        amountDue={due}
+                        compact
+                        className="mt-0.5 text-amber-700"
+                        valueClassName="text-amber-900"
+                      />
                     </div>
                     <button
                       type="button"

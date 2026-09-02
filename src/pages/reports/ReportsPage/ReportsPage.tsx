@@ -187,6 +187,7 @@ export function ReportsPage(): ReactElement {
   }, [dateFrom, dateTo, canViewFinance, canViewOperational]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetchReports synchronizes the report state with the selected external data range.
     void fetchReports();
   }, [fetchReports]);
 

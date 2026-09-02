@@ -2,6 +2,7 @@ import type { FormEvent, ReactElement } from 'react';
 import { useState } from 'react';
 import { CreditCard, Landmark, CalendarDays, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { ChargeBalanceSummary } from '@/components/orders';
 import { formatCurrency } from '@/utils';
 import type { RecordOfflinePayload } from '@/types';
 import { useFxRate } from '@/hooks';
@@ -94,11 +95,6 @@ export function OfflinePaymentForm({
       ? parsedAmount / effectiveRate
       : null;
 
-  const amountDueLabel =
-    view.amountDue != null && view.amountDue > 0
-      ? formatCurrency(view.amountDue, 'USD')
-      : null;
-
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setNotice(null);
@@ -143,10 +139,14 @@ export function OfflinePaymentForm({
                 Log a payment the customer made directly — cash, bank, or POS.
               </p>
             </div>
-            {amountDueLabel && (
-              <span className="shrink-0 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 ring-1 ring-red-200">
-                Unpaid · {amountDueLabel} due
-              </span>
+            {view.finalChargeUsd != null && (
+              <ChargeBalanceSummary
+                finalChargeUsd={view.finalChargeUsd}
+                amountDue={view.amountDue}
+                compact
+                className="shrink-0 rounded-xl bg-red-50 px-3 py-2 text-red-700 ring-1 ring-red-200"
+                valueClassName="text-red-700"
+              />
             )}
           </div>
 

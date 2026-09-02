@@ -505,6 +505,7 @@ export function ExternalSignUpPage(): ReactElement {
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Clerk session recovery synchronizes external auth state.
     void handleFinishSetupRetry();
   }, [handleFinishSetupRetry, isLoaded, isSignedIn, step]);
 
