@@ -16,7 +16,7 @@ import {
   User,
   X,
 } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { Button, PhoneLink } from '@/components/ui';
 import type { ApiPayment } from '@/types';
 import type { OrderTimelineEvent } from '@/services/ordersService';
 import { cn, formatDate } from '@/utils';
@@ -250,7 +250,7 @@ function PickupCard({ view, isPending, onSubmit }: PickupCardProps): ReactElemen
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-900">{view.pickupRepName}</p>
-            <p className="text-xs text-gray-500">{view.pickupRepPhone}</p>
+            <p className="text-xs text-gray-500"><PhoneLink phone={view.pickupRepPhone}>{view.pickupRepPhone}</PhoneLink></p>
           </div>
         </div>
       ) : (

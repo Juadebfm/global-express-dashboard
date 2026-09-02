@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plane, Ship, Package2, CheckCircle2, XCircle, Clock, Store } from 'lucide-react';
 import { AppLayout } from '@/components/layout';
-import { Card, Button, ConfirmModal, ClientCombobox } from '@/components/ui';
+import { Card, Button, ConfirmModal, ClientCombobox, PhoneLink } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import { useAuth } from '@/hooks';
 import {
@@ -31,12 +31,12 @@ function ShipmentBadge({ type }: { type: InternalDeclaration['shipmentType'] }):
   );
 }
 
-function Field({ label, value }: { label: string; value: string | number | null | undefined }): ReactElement | null {
+function Field({ label, value, phone = false }: { label: string; value: string | number | null | undefined; phone?: boolean }): ReactElement | null {
   if (value === null || value === undefined || value === '') return null;
   return (
     <div>
       <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-      <p className="text-sm text-gray-900">{value}</p>
+      <p className="text-sm text-gray-900">{phone && typeof value === 'string' ? <PhoneLink phone={value}>{value}</PhoneLink> : value}</p>
     </div>
   );
 }
@@ -406,7 +406,7 @@ export function SupplierNoticeReviewPage(): ReactElement {
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Recipient</p>
               <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                 <Field label="Name" value={declaration.recipientName} />
-                <Field label="Phone" value={declaration.recipientPhone} />
+                <Field label="Phone" value={declaration.recipientPhone} phone />
                 <Field label="Email" value={declaration.recipientEmail} />
                 {declaration.recipientAddress && (
                   <div className="col-span-2">

@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useOrderDetail, useOrderTimeline } from '@/hooks';
 import { CustomerParcelsPanel } from '@/components/orders';
+import { PhoneLink } from '@/components/ui';
 import { ORIGIN_WAREHOUSE, ROUTES } from '@/constants';
 import { cn, formatDate } from '@/utils';
 import type { ApiOrder } from '@/types';
@@ -105,7 +106,7 @@ function hasWarehouseHandling(order: ApiOrder, goods: GoodsBreakdownItem[]): boo
   );
 }
 
-function DetailItem({ label, value }: { label: string; value: string }): ReactElement {
+function DetailItem({ label, value }: { label: string; value: ReactNode }): ReactElement {
   return (
     <div>
       <dt className="text-xs font-medium text-gray-400">{label}</dt>
@@ -337,7 +338,10 @@ function ModalContent({ orderId }: { orderId: string }): ReactElement {
           <DetailItem label="Declared value" value={declaredValue ?? 'Not provided'} />
           <DetailItem label="Declared weight" value={order.weight ? `${order.weight} kg` : 'Not provided'} />
           <DetailItem label="Recipient" value={displayValue(order.recipientName)} />
-          <DetailItem label="Recipient phone" value={displayValue(order.recipientPhone)} />
+          <DetailItem
+            label="Recipient phone"
+            value={order.recipientPhone ? <PhoneLink phone={order.recipientPhone}>{order.recipientPhone}</PhoneLink> : 'Not provided'}
+          />
           <DetailItem label="Delivery address" value={displayValue(order.recipientAddress)} />
           {order.sourcingSupplierName && (
             <DetailItem label="Sourcing supplier" value={order.sourcingSupplierName} />
@@ -345,7 +349,7 @@ function ModalContent({ orderId }: { orderId: string }): ReactElement {
         </dl>
         {order.sourcingSupplierPhone && (
           <p className="mt-4 flex items-center gap-2 text-sm text-gray-500">
-            <Phone className="h-4 w-4" /> Supplier contact: {order.sourcingSupplierPhone}
+            <Phone className="h-4 w-4" /> Supplier contact: <PhoneLink phone={order.sourcingSupplierPhone}>{order.sourcingSupplierPhone}</PhoneLink>
           </p>
         )}
         {order.departureDate && (

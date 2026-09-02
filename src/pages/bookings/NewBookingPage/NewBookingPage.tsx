@@ -23,7 +23,7 @@ import {
 import flags from 'react-phone-number-input/flags';
 import en from 'react-phone-number-input/locale/en';
 import { AppLayout } from '@/components/layout';
-import { Button, Card, Input, AlertBanner, ClientCombobox } from '@/components/ui';
+import { Button, Card, Input, AlertBanner, ClientCombobox, PhoneLink } from '@/components/ui';
 import {
   useAuth,
   useAuthToken,
@@ -180,10 +180,6 @@ function SupplierDetailsModal({
   onSelect,
 }: SupplierDetailsModalProps): ReactElement {
   const directorySupplier = details ?? supplier;
-  const whatsappHref = details?.publicWhatsapp
-    ? `https://wa.me/${details.publicWhatsapp.replace(/\D/g, '')}`
-    : null;
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-end bg-black/40 sm:items-center sm:justify-center sm:px-4"
@@ -270,24 +266,22 @@ function SupplierDetailsModal({
                   </a>
                 )}
                 {details.publicPhone && (
-                  <a
-                    href={`tel:${details.publicPhone}`}
+                  <PhoneLink
+                    phone={details.publicPhone}
                     className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-700 transition hover:bg-gray-50"
                   >
                     <Phone className="h-4 w-4 text-gray-400" />
                     {details.publicPhone}
-                  </a>
+                  </PhoneLink>
                 )}
-                {details.publicWhatsapp && whatsappHref && (
-                  <a
-                    href={whatsappHref}
-                    target="_blank"
-                    rel="noreferrer"
+                {details.publicWhatsapp && (
+                  <PhoneLink
+                    phone={details.publicWhatsapp}
                     className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-700 transition hover:bg-gray-50"
                   >
                     <MessageCircle className="h-4 w-4 text-gray-400" />
                     {details.publicWhatsapp}
-                  </a>
+                  </PhoneLink>
                 )}
               </div>
             </div>

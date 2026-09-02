@@ -1,7 +1,7 @@
 import type { FormEvent, ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { X, CheckCircle2, Send, Ship, User } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { Button, PhoneLink } from '@/components/ui';
 import { cn } from '@/utils';
 import type { OrderView } from '../types';
 
@@ -155,7 +155,7 @@ export function CreateOrderModal({
                     <div>
                       <p className="text-xs text-gray-400">Recipient</p>
                       <p className="text-sm font-semibold text-gray-800">{recipientName}</p>
-                      {recipientPhone && <p className="text-xs text-gray-500">{recipientPhone}</p>}
+                      {recipientPhone && <p className="text-xs text-gray-500"><PhoneLink phone={recipientPhone}>{recipientPhone}</PhoneLink></p>}
                     </div>
                   </div>
                 )}

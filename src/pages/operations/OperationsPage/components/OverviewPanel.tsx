@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
+import { PhoneLink } from '@/components/ui';
 import { formatDate, formatCurrency } from '@/utils';
 import type { OrderView } from '@/pages/shared/orderStatus';
 import { pricingSourceLabel } from '@/pages/shared/orderStatus';
@@ -134,7 +135,7 @@ export function OverviewPanel({ view, billableWeightKg }: OverviewPanelProps): R
           <ColHeader>Recipient</ColHeader>
           <div className="space-y-3.5">
             <Field label="Name">{view.recipientName || '—'}</Field>
-            <Field label="Phone">{view.recipientPhone || '—'}</Field>
+            <Field label="Phone">{view.recipientPhone ? <PhoneLink phone={view.recipientPhone}>{view.recipientPhone}</PhoneLink> : '—'}</Field>
             <Field label="Address">{view.recipientAddress || '—'}</Field>
           </div>
         </div>
@@ -164,7 +165,7 @@ export function OverviewPanel({ view, billableWeightKg }: OverviewPanelProps): R
                 {view.sourcingSupplierName ?? 'GEX Registered Supplier'}
               </p>
               {view.sourcingSupplierPhone && (
-                <p className="text-sm text-gray-500">{view.sourcingSupplierPhone}</p>
+                <p className="text-sm text-gray-500"><PhoneLink phone={view.sourcingSupplierPhone}>{view.sourcingSupplierPhone}</PhoneLink></p>
               )}
               {view.sourcingSupplierEmail && (
                 <p className="text-sm text-gray-500">{view.sourcingSupplierEmail}</p>

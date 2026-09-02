@@ -6,6 +6,7 @@ import { cn } from '@/utils';
 import type { OrderView } from '@/pages/shared/orderStatus';
 import { QueueShell } from './QueueShell';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { PhoneLink } from '@/components/ui';
 import { OrderSummaryCard } from './OrderSummaryCard';
 
 interface HoldQueueStepProps {
@@ -91,7 +92,7 @@ export function HoldQueueStep({
       {view.recipientPhone && (
         <div className="flex items-center justify-between px-5 py-3">
           <div className="text-sm text-gray-700">
-            {view.recipientPhone}
+            <PhoneLink phone={view.recipientPhone}>{view.recipientPhone}</PhoneLink>
           </div>
           <a
             href={`tel:${view.recipientPhone}`}

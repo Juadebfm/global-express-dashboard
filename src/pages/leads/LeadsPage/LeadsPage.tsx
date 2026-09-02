@@ -5,7 +5,7 @@ import type { Lead, LeadStatus, LeadType } from '@/types';
 import { useLeads, useUpdateLead, useDeleteLead } from '@/hooks/useLeads';
 import { useCapability } from '@/hooks/usePermissions';
 import { AppShell, PageHeader } from '@/pages/shared';
-import { Pagination } from '@/components/ui';
+import { Pagination, PhoneLink } from '@/components/ui';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useFeedbackStore } from '@/store';
 import { cn } from '@/utils';
@@ -177,7 +177,7 @@ export function LeadsPage(): ReactElement {
                       <StatusDropdown lead={lead} onUpdate={handleStatusChange} />
                     </td>
                     <td className="px-4 py-3 text-gray-500">
-                      {lead.email ?? lead.phone ?? '—'}
+                      {lead.email ?? (lead.phone ? <PhoneLink phone={lead.phone} onClick={(event) => event.stopPropagation()}>{lead.phone}</PhoneLink> : '—')}
                     </td>
                     <td className="px-4 py-3 text-gray-500">
                       {new Date(lead.createdAt).toLocaleDateString()}
@@ -225,7 +225,7 @@ export function LeadsPage(): ReactElement {
                           {lead.phone && (
                             <div>
                               <span className="font-medium text-gray-500">Phone</span>
-                              <p className="mt-0.5 text-gray-900">{lead.phone}</p>
+                              <p className="mt-0.5 text-gray-900"><PhoneLink phone={lead.phone}>{lead.phone}</PhoneLink></p>
                             </div>
                           )}
                           {lead.email && (

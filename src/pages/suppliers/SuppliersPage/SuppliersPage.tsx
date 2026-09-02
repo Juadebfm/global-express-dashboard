@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, Phone, Plus, RefreshCw, ShieldCheck, X } from 'lucide-react';
 import { AppShell } from '@/pages/shared';
-import { Button, Input } from '@/components/ui';
+import { Button, Input, PhoneLink } from '@/components/ui';
 import {
   useAddMySupplier,
   useDashboardData,
@@ -231,7 +231,7 @@ function SuppliersList({
             </p>
             {s.phone && (
               <p className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-gray-400" /> {s.phone}
+                <Phone className="h-4 w-4 text-gray-400" /> <PhoneLink phone={s.phone}>{s.phone}</PhoneLink>
               </p>
             )}
             {typeof s.shipmentUsageCount === 'number' && (

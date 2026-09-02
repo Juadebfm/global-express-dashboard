@@ -10,7 +10,7 @@ import flags from 'react-phone-number-input/flags';
 import en from 'react-phone-number-input/locale/en';
 import { AppLayout } from '@/components/layout';
 import { AvatarUploader } from '@/components/profile';
-import { Button, Card, ConfirmModal, Input } from '@/components/ui';
+import { Button, Card, ConfirmModal, Input, PhoneLink } from '@/components/ui';
 import {
   useAuth,
   useAuthToken,
@@ -179,17 +179,18 @@ function getInitials(firstName: string, lastName: string, email: string): string
 interface DetailRowProps {
   label: string;
   value: string;
+  phone?: string;
 }
 
 const SELECT_CLASS = 'auth-form-control w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 pr-10 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed';
 const DATALIST_INPUT_CLASS = 'auth-form-control w-full rounded-lg border border-gray-200 bg-white px-4 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed';
 
-function DetailRow({ label, value }: DetailRowProps): ReactElement {
+function DetailRow({ label, value, phone }: DetailRowProps): ReactElement {
   return (
     <div className="grid gap-2 border-b border-gray-100 py-3 sm:grid-cols-[220px_1fr] sm:items-center">
       <p className="text-sm font-semibold text-gray-800">{label}</p>
       <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-700">
-        {value}
+        {phone ? <PhoneLink phone={phone}>{value}</PhoneLink> : value}
       </p>
     </div>
   );
@@ -1000,8 +1001,8 @@ export function ProfilePage(): ReactElement {
                       <DetailRow label={t('fields.lastName')} value={displayValue(externalForm.lastName)} />
                       <DetailRow label={t('fields.email')} value={displayValue(externalForm.email)} />
                       <DetailRow label={t('fields.businessName')} value={displayValue(externalForm.businessName)} />
-                      <DetailRow label={t('fields.phone')} value={displayValue(externalForm.phone)} />
-                      <DetailRow label={t('fields.whatsappNumber')} value={displayValue(externalForm.whatsappNumber)} />
+                      <DetailRow label={t('fields.phone')} value={displayValue(externalForm.phone)} phone={externalForm.phone || undefined} />
+                      <DetailRow label={t('fields.whatsappNumber')} value={displayValue(externalForm.whatsappNumber)} phone={externalForm.whatsappNumber || undefined} />
                       <DetailRow label={t('fields.streetAddress')} value={displayValue(externalForm.addressStreet)} />
                       <DetailRow label={t('fields.city')} value={displayValue(externalForm.addressCity)} />
                       <DetailRow label={t('fields.state')} value={displayValue(externalForm.addressState)} />
@@ -1157,14 +1158,14 @@ export function ProfilePage(): ReactElement {
                       <DetailRow label={t('fields.email')} value={displayValue(authUser?.email)} />
                       <DetailRow label={t('fields.gender')} value={t(`internal.genders.${internalForm.gender}`)} />
                       <DetailRow label={t('fields.dateOfBirth')} value={displayValue(internalForm.dateOfBirth)} />
-                      <DetailRow label={t('fields.phone')} value={displayValue(internalForm.phone)} />
+                      <DetailRow label={t('fields.phone')} value={displayValue(internalForm.phone)} phone={internalForm.phone || undefined} />
                       <DetailRow label={t('fields.streetAddress')} value={displayValue(internalForm.addressStreet)} />
                       <DetailRow label={t('fields.city')} value={displayValue(internalForm.addressCity)} />
                       <DetailRow label={t('fields.state')} value={displayValue(internalForm.addressState)} />
                       <DetailRow label={t('fields.country')} value={displayValue(COUNTRY_LABELS[internalForm.addressCountry] ?? internalForm.addressCountry)} />
                       <DetailRow label={t('fields.postalCode')} value={displayValue(internalForm.addressPostalCode)} />
                       <DetailRow label={t('fields.emergencyName')} value={displayValue(internalForm.emergencyContactName)} />
-                      <DetailRow label={t('fields.emergencyPhone')} value={displayValue(internalForm.emergencyContactPhone)} />
+                      <DetailRow label={t('fields.emergencyPhone')} value={displayValue(internalForm.emergencyContactPhone)} phone={internalForm.emergencyContactPhone || undefined} />
                       <DetailRow label={t('fields.emergencyRelationship')} value={displayValue(internalForm.emergencyContactRelationship)} />
                       <DetailRow label={t('fields.nationalId')} value={displayValue(internalForm.nationalId)} />
                     </div>

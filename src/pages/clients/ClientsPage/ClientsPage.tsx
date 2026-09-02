@@ -28,7 +28,7 @@ import { deleteUser } from '@/services';
 import i18n from '@/i18n/i18n';
 import type { ApiClient, UpdateClientPayload } from '@/types';
 import { cn } from '@/utils';
-import { Button, CopyButton, Input, Pagination } from '@/components/ui';
+import { Button, CopyButton, Input, Pagination, PhoneLink } from '@/components/ui';
 
 type ClientStatus = 'active' | 'inactive';
 
@@ -215,13 +215,13 @@ function ClientModal({ client, dateLocale, statusLabels, onClose, onEdit, onActi
               {client.phone && (
                 <div className="flex items-center gap-3 text-sm text-gray-700">
                   <Phone className="h-4 w-4 shrink-0 text-gray-400" />
-                  <span>{client.phone}</span>
+                  <PhoneLink phone={client.phone}>{client.phone}</PhoneLink>
                 </div>
               )}
               {client.whatsappNumber && (
                 <div className="flex items-center gap-3 text-sm text-gray-700">
                   <Phone className="h-4 w-4 shrink-0 text-gray-400" />
-                  <span>{client.whatsappNumber}</span>
+                  <PhoneLink phone={client.whatsappNumber}>{client.whatsappNumber}</PhoneLink>
                   <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
                     WhatsApp
                   </span>
@@ -819,7 +819,7 @@ export function ClientsPage(): ReactElement {
                     <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
                       <div>
                         <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{t('phoneLabel')}</p>
-                        <p className="text-xs text-gray-700">{client.phone ?? '—'}</p>
+                        <p className="text-xs text-gray-700">{client.phone ? <PhoneLink phone={client.phone}>{client.phone}</PhoneLink> : '—'}</p>
                       </div>
                       <div>
                         <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{t('businessLabel')}</p>
@@ -918,7 +918,7 @@ export function ClientsPage(): ReactElement {
 
                       {/* Phone */}
                       <td className="whitespace-nowrap border-r border-gray-100 px-6 py-4 text-gray-600">
-                        {client.phone || <span className="text-gray-300">—</span>}
+                        {client.phone ? <PhoneLink phone={client.phone}>{client.phone}</PhoneLink> : <span className="text-gray-300">—</span>}
                       </td>
 
                       {/* Shipping mark */}

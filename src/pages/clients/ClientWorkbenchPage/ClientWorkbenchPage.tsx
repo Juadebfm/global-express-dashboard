@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangle, ArrowLeft, Copy, Check, Package, Pencil, Plus, Users, X } from 'lucide-react';
 import { AppShell } from '@/pages/shared';
-import { Button, Input } from '@/components/ui';
+import { Button, Input, PhoneLink } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import {
   useActivateClient,
@@ -174,7 +174,12 @@ export function ClientWorkbenchPage(): ReactElement {
                   </h1>
                   <p className="mt-1 text-sm text-gray-500">
                     {data.client.email || <span className="italic text-gray-400">No email</span>}
-                    {data.client.phone ? ` · ${data.client.phone}` : ''}
+                    {data.client.phone && (
+                      <>
+                        {' · '}
+                        <PhoneLink phone={data.client.phone}>{data.client.phone}</PhoneLink>
+                      </>
+                    )}
                   </p>
                   {/* Shipping mark pill */}
                   {data.client.shippingMark && (
@@ -515,7 +520,7 @@ function SuppliersSection({
             <div key={s.id} className="rounded-2xl border border-gray-200 p-4">
               <p className="text-sm font-semibold text-gray-900">{supplierName(s)}</p>
               <p className="mt-0.5 text-xs text-gray-500">{s.email}</p>
-              {s.phone && <p className="text-xs text-gray-500">{s.phone}</p>}
+              {s.phone && <p className="text-xs text-gray-500"><PhoneLink phone={s.phone}>{s.phone}</PhoneLink></p>}
               {typeof s.shipmentUsageCount === 'number' && (
                 <p className="mt-2 text-xs text-gray-400">
                   {s.shipmentUsageCount} shipment{s.shipmentUsageCount === 1 ? '' : 's'}

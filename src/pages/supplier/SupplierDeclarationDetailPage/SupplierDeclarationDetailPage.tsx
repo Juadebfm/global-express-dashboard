@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Clock, XCircle, Package2 } from 'lucide-react';
 import { SupplierLayout } from '@/components/supplier/SupplierLayout';
-import { Button, Card } from '@/components/ui';
+import { Button, Card, PhoneLink } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import {
   useSupplierDeclaration,
@@ -16,12 +16,12 @@ function modeLabel(type: Declaration['shipmentType']): string {
   return 'Door-to-door';
 }
 
-function DetailRow({ label, value }: { label: string; value: string | number | null | undefined }) {
+function DetailRow({ label, value, phone = false }: { label: string; value: string | number | null | undefined; phone?: boolean }) {
   if (!value && value !== 0) return null;
   return (
     <div className="flex flex-col sm:flex-row sm:gap-4">
       <dt className="text-sm text-gray-500 sm:w-40 shrink-0">{label}</dt>
-      <dd className="text-sm font-medium text-gray-900 mt-0.5 sm:mt-0">{value}</dd>
+      <dd className="text-sm font-medium text-gray-900 mt-0.5 sm:mt-0">{phone && typeof value === 'string' ? <PhoneLink phone={value}>{value}</PhoneLink> : value}</dd>
     </div>
   );
 }
@@ -204,7 +204,7 @@ export function SupplierDeclarationDetailPage(): ReactElement {
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-4">Recipient</p>
               <dl className="space-y-3">
                 <DetailRow label="Name" value={decl.recipientName} />
-                <DetailRow label="Phone" value={decl.recipientPhone} />
+                <DetailRow label="Phone" value={decl.recipientPhone} phone />
                 <DetailRow label="Email" value={decl.recipientEmail ?? undefined} />
                 <DetailRow label="Address" value={decl.recipientAddress ?? undefined} />
               </dl>

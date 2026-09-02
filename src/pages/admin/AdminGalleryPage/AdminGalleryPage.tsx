@@ -11,7 +11,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { AppShell } from '@/pages/shared';
-import { Button, FileScanPill, Input } from '@/components/ui';
+import { Button, FileScanPill, Input, PhoneLink } from '@/components/ui';
 import { useFileScanStatus } from '@/hooks';
 import { SAFE_FILE_SCAN_STATUSES } from '@/types';
 import { useDashboardData } from '@/hooks';
@@ -645,7 +645,7 @@ function ClaimsTab(): ReactElement {
                   </p>
                   <p className="mt-2 text-sm text-gray-700">
                     {claim.claimantFullName} · {claim.claimantEmail} ·{' '}
-                    {claim.claimantPhone}
+                    <PhoneLink phone={claim.claimantPhone}>{claim.claimantPhone}</PhoneLink>
                   </p>
                   {claim.message && (
                     <p className="mt-2 text-sm text-gray-600">{claim.message}</p>

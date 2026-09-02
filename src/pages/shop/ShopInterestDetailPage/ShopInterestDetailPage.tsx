@@ -5,6 +5,7 @@ import { ArrowLeft, Check, Copy, Loader2 } from 'lucide-react';
 import { useShopInterestRequest, useUpdateShopInterestRequest } from '@/hooks';
 import { AppShell, PageHeader, nextShopInterestStatusOptions, shopInterestStatusBadge } from '@/pages/shared';
 import { formatDate } from '@/utils';
+import { PhoneLink } from '@/components/ui';
 import type { ShopInterestStatus } from '@/types';
 
 /**
@@ -15,7 +16,7 @@ import type { ShopInterestStatus } from '@/types';
  * (new/contacted/qualified/...), not just at 'converted'.
  */
 
-function InfoRow({ label, value, copyable = false }: { label: string; value: string; copyable?: boolean }): ReactElement {
+function InfoRow({ label, value, copyable = false, phone = false }: { label: string; value: string; copyable?: boolean; phone?: boolean }): ReactElement {
   const [copied, setCopied] = useState(false);
   const copy = (): void => {
     void navigator.clipboard.writeText(value).then(() => {
@@ -27,7 +28,7 @@ function InfoRow({ label, value, copyable = false }: { label: string; value: str
     <div className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2.5">
       <div className="min-w-0">
         <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
-        <p className="truncate text-sm font-medium text-gray-800">{value}</p>
+        <p className="truncate text-sm font-medium text-gray-800">{phone ? <PhoneLink phone={value}>{value}</PhoneLink> : value}</p>
       </div>
       {copyable && (
         <button
@@ -110,7 +111,7 @@ export function ShopInterestDetailPage(): ReactElement {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <InfoRow label="Requester" value={interest.fullName} copyable />
             {interest.email && <InfoRow label="Email" value={interest.email} copyable />}
-            {interest.phone && <InfoRow label="Phone" value={interest.phone} copyable />}
+            {interest.phone && <InfoRow label="Phone" value={interest.phone} copyable phone />}
             <InfoRow label="Source" value={interest.source} />
             {interest.deliveryMethod && (
               <InfoRow label="Delivery" value={interest.deliveryMethod === 'delivery' ? 'Delivery' : 'Pickup'} />

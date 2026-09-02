@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ArrowLeft, BadgeCheck, Eye, EyeOff, MapPin, MessageCircle, Phone, Store } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout';
-import { AlertBanner, Button, Card, PageLoader } from '@/components/ui';
+import { AlertBanner, Button, Card, PageLoader, PhoneLink } from '@/components/ui';
 import {
   useAdminSupplierDirectoryProfile,
   useAuth,
@@ -104,8 +104,8 @@ export function AdminSupplierDirectoryProfilePage(): ReactElement {
                 <p className="text-sm font-medium text-gray-900">Approved public contact channels</p>
                 <div className="mt-2 space-y-2 text-sm text-gray-600">
                   {profile.data.publicEmail && <p>{profile.data.publicEmail}</p>}
-                  {profile.data.publicPhone && <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-gray-400" />{profile.data.publicPhone}</p>}
-                  {profile.data.publicWhatsapp && <p className="flex items-center gap-2"><MessageCircle className="h-4 w-4 text-gray-400" />{profile.data.publicWhatsapp}</p>}
+                  {profile.data.publicPhone && <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-gray-400" /><PhoneLink phone={profile.data.publicPhone}>{profile.data.publicPhone}</PhoneLink></p>}
+                  {profile.data.publicWhatsapp && <p className="flex items-center gap-2"><MessageCircle className="h-4 w-4 text-gray-400" /><PhoneLink phone={profile.data.publicWhatsapp}>{profile.data.publicWhatsapp}</PhoneLink></p>}
                   {!profile.data.publicEmail && !profile.data.publicPhone && !profile.data.publicWhatsapp && <p className="text-gray-500">No public contact channels.</p>}
                 </div>
               </div>

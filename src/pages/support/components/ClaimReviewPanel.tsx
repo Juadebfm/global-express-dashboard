@@ -15,6 +15,7 @@ import {
 import { useReviewGalleryClaim, useShopInterestRequest, useUpdateShopInterestRequest } from '@/hooks';
 import type { GalleryClaim, GalleryClaimReviewShipment, ShopInterestStatus } from '@/types';
 import { nextShopInterestStatusOptions, shopInterestStatusBadge } from '@/pages/shared';
+import { PhoneLink } from '@/components/ui';
 import { ImageTile } from './SupportImageTile';
 
 interface ClaimReviewPanelProps {
@@ -97,11 +98,13 @@ function InfoRow({
   label,
   value,
   copyable = false,
+  phone = false,
 }: {
   icon: ReactElement | null;
   label: string;
   value: string;
   copyable?: boolean;
+  phone?: boolean;
 }): ReactElement {
   const [copied, setCopied] = useState(false);
 
@@ -118,7 +121,7 @@ function InfoRow({
         {icon && <span className="shrink-0 text-gray-400">{icon}</span>}
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
-          <p className="truncate text-xs font-medium text-gray-800">{value}</p>
+          <p className="truncate text-xs font-medium text-gray-800">{phone ? <PhoneLink phone={value}>{value}</PhoneLink> : value}</p>
         </div>
       </div>
       {copyable && (
@@ -388,7 +391,7 @@ export function ClaimReviewPanel({ claim, ticketStatus }: ClaimReviewPanelProps)
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <InfoRow icon={<User className="h-3.5 w-3.5" />} label="Claimant" value={claim.claimantFullName} copyable />
             <InfoRow icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={claim.claimantEmail} copyable />
-            <InfoRow icon={<Phone className="h-3.5 w-3.5" />} label="Phone" value={claim.claimantPhone} copyable />
+            <InfoRow icon={<Phone className="h-3.5 w-3.5" />} label="Phone" value={claim.claimantPhone} copyable phone />
             <InfoRow icon={<Hash className="h-3.5 w-3.5" />} label="Tracking" value={claim.itemTrackingNumber} copyable />
             <InfoRow icon={<Package className="h-3.5 w-3.5" />} label="Item" value={claim.itemTitle} />
             <InfoRow
