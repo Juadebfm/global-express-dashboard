@@ -2,10 +2,10 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Search, Package, MapPin, Clock, CheckCircle2 } from "lucide-react";
+import { Search, Package, MapPin, CheckCircle2 } from "lucide-react";
 import { AlertBanner } from "@/components/ui";
 import { FEEDBACK_MESSAGES, ROUTES } from "@/constants";
-import { getDisplayErrorMessage } from "@/lib/feedback";
+import { ApiError } from "@/lib/apiClient";
 import { useFeedbackStore } from "@/store";
 import {
   trackShipment,
@@ -13,8 +13,6 @@ import {
   type TrackingResult,
 } from "@/services/trackingService";
 import { getStatusStyle } from "@/lib/statusUtils";
-import { formatTrackingDisplay } from "@/lib/trackingUtils";
-import { resolveLocation } from "@/utils";
 
 /**
  * Timeline entries arrive as raw ISO strings, unlike `lastUpdate`, which the
@@ -45,12 +43,12 @@ export function TrackPage(): ReactElement {
   const pushMessage = useFeedbackStore((state) => state.pushMessage);
 
   const doSearch = async (trackingNumber: string): Promise<void> => {
-    const trimmed = trackingNumber.trim();
-    if (!trimmed) return;
+    const normalized = trackingNumber.trim().toUpperCase();
+    if (!normalized) return;
 
     // Master batch references are staff-only and the public endpoint 404s on
     // them. Explain that instead of showing a bare "not found".
-    if (isMasterTrackingNumber(trimmed)) {
+    if (isMasterTrackingNumber(normalized)) {
       setResult(null);
       setFetchError(t('public.internalNumberDesc'));
       setSearched(true);
@@ -62,14 +60,13 @@ export function TrackPage(): ReactElement {
     setSearched(false);
 
     try {
-      const data = await trackShipment(trimmed);
+      const data = await trackShipment(normalized);
       setResult(data);
     } catch (err) {
       setResult(null);
-      const message = getDisplayErrorMessage(
-        err,
-        FEEDBACK_MESSAGES.tracking.fetchError,
-      );
+      const message = err instanceof ApiError && err.status === 404
+        ? 'Shipment not found'
+        : FEEDBACK_MESSAGES.tracking.fetchError;
       setFetchError(message);
       pushMessage({ tone: "error", message });
     } finally {
@@ -169,9 +166,7 @@ export function TrackPage(): ReactElement {
                         {t('public.trackingNumber')}
                       </p>
                       <p className="mt-1 text-lg font-semibold text-gray-900">
-                        {result.trackingNumber
-                          ? formatTrackingDisplay(result.trackingNumber)
-                          : input.trim().toUpperCase()}
+                        {result.trackingNumber || input.trim().toUpperCase()}
                       </p>
                     </div>
                     <span
@@ -184,36 +179,7 @@ export function TrackPage(): ReactElement {
                     </span>
                   </div>
 
-                  <div className="mt-6 grid grid-cols-2 gap-4 border-t border-gray-100 pt-4">
-                    {result.origin && (
-                      <div>
-                        <p className="text-xs text-gray-400">{t('public.origin')}</p>
-                        <p className="mt-0.5 text-sm font-medium text-gray-800">
-                          {(() => { const o = resolveLocation(result.origin); return t(`shipments:locations.${o}`, { defaultValue: o }); })()}
-                        </p>
-                      </div>
-                    )}
-                    {result.destination && (
-                      <div>
-                        <p className="text-xs text-gray-400">{t('public.destination')}</p>
-                        <p className="mt-0.5 text-sm font-medium text-gray-800">
-                          {(() => { const d = resolveLocation(result.destination); return t(`shipments:locations.${d}`, { defaultValue: d }); })()}
-                        </p>
-                      </div>
-                    )}
-                    {result.estimatedDelivery && (
-                      <div>
-                        <p className="text-xs text-gray-400">
-                          {t('public.estimatedDelivery')}
-                        </p>
-                        <div className="mt-0.5 flex items-center gap-1.5">
-                          <Clock className="h-3.5 w-3.5 text-gray-400" />
-                          <p className="text-sm font-medium text-gray-800">
-                            {result.estimatedDelivery}
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                  <div className="mt-6 border-t border-gray-100 pt-4">
                     <div>
                       <p className="text-xs text-gray-400">{t('public.lastUpdate')}</p>
                       <p className="mt-0.5 text-sm font-medium text-gray-800">
@@ -238,71 +204,6 @@ export function TrackPage(): ReactElement {
                     <CheckCircle2 className="ml-auto h-5 w-5 text-green-500" />
                   </div>
                 </div>
-
-                {/* Goods — batch-scoped results carry no per-item tracking
-                    number, so the description is the only identifier shown. */}
-                {result.trackingScope === 'customer_batch' &&
-                  result.goods &&
-                  result.goods.length > 0 && (
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                      <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4 text-gray-400" />
-                        <h2 className="text-sm font-semibold text-gray-900">
-                          {t('public.goods')}
-                        </h2>
-                      </div>
-                      <p className="mt-1 text-xs text-gray-400">{t('public.goodsNote')}</p>
-
-                      <ul className="mt-4 divide-y divide-gray-100">
-                        {result.goods.map((good, index) => (
-                          <li
-                            key={`${good.description ?? 'item'}-${index}`}
-                            className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-gray-800">
-                                {good.description ?? t('public.noDescription')}
-                              </p>
-                              <p className="mt-0.5 text-xs text-gray-400">
-                                {t('public.packages', { count: good.packageCount })}
-                                {good.weightKg ? ` · ${good.weightKg} kg` : ''}
-                              </p>
-                            </div>
-                            {good.statusLabel && (
-                              <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
-                                {good.statusLabel}
-                              </span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-
-                      {result.cargoMetrics && (
-                        <dl className="mt-4 grid grid-cols-3 gap-3 border-t border-gray-100 pt-4">
-                          <div>
-                            <dt className="text-xs text-gray-400">
-                              {t('public.totalPackages')}
-                            </dt>
-                            <dd className="mt-0.5 text-sm font-medium text-gray-800">
-                              {result.cargoMetrics.packageCount}
-                            </dd>
-                          </div>
-                          <div>
-                            <dt className="text-xs text-gray-400">{t('public.totalWeight')}</dt>
-                            <dd className="mt-0.5 text-sm font-medium text-gray-800">
-                              {result.cargoMetrics.totalWeightKg} kg
-                            </dd>
-                          </div>
-                          <div>
-                            <dt className="text-xs text-gray-400">{t('public.totalVolume')}</dt>
-                            <dd className="mt-0.5 text-sm font-medium text-gray-800">
-                              {result.cargoMetrics.totalCbm} CBM
-                            </dd>
-                          </div>
-                        </dl>
-                      )}
-                    </div>
-                  )}
 
                 {/* Progress */}
                 {result.timeline && result.timeline.length > 0 && (

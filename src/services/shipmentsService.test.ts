@@ -299,7 +299,7 @@ describe('customer-visible tracking number', () => {
     expect(result.shipments[0]?.sku).toBeFalsy();
   });
 
-  it('uses the customer batch tracking number once one is assigned', async () => {
+  it('uses the order tracking number once one is assigned', async () => {
     mockFetch({
       success: true,
       data: {

@@ -137,7 +137,7 @@ describe('useWebSocket batch movement', () => {
     });
   });
 
-  it('refreshes a customer tracking page named by a batch notification', async () => {
+  it('refreshes a customer tracking page named by an order notification', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const invalidate = vi.spyOn(client, 'invalidateQueries');
 
@@ -153,14 +153,14 @@ describe('useWebSocket batch movement', () => {
           data: {
             title: 'Your shipment moved',
             body: 'Your goods are on their way.',
-            metadata: { customerBatchTrackingNumber: '20260804-A1B2' },
+            metadata: { trackingNumber: '20260902-AB12' },
           },
         }),
       } as MessageEvent);
     });
 
     expect(invalidate).toHaveBeenCalledWith({
-      queryKey: trackingKey('20260804-A1B2'),
+      queryKey: trackingKey('20260902-AB12'),
     });
   });
 });

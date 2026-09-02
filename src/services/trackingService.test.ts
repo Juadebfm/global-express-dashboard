@@ -37,51 +37,40 @@ describe('isMasterTrackingNumber', () => {
 });
 
 describe('trackShipment', () => {
-  it('passes through a customer batch result with its goods', async () => {
+  it('normalizes an order tracking number and returns only public tracking data', async () => {
     mockFetch({
       success: true,
       data: {
-        trackingNumber: '20260727-P8SM',
-        trackingScope: 'customer_batch',
-        status: 'PREPARING_FOR_DEPARTURE',
-        statusLabel: 'Preparing for Departure',
-        lastUpdate: 'Aug 4, 2026 · 05:37 PM',
-        lastLocation: 'South Korea',
-        estimatedDelivery: null,
-        cargoMetrics: { packageCount: 2, totalWeightKg: '94.000', totalCbm: '1.014760' },
-        goods: [
-          {
-            description: "Children's clothes",
-            packageCount: 2,
-            weightKg: '94.00',
-            status: 'PREPARING_FOR_DEPARTURE',
-            statusLabel: 'Preparing for Departure',
-          },
-        ],
+        trackingNumber: '20260902-AB12',
+        status: 'IN_TRANSIT',
+        statusLabel: 'In transit',
+        lastUpdate: 'Sep 2, 2026 · 05:37 PM',
+        lastLocation: 'Lagos, Nigeria',
         timeline: [
           {
-            status: 'PREPARING_FOR_DEPARTURE',
-            statusLabel: 'Preparing for Departure',
-            timestamp: '2026-08-04T17:36:59.692Z',
+            status: 'IN_TRANSIT',
+            statusLabel: 'In transit',
+            timestamp: '2026-09-02T17:36:59.692Z',
           },
         ],
       },
     });
 
-    const result = await trackShipment('20260727-P8SM');
+    const result = await trackShipment('  20260902-ab12  ');
 
-    expect(result.trackingScope).toBe('customer_batch');
-    expect(result.goods).toHaveLength(1);
-    // Batch-scoped goods carry no individual tracking number.
-    expect(result.goods?.[0]).not.toHaveProperty('trackingNumber');
-    expect(result.cargoMetrics?.packageCount).toBe(2);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/orders/track/20260902-AB12'),
+      expect.any(Object),
+    );
+    expect(result.statusLabel).toBe('In transit');
+    expect(result.lastLocation).toBe('Lagos, Nigeria');
   });
 
-  it('defaults the scope to a single order when the field is absent', async () => {
+  it('always returns an array for the timeline', async () => {
     mockFetch({
       success: true,
       data: {
-        trackingNumber: '20260726-0001',
+        trackingNumber: '20260901-0001',
         statusLabel: 'In Transit',
         lastUpdate: 'Aug 4, 2026',
         lastLocation: 'In Transit',
@@ -90,25 +79,7 @@ describe('trackShipment', () => {
       },
     });
 
-    const result = await trackShipment('20260726-0001');
-
-    expect(result.trackingScope).toBe('order');
-  });
-
-  it('always returns an array for the timeline', async () => {
-    mockFetch({
-      success: true,
-      data: {
-        trackingNumber: '20260804-A1B2',
-        trackingScope: 'customer_batch',
-        statusLabel: 'Preparing for Departure',
-        lastUpdate: 'Aug 4, 2026',
-        lastLocation: 'South Korea',
-        estimatedDelivery: null,
-      },
-    });
-
-    const result = await trackShipment('20260804-A1B2');
+    const result = await trackShipment('20260901-0001');
 
     expect(result.timeline).toEqual([]);
   });

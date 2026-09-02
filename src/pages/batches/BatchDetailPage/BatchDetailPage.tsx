@@ -136,7 +136,7 @@ function DesktopRosterOrderRow({
             <p className="font-medium text-gray-900">{customer.customerName}</p>
             <p className="mt-0.5 font-mono text-xs text-gray-400">{customer.shippingMark || 'No shipping mark'}</p>
           </td>
-          <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-gray-600">{customer.batchTrackingNumber}</td>
+          <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-gray-600">{customer.customerBatchReference}</td>
           <td className="min-w-64 px-4 py-3">
             <Link to={`${ROUTES.ORDERS}?select=${order.id}`} className="font-mono text-sm font-semibold text-brand-500 hover:text-brand-600">
               {order.trackingNumber}
@@ -209,8 +209,8 @@ function MobileCustomerCard({
       {/* Stats row */}
       <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
         <div>
-          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Tracking No.</p>
-          <p className="text-xs font-mono font-semibold text-gray-800">{customer.batchTrackingNumber}</p>
+          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Customer batch reference</p>
+          <p className="text-xs font-mono font-semibold text-gray-800">{customer.customerBatchReference}</p>
         </div>
         <div>
           <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Orders / Weight</p>
@@ -877,7 +877,7 @@ export function BatchDetailPage(): ReactElement {
                       <thead>
                         <tr className="bg-gray-50">
                           <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Customer</th>
-                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Customer tracking</th>
+                          <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Customer batch reference</th>
                           <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Shipment</th>
                           <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Mode</th>
                           <th className="px-4 pb-3 pt-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Shipment status</th>

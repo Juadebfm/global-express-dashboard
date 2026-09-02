@@ -34,8 +34,8 @@ export interface ShipmentFilterTab {
 export interface ShipmentRecord {
   id: string;
   /**
-   * Customer-visible tracking number. Null until warehouse verification, when
-   * the backend assigns the customer batch tracking number. Never fall back to
+   * Customer-visible order tracking number. Null until warehouse verification.
+   * Never fall back to
    * the internal order number or id — render tracking UI only when this is a
    * non-empty string.
    */

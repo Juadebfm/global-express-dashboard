@@ -253,7 +253,8 @@ export interface BatchRosterCustomer {
   customerId: string;
   customerName: string;
   shippingMark: string;
-  batchTrackingNumber: string;
+  /** Staff-only grouping reference. It is not a public tracking number. */
+  customerBatchReference: string;
   orderCount: number;
   totalWeightKg: string;
   allVerified: boolean;

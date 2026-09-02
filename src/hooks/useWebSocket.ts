@@ -157,20 +157,18 @@ export function useWebSocket(): void {
             case 'notification:new':
             case 'notification:broadcast': {
               void queryClient.invalidateQueries({ queryKey: ['notifications'] });
-              // Customers never receive batch:movement_updated. A batch-related
-              // notification names their own customer batch reference instead,
-              // so refresh that tracking page if they happen to be on it. Only
-              // the customer reference is ever used — never a master reference.
+              // Customers track an individual order. Refresh that order's
+              // public-tracking query if they are currently viewing it.
               const metadata = (payload as Record<string, unknown>).metadata;
-              const customerBatchTrackingNumber =
+              const orderTrackingNumber =
                 metadata && typeof metadata === 'object' && !Array.isArray(metadata)
                   ? String(
-                      (metadata as Record<string, unknown>).customerBatchTrackingNumber ?? '',
+                      (metadata as Record<string, unknown>).trackingNumber ?? '',
                     )
                   : '';
-              if (customerBatchTrackingNumber) {
+              if (orderTrackingNumber) {
                 void queryClient.invalidateQueries({
-                  queryKey: trackingKey(customerBatchTrackingNumber),
+                  queryKey: trackingKey(orderTrackingNumber),
                 });
               }
               if (title || body) {

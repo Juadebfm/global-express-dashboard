@@ -62,7 +62,7 @@ export function TrackShipmentPage(): ReactElement {
       : (orderTimeline?.timeline ?? []);
 
   const handleTrack = (): void => {
-    const normalized = trackingInput.trim();
+    const normalized = trackingInput.trim().toUpperCase();
     if (!normalized) {
       setErrorMessage(t('internal.emptyState'));
       return;

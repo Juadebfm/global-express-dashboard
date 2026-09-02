@@ -6,36 +6,9 @@ export interface TimelineEvent {
   timestamp: string;
 }
 
-/**
- * Whether the tracking number identified a single order or one customer's
- * goods inside a dispatch batch. A customer batch reference looks like
- * `YYYYMMDD-XXXX` (for example `20260727-P8SM`).
- *
- * Internal master batch references (`AIR-…` / `SEA-…`) are staff-only. The
- * public endpoint returns 404 for them on purpose, so they must never appear
- * in a customer page, notification, or URL.
- */
-export type TrackingScope = 'order' | 'customer_batch';
-
-/** One line of goods. Batch-scoped goods carry no individual tracking number. */
-export interface TrackedGoods {
-  description: string | null;
-  packageCount: number;
-  weightKg: string | null;
-  status: string | null;
-  statusLabel: string | null;
-}
-
-export interface TrackingCargoMetrics {
-  packageCount: number;
-  totalWeightKg: string;
-  totalCbm: string;
-}
-
 export interface TrackingResult {
   orderId?: string;
   trackingNumber: string;
-  trackingScope: TrackingScope;
   status?: string;
   statusLabel: string;
   origin?: string;
@@ -44,30 +17,23 @@ export interface TrackingResult {
   lastUpdate: string;
   lastLocation: string;
   timeline?: TimelineEvent[];
-  goods?: TrackedGoods[];
-  cargoMetrics?: TrackingCargoMetrics;
-  paymentStatus?: 'pending' | 'completed';
-  vendorCount?: number;
 }
 
-interface RawTrackingResult extends Omit<TrackingResult, 'trackingScope'> {
+interface RawTrackingResult extends TrackingResult {
   id?: string;
   currentStatus?: string;
   currentStatusLabel?: string;
-  trackingScope?: TrackingScope;
 }
 
 export async function trackShipment(trackingNumber: string): Promise<TrackingResult> {
+  const normalizedTrackingNumber = trackingNumber.trim().toUpperCase();
   const raw = await apiGetData<RawTrackingResult>(
-    `/orders/track/${encodeURIComponent(trackingNumber)}`
+    `/orders/track/${encodeURIComponent(normalizedTrackingNumber)}`
   );
 
   return {
     ...raw,
     orderId: raw.orderId ?? raw.id,
-    // Older responses predate the scope field; a single order is the safe read
-    // because it never renders batch-only sections.
-    trackingScope: raw.trackingScope ?? 'order',
     status: raw.status ?? raw.currentStatus,
     statusLabel:
       raw.statusLabel ??
@@ -76,7 +42,6 @@ export async function trackShipment(trackingNumber: string): Promise<TrackingRes
       raw.currentStatus ??
       'Unknown',
     timeline: Array.isArray(raw.timeline) ? raw.timeline : [],
-    goods: Array.isArray(raw.goods) ? raw.goods : undefined,
   };
 }
 
