@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import type { KeyboardEvent, ReactElement } from 'react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ import { STALE_TIME } from '@/lib/queryDefaults';
 import { formatTrackingDisplay } from '@/lib/trackingUtils';
 import type { BankInfo, OrderListItem } from '@/types';
 import { STATUS_LABELS } from '@/pages/shared';
+import { ShipmentDetailsModal } from '@/pages/dashboard/DashboardPage/components/ShipmentDetailsModal';
 import { getAwaitingPaymentOrders, getQueueKindForOrder, getQueueOrders, needsAction } from '../utils/orderQueueFilters';
 import type { QueueKind } from './QueueShell';
 
@@ -31,6 +32,10 @@ function greetingWord(): string {
   if (h < 12) return 'Good morning';
   if (h < 17) return 'Good afternoon';
   return 'Good evening';
+}
+
+function isRowActivation(event: KeyboardEvent<HTMLTableRowElement>): boolean {
+  return event.key === 'Enter' || event.key === ' ';
 }
 
 function statusBadgeClass(statusV2: string): string {
@@ -330,6 +335,7 @@ export function BrowsePane({
 
   const sendPaymentRequest = useSendPaymentRequest();
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [previewOrderId, setPreviewOrderId] = useState<string | null>(null);
   const handleResend = (orderId: string): void => {
     setResendingId(orderId);
     sendPaymentRequest.mutate(orderId, { onSettled: () => setResendingId(null) });
@@ -434,7 +440,19 @@ export function BrowsePane({
                   const isSea = order.transportMode === 'sea';
                   const isD2D = (order.raw as Record<string, unknown>).shipmentType === 'd2d';
                   return (
-                    <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={order.id}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`View order ${order.trackingNumber}`}
+                      onClick={() => setPreviewOrderId(order.id)}
+                      onKeyDown={(event) => {
+                        if (!isRowActivation(event)) return;
+                        event.preventDefault();
+                        setPreviewOrderId(order.id);
+                      }}
+                      className="cursor-pointer transition-colors hover:bg-gray-50 focus:outline-none focus-visible:bg-brand-50"
+                    >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
                           <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg', isD2D ? 'bg-purple-100' : isSea ? 'bg-blue-100' : 'bg-brand-100')}>
@@ -535,6 +553,13 @@ export function BrowsePane({
             })}
           </div>
         </div>
+      )}
+
+      {previewOrderId && (
+        <ShipmentDetailsModal
+          orderId={previewOrderId}
+          onClose={() => setPreviewOrderId(null)}
+        />
       )}
     </div>
   );

@@ -73,7 +73,11 @@ export function NeedsAttentionPanel(): ReactElement {
       ) : (
         <div className="divide-y divide-gray-100">
           {STAGES.map((stage, i) => (
-            <div key={stage.statusV2} className="flex items-center justify-between px-5 py-3">
+            <Link
+              key={stage.statusV2}
+              to={ROUTES.OPERATIONS}
+              className="flex items-center justify-between px-5 py-3 transition-colors hover:bg-gray-50 focus:outline-none focus-visible:bg-brand-50"
+            >
               <span className="text-sm text-gray-700">{stage.label}</span>
               {loading[i] ? (
                 <span className="h-5 w-8 animate-pulse rounded-full bg-gray-100" />
@@ -87,7 +91,7 @@ export function NeedsAttentionPanel(): ReactElement {
                   {counts[i]}
                 </span>
               )}
-            </div>
+            </Link>
           ))}
         </div>
       )}
