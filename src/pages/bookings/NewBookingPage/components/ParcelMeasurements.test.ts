@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   EMPTY_PARCEL,
   findInvalidMeasurement,
+  getEstimateDimensionGuidance,
   hasAnyMeasurement,
   toParcelPayload,
 } from './parcelDraft';
@@ -55,6 +56,24 @@ describe('findInvalidMeasurement', () => {
 
   it('rejects text that is not a number', () => {
     expect(findInvalidMeasurement([{ ...EMPTY_PARCEL, widthCm: 'abc' }])).toMatch(/width/i);
+  });
+});
+
+describe('getEstimateDimensionGuidance', () => {
+  it('directs the customer to enter the remaining dimensions without estimating yet', () => {
+    expect(
+      getEstimateDimensionGuidance([{ ...EMPTY_PARCEL, lengthCm: '40' }]),
+    ).toBe('Please enter the width and height to calculate an estimate.');
+    expect(
+      getEstimateDimensionGuidance([{ ...EMPTY_PARCEL, lengthCm: '40', widthCm: '100' }]),
+    ).toBe('Please enter the height to calculate an estimate.');
+  });
+
+  it('allows an estimate with all dimensions or with weight only', () => {
+    expect(
+      getEstimateDimensionGuidance([{ lengthCm: '40', widthCm: '100', heightCm: '50', weightKg: '' }]),
+    ).toBeNull();
+    expect(getEstimateDimensionGuidance([{ ...EMPTY_PARCEL, weightKg: '12.5' }])).toBeNull();
   });
 });
 

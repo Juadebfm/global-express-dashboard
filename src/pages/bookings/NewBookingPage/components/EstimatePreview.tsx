@@ -1,17 +1,35 @@
 import type { ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useOrderEstimate } from '@/hooks';
-import type { CustomerDeclaredParcelInput } from '@/types';
+import {
+  getEstimateDimensionGuidance,
+  toParcelPayload,
+  type ParcelDraft,
+} from './parcelDraft';
 
 interface EstimatePreviewProps {
   shipmentType: 'air' | 'sea';
-  parcels: CustomerDeclaredParcelInput[];
+  parcels: ParcelDraft[];
 }
 
 export function EstimatePreview({ shipmentType, parcels }: EstimatePreviewProps): ReactElement | null {
-  const { data, isPending, isError, isFetching } = useOrderEstimate(shipmentType, parcels);
+  const guidance = getEstimateDimensionGuidance(parcels);
+  const parcelPayload = toParcelPayload(parcels) ?? [];
+  // Passing no parcels leaves the estimate query disabled until all entered
+  // dimensions are complete. This prevents a partial parcel from reaching the
+  // API and producing a misleading calculation error.
+  const estimateParcels = guidance ? [] : parcelPayload;
+  const { data, isPending, isError, isFetching } = useOrderEstimate(shipmentType, estimateParcels);
 
-  if (parcels.length === 0) return null;
+  if (guidance) {
+    return (
+      <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+        {guidance}
+      </div>
+    );
+  }
+
+  if (parcelPayload.length === 0) return null;
 
   if (isPending && !data) {
     return (

@@ -607,7 +607,7 @@ export function NewBookingPage(): ReactElement {
             ) : (
               <EstimatePreview
                 shipmentType={shipmentType}
-                parcels={toParcelPayload(parcels) ?? []}
+                parcels={parcels}
               />
             )}
 

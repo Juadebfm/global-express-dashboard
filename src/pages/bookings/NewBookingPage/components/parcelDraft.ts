@@ -21,9 +21,43 @@ export const PARCEL_FIELDS: { key: keyof ParcelDraft; label: string; unit: strin
   { key: 'weightKg', label: 'Weight', unit: 'kg' },
 ];
 
+const DIMENSION_FIELDS: { key: keyof ParcelDraft; label: string }[] = [
+  { key: 'lengthCm', label: 'length' },
+  { key: 'widthCm', label: 'width' },
+  { key: 'heightCm', label: 'height' },
+];
+
 /** A parcel counts only when at least one measurement is filled in. */
 export function hasAnyMeasurement(parcel: ParcelDraft): boolean {
   return PARCEL_FIELDS.some((field) => parcel[field.key].trim() !== '');
+}
+
+function formatFieldList(fields: string[]): string {
+  if (fields.length === 1) return `the ${fields[0]}`;
+  if (fields.length === 2) return `the ${fields[0]} and ${fields[1]}`;
+  return `the ${fields.slice(0, -1).join(', ')} and ${fields.at(-1)}`;
+}
+
+/**
+ * The estimate service cannot price a partial set of dimensions. Keep the
+ * form helpful while a customer is typing instead of treating this normal
+ * in-progress state as a failed request. Weight-only estimates stay valid.
+ */
+export function getEstimateDimensionGuidance(parcels: ParcelDraft[]): string | null {
+  for (const [index, parcel] of parcels.entries()) {
+    const hasAnyDimension = DIMENSION_FIELDS.some((field) => parcel[field.key].trim() !== '');
+    if (!hasAnyDimension) continue;
+
+    const missing = DIMENSION_FIELDS
+      .filter((field) => parcel[field.key].trim() === '')
+      .map((field) => field.label);
+    if (missing.length === 0) continue;
+
+    const parcelPrefix = parcels.length > 1 ? `Parcel ${index + 1}: ` : '';
+    return `${parcelPrefix}Please enter ${formatFieldList(missing)} to calculate an estimate.`;
+  }
+
+  return null;
 }
 
 /**
@@ -63,4 +97,3 @@ export function findInvalidMeasurement(parcels: ParcelDraft[]): string | null {
   }
   return null;
 }
-
