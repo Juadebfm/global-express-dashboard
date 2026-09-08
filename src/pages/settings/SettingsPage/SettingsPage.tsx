@@ -42,6 +42,11 @@ import type {
 } from '@/types';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
+import {
+  buildRestrictedGoodsUpdatePayload,
+  normalizeRestrictedGoodForEdit,
+  type RestrictedGoodDraft,
+} from './restrictedGoods';
 
 /* ── Types ───────────────────────────────────────────────────── */
 
@@ -560,10 +565,7 @@ function PricingEditor({
 
 /* ── Restricted Goods section ────────────────────────────────── */
 
-interface EditableGood extends Partial<RestrictedGood> {
-  _isNew?: boolean;
-  _markedForDelete?: boolean;
-}
+type EditableGood = RestrictedGoodDraft;
 
 function RestrictedGoodsSection({ canEdit }: { canEdit: boolean }): ReactElement {
   const goods = useRestrictedGoods({ includeInactive: true });
@@ -616,7 +618,7 @@ function RestrictedGoodsEditor({
   updateError: Error | null;
   success: boolean;
 }): ReactElement {
-  const [rows, setRows] = useState<EditableGood[]>(() => initialItems.map((g) => ({ ...g })));
+  const [rows, setRows] = useState<EditableGood[]>(() => initialItems.map(normalizeRestrictedGoodForEdit));
 
   const update = (i: number, patch: Partial<EditableGood>): void =>
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -644,19 +646,7 @@ function RestrictedGoodsEditor({
 
   const handleSave = async (): Promise<void> => {
     if (!validateCodes()) return;
-    const toDelete = rows.filter((r) => r._markedForDelete && r.id).map((r) => r.id as string);
-    const toKeep = rows
-      .filter((r) => !r._markedForDelete)
-      .map((r) => ({
-        id: r.id,
-        code: r.code,
-        nameEn: r.nameEn,
-        nameKo: r.nameKo,
-        description: r.description,
-        allowWithOverride: r.allowWithOverride,
-        isActive: r.isActive,
-      }));
-    await onSave({ items: toKeep, deleteIds: toDelete });
+    await onSave(buildRestrictedGoodsUpdatePayload(rows));
   };
 
   return (

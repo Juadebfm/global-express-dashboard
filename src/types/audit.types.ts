@@ -14,7 +14,8 @@ export interface AuditLog {
   userAgent: string;
   metadata: Record<string, unknown> | null;
   createdAt: string;
-  actor: AuditLogActor;
+  /** Automated events and events whose user was deleted have no actor. */
+  actor: AuditLogActor | null;
 }
 
 export interface AuditLogFilters {

@@ -7,6 +7,7 @@ import { AppShell, PageHeader } from '@/pages/shared';
 import { Pagination } from '@/components/ui';
 import { cn } from '@/utils';
 import type { AuditLog } from '@/types';
+import { getAuditActorDisplay } from './auditActor';
 
 const RESOURCE_TYPES = [
   'order',
@@ -82,6 +83,8 @@ function MetadataCell({ metadata }: { metadata: Record<string, unknown> | null }
 }
 
 function LogRow({ log }: { log: AuditLog }): ReactElement {
+  const actor = getAuditActorDisplay(log.actor);
+
   return (
     <tr className="transition hover:bg-gray-50">
       <td className="px-5 py-4 align-top">
@@ -99,9 +102,9 @@ function LogRow({ log }: { log: AuditLog }): ReactElement {
       </td>
       <td className="px-5 py-4 align-top">
         <p className="text-xs font-semibold text-gray-800">
-          {log.actor.firstName} {log.actor.lastName}
+          {actor.name}
         </p>
-        <p className="mt-0.5 text-[10px] capitalize text-gray-400">{log.actor.role}</p>
+        <p className="mt-0.5 text-[10px] capitalize text-gray-400">{actor.role}</p>
       </td>
       <td className="px-5 py-4 align-top font-mono text-xs text-gray-500">{log.ipAddress}</td>
       <td className="px-5 py-4 align-top">
@@ -250,46 +253,7 @@ export function AuditLogsContent(): ReactElement {
               {/* Mobile card list */}
               <div className="divide-y divide-gray-100 md:hidden">
                 {logs.map((log) => (
-                  <div key={log.id} className="px-4 py-4">
-                    {/* Action + time */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <ActionBadge action={log.action} />
-                        <p className="mt-1 text-xs text-gray-500">
-                          {log.resourceType}
-                          {log.resourceId && (
-                            <span className="ml-1 font-mono text-[10px] text-gray-400">
-                              {log.resourceId.slice(0, 8)}…
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className="text-xs font-semibold text-gray-400">{formatDate(log.createdAt)}</p>
-                        <p className="text-[10px] tabular-nums text-gray-400">{formatTime(log.createdAt)}</p>
-                      </div>
-                    </div>
-                    {/* Actor + IP */}
-                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
-                      <div>
-                        <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Actor</p>
-                        <p className="text-xs font-semibold text-gray-800">
-                          {log.actor.firstName} {log.actor.lastName}
-                        </p>
-                        <p className="text-[10px] capitalize text-gray-400">{log.actor.role}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">IP</p>
-                        <p className="font-mono text-xs text-gray-500">{log.ipAddress}</p>
-                      </div>
-                    </div>
-                    {/* Details if present */}
-                    {log.metadata && Object.keys(log.metadata).length > 0 && (
-                      <div className="mt-2">
-                        <MetadataCell metadata={log.metadata} />
-                      </div>
-                    )}
-                  </div>
+                  <MobileLogRow key={log.id} log={log} />
                 ))}
               </div>
 
@@ -332,6 +296,51 @@ export function AuditLogsContent(): ReactElement {
             </>
           )}
         </div>
+    </div>
+  );
+}
+
+function MobileLogRow({ log }: { log: AuditLog }): ReactElement {
+  const actor = getAuditActorDisplay(log.actor);
+
+  return (
+    <div className="px-4 py-4">
+      {/* Action + time */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <ActionBadge action={log.action} />
+          <p className="mt-1 text-xs text-gray-500">
+            {log.resourceType}
+            {log.resourceId && (
+              <span className="ml-1 font-mono text-[10px] text-gray-400">
+                {log.resourceId.slice(0, 8)}…
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-xs font-semibold text-gray-400">{formatDate(log.createdAt)}</p>
+          <p className="text-[10px] tabular-nums text-gray-400">{formatTime(log.createdAt)}</p>
+        </div>
+      </div>
+      {/* Actor + IP */}
+      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Actor</p>
+          <p className="text-xs font-semibold text-gray-800">{actor.name}</p>
+          <p className="text-[10px] capitalize text-gray-400">{actor.role}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">IP</p>
+          <p className="font-mono text-xs text-gray-500">{log.ipAddress}</p>
+        </div>
+      </div>
+      {/* Details if present */}
+      {log.metadata && Object.keys(log.metadata).length > 0 && (
+        <div className="mt-2">
+          <MetadataCell metadata={log.metadata} />
+        </div>
+      )}
     </div>
   );
 }
