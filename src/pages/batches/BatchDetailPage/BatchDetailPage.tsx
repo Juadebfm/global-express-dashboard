@@ -4,6 +4,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowLeft,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
   FileDown,
@@ -410,7 +411,7 @@ export function BatchDetailPage(): ReactElement {
 
   const queryClient = useQueryClient();
   const { data: roster, isLoading, error, refetch } = useBatchRoster(batchId);
-  const { data: movement, isLoading: isMovementLoading } = useBatchMovement(batchId);
+  const { data: movement, isLoading: isMovementLoading, refetch: refetchMovement } = useBatchMovement(batchId);
   const movementHistory = useBatchMovementHistory(batchId);
 
   const addOrder = useAddOrderToBatch();
@@ -429,7 +430,9 @@ export function BatchDetailPage(): ReactElement {
   const [removingOrderId, setRemovingOrderId] = useState<string | null>(null);
   const [removeConfirm, setRemoveConfirm] = useState<{ orderId: string; customerName: string } | null>(null);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [closeSuccessNotice, setCloseSuccessNotice] = useState<string | null>(null);
   const [isDownloadingManifest, setIsDownloadingManifest] = useState(false);
+  const movementSectionRef = useRef<HTMLDivElement>(null);
 
   const batch = roster?.batch;
   const summary = roster?.summary;
@@ -554,9 +557,16 @@ export function BatchDetailPage(): ReactElement {
     if (!batchId) return;
     try {
       const result = await closeBatchMutation.mutateAsync(batchId);
-      pushMessage({ tone: 'success', message: `Batch closed. ${result.customersNotified} customers notified.` });
       setShowCloseConfirm(false);
-      navigate(ROUTES.BATCHES);
+      setCloseSuccessNotice(`Batch closed. ${result.customersNotified} customers notified.`);
+      try {
+        await Promise.all([refetch(), refetchMovement(), movementHistory.refetch()]);
+      } catch {
+        pushMessage({
+          tone: 'warning',
+          message: 'The batch closed, but its latest details could not be loaded. Refresh the page to see them.',
+        });
+      }
     } catch (err) {
       pushMessage({ tone: 'error', message: getDisplayErrorMessage(err, 'Failed to close batch. Please try again.') });
       setShowCloseConfirm(false);
@@ -655,23 +665,44 @@ export function BatchDetailPage(): ReactElement {
               </div>
             </div>
 
-            {/* The backend decides which batch movement actions are valid. */}
-            {!isMovementLoading && movement && (
-              <BatchMovementPanel
-                movement={movement}
-                history={movementHistory.data}
-                isHistoryLoading={movementHistory.isLoading}
-                historyError={movementHistory.error}
-                onRetryHistory={() => void movementHistory.refetch()}
-                masterTrackingNumber={batch.masterTrackingNumber}
-                totalOrders={summary.totalOrders}
-                canManage={canManage}
-                canOverrideRestriction={canOverrideRestriction}
-                isSubmitting={advanceMovement.isPending}
-                onConfirmAction={(action) => void confirmMovementAction(action)}
-                onViewShipmentActions={() => void navigate(`${ROUTES.OPERATIONS}?queue=last-mile&batch=${encodeURIComponent(batch.id)}`)}
-              />
+            {closeSuccessNotice && (
+              <div className="flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between" role="status">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-800">Batch closed</p>
+                    <p className="mt-0.5 text-sm text-emerald-700">{closeSuccessNotice} Continue with batch movement below.</p>
+                  </div>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => movementSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                >
+                  View next batch action
+                </Button>
+              </div>
             )}
+
+            {/* The backend decides which batch movement actions are valid. */}
+            <div ref={movementSectionRef}>
+              {!isMovementLoading && movement && (
+                <BatchMovementPanel
+                  movement={movement}
+                  history={movementHistory.data}
+                  isHistoryLoading={movementHistory.isLoading}
+                  historyError={movementHistory.error}
+                  onRetryHistory={() => void movementHistory.refetch()}
+                  masterTrackingNumber={batch.masterTrackingNumber}
+                  totalOrders={summary.totalOrders}
+                  canManage={canManage}
+                  canOverrideRestriction={canOverrideRestriction}
+                  isSubmitting={advanceMovement.isPending}
+                  onConfirmAction={(action) => void confirmMovementAction(action)}
+                  onViewShipmentActions={() => void navigate(`${ROUTES.OPERATIONS}?queue=last-mile&batch=${encodeURIComponent(batch.id)}`)}
+                />
+              )}
+            </div>
 
             <BatchCarrierPanel
               batch={batch}
