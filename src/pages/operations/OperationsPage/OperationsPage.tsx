@@ -15,12 +15,15 @@ import { ShipmentIntakeModal } from '@/pages/shipments/components';
 import { ROUTES } from '@/constants';
 import { BrowsePane } from './components/BrowsePane';
 import { OrderWorkspace } from './components/OrderWorkspace';
+import { LastMileWorkspace } from './components/LastMileWorkspace';
 import type { QueueKind } from './components/QueueShell';
 
 const QUEUE_KINDS: readonly QueueKind[] = ['preorder', 'arrival', 'verify', 'holds', 'batch', 'payment', 'escalated'];
+type OperationsQueueKind = QueueKind | 'last-mile';
 const DETAIL_TABS: readonly DetailTab[] = ['overview', 'warehouse', 'records', 'payment', 'images', 'timeline'];
 
-function asQueueKind(value: string | null): QueueKind | null {
+function asQueueKind(value: string | null): OperationsQueueKind | null {
+  if (value === 'last-mile') return value;
   return value && (QUEUE_KINDS as readonly string[]).includes(value) ? (value as QueueKind) : null;
 }
 
@@ -53,7 +56,7 @@ export function OperationsPage(): ReactElement {
   const queueKind = asQueueKind(searchParams.get('queue'));
   const detailTab = asDetailTab(searchParams.get('tab')) ?? 'overview';
 
-  function updateParams(next: { select?: string | null; queue?: QueueKind | null; tab?: DetailTab | null }): void {
+  function updateParams(next: { select?: string | null; queue?: OperationsQueueKind | null; tab?: DetailTab | null; batch?: string | null }): void {
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
       if (next.select !== undefined) {
@@ -65,13 +68,16 @@ export function OperationsPage(): ReactElement {
       if (next.tab !== undefined) {
         if (next.tab === null) params.delete('tab'); else params.set('tab', next.tab);
       }
+      if (next.batch !== undefined) {
+        if (next.batch === null) params.delete('batch'); else params.set('batch', next.batch);
+      }
       return params;
     }, { replace: true });
   }
 
   const handleStartQueue = (id: string, kind: QueueKind): void =>
     updateParams({ select: id, queue: kind, tab: null });
-  const handleExit = (): void => updateParams({ select: null, queue: null, tab: null });
+  const handleExit = (): void => updateParams({ select: null, queue: null, tab: null, batch: null });
   const handleDetailTabChange = (tab: DetailTab): void => updateParams({ tab });
   const handleGuidedNavigate = (next: { select: string; queue?: QueueKind }): void =>
     updateParams({ select: next.select, queue: next.queue ?? null });
@@ -81,6 +87,8 @@ export function OperationsPage(): ReactElement {
 
   const userName = user?.firstName ?? '';
   const hasSelection = !!selectedOrderId;
+  const batchId = searchParams.get('batch');
+  const isLastMile = queueKind === 'last-mile' && !!batchId;
 
   return (
     <AppShell
@@ -111,10 +119,15 @@ export function OperationsPage(): ReactElement {
         </button>
       </div>
 
-      {hasSelection ? (
+      {isLastMile ? (
+        <LastMileWorkspace
+          batchId={batchId!}
+          onExit={() => void navigate(ROUTES.BATCH_DETAIL.replace(':batchId', batchId!))}
+        />
+      ) : hasSelection ? (
         <OrderWorkspace
           selectedOrderId={selectedOrderId}
-          queueKind={queueKind}
+          queueKind={queueKind === 'last-mile' ? null : queueKind}
           detailTab={detailTab}
           allOrders={allOrders}
           onNavigate={handleGuidedNavigate}

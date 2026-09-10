@@ -669,6 +669,7 @@ export function BatchDetailPage(): ReactElement {
                 canOverrideRestriction={canOverrideRestriction}
                 isSubmitting={advanceMovement.isPending}
                 onConfirmAction={(action) => void confirmMovementAction(action)}
+                onViewShipmentActions={() => void navigate(`${ROUTES.OPERATIONS}?queue=last-mile&batch=${encodeURIComponent(batch.id)}`)}
               />
             )}
 

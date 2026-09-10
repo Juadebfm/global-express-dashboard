@@ -97,6 +97,9 @@ export function BatchCarrierPanel({
 }: BatchCarrierPanelProps): ReactElement {
   const isSea = batch.transportMode === 'sea';
   const fields = fieldsForMode(isSea);
+  const hasRecordedCarrierDetails = fields
+    .filter((field) => !WRITE_ONLY_FIELDS.has(field.key))
+    .some((field) => Boolean(readValue(batch, field.key)));
 
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<Record<string, string>>({});
@@ -165,13 +168,24 @@ export function BatchCarrierPanel({
           )}
           <h2 className="font-semibold text-gray-900">Carrier &amp; routing</h2>
         </div>
-        {canManage && !isEditing && (
-          <Button variant="secondary" size="sm" onClick={startEditing}>
-            <Pencil className="mr-1.5 h-4 w-4" />
-            Edit
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          {!hasRecordedCarrierDetails && !isEditing && (
+            <span className="hidden text-xs font-medium text-amber-700 sm:inline">Carrier details not recorded</span>
+          )}
+          {canManage && !isEditing && (
+            <Button variant="secondary" size="sm" onClick={startEditing}>
+              <Pencil className="mr-1.5 h-4 w-4" />
+              Edit
+            </Button>
+          )}
+        </div>
       </div>
+
+      {!hasRecordedCarrierDetails && !isEditing && (
+        <div className="border-t border-amber-100 bg-amber-50 px-5 py-2 text-xs font-medium text-amber-700 sm:hidden">
+          Carrier details not recorded
+        </div>
+      )}
 
       <div className="border-t border-gray-100 px-5 py-4">
         {isEditing ? (

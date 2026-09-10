@@ -72,8 +72,8 @@ export {
   updateAdminSupplierDirectoryVerification,
 } from './suppliersService';
 export { getSupportTickets, getSupportTicketById, createSupportTicket, sendSupportMessage, updateTicketStatus, mapSupportMessage } from './supportService';
-export { createOrder, getWarehousePricingQuote, getOrders, getOrderById, getOrderTimeline, getOrderImages, updateOrderStatus, deleteOrder, updatePickupRep, estimateOrderCost, escalateOrder, clearEscalation } from './ordersService';
-export type { OrderTimeline, OrderTimelineEvent, GoodsBreakdownItem, OrderEstimatePayload } from './ordersService';
+export { createOrder, getWarehousePricingQuote, getOrders, getOrderById, getOrderTimeline, getOrderImages, updateOrderStatus, completePickup, resendPickupPin, deleteOrder, updatePickupRep, estimateOrderCost, escalateOrder, clearEscalation } from './ordersService';
+export type { OrderTimeline, OrderTimelineEvent, GoodsBreakdownItem, OrderEstimatePayload, CompletePickupPayload } from './ordersService';
 export {
   estimateShipping,
   getPublicShipmentTypes,

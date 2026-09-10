@@ -216,6 +216,9 @@ export interface BatchListItem {
   // Cutoff approval is retired, but historic batches still carry this state.
   status: 'open' | 'cutoff_pending_approval' | 'closed';
   statusLabel: string;
+  /** Null until a closed batch has recorded its shared movement stage. */
+  movementStatus: string | null;
+  movementStatusLabel: string | null;
   customerCount: number;
   orderCount: number;
   totalWeightKg: string;

@@ -33,6 +33,7 @@ export {
 } from './useCustomerDeclaredParcels';
 export { useTrackShipment, trackingKey } from './useTrackShipment';
 export { useUpdateOrderStatus } from './useUpdateOrderStatus';
+export { useLastMileActions } from './useLastMileActions';
 export { useCreateClient } from './useCreateClient';
 export { useActivateClient } from './useActivateClient';
 export { useUpdateClient } from './useUpdateClient';

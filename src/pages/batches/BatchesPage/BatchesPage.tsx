@@ -1,13 +1,14 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Boxes, ChevronRight, Package, Plane, Scale, Ship, Users } from 'lucide-react';
+import { Boxes, ChevronRight, ListChecks, Package, Plane, Scale, Ship, Users } from 'lucide-react';
 import { useAuth, useBatches } from '@/hooks';
 import { AppLayout } from '@/components/layout';
 import { PageHeader } from '@/pages/shared';
 import { Card, Pagination } from '@/components/ui';
 import { ROUTES } from '@/constants';
 import { cn } from '@/utils';
+import { isLastMileBatch } from '@/utils/lastMile';
 import type { BatchListItem } from '@/types';
 
 type StatusFilter = 'all' | 'open' | 'closed';
@@ -52,38 +53,51 @@ function StatusBadge({ batch }: { batch: BatchListItem }): ReactElement {
   );
 }
 
+function lastMilePath(batchId: string): string {
+  return `${ROUTES.OPERATIONS}?queue=last-mile&batch=${encodeURIComponent(batchId)}`;
+}
+
 // Mobile: card row
 function BatchCard({ batch }: { batch: BatchListItem }): ReactElement {
   const detailPath = ROUTES.BATCH_DETAIL.replace(':batchId', batch.id);
+  const canViewActions = isLastMileBatch(batch);
 
   return (
-    <Link
-      to={detailPath}
-      className="block px-4 py-3.5 hover:bg-gray-50 transition-colors group"
-    >
-      <div className="flex items-center gap-3">
-        <ModeBadge batch={batch} />
-        <p className="font-mono text-sm font-semibold text-gray-900 truncate flex-1 min-w-0">
-          {batch.masterTrackingNumber}
-        </p>
-        <StatusBadge batch={batch} />
-        <ChevronRight className="h-4 w-4 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
-      </div>
-      <div className="mt-3 grid grid-cols-3 gap-x-4 gap-y-2">
-        <div>
-          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Customers</p>
-          <p className="text-xs text-gray-700">{batch.customerCount}</p>
+    <div className="px-4 py-3.5 hover:bg-gray-50 transition-colors">
+      <Link to={detailPath} className="group block rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2">
+        <div className="flex items-center gap-3">
+          <ModeBadge batch={batch} />
+          <p className="font-mono text-sm font-semibold text-gray-900 truncate flex-1 min-w-0">
+            {batch.masterTrackingNumber}
+          </p>
+          <StatusBadge batch={batch} />
+          <ChevronRight className="h-4 w-4 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
         </div>
-        <div>
-          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Orders</p>
-          <p className="text-xs text-gray-700">{batch.orderCount}</p>
+        <div className="mt-3 grid grid-cols-3 gap-x-4 gap-y-2">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Customers</p>
+            <p className="text-xs text-gray-700">{batch.customerCount}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Orders</p>
+            <p className="text-xs text-gray-700">{batch.orderCount}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Weight</p>
+            <p className="text-xs text-gray-700">{batch.totalWeightKg} kg</p>
+          </div>
         </div>
-        <div>
-          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Weight</p>
-          <p className="text-xs text-gray-700">{batch.totalWeightKg} kg</p>
-        </div>
-      </div>
-    </Link>
+      </Link>
+      {canViewActions && (
+        <Link
+          to={lastMilePath(batch.id)}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-brand-100 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+        >
+          <ListChecks className="h-3.5 w-3.5" />
+          View shipment actions
+        </Link>
+      )}
+    </div>
   );
 }
 
@@ -220,12 +234,13 @@ export function BatchesPage(): ReactElement {
                         <th className="whitespace-nowrap px-6 py-4">
                           <span className="inline-flex items-center gap-1.5"><Scale className="h-3.5 w-3.5" /> Total Weight</span>
                         </th>
-                        <th className="w-10 px-4 py-4" aria-hidden />
+                        <th className="whitespace-nowrap px-6 py-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 bg-white">
                       {data.batches.map((batch) => {
                         const detailPath = ROUTES.BATCH_DETAIL.replace(':batchId', batch.id);
+                        const canViewActions = isLastMileBatch(batch);
                         return (
                           <tr
                             key={batch.id}
@@ -250,8 +265,19 @@ export function BatchesPage(): ReactElement {
                             <td className="whitespace-nowrap px-6 py-4 text-gray-700">
                               {batch.totalWeightKg} kg
                             </td>
-                            <td className="whitespace-nowrap px-4 py-4">
-                              <ChevronRight className="h-4 w-4 text-gray-400" />
+                            <td className="whitespace-nowrap px-6 py-4 text-right">
+                              {canViewActions ? (
+                                <Link
+                                  to={lastMilePath(batch.id)}
+                                  onClick={(event) => event.stopPropagation()}
+                                  className="inline-flex items-center gap-1.5 rounded-xl border border-brand-100 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                                >
+                                  <ListChecks className="h-3.5 w-3.5" />
+                                  View shipment actions
+                                </Link>
+                              ) : (
+                                <ChevronRight className="ml-auto h-4 w-4 text-gray-400" />
+                              )}
                             </td>
                           </tr>
                         );

@@ -374,6 +374,24 @@ export async function updateOrderStatus(
   return apiPatchData<ApiOrder>(`/orders/${id}/status`, { statusV2 }, token);
 }
 
+export interface CompletePickupPayload {
+  pin: string;
+  collectorName?: string;
+  collectorRelationship?: string;
+}
+
+export function completePickup(
+  token: string,
+  orderId: string,
+  payload: CompletePickupPayload,
+): Promise<{ message: string }> {
+  return apiPostData<{ message: string }>(`/orders/${orderId}/complete-pickup`, payload, token);
+}
+
+export function resendPickupPin(token: string, orderId: string): Promise<{ message: string }> {
+  return apiPostData<{ message: string }>(`/orders/${orderId}/resend-pickup-pin`, undefined, token);
+}
+
 export async function escalateOrder(token: string, id: string, note: string): Promise<void> {
   await apiPatch(`/orders/${id}/escalate`, { note }, token);
 }

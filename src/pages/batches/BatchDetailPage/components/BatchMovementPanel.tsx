@@ -245,6 +245,7 @@ interface BatchMovementPanelProps {
   canOverrideRestriction: boolean;
   isSubmitting: boolean;
   onConfirmAction: (action: BatchMovementAction) => void;
+  onViewShipmentActions?: () => void;
 }
 
 export function BatchMovementPanel({
@@ -259,6 +260,7 @@ export function BatchMovementPanel({
   canOverrideRestriction,
   isSubmitting,
   onConfirmAction,
+  onViewShipmentActions = () => undefined,
 }: BatchMovementPanelProps): ReactElement {
   const [pendingAction, setPendingAction] = useState<BatchMovementAction | null>(null);
   const [typedConfirmation, setTypedConfirmation] = useState('');
@@ -335,11 +337,23 @@ export function BatchMovementPanel({
           <MovementTimeline stages={buildStages(history, movement.currentStatus)} />
         )}
 
-        {canManage && movement.allowedActions.length === 0 && (
+        {movement.currentStatus === 'IN_TRANSIT_TO_LAGOS_OFFICE' && (
+          <div className="flex flex-col gap-3 rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-brand-900">Final transfer in progress</p>
+              <p className="mt-0.5 text-sm text-brand-800">
+                Batch-level tracking ends here. Manage pickup or local delivery for each shipment once it reaches the office.
+              </p>
+            </div>
+            <Button variant="secondary" size="sm" onClick={onViewShipmentActions}>
+              View shipment actions
+            </Button>
+          </div>
+        )}
+
+        {canManage && movement.allowedActions.length === 0 && movement.currentStatus !== 'IN_TRANSIT_TO_LAGOS_OFFICE' && (
           <p className="text-sm text-gray-500">
-            {movement.currentStatus === 'IN_TRANSIT_TO_LAGOS_OFFICE'
-              ? 'No further batch-level movement is available. Pickup and local delivery are managed per order.'
-              : PERMANENT_STATUSES.has(movement.currentStatus ?? '')
+            {PERMANENT_STATUSES.has(movement.currentStatus ?? '')
                 ? 'This batch has reached a final state and cannot be moved.'
                 : 'No batch movement action is currently available.'}
           </p>
