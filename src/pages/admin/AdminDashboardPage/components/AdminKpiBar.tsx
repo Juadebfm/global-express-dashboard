@@ -5,6 +5,7 @@ import { useShipmentsDashboard } from '@/hooks';
 import { ROUTES } from '@/constants';
 import type { KpiCard } from '@/types';
 import { cn } from '@/utils';
+import { formatCompactNaira } from './kpiFormat';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   'all orders': Package,
@@ -35,9 +36,10 @@ interface StatCardProps {
   loading?: boolean;
   accent?: boolean;
   to?: string;
+  exactValue?: string;
 }
 
-function StatCard({ label, value, icon: Icon, loading = false, accent = false, to }: StatCardProps): ReactElement {
+function StatCard({ label, value, icon: Icon, loading = false, accent = false, to, exactValue }: StatCardProps): ReactElement {
   const content = (
     <>
       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100">
@@ -47,7 +49,11 @@ function StatCard({ label, value, icon: Icon, loading = false, accent = false, t
       {loading ? (
         <div className="mt-1.5 h-7 w-20 animate-pulse rounded-lg bg-gray-100" />
       ) : (
-        <p className={cn('mt-1 text-2xl font-semibold', accent ? 'text-brand-500' : 'text-gray-900')}>
+        <p
+          className={cn('mt-1 min-w-0 truncate whitespace-nowrap text-2xl font-semibold tabular-nums', accent ? 'text-brand-500' : 'text-gray-900')}
+          title={exactValue}
+          aria-label={exactValue ? `${label}: ${exactValue}` : undefined}
+        >
           {value}
         </p>
       )}
@@ -58,7 +64,7 @@ function StatCard({ label, value, icon: Icon, loading = false, accent = false, t
     return (
       <Link
         to={to}
-        className="block rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-brand-200 hover:shadow-sm"
+        className="block min-w-0 rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-brand-200 hover:shadow-sm"
       >
         {content}
       </Link>
@@ -66,7 +72,7 @@ function StatCard({ label, value, icon: Icon, loading = false, accent = false, t
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5">
+    <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-5">
       {content}
     </div>
   );
@@ -100,7 +106,8 @@ export function AdminKpiBar({ kpis }: AdminKpiBarProps): ReactElement {
         <StatCard
           key={kpi.id}
           label={kpi.title}
-          value={kpi.display ?? kpi.value}
+          value={kpi.id === 'revenueMtd' ? formatCompactNaira(kpi.value) : kpi.display ?? kpi.value}
+          exactValue={kpi.id === 'revenueMtd' ? kpi.display ?? `₦${kpi.value.toLocaleString('en-US')}` : undefined}
           icon={getIcon(kpi.title)}
           to={ROUTE_MAP[kpi.id]}
         />
