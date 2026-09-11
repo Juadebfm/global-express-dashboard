@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Truck } from 'lucide-react';
 import {
   useDashboardData,
   useMyPayments,
@@ -12,13 +12,15 @@ import {
   useSearch,
   useUpdatePickupRep,
 } from '@/hooks';
-import { Pagination, TableRowsSkeleton } from '@/components/ui';
+import { Button, Pagination, TableRowsSkeleton } from '@/components/ui';
 import { AppShell, PageHeader } from '@/pages/shared';
 import { cn } from '@/utils';
+import { useFeedbackStore } from '@/store';
 import {
   OrderQueue,
   CustomerShipmentDetail,
   CustomerPaymentView,
+  D2dOrderModal,
 } from './components';
 import { includesQuery, toView } from './types';
 import type { OperatorFilter } from './types';
@@ -45,6 +47,8 @@ function CustomerOrdersView(): ReactElement {
   // shipment details modal) jumps straight to the settle-balance screen
   // instead of the read-only detail view.
   const [showPaymentView, setShowPaymentView] = useState(() => searchParams.get('pay') === '1');
+  const [showD2dOrderForm, setShowD2dOrderForm] = useState(false);
+  const pushMessage = useFeedbackStore((state) => state.pushMessage);
   const page = Math.max(1, Number(searchParams.get('page')) || 1);
   const setPage = (next: number): void => {
     setSearchParams(
@@ -135,6 +139,19 @@ function CustomerOrdersView(): ReactElement {
     await updatePickupRep.mutateAsync({ orderId, pickupRepName: name, pickupRepPhone: phone });
   };
 
+  const handleD2dOrderCreated = (order: { id: string; trackingNumber: string }): void => {
+    setShowD2dOrderForm(false);
+    setSelectedOrderIdState(order.id);
+    setMobileShowDetail(true);
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.set('select', order.id);
+      next.delete('pay');
+      return next;
+    }, { replace: true });
+    pushMessage({ tone: 'success', message: `D2D order created. Tracking number: ${order.trackingNumber}` });
+  };
+
   return (
     <AppShell
       data={appData}
@@ -146,6 +163,12 @@ function CustomerOrdersView(): ReactElement {
         <PageHeader
           title={t('orders:pageTitle')}
           subtitle={t('orders:subtitle')}
+          actions={(
+            <Button size="sm" onClick={() => setShowD2dOrderForm(true)}>
+              <Truck className="mr-1.5 h-4 w-4" />
+              Create D2D order
+            </Button>
+          )}
         />
 
         <div className="grid gap-4 md:gap-6 md:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
@@ -222,6 +245,12 @@ function CustomerOrdersView(): ReactElement {
             )}
           </section>
         </div>
+        {showD2dOrderForm && (
+          <D2dOrderModal
+            onClose={() => setShowD2dOrderForm(false)}
+            onCreated={handleD2dOrderCreated}
+          />
+        )}
       </div>
     </AppShell>
   );

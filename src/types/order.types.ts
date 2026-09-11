@@ -134,6 +134,35 @@ export interface ApiCreateOrderResponse {
   data: ApiOrder;
 }
 
+/** The normal-order response returned by both D2D intake endpoints. */
+export interface D2dOrderSubmission {
+  id: string;
+  trackingNumber: string;
+  shipmentType: 'd2d';
+  isPreorder: true;
+  statusV2: 'PREORDER_SUBMITTED';
+}
+
+/**
+ * The signed-in endpoint retains its historic `/leads/d2d-intake` path, but
+ * it now creates an Order. Keep the payload beside order contracts so no new
+ * D2D submission is accidentally modelled as a Lead.
+ */
+export interface D2dOrderIntakePayload {
+  fullName: string;
+  email?: string;
+  phone?: string;
+  originCountry: string;
+  goodsDescription: string;
+  estimatedWeightKg?: number;
+  estimatedCbm?: number;
+  deliveryPhone: string;
+  deliveryAddressLine1?: string;
+  deliveryState?: string;
+  deliveryCity?: string;
+  deliveryLandmark?: string;
+}
+
 export interface OrderListItem {
   id: string;
   trackingNumber: string;

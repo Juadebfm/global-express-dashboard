@@ -10,6 +10,8 @@ import type {
   CustomerDeclaredParcel,
   CustomerDeclaredParcelInput,
   CustomerDeclaredParcelPatch,
+  D2dOrderIntakePayload,
+  D2dOrderSubmission,
 } from '@/types';
 import { apiDelete, apiDeleteData, apiGet, apiPatch, apiPatchData, apiPostData } from '@/lib/apiClient';
 
@@ -390,6 +392,31 @@ export function completePickup(
 
 export function resendPickupPin(token: string, orderId: string): Promise<{ message: string }> {
   return apiPostData<{ message: string }>(`/orders/${orderId}/resend-pickup-pin`, undefined, token);
+}
+
+export interface CompleteDeliveryPayload {
+  pin: string;
+  recipientName?: string;
+  recipientRelationship?: string;
+}
+
+export function completeDelivery(
+  token: string,
+  orderId: string,
+  payload: CompleteDeliveryPayload,
+): Promise<{ message: string }> {
+  return apiPostData<{ message: string }>(`/orders/${orderId}/complete-delivery`, payload, token);
+}
+
+export function resendDeliveryPin(token: string, orderId: string): Promise<{ message: string }> {
+  return apiPostData<{ message: string }>(`/orders/${orderId}/resend-delivery-pin`, undefined, token);
+}
+
+export function submitD2dOrderIntake(
+  token: string,
+  payload: D2dOrderIntakePayload,
+): Promise<D2dOrderSubmission> {
+  return apiPostData<D2dOrderSubmission>('/leads/d2d-intake', payload, token);
 }
 
 export async function escalateOrder(token: string, id: string, note: string): Promise<void> {

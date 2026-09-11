@@ -69,7 +69,7 @@ describe('last-mile next actions', () => {
       kind: 'status', label: 'Mark in transit to destination', statusV2: 'IN_TRANSIT_TO_DESTINATION_CITY',
     });
     expect(getLastMileNextAction(d2d('OUT_FOR_DELIVERY_DESTINATION_CITY'))).toEqual({
-      kind: 'status', label: 'Mark delivered', statusV2: 'DELIVERED_TO_RECIPIENT',
+      kind: 'delivery', label: 'Complete delivery',
     });
     expect(getLastMileNextAction(d2d('DELIVERED_TO_RECIPIENT'))).toBeNull();
   });

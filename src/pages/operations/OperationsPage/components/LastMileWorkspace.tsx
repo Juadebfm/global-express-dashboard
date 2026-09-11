@@ -59,8 +59,10 @@ interface LastMileShipmentRowProps {
   isWorking: boolean;
   onReady: (order: BatchRosterOrder) => void;
   onPickup: (order: BatchRosterOrder) => void;
+  onDelivery: (order: BatchRosterOrder) => void;
   onStatus: (order: BatchRosterOrder, statusV2: string) => void;
   onResendPin: (order: BatchRosterOrder) => void;
+  onResendDeliveryPin: (order: BatchRosterOrder) => void;
 }
 
 function LastMileShipmentRow({
@@ -71,8 +73,10 @@ function LastMileShipmentRow({
   isWorking,
   onReady,
   onPickup,
+  onDelivery,
   onStatus,
   onResendPin,
+  onResendDeliveryPin,
 }: LastMileShipmentRowProps): ReactElement {
   const needsD2dRoutingFact = order.shipmentType === 'd2d' && shipmentStatus(order) === 'IN_TRANSIT_TO_LAGOS_OFFICE';
   const timelineQuery = useOrderTimeline(order.id, needsD2dRoutingFact);
@@ -121,6 +125,14 @@ function LastMileShipmentRow({
               Resend PIN
             </Button>
           </div>
+        ) : next.kind === 'delivery' ? (
+          <div className="flex flex-wrap gap-2 lg:justify-end">
+            <Button size="sm" onClick={() => onDelivery(order)} disabled={isWorking}>{next.label}</Button>
+            <Button variant="secondary" size="sm" onClick={() => onResendDeliveryPin(order)} disabled={isWorking}>
+              <KeyRound className="mr-1.5 h-4 w-4" />
+              Resend delivery PIN
+            </Button>
+          </div>
         ) : (
           <Button size="sm" onClick={() => onStatus(order, next.statusV2)} disabled={isWorking}>{next.label}</Button>
         )}
@@ -138,9 +150,13 @@ export function LastMileWorkspace({ batchId, onExit }: LastMileWorkspaceProps): 
   const pushMessage = useFeedbackStore((state) => state.pushMessage);
   const [readyTarget, setReadyTarget] = useState<PickupTarget | null>(null);
   const [pickupTarget, setPickupTarget] = useState<PickupTarget | null>(null);
+  const [deliveryTarget, setDeliveryTarget] = useState<PickupTarget | null>(null);
   const [pin, setPin] = useState('');
   const [collectorName, setCollectorName] = useState('');
   const [collectorRelationship, setCollectorRelationship] = useState('');
+  const [deliveryPin, setDeliveryPin] = useState('');
+  const [recipientName, setRecipientName] = useState('');
+  const [recipientRelationship, setRecipientRelationship] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
 
   const customers = rosterQuery.data?.customers ?? [];
@@ -210,6 +226,39 @@ export function LastMileWorkspace({ batchId, onExit }: LastMileWorkspaceProps): 
     try {
       const result = await actions.resendPin.mutateAsync({ batchId, orderId: order.id });
       pushMessage({ tone: 'success', message: result.message || 'A replacement pickup PIN has been sent.' });
+    } catch (error) {
+      await handleError(error);
+    }
+  };
+
+  const confirmDelivery = async (): Promise<void> => {
+    if (!deliveryTarget || !/^\d{6}$/.test(deliveryPin)) return;
+    setActionError(null);
+    try {
+      await actions.completeDelivery.mutateAsync({
+        batchId,
+        orderId: deliveryTarget.id,
+        payload: {
+          pin: deliveryPin,
+          ...(recipientName.trim() ? { recipientName: recipientName.trim() } : {}),
+          ...(recipientRelationship.trim() ? { recipientRelationship: recipientRelationship.trim() } : {}),
+        },
+      });
+      pushMessage({ tone: 'success', message: 'Delivery completed.' });
+      setDeliveryTarget(null);
+      setDeliveryPin('');
+      setRecipientName('');
+      setRecipientRelationship('');
+    } catch (error) {
+      await handleError(error);
+    }
+  };
+
+  const resendDeliveryPin = async (order: BatchRosterOrder): Promise<void> => {
+    setActionError(null);
+    try {
+      const result = await actions.resendDelivery.mutateAsync({ batchId, orderId: order.id });
+      pushMessage({ tone: 'success', message: result.message || 'A replacement delivery PIN has been sent.' });
     } catch (error) {
       await handleError(error);
     }
@@ -308,11 +357,13 @@ export function LastMileWorkspace({ batchId, onExit }: LastMileWorkspaceProps): 
                 customerName={customerName}
                 canManage={canManage}
                 permissionsReady={permissions.isReady}
-                isWorking={actions.updateStatus.isPending || actions.complete.isPending || actions.resendPin.isPending}
+                isWorking={actions.updateStatus.isPending || actions.complete.isPending || actions.resendPin.isPending || actions.completeDelivery.isPending || actions.resendDelivery.isPending}
                 onReady={(target) => setReadyTarget({ id: target.id, trackingNumber: target.trackingNumber })}
                 onPickup={(target) => setPickupTarget({ id: target.id, trackingNumber: target.trackingNumber })}
+                onDelivery={(target) => setDeliveryTarget({ id: target.id, trackingNumber: target.trackingNumber })}
                 onStatus={(target, statusV2) => void handleStatusAction(target, statusV2)}
                 onResendPin={(target) => void resendPin(target)}
+                onResendDeliveryPin={(target) => void resendDeliveryPin(target)}
               />
             ))}
           </div>
@@ -343,6 +394,21 @@ export function LastMileWorkspace({ batchId, onExit }: LastMileWorkspaceProps): 
           onCollectorRelationshipChange={setCollectorRelationship}
           onClose={() => setPickupTarget(null)}
           onSubmit={() => void confirmPickup()}
+        />
+      )}
+
+      {deliveryTarget && (
+        <DeliveryModal
+          target={deliveryTarget}
+          pin={deliveryPin}
+          recipientName={recipientName}
+          recipientRelationship={recipientRelationship}
+          isPending={actions.completeDelivery.isPending}
+          onPinChange={setDeliveryPin}
+          onRecipientNameChange={setRecipientName}
+          onRecipientRelationshipChange={setRecipientRelationship}
+          onClose={() => setDeliveryTarget(null)}
+          onSubmit={() => void confirmDelivery()}
         />
       )}
     </div>
@@ -435,6 +501,94 @@ function PickupModal({
               </Button>
             </div>
           </form>
+    </div>
+  );
+}
+
+interface DeliveryModalProps {
+  target: PickupTarget;
+  pin: string;
+  recipientName: string;
+  recipientRelationship: string;
+  isPending: boolean;
+  onPinChange: (value: string) => void;
+  onRecipientNameChange: (value: string) => void;
+  onRecipientRelationshipChange: (value: string) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+}
+
+function DeliveryModal({
+  target,
+  pin,
+  recipientName,
+  recipientRelationship,
+  isPending,
+  onPinChange,
+  onRecipientNameChange,
+  onRecipientRelationshipChange,
+  onClose,
+  onSubmit,
+}: DeliveryModalProps): ReactElement {
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape' && !isPending) onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isPending, onClose]);
+
+  return (
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={(event) => {
+        if (event.target === overlayRef.current && !isPending) onClose();
+      }}
+    >
+      <form
+        className="w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="complete-delivery-title"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit();
+        }}
+      >
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50">
+            <Truck className="h-5 w-5 text-brand-700" />
+          </span>
+          <div>
+            <h2 id="complete-delivery-title" className="text-lg font-semibold text-gray-900">Complete delivery</h2>
+            <p className="mt-1 text-sm text-gray-500">Enter the six-digit delivery PIN for {target.trackingNumber}.</p>
+          </div>
+        </div>
+        <div className="mt-5 space-y-4">
+          <Input
+            label="Delivery PIN"
+            value={pin}
+            onChange={(event) => onPinChange(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            required
+            error={pin && !/^\d{6}$/.test(pin) ? 'Enter the six-digit PIN.' : undefined}
+          />
+          <Input label="Recipient name (optional)" value={recipientName} onChange={(event) => onRecipientNameChange(event.target.value)} />
+          <Input label="Relationship to customer (optional)" value={recipientRelationship} onChange={(event) => onRecipientRelationshipChange(event.target.value)} />
+        </div>
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button type="button" variant="secondary" size="sm" onClick={onClose} disabled={isPending}>Cancel</Button>
+          <Button type="submit" size="sm" disabled={!/^\d{6}$/.test(pin) || isPending}>
+            {isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+            Complete delivery
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

@@ -22,6 +22,7 @@ export { usePendingPaymentsCount } from './usePendingPaymentsCount';
 export { useMyNotificationPreferences } from './useMyNotificationPreferences';
 export { useOrders } from './useOrders';
 export { useOrderEstimate } from './useOrderEstimate';
+export { useD2dOrderIntake } from './useD2dOrderIntake';
 export { useChangePassword } from './useChangePassword';
 export { useCreateInternalUser } from './useCreateInternalUser';
 export { useOrderDetail } from './useOrderDetail';
@@ -184,7 +185,7 @@ export {
 } from './useBatches';
 export { useEscalateOrder } from './useEscalateOrder';
 export { useClearEscalation } from './useClearEscalation';
-export { useLeads, useUpdateLead, useDeleteLead, useMyD2dLeads, useSubmitD2dIntake, useSubmitShopInquiry } from './useLeads';
+export { useLeads, useUpdateLead, useDeleteLead, useSubmitShopInquiry } from './useLeads';
 export { useNewsletterSubscribers, useDeactivateSubscriber, useDeleteSubscriber, useExportSubscribers } from './useNewsletter';
 export { usePermissions, useCapability, usePermissionsSync, MY_PERMISSIONS_KEY } from './usePermissions';
 export type { PermissionsState } from './usePermissions';

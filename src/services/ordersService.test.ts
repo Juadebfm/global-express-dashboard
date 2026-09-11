@@ -1,6 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createOrder, getOrderTimeline, getOrders, MAX_ORDERS_PAGE_SIZE, updateOrderStatus } from './ordersService';
+import {
+  completeDelivery,
+  createOrder,
+  getOrderTimeline,
+  getOrders,
+  MAX_ORDERS_PAGE_SIZE,
+  resendDeliveryPin,
+  submitD2dOrderIntake,
+  updateOrderStatus,
+} from './ordersService';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -186,5 +195,58 @@ describe('createOrder shipment type', () => {
     const fetchMock = mockCreate();
     await createOrder({ ...BASE, shipmentType: 'ocean' }, 'token', 'key-3');
     expect(sentBody(fetchMock).shipmentType).toBe('ocean');
+  });
+});
+
+describe('D2D order and delivery actions', () => {
+  it('creates a normal D2D pre-order through the legacy intake path', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(new Response(JSON.stringify({
+      success: true,
+      data: {
+        id: 'order-1',
+        trackingNumber: 'D2D-20260911-0001',
+        shipmentType: 'd2d',
+        isPreorder: true,
+        statusV2: 'PREORDER_SUBMITTED',
+      },
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } })));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(submitD2dOrderIntake('token', {
+      fullName: 'Ada Lovelace',
+      originCountry: 'South Korea',
+      goodsDescription: 'Kitchenware',
+      deliveryPhone: '+2348012345678',
+    })).resolves.toMatchObject({ id: 'order-1', shipmentType: 'd2d', isPreorder: true });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/leads/d2d-intake'),
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"deliveryPhone":"+2348012345678"'),
+      }),
+    );
+  });
+
+  it('uses the delivery-PIN completion and resend endpoints', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(new Response(JSON.stringify({
+      success: true,
+      data: { message: 'Delivery completed.' },
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } })));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await completeDelivery('token', 'order-1', { pin: '123456', recipientName: 'Ada' });
+    await resendDeliveryPin('token', 'order-1');
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('/orders/order-1/complete-delivery'),
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ pin: '123456', recipientName: 'Ada' }) }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('/orders/order-1/resend-delivery-pin'),
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 });

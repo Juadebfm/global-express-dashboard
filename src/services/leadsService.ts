@@ -38,30 +38,6 @@ export function deleteLead(id: string, token: string): Promise<void> {
   return apiDelete<void>(`/leads/${id}`, token);
 }
 
-export function getMyD2dLeads(token: string): Promise<Lead[]> {
-  return apiGetData<Lead[]>('/leads/my-d2d', token);
-}
-
-export function submitD2dIntake(
-  payload: {
-    fullName: string;
-    email?: string;
-    phone?: string;
-    originCountry: string;
-    goodsDescription: string;
-    estimatedWeightKg?: number;
-    estimatedCbm?: number;
-    deliveryPhone?: string;
-    deliveryAddressLine1?: string;
-    deliveryState?: string;
-    deliveryCity?: string;
-    deliveryLandmark?: string;
-  },
-  token: string,
-): Promise<Lead> {
-  return apiPostData<Lead>('/leads/d2d-intake', payload, token);
-}
-
 export function submitShopInquiry(
   payload: {
     fullName: string;

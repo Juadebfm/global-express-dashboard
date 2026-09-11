@@ -145,6 +145,8 @@ export type {
   CustomerDeclaredParcelInput,
   CustomerDeclaredParcelPatch,
   ApiOrder,
+  D2dOrderSubmission,
+  D2dOrderIntakePayload,
   ApiCreateOrderResponse,
   OrderListItem,
   OrdersListResult,

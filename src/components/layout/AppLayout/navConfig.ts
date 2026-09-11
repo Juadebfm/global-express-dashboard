@@ -15,7 +15,6 @@ type Role = User['role'];
 export const CUSTOMER_NAV: SidebarItem[] = [
   { id: 'myShipments', icon: 'clipboard', href: ROUTES.DASHBOARD },
   { id: 'payments', icon: 'wallet', href: ROUTES.PAYMENTS },
-  { id: 'd2dRequests', icon: 'truck', href: ROUTES.D2D_MY_REQUESTS },
   { id: 'deliverySchedule', icon: 'calendar', href: ROUTES.DELIVERY_SCHEDULE },
   { id: 'notification', icon: 'bell', href: ROUTES.NOTIFICATIONS },
 ];

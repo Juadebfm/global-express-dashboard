@@ -72,8 +72,8 @@ export {
   updateAdminSupplierDirectoryVerification,
 } from './suppliersService';
 export { getSupportTickets, getSupportTicketById, createSupportTicket, sendSupportMessage, updateTicketStatus, mapSupportMessage } from './supportService';
-export { createOrder, getWarehousePricingQuote, getOrders, getOrderById, getOrderTimeline, getOrderImages, updateOrderStatus, completePickup, resendPickupPin, deleteOrder, updatePickupRep, estimateOrderCost, escalateOrder, clearEscalation } from './ordersService';
-export type { OrderTimeline, OrderTimelineEvent, GoodsBreakdownItem, OrderEstimatePayload, CompletePickupPayload } from './ordersService';
+export { createOrder, getWarehousePricingQuote, getOrders, getOrderById, getOrderTimeline, getOrderImages, updateOrderStatus, completePickup, resendPickupPin, completeDelivery, resendDeliveryPin, submitD2dOrderIntake, deleteOrder, updatePickupRep, estimateOrderCost, escalateOrder, clearEscalation } from './ordersService';
+export type { OrderTimeline, OrderTimelineEvent, GoodsBreakdownItem, OrderEstimatePayload, CompletePickupPayload, CompleteDeliveryPayload } from './ordersService';
 export {
   estimateShipping,
   getPublicShipmentTypes,
@@ -163,8 +163,6 @@ export {
   getLead,
   updateLead,
   deleteLead,
-  getMyD2dLeads,
-  submitD2dIntake,
   submitShopInquiry,
 } from './leadsService';
 

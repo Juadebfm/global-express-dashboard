@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { completePickup, resendPickupPin, updateOrderStatus } from '@/services';
-import type { CompletePickupPayload } from '@/services/ordersService';
+import { completeDelivery, completePickup, resendDeliveryPin, resendPickupPin, updateOrderStatus } from '@/services';
+import type { CompleteDeliveryPayload, CompletePickupPayload } from '@/services/ordersService';
 
 const TOKEN_KEY = 'globalxpress_token';
 
@@ -40,5 +40,15 @@ export function useLastMileActions() {
     mutationFn: ({ orderId }: { batchId: string; orderId: string }) => resendPickupPin(getToken(), orderId),
   });
 
-  return { updateStatus, complete, resendPin };
+  const completeDeliveryMutation = useMutation({
+    mutationFn: ({ orderId, payload }: { batchId: string; orderId: string; payload: CompleteDeliveryPayload }) =>
+      completeDelivery(getToken(), orderId, payload),
+    onSuccess: (_data, { batchId, orderId }) => invalidateLastMileData(queryClient, batchId, orderId),
+  });
+
+  const resendDelivery = useMutation({
+    mutationFn: ({ orderId }: { batchId: string; orderId: string }) => resendDeliveryPin(getToken(), orderId),
+  });
+
+  return { updateStatus, complete, resendPin, completeDelivery: completeDeliveryMutation, resendDelivery };
 }

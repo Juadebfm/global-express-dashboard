@@ -6,6 +6,8 @@ import { LastMileWorkspace } from './LastMileWorkspace';
 const updateStatus = { isPending: false, mutateAsync: vi.fn() };
 const complete = { isPending: false, mutateAsync: vi.fn() };
 const resendPin = { isPending: false, mutateAsync: vi.fn() };
+const completeDelivery = { isPending: false, mutateAsync: vi.fn() };
+const resendDelivery = { isPending: false, mutateAsync: vi.fn() };
 
 interface PermissionState {
   isReady: boolean;
@@ -21,7 +23,7 @@ let movementState: { data: { currentStatus: string }; isLoading: boolean; error:
 vi.mock('@/hooks', () => ({
   useBatchRoster: () => rosterState,
   useBatchMovement: () => movementState,
-  useLastMileActions: () => ({ updateStatus, complete, resendPin }),
+  useLastMileActions: () => ({ updateStatus, complete, resendPin, completeDelivery, resendDelivery }),
   useOrderTimeline: () => timelineState,
   usePermissions: () => permissionState,
 }));
@@ -73,6 +75,8 @@ beforeEach(() => {
   updateStatus.mutateAsync.mockReset().mockResolvedValue({ id: 'order-1' });
   complete.mutateAsync.mockReset().mockResolvedValue({ message: 'Pickup completed.' });
   resendPin.mutateAsync.mockReset().mockResolvedValue({ message: 'PIN sent.' });
+  completeDelivery.mutateAsync.mockReset().mockResolvedValue({ message: 'Delivery completed.' });
+  resendDelivery.mutateAsync.mockReset().mockResolvedValue({ message: 'Delivery PIN sent.' });
   permissionState = { isReady: true, can: (capability) => capability === 'local_delivery.manage', refresh: vi.fn() };
   timelineState = { data: { goodsBreakdown: [] }, isLoading: false, error: null, refetch: vi.fn() };
   rosterState = { data: makeRoster(), isLoading: false, error: null, refetch: vi.fn() };
@@ -107,6 +111,24 @@ describe('LastMileWorkspace', () => {
 
     expect(screen.getByRole('button', { name: 'Start extra truck movement' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Assign local courier' })).not.toBeInTheDocument();
+  });
+
+  it('requires the delivery PIN after a D2D shipment is out for delivery', async () => {
+    rosterState = { ...rosterState, data: makeRoster({ shipmentType: 'd2d', status: 'OUT_FOR_DELIVERY_DESTINATION_CITY' }) };
+
+    render(<LastMileWorkspace batchId="batch-1" onExit={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: 'Complete delivery' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Resend delivery PIN' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Complete delivery' }));
+    fireEvent.change(screen.getByLabelText('Delivery PIN'), { target: { value: '123456' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Complete delivery' })[1]!);
+
+    await waitFor(() => expect(completeDelivery.mutateAsync).toHaveBeenCalledWith({
+      batchId: 'batch-1',
+      orderId: 'order-1',
+      payload: { pin: '123456' },
+    }));
   });
 
   it('explains missing local-delivery access instead of showing an action control', () => {

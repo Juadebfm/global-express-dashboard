@@ -144,7 +144,16 @@ describe('submitPublicD2dIntake', () => {
   it('POSTs the intake payload + attaches cf-turnstile-response, no Authorization', async () => {
     mockFetch({
       success: true,
-      data: { ticket: { id: 't1' }, contact: { email: 'a@b.test', accountLinked: false }, intakeRequest: {} },
+      data: {
+        order: {
+          id: 'order-1',
+          trackingNumber: 'D2D-20260911-0001',
+          shipmentType: 'd2d',
+          isPreorder: true,
+          statusV2: 'PREORDER_SUBMITTED',
+        },
+        contact: { email: 'a@b.test', accountLinked: false },
+      },
     });
     const result = await submitPublicD2dIntake(
       {
@@ -163,7 +172,7 @@ describe('submitPublicD2dIntake', () => {
       },
       'cf-token-d2d',
     );
-    expect(result.ticket.id).toBe('t1');
+    expect(result.order.trackingNumber).toBe('D2D-20260911-0001');
     const { url, init } = lastCall();
     expect(url).toContain('/public/d2d/intake');
     expect(init.method).toBe('POST');

@@ -6,4 +6,5 @@ export { PickupRepForm } from './PickupRepForm';
 export { CustomerShipmentDetail } from './CustomerShipmentDetail';
 export { CustomerPaymentView } from './CustomerPaymentView';
 export { CreateOrderModal } from './CreateOrderModal';
+export { D2dOrderModal } from './D2dOrderModal';
 export { SendPaymentPanel } from './SendPaymentPanel';

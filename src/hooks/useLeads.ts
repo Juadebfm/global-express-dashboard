@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Lead, LeadStatus, LeadType, LeadsListResult } from '@/types';
-import { listLeads, updateLead, deleteLead, getMyD2dLeads, submitD2dIntake, submitShopInquiry } from '@/services';
+import type { LeadStatus, LeadType, LeadsListResult } from '@/types';
+import { listLeads, updateLead, deleteLead, submitShopInquiry } from '@/services';
 import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuthToken } from './useAuthToken';
 
@@ -63,37 +63,6 @@ export function useDeleteLead() {
   return useMutation({
     mutationFn: (id: string) => deleteLead(id, token),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['leads'] }),
-  });
-}
-
-export function useMyD2dLeads() {
-  const getToken = useAuthToken();
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['leads', 'my-d2d'],
-    queryFn: async (): Promise<Lead[]> => {
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
-      return getMyD2dLeads(token);
-    },
-    staleTime: STALE_TIME.REAL_TIME,
-  });
-  return {
-    leads: data ?? [],
-    isLoading,
-    error: error instanceof Error ? error.message : error ? 'Failed to load your requests' : null,
-  };
-}
-
-export function useSubmitD2dIntake() {
-  const getToken = useAuthToken();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (payload: Parameters<typeof submitD2dIntake>[0]) => {
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
-      return submitD2dIntake(payload, token);
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['leads', 'my-d2d'] }),
   });
 }
 

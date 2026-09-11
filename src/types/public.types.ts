@@ -95,7 +95,6 @@ export interface PublicD2dIntakeContact {
 }
 
 export interface PublicD2dIntakeResult {
-  ticket: { id: string; subject?: string | null };
+  order: import('./order.types').D2dOrderSubmission;
   contact: PublicD2dIntakeContact;
-  intakeRequest: Record<string, unknown>;
 }

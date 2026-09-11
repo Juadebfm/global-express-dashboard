@@ -170,9 +170,6 @@ const LeadsPage = lazy(() =>
 const NewsletterSubscribersPage = lazy(() =>
   import('@/pages/newsletter/NewsletterSubscribersPage').then((m) => ({ default: m.NewsletterSubscribersPage })),
 );
-const D2DMyRequestsPage = lazy(() =>
-  import('@/pages/d2d/D2DMyRequestsPage').then((m) => ({ default: m.D2DMyRequestsPage })),
-);
 
 // Staff+ visiting /orders get bounced to /operations (preserving the query
 // string — ?select=<id>, &tab=warehouse, etc. — a bare <Navigate> would drop
@@ -533,7 +530,7 @@ function AppRoutes(): ReactElement {
         }
       />
 
-      {/* Leads — staff+ see all leads; customers see their own D2D requests */}
+      {/* Leads contain historical inquiries only. New D2D intake creates normal orders. */}
       <Route
         path={ROUTES.LEADS}
         element={
@@ -558,7 +555,7 @@ function AppRoutes(): ReactElement {
         path={ROUTES.D2D_MY_REQUESTS}
         element={
           <ProtectedRoute allowedRoles={['user']} redirectTo={ROUTES.DASHBOARD}>
-            <D2DMyRequestsPage />
+            <Navigate to={ROUTES.ORDERS} replace />
           </ProtectedRoute>
         }
       />

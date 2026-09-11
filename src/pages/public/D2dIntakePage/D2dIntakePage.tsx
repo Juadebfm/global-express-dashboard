@@ -84,8 +84,8 @@ export default function D2dIntakePage(): ReactElement {
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">Door-to-door intake</h1>
             <p className="text-sm text-gray-600">
-              No account needed. Tell us what you're shipping and where it should go — our team
-              follows up to confirm pricing and pickup.
+              Tell us what you&apos;re shipping and where it should go. We&apos;ll create a D2D pre-order
+              so you can track it from the start.
             </p>
           </div>
         </div>
@@ -280,16 +280,15 @@ function SuccessCard({ result, onReset }: SuccessCardProps): ReactElement {
     <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900">
       <div className="flex items-center gap-3">
         <CheckCircle2 className="h-6 w-6 text-emerald-600" />
-        <h2 className="text-lg font-semibold">Request received</h2>
+        <h2 className="text-lg font-semibold">D2D order created</h2>
       </div>
       <p className="mt-2 text-sm">
-        We've created support ticket{' '}
-        <span className="font-mono text-xs">{result.ticket.id}</span>. Our team will reach out to{' '}
-        <span className="font-medium">{result.contact.email}</span> shortly.
+        Tracking number:{' '}
+        <span className="font-mono font-semibold">{result.order.trackingNumber}</span>.
       </p>
       {result.contact.accountLinked && (
         <p className="mt-2 text-sm">
-          We linked this request to your existing account — you can sign in to track progress.
+          We linked this order to your existing account — you can sign in to track progress.
         </p>
       )}
       {result.contact.registerIntent && !result.contact.accountLinked && (

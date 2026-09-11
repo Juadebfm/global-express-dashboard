@@ -3,6 +3,7 @@ import type { BatchListItem, BatchRosterOrder } from '@/types';
 export type LastMileNextAction =
   | { kind: 'ready'; label: string }
   | { kind: 'pickup'; label: string }
+  | { kind: 'delivery'; label: string }
   | { kind: 'status'; label: string; statusV2: string }
   | null;
 
@@ -38,7 +39,7 @@ export function getLastMileNextAction(
     case 'IN_TRANSIT_TO_DESTINATION_CITY':
       return { kind: 'status', label: 'Mark out for delivery', statusV2: 'OUT_FOR_DELIVERY_DESTINATION_CITY' };
     case 'OUT_FOR_DELIVERY_DESTINATION_CITY':
-      return { kind: 'status', label: 'Mark delivered', statusV2: 'DELIVERED_TO_RECIPIENT' };
+      return { kind: 'delivery', label: 'Complete delivery' };
     default:
       return null;
   }

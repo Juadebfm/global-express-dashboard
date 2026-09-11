@@ -14,6 +14,7 @@ import type {
   PublicShipmentTypesResult,
 } from '@/types';
 import { STALE_TIME } from '@/lib/queryDefaults';
+import { ApiError } from '@/lib/apiClient';
 
 const publicShipmentTypesKey = ['public', 'shipment-types'] as const;
 
@@ -91,7 +92,9 @@ export function useSubmitPublicD2dIntake(): {
     onError: (err) => {
       pushMessage({
         tone: 'error',
-        message: err.message || FEEDBACK_MESSAGES.public.d2dIntakeError,
+        message: err instanceof ApiError && err.status === 409
+          ? 'Please sign in to create your D2D order.'
+          : err.message || FEEDBACK_MESSAGES.public.d2dIntakeError,
       });
     },
   });
