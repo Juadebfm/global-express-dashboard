@@ -169,7 +169,7 @@ function Toggle({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(
-        'relative h-6 w-11 rounded-full transition',
+        'relative h-6 w-11 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2',
         checked ? 'bg-brand-500' : 'bg-gray-200',
         disabled && 'cursor-not-allowed opacity-60',
       )}
@@ -1323,6 +1323,7 @@ export function SettingsPage(): ReactElement {
   const {
     preferences, isLoading: prefsLoading, error: prefsError,
     isSaving: prefsSaving, saveError: prefsSaveError, updateChannel,
+    updateInternalActivityEmails,
   } = useMyNotificationPreferences();
 
   const [isExporting, setIsExporting] = useState(false);
@@ -1448,6 +1449,69 @@ export function SettingsPage(): ReactElement {
             )}
 
             {isOperator && <MfaSettingsCard />}
+
+            {isOperator && (
+              <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  {t('notificationPreferences.internalActivity.title')}
+                </h3>
+                <p className="mt-1 text-xs text-gray-500">
+                  {t('notificationPreferences.internalActivity.description')}
+                </p>
+                <div className="mt-5">
+                  {prefsLoading && (
+                    <div className="rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">
+                      {t('notificationPreferences.loadingText')}
+                    </div>
+                  )}
+                  {!prefsLoading && prefsError && <AlertBanner tone="error" message={prefsError} />}
+                  {!prefsLoading && !prefsError && prefsSaveError && (
+                    <div className="mb-3">
+                      <AlertBanner tone="error" message={prefsSaveError} />
+                    </div>
+                  )}
+                  {!prefsLoading && !prefsError && preferences && (
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {t('notificationPreferences.internalActivity.label')}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500">
+                          {preferences.notifyInternalActivityEmails
+                            ? t('notificationPreferences.status.enabled')
+                            : t('notificationPreferences.status.disabled')}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-3">
+                        <span className={cn(
+                          'rounded-full px-3 py-1 text-[11px] font-semibold',
+                          preferences.notifyInternalActivityEmails
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-rose-50 text-rose-600',
+                        )}>
+                          {preferences.notifyInternalActivityEmails
+                            ? t('notificationPreferences.status.enabled')
+                            : t('notificationPreferences.status.disabled')}
+                        </span>
+                        <Toggle
+                          checked={preferences.notifyInternalActivityEmails}
+                          onChange={(enabled) => {
+                            void updateInternalActivityEmails(enabled).catch(() => undefined);
+                          }}
+                          disabled={prefsSaving}
+                          label={t('notificationPreferences.internalActivity.toggleLabel')}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {prefsSaving && (
+                    <p className="mt-3 text-xs text-gray-500">
+                      {t('notificationPreferences.savingText')}
+                    </p>
+                  )}
+                </div>
+              </section>
+            )}
 
             {isCustomer && (
               <section className="space-y-6">

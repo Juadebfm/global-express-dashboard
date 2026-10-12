@@ -4,6 +4,7 @@ import type { NotificationPreferenceChannels, NotificationPreferences } from '@/
 import { getMyNotificationPreferences, updateMyNotificationPreferences } from '@/services';
 import { STALE_TIME } from '@/lib/queryDefaults';
 import { useAuth } from './useAuth';
+import { useAuthToken } from './useAuthToken';
 
 interface NotificationPreferencesState {
   preferences: NotificationPreferences | null;
@@ -15,24 +16,27 @@ interface NotificationPreferencesState {
     channel: keyof NotificationPreferenceChannels,
     enabled: boolean
   ) => Promise<void>;
+  updateInternalActivityEmails: (enabled: boolean) => Promise<void>;
 }
 
 export function useMyNotificationPreferences(): NotificationPreferencesState {
   const { user } = useAuth();
-  const { isSignedIn: isClerkSignedIn, getToken } = useClerkAuth();
+  const { isSignedIn: isClerkSignedIn } = useClerkAuth();
+  const getAuthToken = useAuthToken();
   const queryClient = useQueryClient();
 
   const isCustomer = isClerkSignedIn && !user;
+  const isInternal = user?.role === 'staff' || user?.role === 'admin' || user?.role === 'superadmin';
   const queryKey = ['users', 'me', 'notification-preferences'] as const;
 
   const { data, isLoading, error } = useQuery({
     queryKey,
     queryFn: async (): Promise<NotificationPreferences> => {
-      const token = await getToken();
+      const token = await getAuthToken();
       if (!token) throw new Error('Authentication token is missing.');
-      return getMyNotificationPreferences(token);
+      return getMyNotificationPreferences(token, isInternal);
     },
-    enabled: isCustomer,
+    enabled: isCustomer || isInternal,
     staleTime: STALE_TIME.SLOW_MOVING,
   });
 
@@ -44,7 +48,7 @@ export function useMyNotificationPreferences(): NotificationPreferencesState {
       channel: keyof NotificationPreferenceChannels;
       enabled: boolean;
     }): Promise<NotificationPreferences> => {
-      const token = await getToken();
+      const token = await getAuthToken();
       if (!token) throw new Error('Authentication token is missing.');
 
       return updateMyNotificationPreferences(token, { [channel]: enabled });
@@ -55,6 +59,7 @@ export function useMyNotificationPreferences(): NotificationPreferencesState {
 
       if (previous) {
         queryClient.setQueryData<NotificationPreferences>(queryKey, {
+          ...previous,
           channels: {
             ...previous.channels,
             [channel]: enabled,
@@ -70,7 +75,30 @@ export function useMyNotificationPreferences(): NotificationPreferencesState {
       }
     },
     onSuccess: (result) => {
-      queryClient.setQueryData(queryKey, result);
+      queryClient.setQueryData<NotificationPreferences>(queryKey, (previous) =>
+        previous ? { ...previous, channels: result.channels } : result,
+      );
+    },
+  });
+
+  // This preference has a different audience and purpose from the customer
+  // email channels. Keep it separate and wait for the server response before
+  // changing the displayed switch, so a rejected save never looks successful.
+  const internalActivityMutation = useMutation({
+    mutationFn: async (enabled: boolean): Promise<NotificationPreferences> => {
+      if (!isInternal) {
+        throw new Error('GEX activity email preferences are only available to internal users.');
+      }
+      const token = await getAuthToken();
+      if (!token) throw new Error('Authentication token is missing.');
+      return updateMyNotificationPreferences(token, { notifyInternalActivityEmails: enabled });
+    },
+    onSuccess: (result) => {
+      queryClient.setQueryData<NotificationPreferences>(queryKey, (previous) =>
+        previous
+          ? { ...previous, notifyInternalActivityEmails: result.notifyInternalActivityEmails }
+          : result,
+      );
     },
   });
 
@@ -81,21 +109,24 @@ export function useMyNotificationPreferences(): NotificationPreferencesState {
         ? 'Failed to load notification preferences'
         : null;
 
-  const saveMessage =
-    updateMutation.error instanceof Error
-      ? updateMutation.error.message
-      : updateMutation.error
-        ? 'Failed to update notification preferences'
-        : null;
+  const mutationError = internalActivityMutation.error ?? updateMutation.error;
+  const saveMessage = mutationError instanceof Error
+    ? mutationError.message
+    : mutationError
+      ? 'Failed to update notification preferences'
+      : null;
 
   return {
     preferences: data ?? null,
     isLoading,
     error: message,
-    isSaving: updateMutation.isPending,
+    isSaving: updateMutation.isPending || internalActivityMutation.isPending,
     saveError: saveMessage,
     updateChannel: async (channel, enabled) => {
       await updateMutation.mutateAsync({ channel, enabled });
+    },
+    updateInternalActivityEmails: async (enabled) => {
+      await internalActivityMutation.mutateAsync(enabled);
     },
   };
 }

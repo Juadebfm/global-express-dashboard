@@ -132,7 +132,9 @@ export interface ProfileCompleteness {
 export interface ApiNotificationPreferencesResponse {
   success: boolean;
   message?: string;
-  data: NotificationPreferenceChannels | null;
+  data: (Partial<NotificationPreferenceChannels> & {
+    notifyInternalActivityEmails?: boolean;
+  }) | null;
 }
 
 export interface NotificationPreferenceChannels {
@@ -144,9 +146,12 @@ export interface NotificationPreferenceChannels {
 
 export interface NotificationPreferences {
   channels: NotificationPreferenceChannels;
+  notifyInternalActivityEmails: boolean;
 }
 
-export type NotificationPreferencesUpdateInput = Partial<NotificationPreferenceChannels>;
+export type NotificationPreferencesUpdateInput = Partial<NotificationPreferenceChannels> & {
+  notifyInternalActivityEmails?: boolean;
+};
 
 export interface AccountExportFile {
   blob: Blob;

@@ -154,7 +154,8 @@ export async function getMyProfileCompleteness(token: string): Promise<ProfileCo
 }
 
 export async function getMyNotificationPreferences(
-  token: string
+  token: string,
+  requireInternalActivityPreference = false,
 ): Promise<NotificationPreferences> {
   const response = await apiGet<ApiNotificationPreferencesResponse>(
     '/users/me/notification-preferences',
@@ -162,6 +163,10 @@ export async function getMyNotificationPreferences(
   );
 
   const data = response.data;
+  if (requireInternalActivityPreference && typeof data?.notifyInternalActivityEmails !== 'boolean') {
+    throw new Error('The server did not return your GEX activity email preference. Please try again.');
+  }
+
   return {
     channels: {
       notifyEmailAlerts: data?.notifyEmailAlerts ?? false,
@@ -169,6 +174,7 @@ export async function getMyNotificationPreferences(
       notifyInAppAlerts: data?.notifyInAppAlerts ?? false,
       consentMarketing: data?.consentMarketing ?? false,
     },
+    notifyInternalActivityEmails: data?.notifyInternalActivityEmails ?? false,
   };
 }
 
@@ -183,6 +189,13 @@ export async function updateMyNotificationPreferences(
   );
 
   const data = response.data;
+  if (
+    'notifyInternalActivityEmails' in input &&
+    typeof data?.notifyInternalActivityEmails !== 'boolean'
+  ) {
+    throw new Error('The server did not confirm your GEX activity email preference. Please try again.');
+  }
+
   return {
     channels: {
       notifyEmailAlerts: data?.notifyEmailAlerts ?? false,
@@ -190,6 +203,7 @@ export async function updateMyNotificationPreferences(
       notifyInAppAlerts: data?.notifyInAppAlerts ?? false,
       consentMarketing: data?.consentMarketing ?? false,
     },
+    notifyInternalActivityEmails: data?.notifyInternalActivityEmails ?? false,
   };
 }
 

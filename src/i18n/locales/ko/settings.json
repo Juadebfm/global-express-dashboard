@@ -53,6 +53,12 @@
       "notifyInAppAlerts": "앱 내 알림",
       "consentMarketing": "마케팅 이메일"
     },
+    "internalActivity": {
+      "title": "GEX 활동 이메일",
+      "label": "개인 GEX 활동 이메일 사본",
+      "description": "GEX 활동 알림의 개인 이메일 사본을 받을지 선택하세요. 이 설정은 회사 받은편지함이나 비밀번호 재설정, MFA, 보안, 고객 및 공급업체 이메일에는 영향을 주지 않습니다.",
+      "toggleLabel": "개인 GEX 활동 이메일 전환"
+    },
     "status": {
       "enabled": "활성",
       "disabled": "비활성"

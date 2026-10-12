@@ -53,6 +53,12 @@
       "notifyInAppAlerts": "In-App Alerts",
       "consentMarketing": "Marketing Emails"
     },
+    "internalActivity": {
+      "title": "GEX activity emails",
+      "label": "Personal GEX activity email copies",
+      "description": "Choose whether to receive personal copies of GEX activity alerts. This does not affect the company inbox, password reset, MFA, security, customer, or supplier emails.",
+      "toggleLabel": "Toggle personal GEX activity emails"
+    },
     "status": {
       "enabled": "Enabled",
       "disabled": "Disabled"

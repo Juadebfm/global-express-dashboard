@@ -3,12 +3,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   confirmMyAvatar,
   adminResetPassword,
+  getMyNotificationPreferences,
   getMe,
   login,
   presignMyAvatar,
   register,
   removeMyAvatar,
   syncClerkAccount,
+  updateMyNotificationPreferences,
   uploadAvatarFile,
 } from './authService';
 
@@ -229,5 +231,52 @@ describe('self-service avatar', () => {
     });
     const { init } = lastCall();
     expect(init.body).toBeUndefined();
+  });
+});
+
+describe('GEX activity email preference', () => {
+  it('loads the signed-in user preference with their bearer token', async () => {
+    mockFetch({
+      success: true,
+      data: {
+        notifyInternalActivityEmails: true,
+      },
+    });
+
+    const preferences = await getMyNotificationPreferences('staff-token', true);
+
+    expect(preferences.notifyInternalActivityEmails).toBe(true);
+    const { url, init } = lastCall();
+    expect(url).toContain('/users/me/notification-preferences');
+    expect(init.method ?? 'GET').toBe('GET');
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer staff-token');
+  });
+
+  it('sends only the requested preference and returns the server-confirmed value', async () => {
+    mockFetch({
+      success: true,
+      data: {
+        notifyInternalActivityEmails: false,
+      },
+    });
+
+    const preferences = await updateMyNotificationPreferences('staff-token', {
+      notifyInternalActivityEmails: false,
+    });
+
+    expect(preferences.notifyInternalActivityEmails).toBe(false);
+    const { url, init } = lastCall();
+    expect(url).toContain('/users/me/notification-preferences');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(init.body as string)).toEqual({ notifyInternalActivityEmails: false });
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer staff-token');
+  });
+
+  it('rejects a successful response that does not confirm the new preference', async () => {
+    mockFetch({ success: true, data: {} });
+
+    await expect(
+      updateMyNotificationPreferences('staff-token', { notifyInternalActivityEmails: true }),
+    ).rejects.toThrow('The server did not confirm your GEX activity email preference.');
   });
 });
