@@ -41,12 +41,17 @@ export function deleteLead(id: string, token: string): Promise<void> {
 export function submitShopInquiry(
   payload: {
     fullName: string;
-    phone?: string;
+    phone: string;
     email?: string;
     message: string;
-    itemId?: string;
+    itemId: string;
   },
-  token: string,
+  turnstileToken: string,
 ): Promise<Lead> {
-  return apiPostData<Lead>('/leads/shop-inquiry', payload, token);
+  return apiPostData<Lead>(
+    '/leads/shop-inquiry',
+    payload,
+    undefined,
+    { turnstileToken },
+  );
 }

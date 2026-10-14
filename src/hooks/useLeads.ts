@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { LeadStatus, LeadType, LeadsListResult } from '@/types';
 import { listLeads, updateLead, deleteLead, submitShopInquiry } from '@/services';
 import { STALE_TIME } from '@/lib/queryDefaults';
-import { useAuthToken } from './useAuthToken';
 
 const TOKEN_KEY = 'globalxpress_token';
 
@@ -67,12 +66,10 @@ export function useDeleteLead() {
 }
 
 export function useSubmitShopInquiry() {
-  const getToken = useAuthToken();
   return useMutation({
-    mutationFn: async (payload: Parameters<typeof submitShopInquiry>[0]) => {
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
-      return submitShopInquiry(payload, token);
-    },
+    mutationFn: ({ payload, turnstileToken }: {
+      payload: Parameters<typeof submitShopInquiry>[0];
+      turnstileToken: string;
+    }) => submitShopInquiry(payload, turnstileToken),
   });
 }

@@ -45,7 +45,7 @@ export interface TurnstileGateProps {
 
 /**
  * Renders the Cloudflare Turnstile widget on unauthenticated public POST
- * forms (newsletter subscribe, vehicle inquiry, D2D intake). Captures the token, hands it to the form
+ * forms (newsletter subscribe, shop inquiry, D2D intake). Captures the token, hands it to the form
  * via `onToken`, and exposes `reset()` so the form can re-issue after a
  * server-side CAPTCHA rejection.
  *

@@ -177,7 +177,16 @@ export function LeadsPage(): ReactElement {
                       <StatusDropdown lead={lead} onUpdate={handleStatusChange} />
                     </td>
                     <td className="px-4 py-3 text-gray-500">
-                      {lead.email ?? (lead.phone ? <PhoneLink phone={lead.phone} onClick={(event) => event.stopPropagation()}>{lead.phone}</PhoneLink> : '—')}
+                      {lead.email || lead.phone ? (
+                        <div className="flex flex-col gap-1">
+                          {lead.email && <span>{lead.email}</span>}
+                          {lead.phone && (
+                            <PhoneLink phone={lead.phone} onClick={(event) => event.stopPropagation()}>
+                              {lead.phone}
+                            </PhoneLink>
+                          )}
+                        </div>
+                      ) : '—'}
                     </td>
                     <td className="px-4 py-3 text-gray-500">
                       {new Date(lead.createdAt).toLocaleDateString()}

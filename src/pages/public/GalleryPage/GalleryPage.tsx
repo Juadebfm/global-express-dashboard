@@ -39,6 +39,7 @@ import {
   type NewsletterSubscribeFormData,
 } from '@/components/forms';
 import type { GalleryItem, GalleryUploadContentType } from '@/types';
+import { ApiError } from '@/lib/apiClient';
 
 const ALLOWED_PROOF_TYPES: GalleryUploadContentType[] = [
   'application/pdf',
@@ -158,6 +159,16 @@ export default function GalleryPage(): ReactElement {
               icon={<Car className="h-5 w-5" />}
               items={data.cars}
               emptyLabel="No cars listed at the moment."
+              renderActions={(item) => (
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="w-full"
+                  onClick={() => setInquiryTarget(item)}
+                >
+                  Inquire
+                </Button>
+              )}
             />
 
             <GallerySection
@@ -207,7 +218,16 @@ function ShopInquiryModal({ item, onClose }: { item: GalleryItem; onClose: () =>
   const { mutateAsync, isPending } = useSubmitShopInquiry();
   const pushMessage = useFeedbackStore((s) => s.pushMessage);
   const [form, setForm] = useState({ fullName: '', phone: '', email: '', message: '' });
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
+  const turnstileRef = useRef<TurnstileGateRef | null>(null);
+
+  const resetTurnstile = useCallback(() => {
+    setTurnstileToken('');
+    turnstileRef.current?.reset();
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -236,22 +256,86 @@ function ShopInquiryModal({ item, onClose }: { item: GalleryItem; onClose: () =>
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
+    setSubmitError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const values = {
+      fullName: form.fullName.trim(),
+      phone: form.phone.trim(),
+      email: form.email.trim(),
+      message: form.message.trim(),
+    };
+    const errors: Partial<Record<keyof typeof form, string>> = {};
+    if (values.fullName.length < 2 || values.fullName.length > 200) {
+      errors.fullName = 'Enter a name between 2 and 200 characters.';
+    }
+    if (values.phone.length < 5 || values.phone.length > 30) {
+      errors.phone = 'Enter a phone number between 5 and 30 characters.';
+    }
+    if (values.email.length > 254) {
+      errors.email = 'Email must be 254 characters or fewer.';
+    }
+    if (values.message.length < 5 || values.message.length > 2000) {
+      errors.message = 'Enter a message between 5 and 2000 characters.';
+    }
+    if (!turnstileToken) {
+      setSubmitError('Complete the security check before sending your inquiry.');
+      return;
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
+    setSubmitError(null);
     try {
       await mutateAsync({
-        fullName: form.fullName,
-        phone: form.phone || undefined,
-        email: form.email || undefined,
-        message: form.message,
-        itemId: item.id,
+        payload: {
+          fullName: values.fullName,
+          phone: values.phone,
+          ...(values.email ? { email: values.email } : {}),
+          message: values.message,
+          itemId: item.id,
+        },
+        turnstileToken,
       });
       pushMessage({ tone: 'success', message: 'Inquiry submitted. Our team will be in touch.' });
       onClose();
-    } catch {
-      pushMessage({ tone: 'error', message: 'Failed to submit inquiry. Please try again.' });
+    } catch (error) {
+      const apiError = error instanceof ApiError ? error : null;
+      if (apiError?.status === 400) {
+        const validationErrors = apiError.problem?.errors ?? [];
+        const mappedErrors: Partial<Record<keyof typeof form, string>> = {};
+        for (const validationError of validationErrors) {
+          const fieldName = validationError.path
+            .filter((part): part is string => typeof part === 'string')
+            .at(-1);
+          if (fieldName && fieldName in form) {
+            mappedErrors[fieldName as keyof typeof form] = validationError.message;
+          }
+        }
+        setFieldErrors(mappedErrors);
+        setSubmitError(
+          validationErrors.length > 0
+            ? 'Please correct the highlighted fields and try again.'
+            : apiError.message,
+        );
+      } else if (apiError?.status === 404) {
+        setSubmitError('This listing is no longer available. Refresh the Gallery and try another listing.');
+      } else if (apiError?.status === 422 && isTurnstileError(apiError)) {
+        setSubmitError('The security check expired or was rejected. Complete it again and resend your inquiry.');
+      } else if (apiError?.status === 422) {
+        setSubmitError(apiError.message || 'We could not verify this inquiry. Please try again.');
+      } else if (apiError?.status === 429) {
+        setSubmitError('You have reached the limit of five inquiries per minute. Please try again shortly.');
+      } else {
+        setSubmitError(error instanceof Error ? error.message : 'Failed to submit inquiry. Please try again.');
+      }
+      resetTurnstile();
     }
   };
 
@@ -283,34 +367,48 @@ function ShopInquiryModal({ item, onClose }: { item: GalleryItem; onClose: () =>
         </div>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">Full Name *</label>
-            <input name="fullName" value={form.fullName} onChange={handleChange} required
+            <label htmlFor="shop-inquiry-full-name" className="mb-1.5 block text-sm font-medium text-gray-700">Full Name *</label>
+            <input id="shop-inquiry-full-name" name="fullName" value={form.fullName} onChange={handleChange}
+              required minLength={2} maxLength={200} aria-invalid={!!fieldErrors.fullName}
+              aria-describedby={fieldErrors.fullName ? 'shop-inquiry-full-name-error' : undefined}
               className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500" />
+            {fieldErrors.fullName && <p id="shop-inquiry-full-name-error" className="mt-1 text-sm text-red-600">{fieldErrors.fullName}</p>}
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">Phone</label>
-              <input name="phone" value={form.phone} onChange={handleChange}
+              <label htmlFor="shop-inquiry-phone" className="mb-1.5 block text-sm font-medium text-gray-700">Phone *</label>
+              <input id="shop-inquiry-phone" name="phone" type="tel" autoComplete="tel" value={form.phone} onChange={handleChange}
+                required minLength={5} maxLength={30} aria-invalid={!!fieldErrors.phone}
+                aria-describedby={fieldErrors.phone ? 'shop-inquiry-phone-error' : undefined}
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500" />
+              {fieldErrors.phone && <p id="shop-inquiry-phone-error" className="mt-1 text-sm text-red-600">{fieldErrors.phone}</p>}
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">Email</label>
-              <input name="email" type="email" value={form.email} onChange={handleChange}
+              <label htmlFor="shop-inquiry-email" className="mb-1.5 block text-sm font-medium text-gray-700">Email (optional)</label>
+              <input id="shop-inquiry-email" name="email" type="email" autoComplete="email" maxLength={254} value={form.email} onChange={handleChange}
+                aria-invalid={!!fieldErrors.email}
+                aria-describedby={fieldErrors.email ? 'shop-inquiry-email-error' : undefined}
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500" />
+              {fieldErrors.email && <p id="shop-inquiry-email-error" className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>}
             </div>
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">Message *</label>
-            <textarea name="message" value={form.message} onChange={handleChange} required minLength={5}
+            <label htmlFor="shop-inquiry-message" className="mb-1.5 block text-sm font-medium text-gray-700">Message *</label>
+            <textarea id="shop-inquiry-message" name="message" value={form.message} onChange={handleChange}
+              required minLength={5} maxLength={2000} aria-invalid={!!fieldErrors.message}
+              aria-describedby={fieldErrors.message ? 'shop-inquiry-message-error' : undefined}
               rows={3}
               placeholder="Tell us what you'd like to know or offer"
               className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500" />
+            {fieldErrors.message && <p id="shop-inquiry-message-error" className="mt-1 text-sm text-red-600">{fieldErrors.message}</p>}
           </div>
+          <TurnstileGate ref={turnstileRef} onToken={setTurnstileToken} />
+          {submitError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{submitError}</p>}
           <div className="flex gap-3 pt-1">
             <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
               Cancel
             </Button>
-            <Button type="submit" variant="primary" isLoading={isPending} disabled={isPending} className="flex-1">
+            <Button type="submit" variant="primary" isLoading={isPending} disabled={!turnstileToken || isPending} className="flex-1">
               {isPending ? 'Sending…' : 'Send Inquiry'}
             </Button>
           </div>

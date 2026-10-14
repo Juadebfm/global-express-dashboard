@@ -422,7 +422,7 @@ export function apiGet<T>(path: string, token?: string): Promise<T> {
 
 /**
  * Per-POST options. Combines Idempotency-Key (payment / order / ticket
- * creation) and Cloudflare Turnstile (5 unauthenticated public POSTs).
+ * creation) and Cloudflare Turnstile (unauthenticated public POSTs).
  * Future per-request headers (request-id override, abort signal, etc.)
  * would land here too.
  */
@@ -444,8 +444,8 @@ export interface PostOpts {
   /**
    * Cloudflare Turnstile token captured by the widget. When set, attaches
    * `cf-turnstile-response: <token>` to the request. Required by the BE
-   * for the remaining unauthenticated public POSTs (newsletter subscribe,
-   * vehicle inquiry, D2D intake). Tokens are
+   * for unauthenticated public POSTs (newsletter subscribe, shop inquiry,
+   * D2D intake). Tokens are
    * single-use and expire after 5 minutes — on a 422 with
    * `code: "captcha_failed"`/"captcha_missing", reset the widget and
    * re-issue.
